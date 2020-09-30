@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <AssemblyName>Prp.Platform.Api</AssemblyName>
     <RootNamespace>Prp.Platform</RootNamespace>
