@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
 
-namespace Prp.Platform.Api
+namespace PrecisionReporters.Platform.Api
 {
     public class Program
     {

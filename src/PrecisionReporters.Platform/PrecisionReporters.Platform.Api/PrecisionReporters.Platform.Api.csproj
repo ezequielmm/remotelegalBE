@@ -3,8 +3,8 @@
   <PropertyGroup>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <TargetFramework>netcoreapp3.1</TargetFramework>
-    <AssemblyName>Prp.Platform.Api</AssemblyName>
-    <RootNamespace>Prp.Platform</RootNamespace>
+    <AssemblyName>PrecisionReporters.Platform.Api</AssemblyName>
+    <RootNamespace>PrecisionReporters.Platform.Api</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>

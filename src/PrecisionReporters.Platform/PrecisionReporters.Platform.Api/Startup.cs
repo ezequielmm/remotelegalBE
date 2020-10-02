@@ -4,7 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
-namespace Prp.Platform.Api
+namespace PrecisionReporters.Platform.Api
 {
     public class Startup
     {
@@ -22,6 +22,8 @@ namespace Prp.Platform.Api
 
             // Register the Swagger generator, defining our Swagger documents
             services.AddSwaggerGen();
+
+            services.AddHealthChecks();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -48,6 +50,8 @@ namespace Prp.Platform.Api
             app.UseRouting();
 
             app.UseAuthorization();
+
+            app.UseHealthChecks("/healthcheck");
 
             app.UseEndpoints(endpoints =>
             {
