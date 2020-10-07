@@ -1,0 +1,72 @@
+name: Build, Test & Deploy
+
+on: [push]
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    env:
+      work-dir: ./src/PrecisionReporters.Platform
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 3.1.301
+    - name: Install dependencies
+      run: dotnet restore
+      working-directory: ${{ env.work-dir }}
+    - name: Build
+      run: dotnet build --configuration Release --no-restore
+      working-directory: ${{ env.work-dir }}
+    - name: Test
+      run: dotnet test --no-restore --verbosity normal /p:CollectCoverage=true /p:CoverletOutputFormat=opencover
+      working-directory: ${{ env.work-dir }}
+
+  pack-deploy:
+    runs-on: ubuntu-latest
+    needs: [build-test]
+    if:
+      contains('
+        refs/heads/develop
+        refs/heads/qa
+      ', github.ref)
+    steps:
+    - uses: actions/checkout@v2
+    - name: Extract Branch Name
+      id: extract-branch
+      shell: bash
+      run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v1
+    - name: Build, tag, and push image to Amazon ECR
+      id: build-image
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        ECR_REPOSITORY: prp-be
+        IMAGE_TAG: ${{ github.sha }}
+      run: |
+        docker build -f ./src/PrecisionReporters.Platform/PrecisionReporters.Platform.Api/Docker/Dockerfile -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"        
+    - name: Set New Image to Amazon ECS Task Definition
+      id: task-def
+      uses: aws-actions/amazon-ecs-render-task-definition@v1
+      with:
+        task-definition: ./.github/workflows/task-definition-${{ steps.extract-branch.outputs.branch  }}.json
+        container-name: prp-be-container-${{ steps.extract-branch.outputs.branch  }}
+        image: ${{ steps.build-image.outputs.image }}
+    - name: Update Amazon ECS Cluster Service
+      uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+      with:
+        task-definition: ${{ steps.task-def.outputs.task-definition }}
+        service: prp-be-srv-${{ steps.extract-branch.outputs.branch  }}
+        cluster: prp-cluster-nonprod
+        wait-for-service-stability: true

@@ -1,0 +1,39 @@
+{
+    "containerDefinitions": [
+        {
+            "name": "prp-be-container-qa",
+            "image": "747865543072.dkr.ecr.us-east-1.amazonaws.com/prp-be:latest",
+            "cpu": 0,
+            "portMappings": [
+                {
+                    "containerPort": 80,
+                    "hostPort": 80,
+                    "protocol": "tcp"
+                }
+            ],
+            "essential": true,
+            "environment": [],
+            "mountPoints": [],
+            "volumesFrom": [],
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-group": "/ecs/prp-be-task-qa",
+                    "awslogs-region": "us-east-1",
+                    "awslogs-stream-prefix": "ecs"
+                }
+            }
+        }
+    ],
+    "family": "prp-be-task-qa",
+    "taskRoleArn": "arn:aws:iam::747865543072:role/prp-ecs-task-role",
+    "executionRoleArn": "arn:aws:iam::747865543072:role/ecsTaskExecutionRole",
+    "networkMode": "awsvpc",
+    "volumes": [],
+    "placementConstraints": [],
+    "requiresCompatibilities": [
+        "FARGATE"
+    ],
+    "cpu": "512",
+    "memory": "1024"
+}
