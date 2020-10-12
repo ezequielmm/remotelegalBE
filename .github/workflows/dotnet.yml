@@ -52,10 +52,12 @@ jobs:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         ECR_REPOSITORY: prp-be
         IMAGE_TAG: ${{ github.sha }}
+        BRANCH_IMAGE_TAG: ${{ steps.extract-branch.outputs.branch  }}-${{ github.sha }}
       run: |
-        docker build -f ./src/PrecisionReporters.Platform/PrecisionReporters.Platform.Api/Docker/Dockerfile -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+        docker build -f ./src/PrecisionReporters.Platform/PrecisionReporters.Platform.Api/Docker/Dockerfile -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY:$BRANCH_IMAGE_TAG .
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-        echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"        
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$BRANCH_IMAGE_TAG
+        echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
     - name: Set New Image to Amazon ECS Task Definition
       id: task-def
       uses: aws-actions/amazon-ecs-render-task-definition@v1
