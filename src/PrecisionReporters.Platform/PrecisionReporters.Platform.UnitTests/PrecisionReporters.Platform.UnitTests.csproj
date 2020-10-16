@@ -23,4 +23,9 @@
     <ProjectReference Include="..\PrecisionReporters.Platform.Domain\PrecisionReporters.Platform.Domain.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="02 Domain\Mappers\" />
+    <Folder Include="02 Domain\" />
+  </ItemGroup>
+
 </Project>

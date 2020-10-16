@@ -1,8 +1,17 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using PrecisionReporters.Platform.Api.Dtos;
+using PrecisionReporters.Platform.Api.Mappers;
+using PrecisionReporters.Platform.Data;
+using PrecisionReporters.Platform.Data.Entities;
+using PrecisionReporters.Platform.Data.Repositories;
+using PrecisionReporters.Platform.Domain.Services;
+using PrecisionReporters.Platform.Domain.Services.Interfaces;
 
 namespace PrecisionReporters.Platform.Api
 {
@@ -24,6 +33,17 @@ namespace PrecisionReporters.Platform.Api
             services.AddSwaggerGen();
 
             services.AddHealthChecks();
+            services.AddDbContext<ApplicationDbContext>(options =>
+                options.UseMySQL($"{Configuration.GetConnectionString("MySqlConnection")}"));
+
+            // Mappers
+            services.AddSingleton<IMapper<Case, CaseDto, CreateCaseDto>, CaseMapper>();
+
+            // Services
+            services.AddScoped<ICaseService, CaseService>();
+
+            // Repositories
+            services.AddScoped<ICaseRepository, CaseRepository>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
