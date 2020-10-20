@@ -11,7 +11,7 @@ namespace PrecisionReporters.Platform.Api.Mappers
             return new CaseDto
             {
                 Id = model.Id,
-                CreatedDate = model.CreatedDate,
+                CreationDate = model.CreationDate,
                 Name = model.Name
             };
         }
@@ -21,7 +21,7 @@ namespace PrecisionReporters.Platform.Api.Mappers
             return new Case
             {
                 Id = dto.Id,
-                CreatedDate = dto.CreatedDate,
+                CreationDate = dto.CreationDate,
                 Name = dto.Name
             };
         }
@@ -31,7 +31,7 @@ namespace PrecisionReporters.Platform.Api.Mappers
             return new Case
             {
                 Id = Guid.NewGuid(),
-                CreatedDate = DateTime.UtcNow,
+                CreationDate = DateTime.UtcNow,
                 Name = dto.Name
             };
         }

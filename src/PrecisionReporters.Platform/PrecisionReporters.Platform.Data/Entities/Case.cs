@@ -1,16 +1,16 @@
-﻿using System;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace PrecisionReporters.Platform.Data.Entities
 {
-    public class Case
+    public class Case : BaseEntity<Case>
     {
-        [Key]
-        public Guid Id { get; set; }
-
-        public DateTime CreatedDate { get; set; }
-
         [Required]
         public string Name { get; set; }
+
+        public override void CopyFrom(Case entity)
+        {
+            Name = entity.Name;
+            CreationDate = entity.CreationDate;
+        }
     }
 }

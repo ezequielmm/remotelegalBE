@@ -5,6 +5,7 @@ using PrecisionReporters.Platform.Domain.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -23,8 +24,8 @@ namespace PrecisionReporters.Platform.UnitTests.Services
             // Setup
             _caseRepositoryMock = new Mock<ICaseRepository>();
 
-            _caseRepositoryMock.Setup(x => x.GetCases()).ReturnsAsync(_cases);
-            _caseRepositoryMock.Setup(x => x.GetCaseById(It.IsAny<Guid>())).ReturnsAsync(() => _cases.FirstOrDefault());
+            _caseRepositoryMock.Setup(x => x.GetByFilter(It.IsAny<Expression<Func<Case, bool>>>())).ReturnsAsync(_cases);
+            _caseRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>())).ReturnsAsync(() => _cases.FirstOrDefault());
 
             _service = new CaseService(_caseRepositoryMock.Object);
         }
@@ -42,19 +43,19 @@ namespace PrecisionReporters.Platform.UnitTests.Services
                 {
                     Id = Guid.NewGuid(),
                     Name = "TestCase1",
-                    CreatedDate = DateTime.UtcNow
+                    CreationDate = DateTime.UtcNow
                 },
                 new Case
                 {
                     Id = Guid.NewGuid(),
                     Name = "TestCase2",
-                    CreatedDate = DateTime.UtcNow
+                    CreationDate = DateTime.UtcNow
                 },
                 new Case
                 {
                     Id = Guid.NewGuid(),
                     Name = "TestCase3",
-                    CreatedDate = DateTime.UtcNow
+                    CreationDate = DateTime.UtcNow
                 }
             });
 
@@ -62,7 +63,7 @@ namespace PrecisionReporters.Platform.UnitTests.Services
             var result = await _service.GetCases();
 
             // Assert
-            _caseRepositoryMock.Verify(mock => mock.GetCases(), Times.Once());
+            _caseRepositoryMock.Verify(mock => mock.GetByFilter(It.IsAny<Expression<Func<Case,bool>>>()), Times.Once());
             Assert.NotEmpty(result);
             Assert.Equal(_cases.Count, result.Count);
         }
@@ -76,14 +77,14 @@ namespace PrecisionReporters.Platform.UnitTests.Services
             {
                 Id = id,
                 Name = "TestCase1",
-                CreatedDate = DateTime.Now
+                CreationDate = DateTime.Now
             });
 
             // Act
             var result = await _service.GetCaseById(id);
 
             // Assert
-            _caseRepositoryMock.Verify(mock => mock.GetCaseById(id), Times.Once());
+            _caseRepositoryMock.Verify(mock => mock.GetById(id), Times.Once());
             Assert.NotNull(result);
             Assert.Equal(id, result.Id);
         }
@@ -93,8 +94,8 @@ namespace PrecisionReporters.Platform.UnitTests.Services
         {
             // Arrange
             var name = "Test";
-            var newCase = new Case { CreatedDate = DateTime.Now, Name = name };
-            _caseRepositoryMock.Setup(x => x.CreateCase(It.IsAny<Case>()))
+            var newCase = new Case { CreationDate = DateTime.Now, Name = name };
+            _caseRepositoryMock.Setup(x => x.Create(It.IsAny<Case>()))
                 .Returns<Case>((a) =>
                 {
                     a.Id = Guid.NewGuid();
@@ -106,7 +107,7 @@ namespace PrecisionReporters.Platform.UnitTests.Services
             var result = await _service.CreateCase(newCase);
 
             // Assert
-            _caseRepositoryMock.Verify(mock => mock.CreateCase(It.IsAny<Case>()), Times.Once());
+            _caseRepositoryMock.Verify(mock => mock.Create(It.IsAny<Case>()), Times.Once());
             Assert.NotNull(result);
             Assert.Equal(name, result.Name);
         }

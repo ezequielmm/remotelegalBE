@@ -11,24 +11,24 @@ namespace PrecisionReporters.Platform.Domain.Services
     {
         private readonly ICaseRepository _caseRepository;
 
-        public CaseService( ICaseRepository caseRepository)
+        public CaseService(ICaseRepository caseRepository)
         {
             _caseRepository = caseRepository;
         }
 
         public async Task<List<Case>> GetCases()
         {
-            return await _caseRepository.GetCases();
+            return await _caseRepository.GetByFilter();
         }
 
         public async Task<Case> GetCaseById(Guid id)
         {
-            return await _caseRepository.GetCaseById(id);
+            return await _caseRepository.GetById(id);
         }
 
         public async Task<Case> CreateCase(Case newCase)
         {
-            return await _caseRepository.CreateCase(newCase);
+            return await _caseRepository.Create(newCase);
         }
     }
 }
