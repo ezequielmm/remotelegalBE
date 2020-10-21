@@ -1,5 +1,6 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace PrecisionReporters.Platform.Data.Entities
 {
@@ -8,6 +9,7 @@ namespace PrecisionReporters.Platform.Data.Entities
         [Key]
         public Guid Id { get; set; }
 
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public DateTime CreationDate { get; set; }
 
 
