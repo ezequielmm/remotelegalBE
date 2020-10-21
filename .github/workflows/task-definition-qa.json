@@ -13,6 +13,12 @@
             ],
             "essential": true,
             "environment": [],
+            "secrets":[
+                {
+                    "name": "ConnectionStrings__MySqlConnection",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:QA-MYSQL-CONNECTIONSTRING-fqVG5a"
+                }
+            ],
             "mountPoints": [],
             "volumesFrom": [],
             "logConfiguration": {
