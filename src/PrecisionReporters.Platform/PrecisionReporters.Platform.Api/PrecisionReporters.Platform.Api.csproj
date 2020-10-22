@@ -21,8 +21,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\PrecisionReporters.Platform.Domain\PrecisionReporters.Platform.Domain.csproj" />
+    <Folder Include="Controllers\" />
+    <Folder Include="Dtos\" />
+    <Folder Include="Mappers\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\PrecisionReporters.Platform.Domain\PrecisionReporters.Platform.Domain.csproj" />
+  </ItemGroup>
 
 </Project>

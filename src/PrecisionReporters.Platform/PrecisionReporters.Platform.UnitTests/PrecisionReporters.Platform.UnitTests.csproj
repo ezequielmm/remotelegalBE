@@ -26,6 +26,7 @@
   <ItemGroup>
     <Folder Include="02 Domain\Mappers\" />
     <Folder Include="02 Domain\" />
+    <Folder Include="Domain\Services\" />
   </ItemGroup>
 
 </Project>

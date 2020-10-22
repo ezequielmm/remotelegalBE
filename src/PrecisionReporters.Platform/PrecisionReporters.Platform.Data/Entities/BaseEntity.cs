@@ -12,7 +12,6 @@ namespace PrecisionReporters.Platform.Data.Entities
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public DateTime CreationDate { get; set; }
 
-
         public abstract void CopyFrom(T entity);
     }
 }

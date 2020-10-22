@@ -7,9 +7,10 @@ namespace PrecisionReporters.Platform.Data
     {
         public DbSet<Case> Cases { get; set; }
 
+        public DbSet<Room> Rooms { get; set; }
+
         public ApplicationDbContext(DbContextOptions options) : base(options) { }
-
+        
         public ApplicationDbContext() { }
-
     }
 }
