@@ -16,7 +16,7 @@
             "secrets": [
                 {
                     "name": "ConnectionStrings__MySqlConnection",
-                    "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:DEV-MYSQL-CONNECTIONSTRING-Qi8qb3:DEV-MYSQL-CONNECTIONSTRING"
+                    "value": "host=db-prp-nonprod.cluster-cbccmurhpimf.us-east-1.rds.amazonaws.com;port=3306;database=RemoteLegal-Dev;user=admin;password=SW&m1TDG7xyRHiEs"
                 }
             ],
             "mountPoints": [],
