@@ -1,0 +1,20 @@
+name: Static analysis code
+on: 
+  push:
+    branches:
+      - develop
+jobs:
+  static-analysis:
+    runs-on: ubuntu-latest
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: Secbyte/dotnet-sonarscanner@v2.3
+        with:
+          projectKey: prp-be
+          projectName: prp-be
+          sonarHostname: https://sonarqube.prdevelopment.net/
+          buildCommand: dotnet build ./src/PrecisionReporters.Platform/PrecisionReporters.Platform.sln
+          sonarOrganisation: default-organization
