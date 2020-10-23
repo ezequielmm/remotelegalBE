@@ -14,10 +14,9 @@
             "essential": true,
             "environment": [
                 {
-                    "name": "ConnectionStrings__MySqlConnection",
+                    "name": "AppConfiguration__ConnectionStrings__MySqlConnection",
                     "value": "host=db-prp-nonprod.cluster-cbccmurhpimf.us-east-1.rds.amazonaws.com;port=3306;database=RemoteLegal-Qa;user=admin;password=SW&m1TDG7xyRHiEs"
-                }
-
+                }                
             ],
             "mountPoints": [],
             "volumesFrom": [],

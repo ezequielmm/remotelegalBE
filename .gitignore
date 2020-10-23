@@ -350,3 +350,4 @@ MigrationBackup/
 .ionide/
 
 src/PrecisionReporters.Platform/PrecisionReporters.Platform.UnitTests/coverage.opencover.xml
+src/PrecisionReporters.Platform/PrecisionReporters.Platform.Api/appsettings.Localhost.json

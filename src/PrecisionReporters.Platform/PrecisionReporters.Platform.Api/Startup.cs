@@ -1,9 +1,10 @@
+using System;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
+using PrecisionReporters.Platform.Api.AppConfigurations;
 using PrecisionReporters.Platform.Api.Dtos;
 using PrecisionReporters.Platform.Api.Mappers;
 using PrecisionReporters.Platform.Data;
@@ -18,9 +19,12 @@ namespace PrecisionReporters.Platform.Api
 {
     public class Startup
     {
-        public Startup(IConfiguration configuration)
+        public Startup(IWebHostEnvironment env)
         {
-            Configuration = configuration;
+            var builder = new ConfigurationBuilder().SetBasePath(env.ContentRootPath)
+                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+                .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true);
+            Configuration = builder.Build();
         }
 
         public IConfiguration Configuration { get; }
@@ -30,6 +34,7 @@ namespace PrecisionReporters.Platform.Api
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            var appConfiguration = Configuration.GetApplicationConfig();
 
             //TODO get origins from config file
             services.AddCors(options =>
@@ -49,8 +54,8 @@ namespace PrecisionReporters.Platform.Api
 
             services.AddHealthChecks();
 
-            services.AddDbContext<ApplicationDbContext>(options =>
-                options.UseMySQL($"{Configuration.GetConnectionString("MySqlConnection")}"));
+            // Appsettings
+            services.AddSingleton<IAppConfiguration>(appConfiguration);
 
             // Mappers
             services.AddSingleton<IMapper<Case, CaseDto, CreateCaseDto>, CaseMapper>();
@@ -58,20 +63,28 @@ namespace PrecisionReporters.Platform.Api
 
             // Services
             services.AddScoped<ICaseService, CaseService>();
-            services.Configure<TwilioAccountConfiguration>(Configuration.GetSection(TwilioAccountConfiguration.SectionName));
-            services.AddScoped<ITwilioService, TwilioService>();
+            services.AddScoped<ITwilioService, TwilioService>().Configure<TwilioAccountConfiguration>(x =>
+            {
+                x.AccountSid = appConfiguration.TwilioAccountConfiguration.AccountSid;
+                x.ApiKeySecret = appConfiguration.TwilioAccountConfiguration.ApiKeySecret;
+                x.ApiKeySid = appConfiguration.TwilioAccountConfiguration.ApiKeySid;
+                x.AuthToken = appConfiguration.TwilioAccountConfiguration.AuthToken;
+            });
+
             services.AddScoped<IRoomService, RoomService>();
 
             // Repositories
             services.AddScoped<ICaseRepository, CaseRepository>();
             services.AddScoped<IRoomRepository, RoomRepository>();
+
+            services.AddDbContext<ApplicationDbContext>(options =>
+                options.UseMySQL(appConfiguration.ConnectionStrings.MySqlConnection));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IAppConfiguration appConfiguration)
         {
-            // TODO: use configuration flag instead
-            if (env.IsDevelopment())
+            if (appConfiguration.ConfigurationFlags.IsDeveloperExceptionPageEnabled)
             {
                 app.UseDeveloperExceptionPage();
             }
@@ -80,11 +93,13 @@ namespace PrecisionReporters.Platform.Api
             app.UseSwagger();
 
             // Enable middleware to serve swagger-ui, specifying the Swagger JSON endpoint.
-            // TODO: use configuration flag for enabling/disabling swagger UI
-            app.UseSwaggerUI(c =>
+            if (appConfiguration.ConfigurationFlags.IsSwaggerUiEnabled)
             {
-                c.SwaggerEndpoint("/swagger/v1/swagger.json", "Precision Reporters API v1");
-            });
+                app.UseSwaggerUI(c =>
+                {
+                    c.SwaggerEndpoint(appConfiguration.Swagger.Url, appConfiguration.Swagger.Name);
+                });
+            }
 
             app.UseHttpsRedirection();
 
