@@ -1,4 +1,4 @@
-using System;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
@@ -57,6 +57,9 @@ namespace PrecisionReporters.Platform.Api
             // Appsettings
             services.AddSingleton<IAppConfiguration>(appConfiguration);
 
+            //Configuration data
+            var cognitoConfiguration = Configuration.GetSection(CognitoConfiguration.SectionName).Get<CognitoConfiguration>();
+
             // Mappers
             services.AddSingleton<IMapper<Case, CaseDto, CreateCaseDto>, CaseMapper>();
             services.AddSingleton<IMapper<Room, RoomDto, CreateRoomDto>, RoomMapper>();
@@ -79,6 +82,20 @@ namespace PrecisionReporters.Platform.Api
 
             services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseMySQL(appConfiguration.ConnectionStrings.MySqlConnection));
+
+            // Enable Bearer token authentication           
+            services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+
+            }).AddJwtBearer(options =>
+            {
+                options.Audience = cognitoConfiguration.ClientId;
+                options.Authority = cognitoConfiguration.Authority;
+            });
+
+            services.AddMvc();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -107,6 +124,7 @@ namespace PrecisionReporters.Platform.Api
 
             app.UseCors(AllowedOrigins);
 
+            app.UseAuthentication();
             app.UseAuthorization();
 
             app.UseHealthChecks("/healthcheck");

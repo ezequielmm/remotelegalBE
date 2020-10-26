@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using PrecisionReporters.Platform.Api.Dtos;
 using PrecisionReporters.Platform.Api.Mappers;
 using PrecisionReporters.Platform.Data.Entities;
@@ -12,6 +13,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class CaseController : ControllerBase
     {
         private readonly ICaseService _caseService;
