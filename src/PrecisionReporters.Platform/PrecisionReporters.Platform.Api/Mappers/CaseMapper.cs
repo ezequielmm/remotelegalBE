@@ -30,6 +30,7 @@ namespace PrecisionReporters.Platform.Api.Mappers
         {
             return new Case
             {
+                //TODO: Remove NewGuid EF will take charge of that
                 Id = Guid.NewGuid(),
                 CreationDate = DateTime.UtcNow,
                 Name = dto.Name

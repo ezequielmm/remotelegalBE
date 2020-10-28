@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Amazon.CognitoIdentityProvider;
+using Amazon.SimpleEmail;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
@@ -14,6 +16,7 @@ using PrecisionReporters.Platform.Data.Repositories.Interfaces;
 using PrecisionReporters.Platform.Domain.Configurations;
 using PrecisionReporters.Platform.Domain.Services;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
+using Amazon;
 
 namespace PrecisionReporters.Platform.Api
 {
@@ -52,18 +55,29 @@ namespace PrecisionReporters.Platform.Api
             });
 
             services.AddControllers();
+            services.AddHttpContextAccessor();
 
             // Register the Swagger generator, defining our Swagger documents
             services.AddSwaggerGen();
 
             services.AddHealthChecks();
 
-            // Appsettings
-            services.AddSingleton<IAppConfiguration>(appConfiguration);
+           // Appsettings
+            services.AddSingleton<IAppConfiguration>(appConfiguration);           
+
+            //Configurations
+            services.AddOptions();
+            services.Configure<UrlPathConfiguration>(x =>
+            {
+                x.FrontendBaseUrl = appConfiguration.UrlPathConfiguration.FrontendBaseUrl;
+                x.VerifyUserUrl = appConfiguration.UrlPathConfiguration.VerifyUserUrl;
+            });           
 
             // Mappers
             services.AddSingleton<IMapper<Case, CaseDto, CreateCaseDto>, CaseMapper>();
             services.AddSingleton<IMapper<Room, RoomDto, CreateRoomDto>, RoomMapper>();
+            services.AddSingleton<IMapper<User, UserDto, CreateUserDto>, UserMapper>();
+            services.AddSingleton<IMapper<VerifyUser, object, CreateVerifyUserDto>, VerifyUserMapper>();
 
             // Services
             services.AddScoped<ICaseService, CaseService>();
@@ -76,10 +90,37 @@ namespace PrecisionReporters.Platform.Api
             });
 
             services.AddScoped<IRoomService, RoomService>();
+            services.AddScoped<ICognitoService, CognitoService>().Configure<CognitoConfiguration>(x =>
+            {
+                x.Authority = appConfiguration.CognitoConfiguration.Authority;
+                x.AWSAccessKey = appConfiguration.CognitoConfiguration.AWSAccessKey;
+                x.AWSRegion = appConfiguration.CognitoConfiguration.AWSRegion;
+                x.AWSSecretAccessKey = appConfiguration.CognitoConfiguration.AWSSecretAccessKey;
+                x.ClientId = appConfiguration.CognitoConfiguration.ClientId;
+                x.UserPoolId = appConfiguration.CognitoConfiguration.UserPoolId;
+            });
+
+            services.AddScoped<IUserService, UserService>();
+            services.AddScoped<IVerifyUserService, VerifyUserService>();
+            services.AddTransient<IAwsEmailService, AwsEmailService>().Configure<EmailConfiguration>(x =>
+            {
+                x.BaseTemplatePath = appConfiguration.EmailConfiguration.BaseTemplatePath;
+                x.EmailHelp = appConfiguration.EmailConfiguration.EmailHelp;
+                x.Sender = appConfiguration.EmailConfiguration.Sender;
+                x.VerifyEmailSubject = appConfiguration.EmailConfiguration.VerifyEmailSubject;
+                x.VerifyTemplateName = appConfiguration.EmailConfiguration.VerifyTemplateName;
+            });
+
+            services.AddSingleton(typeof(IAmazonCognitoIdentityProvider),
+                _ => new AmazonCognitoIdentityProviderClient(appConfiguration.CognitoConfiguration.AWSAccessKey, appConfiguration.CognitoConfiguration.AWSSecretAccessKey, RegionEndpoint.USEast1));
+            services.AddSingleton(typeof(IAmazonSimpleEmailService),
+                _ => new AmazonSimpleEmailServiceClient(appConfiguration.CognitoConfiguration.AWSAccessKey, appConfiguration.CognitoConfiguration.AWSSecretAccessKey, RegionEndpoint.USEast1));
 
             // Repositories
             services.AddScoped<ICaseRepository, CaseRepository>();
             services.AddScoped<IRoomRepository, RoomRepository>();
+            services.AddScoped<IUserRepository, UserRepository>();
+            services.AddScoped<IVerifyUserRepository, VerifyUserRepository>();
 
             services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseMySQL(appConfiguration.ConnectionStrings.MySqlConnection));

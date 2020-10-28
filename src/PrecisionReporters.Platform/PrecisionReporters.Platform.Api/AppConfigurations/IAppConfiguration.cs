@@ -10,5 +10,7 @@ namespace PrecisionReporters.Platform.Api.AppConfigurations
         Swagger Swagger { get; set; }
         TwilioAccountConfiguration TwilioAccountConfiguration { get; set; }
         CognitoConfiguration CognitoConfiguration { get; set; }
+        EmailConfiguration EmailConfiguration { get; set; }
+        UrlPathConfiguration UrlPathConfiguration { get; set; }
     }
 }

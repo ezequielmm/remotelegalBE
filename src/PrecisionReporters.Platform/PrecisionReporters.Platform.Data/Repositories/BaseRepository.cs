@@ -31,16 +31,50 @@ namespace PrecisionReporters.Platform.Data.Repositories
             return editedEntity;
         }
 
-        public async Task<List<T>> GetByFilter(Expression<Func<T, bool>> filter = null)
+        public async Task<List<T>> GetByFilter(Expression<Func<T, bool>> filter = null, string include = "")
         {
+            IQueryable<T> query = _dbContext.Set<T>();
+
+            if (!string.IsNullOrEmpty(include))
+            {
+                query = query.Include(include);
+            }
+
             if (filter != null)
-                return await _dbContext.Set<T>().Where(filter).ToListAsync();
-            return await _dbContext.Set<T>().ToListAsync();
+            {
+                query = query.Where(filter);
+            }
+
+            return await query.ToListAsync();           
         }
 
-        public async Task<T> GetById(Guid id)
+        public async Task<T> GetFirstOrDefaultByFilter(Expression<Func<T, bool>> filter = null, string include = "")
         {
-            return await _dbContext.Set<T>().FirstOrDefaultAsync(x => x.Id == id);
+            IQueryable<T> query = _dbContext.Set<T>();
+
+            if (!string.IsNullOrEmpty(include)) 
+            { 
+                query = query.Include(include);
+            }
+
+            if (filter != null) 
+            {
+                query = query.Where(filter);
+            }
+
+            return await query.FirstOrDefaultAsync();
+        }
+
+        public async Task<T> GetById(Guid id, string include = "")
+        {
+            IQueryable<T> query = _dbContext.Set<T>();
+
+            if (!string.IsNullOrEmpty(include))
+            {
+                query = query.Include(include);
+            }
+
+            return await query.FirstOrDefaultAsync(x => x.Id == id);
         }
     }
 }

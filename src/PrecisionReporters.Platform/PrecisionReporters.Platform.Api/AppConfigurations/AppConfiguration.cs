@@ -11,5 +11,7 @@ namespace PrecisionReporters.Platform.Api
         public Swagger Swagger { get; set; }
         public TwilioAccountConfiguration TwilioAccountConfiguration { get; set; }
         public CognitoConfiguration CognitoConfiguration { get; set; }
+        public EmailConfiguration EmailConfiguration { get; set; }
+        public UrlPathConfiguration UrlPathConfiguration { get; set; }
     }
 }

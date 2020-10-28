@@ -1,16 +1,15 @@
-﻿using Moq;
-using PrecisionReporters.Platform.Data.Entities;
-using PrecisionReporters.Platform.Data.Repositories;
-using PrecisionReporters.Platform.Domain.Services;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
+using Moq;
+using PrecisionReporters.Platform.Data.Entities;
+using PrecisionReporters.Platform.Data.Repositories;
+using PrecisionReporters.Platform.Domain.Services;
 using Xunit;
 
-
-namespace PrecisionReporters.Platform.UnitTests.Services
+namespace PrecisionReporters.Platform.UnitTests.Data.Services
 {
     public class CaseServiceTests : IDisposable
     {
@@ -24,8 +23,8 @@ namespace PrecisionReporters.Platform.UnitTests.Services
             // Setup
             _caseRepositoryMock = new Mock<ICaseRepository>();
 
-            _caseRepositoryMock.Setup(x => x.GetByFilter(It.IsAny<Expression<Func<Case, bool>>>())).ReturnsAsync(_cases);
-            _caseRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>())).ReturnsAsync(() => _cases.FirstOrDefault());
+            _caseRepositoryMock.Setup(x => x.GetByFilter(It.IsAny<Expression<Func<Case, bool>>>(),It.IsAny<string>())).ReturnsAsync(_cases);
+            _caseRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string>())).ReturnsAsync(() => _cases.FirstOrDefault());
 
             _service = new CaseService(_caseRepositoryMock.Object);
         }
@@ -63,7 +62,7 @@ namespace PrecisionReporters.Platform.UnitTests.Services
             var result = await _service.GetCases();
 
             // Assert
-            _caseRepositoryMock.Verify(mock => mock.GetByFilter(It.IsAny<Expression<Func<Case,bool>>>()), Times.Once());
+            _caseRepositoryMock.Verify(mock => mock.GetByFilter(It.IsAny<Expression<Func<Case, bool>>>(), It.IsAny<string>()), Times.Once());
             Assert.NotEmpty(result);
             Assert.Equal(_cases.Count, result.Count);
         }
@@ -84,8 +83,9 @@ namespace PrecisionReporters.Platform.UnitTests.Services
             var result = await _service.GetCaseById(id);
 
             // Assert
-            _caseRepositoryMock.Verify(mock => mock.GetById(id), Times.Once());
+            _caseRepositoryMock.Verify(mock => mock.GetById(It.Is<Guid>(a=>a==id), It.IsAny<string>()), Times.Once());
             Assert.NotNull(result);
+            Assert.IsType<Case>(result);
             Assert.Equal(id, result.Id);
         }
 
@@ -107,7 +107,7 @@ namespace PrecisionReporters.Platform.UnitTests.Services
             var result = await _service.CreateCase(newCase);
 
             // Assert
-            _caseRepositoryMock.Verify(mock => mock.Create(It.IsAny<Case>()), Times.Once());
+            _caseRepositoryMock.Verify(mock => mock.Create(It.Is<Case>(a=>a== newCase)), Times.Once());
             Assert.NotNull(result);
             Assert.Equal(name, result.Name);
         }
