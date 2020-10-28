@@ -68,6 +68,10 @@
                 {
                     "name": "AppConfiguration__ConfigurationFlags__IsSwaggerUiEnabled",
                     "value": "true"
+                },
+                {
+                    "name": "AppConfiguration__UrlPathConfiguration__FrontendBaseUrl",
+                    "value": "https://prdevelopment.net/"
                 }
             ],
             "mountPoints": [],
