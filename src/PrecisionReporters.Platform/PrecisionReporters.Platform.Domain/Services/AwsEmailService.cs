@@ -44,10 +44,10 @@ namespace PrecisionReporters.Platform.Domain.Services
         private BodyBuilder BuildEmailBody(EmailTemplateInfo emailTemplateInfo)
         {
             var bodyBuilder = new BodyBuilder();
-            var emailTemplate = Path.Combine(_filePath, $"{_emailConfiguration.BaseTemplatePath}{emailTemplateInfo.TemplateName}");
+            //var emailTemplate = Path.Combine(_filePath, $"{_emailConfiguration.BaseTemplatePath}{emailTemplateInfo.TemplateName}");
 
-            var verifyEmailTemplate = File.ReadAllText(emailTemplate);
-            var helpEmail = _emailConfiguration.EmailHelp;
+            //var verifyEmailTemplate = File.ReadAllText(emailTemplate);
+            //var helpEmail = _emailConfiguration.EmailHelp;
             //bodyBuilder.HtmlBody = string.Format(verifyEmailTemplate, emailTemplateInfo.TemplateData.ToArray());
             var dataArray = emailTemplateInfo.TemplateData.ToArray();
             var baseUrl = "https://prdevelopment.net/";
