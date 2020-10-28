@@ -60,6 +60,14 @@
                 {
                     "name": "AppConfiguration__EmailConfiguration__VerifyEmailSubject",
                     "value": "[DEV] Verify your Remote Legal account"
+                },
+                {
+                    "name": "AppConfiguration__ConfigurationFlags__IsDeveloperExceptionPageEnabled",
+                    "value": "true"
+                },
+                {
+                    "name": "AppConfiguration__ConfigurationFlags__IsSwaggerUiEnabled",
+                    "value": "true"
                 }
             ],
             "mountPoints": [],
