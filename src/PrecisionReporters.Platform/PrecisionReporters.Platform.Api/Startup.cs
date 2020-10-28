@@ -57,9 +57,6 @@ namespace PrecisionReporters.Platform.Api
             // Appsettings
             services.AddSingleton<IAppConfiguration>(appConfiguration);
 
-            //Configuration data
-            var cognitoConfiguration = Configuration.GetSection(CognitoConfiguration.SectionName).Get<CognitoConfiguration>();
-
             // Mappers
             services.AddSingleton<IMapper<Case, CaseDto, CreateCaseDto>, CaseMapper>();
             services.AddSingleton<IMapper<Room, RoomDto, CreateRoomDto>, RoomMapper>();
@@ -91,8 +88,8 @@ namespace PrecisionReporters.Platform.Api
 
             }).AddJwtBearer(options =>
             {
-                options.Audience = cognitoConfiguration.ClientId;
-                options.Authority = cognitoConfiguration.Authority;
+                options.Audience = appConfiguration.CognitoConfiguration.ClientId;
+                options.Authority = appConfiguration.CognitoConfiguration.Authority;
             });
 
             services.AddMvc();

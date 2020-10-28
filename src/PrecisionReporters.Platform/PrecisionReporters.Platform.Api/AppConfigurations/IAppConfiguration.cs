@@ -9,5 +9,6 @@ namespace PrecisionReporters.Platform.Api.AppConfigurations
         ConfigurationFlags ConfigurationFlags { get; set; }
         Swagger Swagger { get; set; }
         TwilioAccountConfiguration TwilioAccountConfiguration { get; set; }
+        CognitoConfiguration CognitoConfiguration { get; set; }
     }
 }

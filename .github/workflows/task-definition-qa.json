@@ -16,7 +16,51 @@
                 {
                     "name": "AppConfiguration__ConnectionStrings__MySqlConnection",
                     "value": "host=db-prp-nonprod.cluster-cbccmurhpimf.us-east-1.rds.amazonaws.com;port=3306;database=RemoteLegal-Qa;user=admin;password=SW&m1TDG7xyRHiEs"
-                }                
+                },
+                {
+                    "name": "AppConfiguration__CognitoConfiguration__AWSRegion",
+                    "value": "us-east-1"
+                },
+                {
+                    "name": "AppConfiguration__CognitoConfiguration__AWSAccessKey",
+                    "value": "AKIA24ICCSGQPW2OPAGM"
+                },
+                {
+                    "name": "AppConfiguration__CognitoConfiguration__AWSSecretAccessKey",
+                    "value": "YAxQkHNYgUvuGe+jmpL/mSyMWMwfoh7DGzFJFEby"
+                },
+                {
+                    "name": "AppConfiguration__CognitoConfiguration__ClientId",
+                    "value": "720vhm6a065ggolm1hsps6vgtr"
+                },
+                {
+                    "name": "AppConfiguration__CognitoConfiguration__UserPoolId",
+                    "value": "us-east-1_UgmqrH6rI"
+                },
+                {
+                    "name": "AppConfiguration__CognitoConfiguration__Authority",
+                    "value": "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_UgmqrH6rI"
+                },
+                {
+                    "name": "AppConfiguration__TwilioAccountConfiguration__AccountSid",
+                    "value": "AC10630a7fe13c83b2276982649b55c01d"
+                },
+                {
+                    "name": "AppConfiguration__TwilioAccountConfiguration__AuthToken",
+                    "value": "cdb3fcc2568d4f7a4fc8678b383b3367"
+                },
+                {
+                    "name": "AppConfiguration__TwilioAccountConfiguration__ApiKeySid",
+                    "value": "SK7d054c54a8e9981507c631ee644cd805"
+                },
+                {
+                    "name": "AppConfiguration__TwilioAccountConfiguration__ApiKeySecret",
+                    "value": "L5kaAYgBnyMsLT3FUH3o9caKz3C4BWCf"
+                },
+                {
+                    "name": "AppConfiguration__EmailConfiguration__VerifyEmailSubject",
+                    "value": "[QA] Verify your Remote Legal account"
+                }
             ],
             "mountPoints": [],
             "volumesFrom": [],
