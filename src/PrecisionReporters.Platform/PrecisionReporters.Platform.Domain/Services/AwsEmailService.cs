@@ -48,7 +48,20 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             var verifyEmailTemplate = File.ReadAllText(emailTemplate);
             var helpEmail = _emailConfiguration.EmailHelp;
-            bodyBuilder.HtmlBody = string.Format(verifyEmailTemplate, emailTemplateInfo.TemplateData.ToArray());
+            //bodyBuilder.HtmlBody = string.Format(verifyEmailTemplate, emailTemplateInfo.TemplateData.ToArray());
+            var dataArray = emailTemplateInfo.TemplateData.ToArray();
+            var baseUrl = "https://prdevelopment.net/";
+            var link = $"{baseUrl}{dataArray[2]}";
+            bodyBuilder.HtmlBody = @$"<table>
+                                        <tr>
+                                            <td>
+                                                Verification Link
+                                            </td>
+                                            <td>
+                                                {link}
+                                            </td>
+                                        </tr>
+                                    </table>";
 
             return bodyBuilder;
         }
