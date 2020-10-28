@@ -21,9 +21,13 @@ namespace PrecisionReporters.Platform.Api
     {
         public Startup(IWebHostEnvironment env)
         {
+           
             var builder = new ConfigurationBuilder().SetBasePath(env.ContentRootPath)
                 .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-                .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true);
+                .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true)
+                .AddUserSecrets("9c1879dd-b940-4fbe-87e6-7e813a64acbb")
+                .AddEnvironmentVariables();
+
             Configuration = builder.Build();
         }
 
