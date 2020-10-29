@@ -31,15 +31,15 @@
                 },
                 {
                     "name": "AppConfiguration__CognitoConfiguration__ClientId",
-                    "value": "720vhm6a065ggolm1hsps6vgtr"
+                    "value": "4lh6ji3bllp5mef6nn99oo5eii"
                 },
                 {
                     "name": "AppConfiguration__CognitoConfiguration__UserPoolId",
-                    "value": "us-east-1_UgmqrH6rI"
+                    "value": "us-east-1_EIxRbuTmE"
                 },
                 {
                     "name": "AppConfiguration__CognitoConfiguration__Authority",
-                    "value": "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_UgmqrH6rI"
+                    "value": "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_EIxRbuTmE"
                 },
                 {
                     "name": "AppConfiguration__TwilioAccountConfiguration__AccountSid",
