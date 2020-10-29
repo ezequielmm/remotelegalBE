@@ -1,6 +1,4 @@
-﻿using Amazon.Runtime.Internal;
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Data.Repositories.Interfaces;
@@ -9,7 +7,6 @@ using PrecisionReporters.Platform.Domain.Configurations;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using System;
 using System.Collections.Generic;
-using System.Net;
 using System.Threading.Tasks;
 
 namespace PrecisionReporters.Platform.Domain.Services
@@ -25,7 +22,6 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly EmailConfiguration _emailConfiguration;
         private User _newUser;
         private VerifyUser _verifyUser;
-        private string _baseUrl;
 
         public UserService(ILogger<UserService> log, IUserRepository userRepository, ICognitoService cognitoService, IAwsEmailService awsEmailService, IVerifyUserService verifyUserService, IOptions<UrlPathConfiguration> urlPathConfiguration, IOptions<EmailConfiguration> emailConfiguration)
         {
@@ -50,7 +46,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             _newUser = await _userRepository.Create(user);
             await _cognitoService.CreateAsync(user);
             _verifyUser = await SaveVerifyUser(_newUser);
-            var verificationLink = $"{_baseUrl}{_urlPathConfiguration.VerifyUserUrl}{_verifyUser.Id}";
+            var verificationLink = $"{_urlPathConfiguration.FrontendBaseUrl}{_urlPathConfiguration.VerifyUserUrl}{_verifyUser.Id}";
             var emailData = SetVerifyEmailData(user.EmailAddress, user.FirstName, user.LastName, verificationLink);
             await _awsEmailService.SendEmailAsync(emailData, user.EmailAddress);
             return _newUser;

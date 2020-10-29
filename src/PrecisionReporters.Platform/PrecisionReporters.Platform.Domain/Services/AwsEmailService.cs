@@ -10,7 +10,6 @@ using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 
@@ -44,22 +43,11 @@ namespace PrecisionReporters.Platform.Domain.Services
         private BodyBuilder BuildEmailBody(EmailTemplateInfo emailTemplateInfo)
         {
             var bodyBuilder = new BodyBuilder();
-            //var emailTemplate = Path.Combine(_filePath, $"{_emailConfiguration.BaseTemplatePath}{emailTemplateInfo.TemplateName}");
 
-            //var verifyEmailTemplate = File.ReadAllText(emailTemplate);
-            //var helpEmail = _emailConfiguration.EmailHelp;
-            //bodyBuilder.HtmlBody = string.Format(verifyEmailTemplate, emailTemplateInfo.TemplateData.ToArray());
-            var dataArray = emailTemplateInfo.TemplateData.ToArray();
-            bodyBuilder.HtmlBody = @$"<table>
-                                        <tr>
-                                            <td>
-                                                Verification Link
-                                            </td>
-                                            <td>
-                                                {dataArray[2]}
-                                            </td>
-                                        </tr>
-                                    </table>";
+            //TODO: Remove template from the class and storage into SES email Template section
+            var emailTemplate = new EmailVerifyHtmlTemplate();
+            var body = emailTemplate.GetVerifyTemplate(emailTemplateInfo);
+            bodyBuilder.HtmlBody = body;
 
             return bodyBuilder;
         }

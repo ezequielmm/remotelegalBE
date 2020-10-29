@@ -1,6 +1,5 @@
 ﻿using Amazon.CognitoIdentityProvider.Model;
 using Amazon.SimpleEmail.Model;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
