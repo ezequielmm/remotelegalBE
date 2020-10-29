@@ -49,8 +49,6 @@ namespace PrecisionReporters.Platform.Api
                 builder =>
                     {
                         builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
-//                        builder.AllowAnyHeader();
-                        builder.AllowCredentials();
                     });
             });
 
