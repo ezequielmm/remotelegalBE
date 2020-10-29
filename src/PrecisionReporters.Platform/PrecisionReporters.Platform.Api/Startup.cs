@@ -48,10 +48,8 @@ namespace PrecisionReporters.Platform.Api
                 options.AddPolicy(name: AllowedOrigins,
                 builder =>
                     {
-                        builder.SetIsOriginAllowedToAllowWildcardSubdomains();
-                        builder.WithOrigins(appConfiguration.CorsConfiguration.Origins);
-                        builder.WithMethods(appConfiguration.CorsConfiguration.Methods);
-                        builder.AllowAnyHeader();
+                        builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
+//                        builder.AllowAnyHeader();
                         builder.AllowCredentials();
                     });
             });
