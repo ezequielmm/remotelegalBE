@@ -50,15 +50,13 @@ namespace PrecisionReporters.Platform.Domain.Services
             //var helpEmail = _emailConfiguration.EmailHelp;
             //bodyBuilder.HtmlBody = string.Format(verifyEmailTemplate, emailTemplateInfo.TemplateData.ToArray());
             var dataArray = emailTemplateInfo.TemplateData.ToArray();
-            var baseUrl = "https://prdevelopment.net/";
-            var link = $"{baseUrl}{dataArray[2]}";
             bodyBuilder.HtmlBody = @$"<table>
                                         <tr>
                                             <td>
                                                 Verification Link
                                             </td>
                                             <td>
-                                                {link}
+                                                {dataArray[2]}
                                             </td>
                                         </tr>
                                     </table>";
