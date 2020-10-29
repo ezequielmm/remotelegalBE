@@ -25,6 +25,7 @@
     <Folder Include="Controllers\" />
     <Folder Include="Dtos\" />
     <Folder Include="Mappers\" />
+    <Folder Include="Middlewares\" />
   </ItemGroup>
 
   <ItemGroup>

@@ -70,6 +70,10 @@
                     "value": "true"
                 },
                 {
+                    "name": "AppConfiguration__ConfigurationFlags__IsShowErrorMessageEnabled",
+                    "value": "true"
+                },
+                {
                     "name": "AppConfiguration__UrlPathConfiguration__FrontendBaseUrl",
                     "value": "https://prp-qa.prdevelopment.net/"
                 },

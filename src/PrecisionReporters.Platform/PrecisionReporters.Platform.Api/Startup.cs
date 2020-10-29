@@ -17,6 +17,7 @@ using PrecisionReporters.Platform.Domain.Configurations;
 using PrecisionReporters.Platform.Domain.Services;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using Amazon;
+using PrecisionReporters.Platform.Api.Middlewares;
 
 namespace PrecisionReporters.Platform.Api
 {
@@ -136,6 +137,7 @@ namespace PrecisionReporters.Platform.Api
             });
 
             services.AddMvc();
+            
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -148,6 +150,8 @@ namespace PrecisionReporters.Platform.Api
 
             // Enable middleware to serve generated Swagger as a JSON endpoint.
             app.UseSwagger();
+
+            app.UseMiddleware<ErrorHandlingMiddleware>(appConfiguration.ConfigurationFlags.IsShowErrorMessageEnabled);
 
             // Enable middleware to serve swagger-ui, specifying the Swagger JSON endpoint.
             if (appConfiguration.ConfigurationFlags.IsSwaggerUiEnabled)
