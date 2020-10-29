@@ -75,7 +75,7 @@
                 },
                 {
                     "name": "AppConfiguration__CorsConfiguration__Origins",
-                    "value": "https://*.prdevelopment.net/"
+                    "value": "https://*.prdevelopment.net"
                 }
             ],
             "mountPoints": [],
