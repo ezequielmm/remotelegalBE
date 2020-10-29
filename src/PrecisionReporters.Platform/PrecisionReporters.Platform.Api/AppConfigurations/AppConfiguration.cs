@@ -13,5 +13,6 @@ namespace PrecisionReporters.Platform.Api
         public CognitoConfiguration CognitoConfiguration { get; set; }
         public EmailConfiguration EmailConfiguration { get; set; }
         public UrlPathConfiguration UrlPathConfiguration { get; set; }
+        public CorsConfiguration CorsConfiguration { get; set; }
     }
 }

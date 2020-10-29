@@ -43,14 +43,16 @@ namespace PrecisionReporters.Platform.Api
         {
             var appConfiguration = Configuration.GetApplicationConfig();
 
-            //TODO get origins from config file
             services.AddCors(options =>
             {
                 options.AddPolicy(name: AllowedOrigins,
                 builder =>
                     {
-                        builder.WithOrigins("http://localhost:3000");
+                        builder.SetIsOriginAllowedToAllowWildcardSubdomains();
+                        builder.WithOrigins(appConfiguration.CorsConfiguration.Origins);
+                        builder.WithMethods(appConfiguration.CorsConfiguration.Methods);
                         builder.AllowAnyHeader();
+                        builder.AllowCredentials();
                     });
             });
 

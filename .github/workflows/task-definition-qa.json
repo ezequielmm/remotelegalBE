@@ -72,6 +72,10 @@
                 {
                     "name": "AppConfiguration__UrlPathConfiguration__FrontendBaseUrl",
                     "value": "https://prp-qa.prdevelopment.net/"
+                },
+                {
+                    "name": "AppConfiguration__CorsConfiguration__Origins",
+                    "value": ["https://*.prdevelopment.net/"]
                 }
             ],
             "mountPoints": [],
