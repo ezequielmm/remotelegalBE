@@ -26,7 +26,6 @@
 
   <ItemGroup>
     <Folder Include="Configurations\" />
-    <Folder Include="Services\" />
     <Folder Include="Services\Interfaces\" />
   </ItemGroup>
   <ItemGroup>

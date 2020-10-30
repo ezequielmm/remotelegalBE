@@ -4,6 +4,7 @@ using Amazon.SimpleEmail;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using PrecisionReporters.Platform.Api.AppConfigurations;
@@ -18,6 +19,8 @@ using PrecisionReporters.Platform.Domain.Services;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using Amazon;
 using PrecisionReporters.Platform.Api.Middlewares;
+using PrecisionReporters.Platform.Data.Handlers.Interfaces;
+using PrecisionReporters.Platform.Data.Handlers;
 
 namespace PrecisionReporters.Platform.Api
 {
@@ -123,6 +126,9 @@ namespace PrecisionReporters.Platform.Api
 
             services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseMySQL(appConfiguration.ConnectionStrings.MySqlConnection));
+
+            services.AddScoped<ITransactionHandler, TransactionHandler>();
+            services.AddScoped<ITransactionInfo, TransactionInfo>();
 
             // Enable Bearer token authentication           
             services.AddAuthentication(options =>

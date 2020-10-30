@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 using PrecisionReporters.Platform.Data.Entities;
+using PrecisionReporters.Platform.Data.Handlers.Interfaces;
 using PrecisionReporters.Platform.Data.Repositories.Interfaces;
 using PrecisionReporters.Platform.Domain.Commons;
 using PrecisionReporters.Platform.Domain.Configurations;
@@ -38,7 +39,7 @@ namespace PrecisionReporters.Platform.UnitTests.Data.Services
             var email = "User1@TestMail.com";
             var user = UserFactory.GetUserByGivenIdAndEmail(id, email);
             var verifyUser = VerifyUserFactory.GetVerifyUser(user);
-
+            
             var userRepositoryMock = new Mock<IUserRepository>();
             userRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<string>())).ReturnsAsync((User)null);
             userRepositoryMock.Setup(x => x.Create(It.IsAny<User>())).ReturnsAsync(user);
@@ -48,11 +49,14 @@ namespace PrecisionReporters.Platform.UnitTests.Data.Services
             var cognitoServiceMock = new Mock<ICognitoService>();
             cognitoServiceMock.Setup(x => x.CreateAsync(It.IsAny<User>())).Verifiable();
 
+            var transactionHandlerMock = new Mock<ITransactionHandler>();
+            transactionHandlerMock.Setup(x => x.RunAsync(It.IsAny<Func<Task>>(), It.IsAny<Func<Exception, Task>>())).Returns(async (Func<Task> action, Func<Exception, Task> exceptionHandler) => { await action(); });
+
             var awsEmailServiceMock = new Mock<IAwsEmailService>();
             awsEmailServiceMock
                 .Setup(x => x.SendEmailAsync(It.IsAny<EmailTemplateInfo>(), It.IsAny<string>(), It.IsAny<List<string>>(), It.IsAny<List<string>>()))
                 .ReturnsAsync(new SendRawEmailResponse());
-            var service = InitializeService(userRepository: userRepositoryMock, cognitoService: cognitoServiceMock, awsEmailService: awsEmailServiceMock, verifyUserService: verifyUserServiceMock);
+            var service = InitializeService(userRepository: userRepositoryMock, cognitoService: cognitoServiceMock, awsEmailService: awsEmailServiceMock, verifyUserService: verifyUserServiceMock, transactionHandler: transactionHandlerMock);
 
             // Act
             var result = await service.SignUpAsync(user);
@@ -62,6 +66,7 @@ namespace PrecisionReporters.Platform.UnitTests.Data.Services
             userRepositoryMock.Verify(x => x.Create(It.Is<User>(a => a == user)), Times.Once);
             verifyUserServiceMock.Verify(x => x.CreateVerifyUser(It.IsAny<VerifyUser>()), Times.Once);
             cognitoServiceMock.Verify(x => x.CreateAsync(It.IsAny<User>()), Times.Once);
+            transactionHandlerMock.Verify(x => x.RunAsync(It.IsAny<Func<Task>>(), It.IsAny<Func<Exception, Task>>()), Times.Once);
             awsEmailServiceMock.Verify(x => x.SendEmailAsync(It.IsAny<EmailTemplateInfo>(), It.IsAny<string>(), It.IsAny<List<string>>(), It.IsAny<List<string>>()), Times.Once);
 
             Assert.NotNull(result);
@@ -209,7 +214,8 @@ namespace PrecisionReporters.Platform.UnitTests.Data.Services
             Mock<IUserRepository> userRepository = null,
             Mock<ICognitoService> cognitoService = null,
             Mock<IAwsEmailService> awsEmailService = null,
-            Mock<IVerifyUserService> verifyUserService = null)
+            Mock<IVerifyUserService> verifyUserService = null,
+            Mock<ITransactionHandler> transactionHandler = null)
         {
 
             var logMock = log ?? new Mock<ILogger<UserService>>();
@@ -217,6 +223,7 @@ namespace PrecisionReporters.Platform.UnitTests.Data.Services
             var cognitoServiceMock = cognitoService ?? new Mock<ICognitoService>();
             var awsEmailServiceMock = awsEmailService ?? new Mock<IAwsEmailService>();
             var verifyUserServiceMock = verifyUserService ?? new Mock<IVerifyUserService>();
+            var transactionHandlerMock = transactionHandler ?? new Mock<ITransactionHandler>();
             var urlPathConfigurationMock = new Mock<IOptions<UrlPathConfiguration>>();
             urlPathConfigurationMock.Setup(x => x.Value).Returns(_urlPathConfiguration);
             var emailConfigurationMock = new Mock<IOptions<EmailConfiguration>>();
@@ -228,6 +235,7 @@ namespace PrecisionReporters.Platform.UnitTests.Data.Services
                 cognitoServiceMock.Object,
                 awsEmailServiceMock.Object,
                 verifyUserServiceMock.Object,
+                transactionHandlerMock.Object,
                 urlPathConfigurationMock.Object,
                 emailConfigurationMock.Object
                 );

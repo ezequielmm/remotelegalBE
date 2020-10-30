@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using PrecisionReporters.Platform.Data.Entities;
+using PrecisionReporters.Platform.Data.Handlers.Interfaces;
 using PrecisionReporters.Platform.Data.Repositories.Interfaces;
 using PrecisionReporters.Platform.Domain.Commons;
 using PrecisionReporters.Platform.Domain.Configurations;
@@ -18,21 +19,23 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly ICognitoService _cognitoService;
         private readonly IAwsEmailService _awsEmailService;
         private readonly IVerifyUserService _verifyUserService;
+        private readonly ITransactionHandler _transactionHandler;
         private readonly UrlPathConfiguration _urlPathConfiguration;
         private readonly EmailConfiguration _emailConfiguration;
         private User _newUser;
         private VerifyUser _verifyUser;
 
-        public UserService(ILogger<UserService> log, IUserRepository userRepository, ICognitoService cognitoService, IAwsEmailService awsEmailService, IVerifyUserService verifyUserService, IOptions<UrlPathConfiguration> urlPathConfiguration, IOptions<EmailConfiguration> emailConfiguration)
+        public UserService(ILogger<UserService> log, IUserRepository userRepository, ICognitoService cognitoService, IAwsEmailService awsEmailService, IVerifyUserService verifyUserService, ITransactionHandler transactionHandler, IOptions<UrlPathConfiguration> urlPathConfiguration, IOptions<EmailConfiguration> emailConfiguration)
         {
             _log = log;
             _userRepository = userRepository;
             _cognitoService = cognitoService;
             _awsEmailService = awsEmailService;
             _verifyUserService = verifyUserService;
-            _urlPathConfiguration = urlPathConfiguration.Value;     
+            _transactionHandler = transactionHandler;
+            _urlPathConfiguration = urlPathConfiguration.Value;
             _emailConfiguration = emailConfiguration.Value;
-        }         
+        }
 
         public async Task<User> SignUpAsync(User user)
         {
@@ -43,9 +46,13 @@ namespace PrecisionReporters.Platform.Domain.Services
             }
 
             //TODO: Perform logic to commit transactions
-            _newUser = await _userRepository.Create(user);
-            await _cognitoService.CreateAsync(user);
-            _verifyUser = await SaveVerifyUser(_newUser);
+            await _transactionHandler.RunAsync(async () =>
+            {
+                _newUser = await _userRepository.Create(user);
+                await _cognitoService.CreateAsync(user);
+                _verifyUser = await SaveVerifyUser(_newUser);
+            });
+            
             var verificationLink = $"{_urlPathConfiguration.FrontendBaseUrl}{_urlPathConfiguration.VerifyUserUrl}{_verifyUser.Id}";
             var emailData = SetVerifyEmailData(user.EmailAddress, user.FirstName, user.LastName, verificationLink);
             await _awsEmailService.SendEmailAsync(emailData, user.EmailAddress);
