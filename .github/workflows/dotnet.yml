@@ -50,12 +50,14 @@ jobs:
         include: 'task-definition-develop.json'
         find: "CONNECTION_STRING"
         replace: "${{ secrets.CONNECTIONSTRING_DEVELOP }}"
+        exclude: "^$"
     - name: Replace ConnectionStrings in QA task definition
       uses: jacobtomlinson/gha-find-replace@master
       with:
         include: 'task-definition-qa.json'
         find: "CONNECTION_STRING"
         replace: "${{ secrets.CONNECTIONSTRING_QA }}"
+        exclude: "^$"
 
     - name: Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@v1
