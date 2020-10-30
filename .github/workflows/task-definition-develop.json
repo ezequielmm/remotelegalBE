@@ -78,7 +78,7 @@
                     "value": "https://*.prdevelopment.net"
                 },
                 {
-                    "name": "ConnectionStrings__MySqlConnection",
+                    "name": "AppConfiguration__ConnectionStrings__MySqlConnection",
                     "value": "CONNECTION_STRING"
                 }
             ],
