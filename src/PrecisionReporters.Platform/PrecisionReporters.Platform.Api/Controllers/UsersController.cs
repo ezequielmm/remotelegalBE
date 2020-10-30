@@ -29,16 +29,8 @@ namespace PrecisionReporters.Platform.Api.Controllers
         [HttpPost]
         public async Task<ActionResult<UserDto>> SignUpAsync(CreateUserDto createUserDto)
         {
-            var result = new User();
-            try
-            {
-                var user = _userMapper.ToModel(createUserDto);
-                result = await _userService.SignUpAsync(user);                
-            }
-            catch(UserAlreadyExistException ex)
-            {
-                return Conflict();
-            }
+            var user = _userMapper.ToModel(createUserDto);
+            var result = await _userService.SignUpAsync(user);
 
             return Ok(_userMapper.ToDto(result));
         }

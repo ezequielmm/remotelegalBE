@@ -5,13 +5,9 @@ using System.Threading.Tasks;
 namespace PrecisionReporters.Platform.Domain.Commons
 {
     [Serializable]
-    public class UserAlreadyExistException : Exception
+    public class UserAlreadyExistException : BaseException
     {
-        public UserAlreadyExistException()
-        {            
-        }
-
-        public UserAlreadyExistException(string name) : base(String.Format("User already exist: {0}", name))
+        public UserAlreadyExistException(string name) : base(409, String.Format("User already exist: {0}", name))
         {
         }
     }

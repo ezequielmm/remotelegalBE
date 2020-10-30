@@ -1,5 +1,6 @@
 ﻿using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Data.Repositories.Interfaces;
+using PrecisionReporters.Platform.Domain.Commons;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using System;
 using System.Linq;
@@ -37,12 +38,12 @@ namespace PrecisionReporters.Platform.Domain.Services
         {
             if (String.IsNullOrEmpty(roomName))
             {
-                throw new ArgumentNullException("Room name can not be null or empty");
+                throw new InvalidArgumentException("Room name can not be null or empty");
             }
 
             if (GetByName(roomName).Result == null)
             {
-                throw new ArgumentException($"The Room with name '{roomName}' doesn't exist");
+                throw new NotFoundException($"The Room with name '{roomName}' doesn't exist");
             }
 
             // get user from jwt token or session
