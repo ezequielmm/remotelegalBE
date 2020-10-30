@@ -1,6 +1,14 @@
 name: Build, Test & Deploy
 
-on: [push]
+on:
+  push:
+    branches:
+      - develop
+      - qa
+  pull_request:
+    branches:
+      - '!develop'
+      - '!qa'
 
 jobs:
   build-test:
@@ -41,12 +49,12 @@ jobs:
       uses: datamonsters/replace-action@v1
       with:
         files: './.github/workflows/task-definition-develop.json'
-        replacement: 'CONNECTION_STRING=${{ secrets.CONNECTIONSTRING_DEVELOP }}'
+        replacements: 'CONNECTION_STRING=${{ secrets.CONNECTIONSTRING_DEVELOP }}'
     - name: Replace ConnectionStrings in QA task definition
       uses: datamonsters/replace-action@v1
       with:
         files: './.github/workflows/task-definition-qa.json'
-        replacement: 'CONNECTION_STRING=${{ secrets.CONNECTIONSTRING_QA }}'
+        replacements: 'CONNECTION_STRING=${{ secrets.CONNECTIONSTRING_QA }}'
     - name: Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@v1
       with:
