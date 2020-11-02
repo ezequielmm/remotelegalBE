@@ -54,7 +54,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             });
             
             var verificationLink = $"{_urlPathConfiguration.FrontendBaseUrl}{_urlPathConfiguration.VerifyUserUrl}{_verifyUser.Id}";
-            var emailData = SetVerifyEmailData(user.EmailAddress, user.FirstName, user.LastName, verificationLink);
+            var emailData = SetVerifyEmailData(user.FirstName, verificationLink);
             await _awsEmailService.SendEmailAsync(emailData, user.EmailAddress);
             return _newUser;
         }
@@ -65,8 +65,8 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             if (verifyUser.CreationDate < DateTime.UtcNow.AddDays(-1) || verifyUser.IsUsed)
             {
-                _log.LogWarning("Verification Code is already used or out of date");
-                return null;
+                _log.LogWarning(ApplicationConstants.VerificationCodeException);
+                throw new HashExpiredOrAlreadyUsedException(ApplicationConstants.VerificationCodeException);
             }
 
             await _cognitoService.ConfirmUserAsync(verifyUser.User.EmailAddress);
@@ -83,7 +83,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             var verifyUser = await _verifyUserService.GetVerifyUserByUserId(user.Id);
 
             var verificationLink = $"{_urlPathConfiguration.FrontendBaseUrl}{_urlPathConfiguration.VerifyUserUrl}{verifyUser.Id}";
-            var emailData = SetVerifyEmailData(user.EmailAddress, user.FirstName, user.LastName, verificationLink);
+            var emailData = SetVerifyEmailData(user.FirstName, verificationLink);
             await _awsEmailService.SendEmailAsync(emailData, email);
         }
 
@@ -98,16 +98,14 @@ namespace PrecisionReporters.Platform.Domain.Services
             return await _verifyUserService.CreateVerifyUser(verifyUser);
         }
 
-        private EmailTemplateInfo SetVerifyEmailData(string emailTo, string firstName, string lastName, string verificationLink)
+        private EmailTemplateInfo SetVerifyEmailData(string firstName, string verificationLink)
         {
             var emailInfo = new EmailTemplateInfo
             {
                 TemplateData = new List<string>
                 {
-                    $"{firstName} {lastName}",
-                    emailTo,
-                    verificationLink,
-                    _emailConfiguration.EmailHelp
+                    $"{firstName}",
+                    verificationLink                    
                 },
                 TemplateName = _emailConfiguration.VerifyTemplateName
             };

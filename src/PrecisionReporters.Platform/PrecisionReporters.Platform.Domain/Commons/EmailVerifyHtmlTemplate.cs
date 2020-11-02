@@ -111,74 +111,71 @@
                         </head>
 
                         <body style='margin: 0 !important; padding: 0 !important;'>
-                            <table align='center' cellpadding='0' cellspacing='0' border='0' width='100%'>
+                          <table align='center' cellpadding='0' cellspacing='0' border='0' width='100%'>
                             <tr>
-                                <td align='center' valign='top'>
+                              <td align='center' valign='top'>
                                 <!--[if mso]>
-                                <table cellspacing='0' cellpadding='0' border='0' width='600' align='center'>
-                                <tr>
-                                <td>
-                                <![endif]-->
+                              <table cellspacing='0' cellpadding='0' border='0' width='600' align='center'>
+                              <tr>
+                              <td>
+                              <![endif]-->
 
                                 <!-- Email Body : BEGIN -->
                                 <table align='center' cellspacing='0' cellpadding='0' border='0' width='100%' style='max-width: 450px; width: 100%;' class='container__fluid'>
-                                    <tr>
+                                  <tr>
                                     <td align='center' height='100%' valign='top' width='100%'>
-                                        <!--[if (gte mso 9)|(IE)]>
-                                        <table align='center' border='0' cellspacing='0' cellpadding='0' width='600'>
-                                        <tr>
-                                        <td align='center' valign='top' width='600'>
-                                        <![endif]-->
+                                      <!--[if (gte mso 9)|(IE)]>
+                                      <table align='center' border='0' cellspacing='0' cellpadding='0' width='600'>
+                                      <tr>
+                                      <td align='center' valign='top' width='600'>
+                                      <![endif]-->
                                         <table align='center' border='0' cellpadding='0' cellspacing='0' width='95%' style='max-width:600px;' bgcolor='#ffffff'>
-                                            <tr>
+                                          <tr>
                                             <td align='left' valign='top' style='font-size:14px;padding-top: 10%;padding-bottom: 10%;'>
-                                                <span style='font-family: Merriweather, Georgia, “Times New Roman”, serif;font-weight: 400; font-size: 24px; line-height: 30px; color: #14232E;'>
-                                                Verify your account to finish sign up for Remote Legal
-                                                </span>
-                                                <br><br><br>
-                                                <span style='font-family: Lato, Trebuchet, “Trebuchet MS”, sans-serif; font-size: 16px; line-height: 24px; color: #666666;'>
-                                                Hi <b style='color: #122D52;'>{data[0]}</b>
-                                                </span>
-                                                <br><br>
-                                                <span style='font-family: Lato, Trebuchet, “Trebuchet MS”, sans-serif; font-size: 16px; line-height: 24px; color: #666666;'>
-                                                Thanks for joining Remote Legal.
-                                                </span>
-                                                <br><br>
-                                                <span style='font-family: Lato, Trebuchet, “Trebuchet MS”, sans-serif; font-size: 16px; line-height: 24px; color: #666666;'>
-                                                Please confirm if <span style='color: #122D52;'>{data[1]}</span> is your email address by clicking the button bellow.
-                                                </span>
-                                                <br><br>
-                                                <div style='display:inline-block;'>
+                                              <span style='font-family: Merriweather, Georgia, “Times New Roman”, serif;font-weight: 400; font-size: 24px; line-height: 30px; color: #14232E;'>
+                                                Verify your Remote Legal account
+                                              </span>
+                                              <br><br><br>
+                                              <span style='font-family: Lato, Trebuchet, “Trebuchet MS”, sans-serif; font-size: 16px; line-height: 24px; color: #666666;'>
+                                                Hi <b style='color: #122D52;'>{data[0]}!</b>
+                                              </span>
+                                              <br><br>
+                                              <span style='font-family: Lato, Trebuchet, “Trebuchet MS”, sans-serif; font-size: 16px; line-height: 24px; color: #666666;'>
+                                                Thanks for joining Remote Legal. To finish registration, please confirm your email address by clicking the button below.
+                                              </span>
+                                              <br><br><br>  
+                                              <div style='display:inline-block;'>
                                                 <!--[if mso]> <v:roundrect xmlns:v='urn:schemas-microsoft-com:vml' xmlns:w='urn:schemas-microsoft-com:office:word' arcsize='12%' stroke='f' fillcolor='#C09853' style='height:55px;v-text-anchor:middle;width:255.39px;' > <w:anchorlock/> <center style='width:100%;' > <![endif]-->
-                                                <a href='{data[2]}' target='_blank' class='button-gold--a' style='box-sizing:content-box;background-color:#C09853;border-radius:12px;color:#FFF;display:inline-block;font-family: Lato, Arial, sans-serif;font-size:14px;font-style:normal;font-weight:normal;line-height:50px;text-align:center;text-decoration:none;padding: 0 90px; max-width: 100%; white-space: nowrap; -webkit-text-size-adjust:none;word-break:break-all;'>VERIFY ACCOUNT</a>
+                                                <a href='{data[1]}' target='_blank' class='button-gold--a' style='box-sizing:content-box;background-color:#C09853;border-radius:12px;color:#FFF;display:inline-block;font-family: Lato, Arial, sans-serif;font-size:14px;font-style:normal;font-weight:normal;line-height:50px;text-align:center;text-decoration:none;padding: 0 90px; max-width: 100%; white-space: nowrap; -webkit-text-size-adjust:none;word-break:break-all;'>VERIFY ACCOUNT</a>
                                                 <!--[if mso]> </center> </v:roundrect> <![endif]-->
-                                                </div>
-                                                <br><br>
-                                                <span style='font-family: Lato, Trebuchet, “Trebuchet MS”, sans-serif; font-size: 16px; line-height: 24px; color: #666666;'>
-                                                Need help? ask at <a href='{data[3]}' target='_blank' style='text-decoration: none; color: #C09853;'>{data[3]}</a>
-                                                </span>
+                                              </div>
+                                              <br><br>
+                                              <span style='font-family: Lato, Trebuchet, “Trebuchet MS”, sans-serif; font-size: 16px; line-height: 24px; color: #666666;'>
+                                                Thank you, <br>
+                                                The Remote Legal Team
+                                              </span>
 
                                             </td>
-                                            </tr>
+                                          </tr>
                                         </table>
-                                        <!--[if (gte mso 9)|(IE)]>
-                                        </td>
-                                        </tr>
-                                        </table>
-                                        <![endif]-->
+                                      <!--[if (gte mso 9)|(IE)]>
+                                      </td>
+                                      </tr>
+                                      </table>
+                                      <![endif]-->
                                     </td>
-                                    </tr>
+                                  </tr>
                                 </table>
                                 <!-- Email Body : END -->
 
                                 <!--[if mso]>
-                                </td>
-                                </tr>
-                                </table>
-                                <![endif]-->
-                                </td>
+                              </td>
+                              </tr>
+                              </table>
+                              <![endif]-->
+                              </td>
                             </tr>
-                            </table>
+                          </table>
                         </body>
 
                         </html>";

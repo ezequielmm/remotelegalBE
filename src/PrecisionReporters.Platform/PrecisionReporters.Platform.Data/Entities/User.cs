@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace PrecisionReporters.Platform.Data.Entities
 {
@@ -8,7 +9,7 @@ namespace PrecisionReporters.Platform.Data.Entities
         public string FirstName { get; set; }
         [Required]
         public string LastName { get; set; }
-        [Required]
+        [NotMapped]
         public string Password { get; set; }
         [Required]
         [MaxLength(255)]

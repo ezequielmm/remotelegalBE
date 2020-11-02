@@ -85,9 +85,10 @@ namespace PrecisionReporters.Platform.UnitTests.Data.Services
             var userRepositoryMock = new Mock<IUserRepository>();
             userRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<string>())).ReturnsAsync(user);
 
+            // Act
             var service = InitializeService(userRepository: userRepositoryMock);
 
-            //Assert
+            // Assert
             var ex = await Assert.ThrowsAsync<UserAlreadyExistException>(() => service.SignUpAsync(user));
             Assert.Equal(errorMessage, ex.Message);
         }
@@ -131,7 +132,7 @@ namespace PrecisionReporters.Platform.UnitTests.Data.Services
         public async Task VerifyUser_Should_LogWarning_WhenOlderThan24hours()
         {
             // Arrange
-            var expectedErrorMessage = "Verification Code is already used or out of date";
+            var expectedErrorMessage = ApplicationConstants.VerificationCodeException;
             var id = Guid.NewGuid();
             var user = UserFactory.GetUserByGivenId(id);
 
@@ -143,23 +144,20 @@ namespace PrecisionReporters.Platform.UnitTests.Data.Services
             var logMock = new Mock<ILogger<UserService>>();
             var service = InitializeService(verifyUserService: verifyUserServiceMock, log: logMock);
 
-            // Acr
-            var result = await service.VerifyUser(verifyUser.Id);
+            // Act
+            var ex = await Assert.ThrowsAsync<HashExpiredOrAlreadyUsedException>(async () => await service.VerifyUser(verifyUser.Id));
 
             // Assert
             verifyUserServiceMock.Verify(x => x.GetVerifyUserById(It.IsAny<Guid>()), Times.Once);
             Assert.Single(logMock.Invocations);
-            var loggerInvocation = logMock.Invocations[0];
-            Assert.Equal(LogLevel.Warning, loggerInvocation.Arguments[0]);
-            Assert.Equal(expectedErrorMessage, loggerInvocation.Arguments[2].ToString());
-            Assert.Null(result);
+            Assert.Equal(expectedErrorMessage, ex.Message);
         }
 
         [Fact]
         public async Task VerifyUser_Should_LogWarning_WhenIsUsedIsTrue()
         {
             // Arrange
-            var expectedErrorMessage = "Verification Code is already used or out of date";
+            var expectedErrorMessage = ApplicationConstants.VerificationCodeException;
             var id = Guid.NewGuid();
             var user = UserFactory.GetUserByGivenId(id);
 
@@ -171,16 +169,13 @@ namespace PrecisionReporters.Platform.UnitTests.Data.Services
             var logMock = new Mock<ILogger<UserService>>();
             var service = InitializeService(verifyUserService: verifyUserServiceMock, log: logMock);
 
-            // Acr
-            var result = await service.VerifyUser(verifyUser.Id);
-
+            // Act
+            var ex = await  Assert.ThrowsAsync<HashExpiredOrAlreadyUsedException>(async () => await service.VerifyUser(verifyUser.Id));
+            
             // Assert
             verifyUserServiceMock.Verify(x => x.GetVerifyUserById(It.IsAny<Guid>()), Times.Once);
-            Assert.Single(logMock.Invocations);
-            var loggerInvocation = logMock.Invocations[0];
-            Assert.Equal(LogLevel.Warning, loggerInvocation.Arguments[0]);
-            Assert.Equal(expectedErrorMessage, loggerInvocation.Arguments[2].ToString());
-            Assert.Null(result);
+            Assert.Single(logMock.Invocations);           
+            Assert.Equal(expectedErrorMessage, ex.Message);
         }
 
         [Fact]

@@ -18,17 +18,13 @@ namespace PrecisionReporters.Platform.Domain.Services
     public class AwsEmailService : IAwsEmailService
     {
         private readonly ILogger<AwsEmailService> _logger;
-        private readonly CognitoConfiguration _cognitoConfiguration;
         private readonly EmailConfiguration _emailConfiguration;
         private IAmazonSimpleEmailService _emailService;
-        private readonly string _filePath;
 
-        public AwsEmailService(ILogger<AwsEmailService> logger, IOptions<CognitoConfiguration> cognitoConfiguration, IOptions<EmailConfiguration> emailConfiguration, IHostingEnvironment env, IAmazonSimpleEmailService emailService)
+        public AwsEmailService(ILogger<AwsEmailService> logger, IOptions<EmailConfiguration> emailConfiguration, IHostingEnvironment env, IAmazonSimpleEmailService emailService)
         {
             _logger = logger;
-            _cognitoConfiguration = cognitoConfiguration.Value;
             _emailConfiguration = emailConfiguration.Value;
-            _filePath = env.ContentRootPath;
             _emailService = emailService;
         }
 
