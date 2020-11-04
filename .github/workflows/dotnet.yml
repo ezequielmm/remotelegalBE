@@ -59,6 +59,150 @@ jobs:
         replace: "${{ secrets.CONNECTIONSTRING_QA }}"
         exclude: "^$"
 
+    - name: Replace Cognito Access Key in DEV task definition
+      uses: jacobtomlinson/gha-find-replace@master
+      with:
+        include: 'task-definition-develop.json'
+        find: "ACCESS_KEY"
+        replace: "${{ secrets.COGNITOCONFIG_ACCESSKEY_DEV }}"
+        exclude: "^$"
+
+    - name: Replace Cognito Access Key in QA task definition
+      uses: jacobtomlinson/gha-find-replace@master
+      with:
+        include: 'task-definition-qa.json'
+        find: "ACCESS_KEY"
+        replace: "${{ secrets.COGNITOCONFIG_ACCESSKEY_QA }}"
+        exclude: "^$"
+   
+    - name: Replace Cognito Secret Access Key in DEV task definition
+      uses: jacobtomlinson/gha-find-replace@master
+      with:
+        include: 'task-definition-develop.json'
+        find: "SECRET_ACCESS_KEY"
+        replace: "${{ secrets.COGNITOCONFIG_SECRETACCESSKEY_DEV }}"
+        exclude: "^$"
+  
+    - name: Replace Cognito Secret Access Key in QA task definition
+      uses: jacobtomlinson/gha-find-replace@master
+      with:
+        include: 'task-definition-qa.json'
+        find: "SECRET_ACCESS_KEY"
+        replace: "${{ secrets.COGNITOCONFIG_SECRETACCESSKEY_QA }}"
+        exclude: "^$"
+  
+    - name: Replace Cognito Client ID in DEV task definition
+      uses: jacobtomlinson/gha-find-replace@master
+      with:
+        include: 'task-definition-develop.json'
+        find: "CLIENT_ID"
+        replace: "${{ secrets.COGNITOCONFIG_CLIENTID_DEV }}"
+        exclude: "^$"
+    
+    - name: Replace Cognito Client ID in QA task definition
+      uses: jacobtomlinson/gha-find-replace@master
+      with:
+        include: 'task-definition-qa.json'
+        find: "CLIENT_ID"
+        replace: "${{ secrets.COGNITOCONFIG_CLIENTID_QA }}"
+        exclude: "^$"
+
+    - name: Replace Cognito User Pool in DEV task definition
+      uses: jacobtomlinson/gha-find-replace@master
+      with:
+        include: 'task-definition-develop.json'
+        find: "USER_POOL_ID"
+        replace: "${{ secrets.COGNITOCONFIG_USERPOOLID_DEV }}"
+        exclude: "^$"
+    
+    - name: Replace Cognito User Pool in QA task definition
+      uses: jacobtomlinson/gha-find-replace@master
+      with:
+        include: 'task-definition-qa.json'
+        find: "USER_POOL_ID"
+        replace: "${{ secrets.COGNITOCONFIG_USERPOOLID_QA }}"
+        exclude: "^$"
+
+    - name: Replace Cognito Authority in DEV task definition
+      uses: jacobtomlinson/gha-find-replace@master
+      with:
+        include: 'task-definition-develop.json'
+        find: "AUTHORITY"
+        replace: "${{ secrets.COGNITOCONFIG_AUTHORITY_DEV }}"
+        exclude: "^$"
+    
+    - name: Replace Cognito Authority in QA task definition
+      uses: jacobtomlinson/gha-find-replace@master
+      with:
+        include: 'task-definition-qa.json'
+        find: "AUTHORITY"
+        replace: "${{ secrets.COGNITOCONFIG_AUTHORITY_QA }}"
+        exclude: "^$"
+
+    - name: Replace Twilio AccountSid in DEV task definition
+      uses: jacobtomlinson/gha-find-replace@master
+      with:
+        include: 'task-definition-develop.json'
+        find: "TWILIO_ACCOUNTSID"
+        replace: "${{ secrets.TWILIOCONFIG_ACCOUNTSID_DEV }}"
+        exclude: "^$"
+    
+    - name: Replace Twilio AccountSid in QA task definition
+      uses: jacobtomlinson/gha-find-replace@master
+      with:
+        include: 'task-definition-qa.json'
+        find: "TWILIO_ACCOUNTSID"
+        replace: "${{ secrets.TWILIOCONFIG_ACCOUNTSID_QA }}"
+        exclude: "^$"
+  
+    - name: Replace Twilio AuthToken in DEV task definition
+      uses: jacobtomlinson/gha-find-replace@master
+      with:
+        include: 'task-definition-develop.json'
+        find: "TWILIO_AUTHTOKEN"
+        replace: "${{ secrets.TWILIOCONFIG_AUTHTOKEN_DEV }}"
+        exclude: "^$"
+    
+    - name: Replace Twilio AccountSid in QA task definition
+      uses: jacobtomlinson/gha-find-replace@master
+      with:
+        include: 'task-definition-qa.json'
+        find: "TWILIO_AUTHTOKEN"
+        replace: "${{ secrets.TWILIOCONFIG_AUTHTOKEN_QA }}"
+        exclude: "^$"
+
+    - name: Replace Twilio ApiKeySID in DEV task definition
+      uses: jacobtomlinson/gha-find-replace@master
+      with:
+        include: 'task-definition-develop.json'
+        find: "TWILIO_APIKEYSID"
+        replace: "${{ secrets.TWILIOCONFIG_APIKEYSID_DEV }}"
+        exclude: "^$"
+    
+    - name: Replace Twilio ApiKeySID in QA task definition
+      uses: jacobtomlinson/gha-find-replace@master
+      with:
+        include: 'task-definition-qa.json'
+        find: "TWILIO_APIKEYSID"
+        replace: "${{ secrets.TWILIOCONFIG_APIKEYSID_QA }}"
+        exclude: "^$"
+    
+    - name: Replace Twilio ApiKeySecret in DEV task definition
+      uses: jacobtomlinson/gha-find-replace@master
+      with:
+        include: 'task-definition-develop.json'
+        find: "TWILIO_APIKEYSECRET"
+        replace: "${{ secrets.TWILIOCONFIG_APIKEYSECRET_DEV }}"
+        exclude: "^$"
+    
+    - name: Replace Twilio ApiKeySID in QA task definition
+      uses: jacobtomlinson/gha-find-replace@master
+      with:
+        include: 'task-definition-qa.json'
+        find: "TWILIO_APIKEYSECRET"
+        replace: "${{ secrets.TWILIOCONFIG_APIKEYSECRET_QA }}"
+        exclude: "^$"
+
     - name: Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@v1
       with:
