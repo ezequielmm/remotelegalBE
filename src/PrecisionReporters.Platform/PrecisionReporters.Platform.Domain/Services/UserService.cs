@@ -87,6 +87,11 @@ namespace PrecisionReporters.Platform.Domain.Services
             await _awsEmailService.SendEmailAsync(emailData, email);
         }
 
+        public async Task<User> GetUserByEmail(string userEmail)
+        {
+            return await _userRepository.GetFirstOrDefaultByFilter(x=>x.EmailAddress == userEmail);
+        }
+
         private async Task<VerifyUser> SaveVerifyUser(User user)
         {
             var verifyUser = new VerifyUser

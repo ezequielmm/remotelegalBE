@@ -10,6 +10,7 @@ namespace PrecisionReporters.Platform.Data
         public DbSet<VerifyUser> VerifyUsers { get; set; }
 
         public DbSet<Room> Rooms { get; set; }
+        public DbSet<Member> Members { get; set; }
 
         public ApplicationDbContext(DbContextOptions options) : base(options) { }
 

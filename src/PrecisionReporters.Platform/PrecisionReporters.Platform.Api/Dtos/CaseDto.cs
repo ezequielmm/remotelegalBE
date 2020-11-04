@@ -7,5 +7,7 @@ namespace PrecisionReporters.Platform.Api.Dtos
         public Guid Id { get; set; }
         public DateTime CreationDate { get; set; }
         public string Name { get; set; }
+        public string CaseNumber { get; set; }
+        public string AddedBy { get; set; }
     }
 }

@@ -12,7 +12,9 @@ namespace PrecisionReporters.Platform.Api.Mappers
             {
                 Id = model.Id,
                 CreationDate = model.CreationDate,
-                Name = model.Name
+                Name = model.Name,
+                CaseNumber = model.CaseNumber,
+                AddedBy = $"{model.AddedBy.FirstName} {model.AddedBy.LastName}"
             };
         }
 
@@ -22,7 +24,8 @@ namespace PrecisionReporters.Platform.Api.Mappers
             {
                 Id = dto.Id,
                 CreationDate = dto.CreationDate,
-                Name = dto.Name
+                Name = dto.Name,
+                CaseNumber = dto.CaseNumber
             };
         }
 
@@ -30,10 +33,9 @@ namespace PrecisionReporters.Platform.Api.Mappers
         {
             return new Case
             {
-                //TODO: Remove NewGuid EF will take charge of that
-                Id = Guid.NewGuid(),
                 CreationDate = DateTime.UtcNow,
-                Name = dto.Name
+                Name = dto.Name,
+                CaseNumber = dto.CaseNumber
             };
         }
     }

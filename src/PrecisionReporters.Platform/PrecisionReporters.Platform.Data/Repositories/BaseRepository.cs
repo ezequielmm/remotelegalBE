@@ -31,7 +31,27 @@ namespace PrecisionReporters.Platform.Data.Repositories
             return editedEntity;
         }
 
-        public async Task<List<T>> GetByFilter(Expression<Func<T, bool>> filter = null, string include = "")
+        public async Task<List<T>> GetByFilter(Expression<Func<T, bool>> filter = null, string[] include = null)
+        {
+            IQueryable<T> query = _dbContext.Set<T>();
+
+            if (include != null)
+            {
+                foreach (var property in include)
+                {
+                    query = query.Include(property);
+                }
+            }
+
+            if (filter != null)
+            {
+                query = query.Where(filter);
+            }
+
+            return await query.ToListAsync();
+        }
+
+        public async Task<T> GetFirstOrDefaultByFilter(Expression<Func<T, bool>> filter = null, string include = "")
         {
             IQueryable<T> query = _dbContext.Set<T>();
 
@@ -41,23 +61,6 @@ namespace PrecisionReporters.Platform.Data.Repositories
             }
 
             if (filter != null)
-            {
-                query = query.Where(filter);
-            }
-
-            return await query.ToListAsync();           
-        }
-
-        public async Task<T> GetFirstOrDefaultByFilter(Expression<Func<T, bool>> filter = null, string include = "")
-        {
-            IQueryable<T> query = _dbContext.Set<T>();
-
-            if (!string.IsNullOrEmpty(include)) 
-            { 
-                query = query.Include(include);
-            }
-
-            if (filter != null) 
             {
                 query = query.Where(filter);
             }

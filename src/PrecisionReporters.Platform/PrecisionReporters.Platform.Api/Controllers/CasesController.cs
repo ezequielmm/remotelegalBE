@@ -7,6 +7,7 @@ using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 
 namespace PrecisionReporters.Platform.Api.Controllers
@@ -14,16 +15,19 @@ namespace PrecisionReporters.Platform.Api.Controllers
     [Route("api/[controller]")]
     [ApiController]
     [Authorize]
-    public class CaseController : ControllerBase
+    public class CasesController : ControllerBase
     {
         private readonly ICaseService _caseService;
+        private readonly IUserService _userService;
         private readonly IMapper<Case, CaseDto, CreateCaseDto> _caseMapper;
 
-        public CaseController(ICaseService caseService,
-            IMapper<Case, CaseDto, CreateCaseDto> caseMapper)
+        public CasesController(ICaseService caseService,
+            IMapper<Case, CaseDto, CreateCaseDto> caseMapper,
+            IUserService userService)
         {
             _caseService = caseService;
             _caseMapper = caseMapper;
+            _userService = userService;
         }
 
         /// <summary>
@@ -34,8 +38,9 @@ namespace PrecisionReporters.Platform.Api.Controllers
         [HttpPost]
         public async Task<ActionResult<CaseDto>> CreateCase(CreateCaseDto caseDto)
         {
+            var userEmail = HttpContext.User.FindFirstValue(ClaimTypes.Email);
             var model = _caseMapper.ToModel(caseDto);
-            var newCase = await _caseService.CreateCase(model);
+            var newCase = await _caseService.CreateCase(userEmail, model);
 
             return Ok(_caseMapper.ToDto(newCase));
         }
@@ -57,9 +62,10 @@ namespace PrecisionReporters.Platform.Api.Controllers
         /// </summary>
         /// <returns>A list with all cases</returns>
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<CaseDto>>> GetCases()
+        public async Task<ActionResult<List<Case>>> GetCasesForCurrentUser()
         {
-            var cases = await _caseService.GetCases();
+            var userEmail = HttpContext.User.FindFirstValue(ClaimTypes.Email);
+            var cases = await _caseService.GetCasesForUser(userEmail);
             return Ok(cases.Select(c => _caseMapper.ToDto(c)));
         }
     }

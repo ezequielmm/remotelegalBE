@@ -9,5 +9,6 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
         Task<User> SignUpAsync(User user);
         Task<VerifyUser> VerifyUser(Guid verifyuserId);
         Task ResendVerificationEmailAsync(string email);
+        Task<User> GetUserByEmail(string email);
     }
 }

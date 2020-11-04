@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace PrecisionReporters.Platform.Data.Entities
@@ -15,6 +16,8 @@ namespace PrecisionReporters.Platform.Data.Entities
         [MaxLength(255)]
         public string EmailAddress { get; set; }
         public string PhoneNumber { get; set; }
+
+        public virtual ICollection<Member> MemberOn { get; set; }
 
         public override void CopyFrom(User entity)
         {
