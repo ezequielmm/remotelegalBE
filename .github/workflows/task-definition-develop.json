@@ -75,7 +75,7 @@
                 },
                 {
                     "name": "AppConfiguration__CorsConfiguration__Origins",
-                    "value": "https://*.prdevelopment.net"
+                    "value": "https://*.prdevelopment.net,https://prdevelopment.net,https://localhost:3000,http://localhost:3000"
                 },
                 {
                     "name": "AppConfiguration__ConnectionStrings__MySqlConnection",
