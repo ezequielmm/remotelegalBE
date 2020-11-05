@@ -111,12 +111,8 @@ namespace PrecisionReporters.Platform.Api
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<IVerifyUserService, VerifyUserService>();
             services.AddTransient<IAwsEmailService, AwsEmailService>().Configure<EmailConfiguration>(x =>
-            {
-                x.BaseTemplatePath = appConfiguration.EmailConfiguration.BaseTemplatePath;
-                x.EmailHelp = appConfiguration.EmailConfiguration.EmailHelp;
+            {              
                 x.Sender = appConfiguration.EmailConfiguration.Sender;
-                x.VerifyEmailSubject = appConfiguration.EmailConfiguration.VerifyEmailSubject;
-                x.VerifyTemplateName = appConfiguration.EmailConfiguration.VerifyTemplateName;
             });
 
             services.AddSingleton(typeof(IAmazonCognitoIdentityProvider),

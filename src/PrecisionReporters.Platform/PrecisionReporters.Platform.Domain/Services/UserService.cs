@@ -21,11 +21,11 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly IVerifyUserService _verifyUserService;
         private readonly ITransactionHandler _transactionHandler;
         private readonly UrlPathConfiguration _urlPathConfiguration;
-        private readonly EmailConfiguration _emailConfiguration;
+        
         private User _newUser;
         private VerifyUser _verifyUser;
 
-        public UserService(ILogger<UserService> log, IUserRepository userRepository, ICognitoService cognitoService, IAwsEmailService awsEmailService, IVerifyUserService verifyUserService, ITransactionHandler transactionHandler, IOptions<UrlPathConfiguration> urlPathConfiguration, IOptions<EmailConfiguration> emailConfiguration)
+        public UserService(ILogger<UserService> log, IUserRepository userRepository, ICognitoService cognitoService, IAwsEmailService awsEmailService, IVerifyUserService verifyUserService, ITransactionHandler transactionHandler, IOptions<UrlPathConfiguration> urlPathConfiguration)
         {
             _log = log;
             _userRepository = userRepository;
@@ -33,8 +33,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             _awsEmailService = awsEmailService;
             _verifyUserService = verifyUserService;
             _transactionHandler = transactionHandler;
-            _urlPathConfiguration = urlPathConfiguration.Value;
-            _emailConfiguration = emailConfiguration.Value;
+            _urlPathConfiguration = urlPathConfiguration.Value;            
         }
 
         public async Task<User> SignUpAsync(User user)
@@ -45,7 +44,6 @@ namespace PrecisionReporters.Platform.Domain.Services
                 throw new UserAlreadyExistException(user.EmailAddress);
             }
 
-            //TODO: Perform logic to commit transactions
             await _transactionHandler.RunAsync(async () =>
             {
                 _newUser = await _userRepository.Create(user);
@@ -54,8 +52,8 @@ namespace PrecisionReporters.Platform.Domain.Services
             });
             
             var verificationLink = $"{_urlPathConfiguration.FrontendBaseUrl}{_urlPathConfiguration.VerifyUserUrl}{_verifyUser.Id}";
-            var emailData = SetVerifyEmailData(user.FirstName, verificationLink);
-            await _awsEmailService.SendEmailAsync(emailData, user.EmailAddress);
+            var emailData = await SetVerifyEmailTemplate(user.EmailAddress, user.FirstName, verificationLink);
+            await _awsEmailService.SetTemplateEmailRequest(emailData);
             return _newUser;
         }
 
@@ -83,8 +81,8 @@ namespace PrecisionReporters.Platform.Domain.Services
             var verifyUser = await _verifyUserService.GetVerifyUserByUserId(user.Id);
 
             var verificationLink = $"{_urlPathConfiguration.FrontendBaseUrl}{_urlPathConfiguration.VerifyUserUrl}{verifyUser.Id}";
-            var emailData = SetVerifyEmailData(user.FirstName, verificationLink);
-            await _awsEmailService.SendEmailAsync(emailData, email);
+            var emailData = await SetVerifyEmailTemplate(email, user.FirstName, verificationLink);
+            await _awsEmailService.SetTemplateEmailRequest(emailData);
         }
 
         public async Task<User> GetUserByEmail(string userEmail)
@@ -103,18 +101,18 @@ namespace PrecisionReporters.Platform.Domain.Services
             return await _verifyUserService.CreateVerifyUser(verifyUser);
         }
 
-        private EmailTemplateInfo SetVerifyEmailData(string firstName, string verificationLink)
+        private async Task<EmailTemplateInfo> SetVerifyEmailTemplate(string emailAddress, string firstName, string verificationLink)
         {
-            var emailInfo = new EmailTemplateInfo
+            return await Task.Run(() => new EmailTemplateInfo
             {
-                TemplateData = new List<string>
+                EmailTo = new List<string> { emailAddress },                
+                TemplateName = ApplicationConstants.VerificationEmailTemplate,
+                TemplateData = new Dictionary<string, string> 
                 {
-                    $"{firstName}",
-                    verificationLink                    
-                },
-                TemplateName = _emailConfiguration.VerifyTemplateName
-            };
-            return emailInfo;
+                    { "user-name", firstName },
+                    { "verification-link", verificationLink }
+                }
+            });            
         }
     }
 }

@@ -16,11 +16,7 @@ namespace PrecisionReporters.Platform.UnitTests.Utils
         {
             return new EmailConfiguration
             {
-                BaseTemplatePath = "BaseTemplatePathTest",
-                EmailHelp = "EmailHelpTest",
                 Sender = "SenderTest",
-                VerifyEmailSubject = "VerifyEmailSubjectTest",
-                VerifyTemplateName = "VerifyTemplateNameTest"
             };
         }
     }

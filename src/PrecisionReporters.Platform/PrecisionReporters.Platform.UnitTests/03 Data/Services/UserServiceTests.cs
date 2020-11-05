@@ -1,5 +1,4 @@
 ﻿using Amazon.CognitoIdentityProvider.Model;
-using Amazon.SimpleEmail.Model;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -12,7 +11,6 @@ using PrecisionReporters.Platform.Domain.Services;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using PrecisionReporters.Platform.UnitTests.Utils;
 using System;
-using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Net;
 using System.Threading.Tasks;
@@ -23,12 +21,10 @@ namespace PrecisionReporters.Platform.UnitTests.Data.Services
     public class UserServiceTests
     {
         private readonly UrlPathConfiguration _urlPathConfiguration;
-        private readonly EmailConfiguration _emailConfiguration;    
 
         public UserServiceTests()
         {
             _urlPathConfiguration = ConfigurationFactory.GetUrlPathConfiguration();
-            _emailConfiguration = ConfigurationFactory.GetEmailConfiguration();
         }  
 
         [Fact]
@@ -53,9 +49,7 @@ namespace PrecisionReporters.Platform.UnitTests.Data.Services
             transactionHandlerMock.Setup(x => x.RunAsync(It.IsAny<Func<Task>>(), It.IsAny<Func<Exception, Task>>())).Returns(async (Func<Task> action, Func<Exception, Task> exceptionHandler) => { await action(); });
 
             var awsEmailServiceMock = new Mock<IAwsEmailService>();
-            awsEmailServiceMock
-                .Setup(x => x.SendEmailAsync(It.IsAny<EmailTemplateInfo>(), It.IsAny<string>(), It.IsAny<List<string>>(), It.IsAny<List<string>>()))
-                .ReturnsAsync(new SendRawEmailResponse());
+            awsEmailServiceMock.Setup(x => x.SetTemplateEmailRequest(It.IsAny<EmailTemplateInfo>())).Verifiable();
             var service = InitializeService(userRepository: userRepositoryMock, cognitoService: cognitoServiceMock, awsEmailService: awsEmailServiceMock, verifyUserService: verifyUserServiceMock, transactionHandler: transactionHandlerMock);
 
             // Act
@@ -67,7 +61,7 @@ namespace PrecisionReporters.Platform.UnitTests.Data.Services
             verifyUserServiceMock.Verify(x => x.CreateVerifyUser(It.IsAny<VerifyUser>()), Times.Once);
             cognitoServiceMock.Verify(x => x.CreateAsync(It.IsAny<User>()), Times.Once);
             transactionHandlerMock.Verify(x => x.RunAsync(It.IsAny<Func<Task>>(), It.IsAny<Func<Exception, Task>>()), Times.Once);
-            awsEmailServiceMock.Verify(x => x.SendEmailAsync(It.IsAny<EmailTemplateInfo>(), It.IsAny<string>(), It.IsAny<List<string>>(), It.IsAny<List<string>>()), Times.Once);
+            awsEmailServiceMock.Verify(x => x.SetTemplateEmailRequest(It.IsAny<EmailTemplateInfo>()), Times.Once);
 
             Assert.NotNull(result);
             Assert.Equal(id, result.Id);
@@ -190,7 +184,7 @@ namespace PrecisionReporters.Platform.UnitTests.Data.Services
             var verifyUserServiceMock = new Mock<IVerifyUserService>();
             verifyUserServiceMock.Setup(x => x.GetVerifyUserByUserId(It.IsAny<Guid>())).ReturnsAsync(verifyUser);
             var awsEmailServiceMock = new Mock<IAwsEmailService>();
-            awsEmailServiceMock.Setup(x => x.SendEmailAsync(It.IsAny<EmailTemplateInfo>(), It.IsAny<string>(), It.IsAny<List<string>>(), It.IsAny<List<string>>())).Verifiable();
+            awsEmailServiceMock.Setup(x => x.SetTemplateEmailRequest(It.IsAny<EmailTemplateInfo>())).Verifiable();
             var service = InitializeService(userRepository: userRepositoryMock, verifyUserService: verifyUserServiceMock, awsEmailService: awsEmailServiceMock);
 
             // Act
@@ -199,9 +193,7 @@ namespace PrecisionReporters.Platform.UnitTests.Data.Services
             // Assert
             userRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<string>()), Times.Once);
             verifyUserServiceMock.Verify(x => x.GetVerifyUserByUserId(It.Is<Guid>((a) => a == user.Id)), Times.Once);
-            awsEmailServiceMock.Verify(x =>
-                x.SendEmailAsync(It.IsAny<EmailTemplateInfo>(), It.Is<string>(a => a == email), It.IsAny<List<string>>(), It.IsAny<List<string>>()),
-                Times.Once);
+            awsEmailServiceMock.Verify(x => x.SetTemplateEmailRequest(It.IsAny<EmailTemplateInfo>()), Times.Once);
         }
 
         private UserService InitializeService(
@@ -221,8 +213,6 @@ namespace PrecisionReporters.Platform.UnitTests.Data.Services
             var transactionHandlerMock = transactionHandler ?? new Mock<ITransactionHandler>();
             var urlPathConfigurationMock = new Mock<IOptions<UrlPathConfiguration>>();
             urlPathConfigurationMock.Setup(x => x.Value).Returns(_urlPathConfiguration);
-            var emailConfigurationMock = new Mock<IOptions<EmailConfiguration>>();
-            emailConfigurationMock.Setup(x => x.Value).Returns(_emailConfiguration);   
 
             return new UserService(
                 logMock.Object,
@@ -231,8 +221,7 @@ namespace PrecisionReporters.Platform.UnitTests.Data.Services
                 awsEmailServiceMock.Object,
                 verifyUserServiceMock.Object,
                 transactionHandlerMock.Object,
-                urlPathConfigurationMock.Object,
-                emailConfigurationMock.Object
+                urlPathConfigurationMock.Object
                 );
         }
     }
