@@ -47,12 +47,18 @@ namespace PrecisionReporters.Platform.Api
         {
             var appConfiguration = Configuration.GetApplicationConfig();
 
+            var allowedDomains = appConfiguration.CorsConfiguration.GetOrigingsAsArray();
+            var allowedMethods = appConfiguration.CorsConfiguration.Methods;
+
             services.AddCors(options =>
             {
                 options.AddPolicy(name: AllowedOrigins,
                 builder =>
                     {
-                        builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
+                        builder.SetIsOriginAllowedToAllowWildcardSubdomains()
+                        .WithOrigins(allowedDomains)
+                        .AllowAnyHeader()
+                        .WithMethods(allowedMethods);
                     });
             });
 
