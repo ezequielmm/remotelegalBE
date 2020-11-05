@@ -71,7 +71,7 @@
                 },
                 {
                     "name": "AppConfiguration__UrlPathConfiguration__FrontendBaseUrl",
-                    "value": "https://prdevelopment.net/"
+                    "value": "https://prp-dev.prdevelopment.net/"
                 },
                 {
                     "name": "AppConfiguration__CorsConfiguration__Origins",
