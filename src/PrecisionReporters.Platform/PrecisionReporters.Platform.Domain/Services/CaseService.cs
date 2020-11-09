@@ -34,6 +34,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         {
             var user = await _userService.GetUserByEmail(userEmail);
             newCase.AddedBy = user;
+            newCase.Members = new List<Member> { new Member { User = user } };
             return await _caseRepository.Create(newCase);
         }
 

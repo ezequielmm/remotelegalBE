@@ -39,8 +39,8 @@ namespace PrecisionReporters.Platform.Api.Controllers
         public async Task<ActionResult<CaseDto>> CreateCase(CreateCaseDto caseDto)
         {
             var userEmail = HttpContext.User.FindFirstValue(ClaimTypes.Email);
-            var model = _caseMapper.ToModel(caseDto);
-            var newCase = await _caseService.CreateCase(userEmail, model);
+            var caseModel = _caseMapper.ToModel(caseDto);
+            var newCase = await _caseService.CreateCase(userEmail, caseModel);
 
             return Ok(_caseMapper.ToDto(newCase));
         }
