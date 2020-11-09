@@ -1,5 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace PrecisionReporters.Platform.Data.Entities
 {
@@ -9,6 +11,10 @@ namespace PrecisionReporters.Platform.Data.Entities
         public string Name { get; set; }
 
         public string CaseNumber { get; set; }
+
+        [ForeignKey(nameof(AddedBy))]
+        [Column(TypeName = "char(36)")]
+        public Guid? AddedById { get; set; }
 
         public User AddedBy { get; set; }
         public virtual ICollection<Member> Members { get; set; }

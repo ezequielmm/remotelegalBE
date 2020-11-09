@@ -7,6 +7,7 @@ namespace PrecisionReporters.Platform.Data.Entities
     public abstract class BaseEntity<T>
     {
         [Key]
+        [Column(TypeName = "char(36)")]
         public Guid Id { get; set; }
 
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]

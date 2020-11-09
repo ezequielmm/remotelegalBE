@@ -8,8 +8,11 @@ namespace PrecisionReporters.Platform.Data.Entities
     public class Member : BaseEntity<Member>
     {
         [ForeignKey(nameof(User))]
+        [Column(TypeName = "char(36)")]
         public Guid UserId { get; set; }
+
         [ForeignKey(nameof(Case))]
+        [Column(TypeName = "char(36)")]
         public Guid CaseId { get; set; }
 
         public User User { get; set; }
