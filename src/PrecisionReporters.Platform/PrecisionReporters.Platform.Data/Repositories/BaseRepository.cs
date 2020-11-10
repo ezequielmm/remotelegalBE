@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
+using PrecisionReporters.Platform.Data.Enums;
 
 namespace PrecisionReporters.Platform.Data.Repositories
 {
@@ -33,6 +34,11 @@ namespace PrecisionReporters.Platform.Data.Repositories
 
         public async Task<List<T>> GetByFilter(Expression<Func<T, bool>> filter = null, string[] include = null)
         {
+            return await GetByFilter(x => x.CreationDate, SortDirection.Ascend, filter, include);
+        }
+
+        public async Task<List<T>> GetByFilter(Expression<Func<T, object>> orderBy, SortDirection sortDirection, Expression<Func<T, bool>> filter = null, string[] include = null)
+        {
             IQueryable<T> query = _dbContext.Set<T>();
 
             if (include != null)
@@ -48,7 +54,11 @@ namespace PrecisionReporters.Platform.Data.Repositories
                 query = query.Where(filter);
             }
 
-            return await query.ToListAsync();
+            var result = sortDirection == SortDirection.Ascend
+                ? query.OrderBy(orderBy)
+                : query.OrderByDescending(orderBy);
+
+            return await result.ToListAsync();
         }
 
         public async Task<T> GetFirstOrDefaultByFilter(Expression<Func<T, bool>> filter = null, string include = "")

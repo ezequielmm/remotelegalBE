@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using PrecisionReporters.Platform.Data.Enums;
 
 namespace PrecisionReporters.Platform.Api.Controllers
 {
@@ -62,10 +63,10 @@ namespace PrecisionReporters.Platform.Api.Controllers
         /// </summary>
         /// <returns>A list with all cases</returns>
         [HttpGet]
-        public async Task<ActionResult<List<Case>>> GetCasesForCurrentUser()
+        public async Task<ActionResult<List<CaseDto>>> GetCasesForCurrentUser(CaseSortField? sortedField  = null, SortDirection? sortDirection = null)
         {
             var userEmail = HttpContext.User.FindFirstValue(ClaimTypes.Email);
-            var cases = await _caseService.GetCasesForUser(userEmail);
+            var cases = await _caseService.GetCasesForUser(userEmail, sortedField, sortDirection);
             return Ok(cases.Select(c => _caseMapper.ToDto(c)));
         }
     }

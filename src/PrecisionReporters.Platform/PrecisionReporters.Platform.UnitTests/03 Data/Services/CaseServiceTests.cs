@@ -5,6 +5,7 @@ using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Moq;
 using PrecisionReporters.Platform.Data.Entities;
+using PrecisionReporters.Platform.Data.Enums;
 using PrecisionReporters.Platform.Data.Repositories;
 using PrecisionReporters.Platform.Domain.Services;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
@@ -121,8 +122,13 @@ namespace PrecisionReporters.Platform.UnitTests.Data.Services
             Assert.Equal(name, result.Name);
         }
 
-        [Fact]
-        public async Task GetCasesForUser_ShouldReturn_ListOfCases_WhereLogedUserIsMemberOf()
+        [Theory]
+        [InlineData(null, null)]
+        [InlineData(CaseSortField.AddedBy, SortDirection.Ascend)]
+        [InlineData(CaseSortField.Name, SortDirection.Descend)]
+        [InlineData(CaseSortField.CaseNumber, SortDirection.Ascend)]
+        [InlineData(CaseSortField.CreatedDate, null)]
+        public async Task GetCasesForUser_ShouldReturn_ListOfCases_WhereLogedUserIsMemberOf(CaseSortField? orderBy, SortDirection? sortDirection)
         {
             var userEmail = "testUser@mail.com";
             var user = UserFactory.GetUserByGivenEmail(userEmail);
@@ -135,12 +141,14 @@ namespace PrecisionReporters.Platform.UnitTests.Data.Services
             }};
 
             _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(user);
-            _caseRepositoryMock.Setup(x => x.GetByFilter(It.IsAny<Expression<Func<Case, bool>>>(), It.IsAny<string[]>())).ReturnsAsync(userCases);
+            _caseRepositoryMock.Setup(x => x.GetByFilter(It.IsAny<Expression<Func<Case, object>>>(), It.IsAny<SortDirection>(), It.IsAny<Expression<Func<Case, bool>>>(), It.IsAny<string[]>())).ReturnsAsync(userCases);
 
-            await _service.GetCasesForUser(userEmail);
+            await _service.GetCasesForUser(userEmail, orderBy, sortDirection);
 
             _userServiceMock.Verify(x => x.GetUserByEmail(It.Is<string>(a => a == userEmail)), Times.Once);
-            _caseRepositoryMock.Verify(x => x.GetByFilter(It.IsAny<Expression<Func<Case, bool>>>(), It.IsAny<string[]>()), Times.Once);
+
+            // TODO: Find a way to evaluate that the param orderBy was called with the given field or the default one
+            _caseRepositoryMock.Verify(x => x.GetByFilter(It.IsAny<Expression<Func<Case, object>>>(), It.Is<SortDirection>(a => a == sortDirection || (a == SortDirection.Ascend && sortDirection == null)), It.IsAny<Expression<Func<Case, bool>>>(), It.IsAny<string[]>()), Times.Once);
         }
     }
 }

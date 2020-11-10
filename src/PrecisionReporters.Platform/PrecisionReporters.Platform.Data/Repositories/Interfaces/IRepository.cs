@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
+using PrecisionReporters.Platform.Data.Enums;
 
 namespace PrecisionReporters.Platform.Data.Repositories.Interfaces
 {
@@ -12,6 +13,7 @@ namespace PrecisionReporters.Platform.Data.Repositories.Interfaces
         Task<T> Update(T entity);
         Task<T> GetFirstOrDefaultByFilter(Expression<Func<T, bool>> filter = null, string include = "");
         Task<List<T>> GetByFilter(Expression<Func<T, bool>> filter = null, string[] include = null);
+        Task<List<T>> GetByFilter(Expression<Func<T, object>> orderBy, SortDirection sortDirection, Expression<Func<T, bool>> filter = null, string[] include = null);
         Task<T> GetById(Guid id, string include = "");
     }
 }
