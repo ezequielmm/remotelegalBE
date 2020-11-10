@@ -10,6 +10,7 @@ using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using PrecisionReporters.Platform.Data.Enums;
+using PrecisionReporters.Platform.Api.Helpers;
 
 namespace PrecisionReporters.Platform.Api.Controllers
 {
@@ -41,9 +42,10 @@ namespace PrecisionReporters.Platform.Api.Controllers
         {
             var userEmail = HttpContext.User.FindFirstValue(ClaimTypes.Email);
             var caseModel = _caseMapper.ToModel(caseDto);
-            var newCase = await _caseService.CreateCase(userEmail, caseModel);
+            var createCaseResult = await _caseService.CreateCase(userEmail, caseModel);
 
-            return Ok(_caseMapper.ToDto(newCase));
+            var createdCase = _caseMapper.ToDto(createCaseResult.Value);
+            return Ok(createdCase);
         }
 
         /// <summary>
@@ -54,8 +56,12 @@ namespace PrecisionReporters.Platform.Api.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<CaseDto>> GetCaseById(Guid id)
         {
-            var model = await _caseService.GetCaseById(id);
-            return Ok(_caseMapper.ToDto(model));
+            var findCaseResult = await _caseService.GetCaseById(id);
+            if (findCaseResult.IsFailed)
+                return WebApiResponses.GetErrorResponse(findCaseResult);
+
+            var foundCase = _caseMapper.ToDto(findCaseResult.Value);
+            return Ok(foundCase);
         }
 
         /// <summary>
@@ -66,8 +72,12 @@ namespace PrecisionReporters.Platform.Api.Controllers
         public async Task<ActionResult<List<CaseDto>>> GetCasesForCurrentUser(CaseSortField? sortedField  = null, SortDirection? sortDirection = null)
         {
             var userEmail = HttpContext.User.FindFirstValue(ClaimTypes.Email);
-            var cases = await _caseService.GetCasesForUser(userEmail, sortedField, sortDirection);
-            return Ok(cases.Select(c => _caseMapper.ToDto(c)));
+
+            var getCasesResult = await _caseService.GetCasesForUser(userEmail, sortedField, sortDirection);
+            if (getCasesResult.IsFailed)
+                return WebApiResponses.GetErrorResponse(getCasesResult);
+
+            return Ok(getCasesResult.Value.Select(c => _caseMapper.ToDto(c)));
         }
     }
 }

@@ -1,8 +1,10 @@
 ﻿using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using PrecisionReporters.Platform.Api.Dtos;
+using PrecisionReporters.Platform.Api.Helpers;
 using PrecisionReporters.Platform.Api.Mappers;
 using PrecisionReporters.Platform.Data.Entities;
+using PrecisionReporters.Platform.Domain.Errors;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 
 namespace PrecisionReporters.Platform.Api.Controllers
@@ -29,13 +31,16 @@ namespace PrecisionReporters.Platform.Api.Controllers
         [HttpPost]
         public async Task<ActionResult<RoomDto>> CreateRoom(CreateRoomDto roomDto)
         {
-            var room = await _roomService.GetByName(roomDto.Name);
-            if (room == null)
-            {
-                room = await _roomService.Create(_roomMapper.ToModel(roomDto));
-            }
+            var getRoomResult = await _roomService.GetByName(roomDto.Name);
+            if (getRoomResult.IsFailed && !getRoomResult.HasError<ResourceNotFoundError>())
+                return WebApiResponses.GetErrorResponse(getRoomResult);
 
-            return Created(nameof(GetRoom), _roomMapper.ToDto(room));
+            var createRoomResult = await _roomService.Create(_roomMapper.ToModel(roomDto));
+            if (createRoomResult.IsFailed)
+                return WebApiResponses.GetErrorResponse(createRoomResult);
+
+            var createdRoom = _roomMapper.ToDto(getRoomResult.Value);
+            return Created(nameof(GetRoom), createdRoom);
         }
 
         /// <summary>
@@ -46,13 +51,11 @@ namespace PrecisionReporters.Platform.Api.Controllers
         [HttpGet("{name}")]
         public async Task<ActionResult<RoomDto>> GetRoom(string name)
         {
-            var room = await _roomService.GetByName(name);
-            if (room == null)
-            {
-                return NotFound();
-            }
+            var getRoomResult = await _roomService.GetByName(name);
+            if (getRoomResult.IsFailed)
+                return WebApiResponses.GetErrorResponse(getRoomResult);
 
-            return Ok(_roomMapper.ToDto(room));
+            return Ok(_roomMapper.ToDto(getRoomResult.Value));
         }
 
         /// <summary>
@@ -64,8 +67,11 @@ namespace PrecisionReporters.Platform.Api.Controllers
         [HttpPost]
         public ActionResult<RoomTokenDto> GenerateRoomToken(RoomDto roomDto)
         {
-            var token = _roomService.GenerateRoomToken(roomDto.Name);
-            var tokenDto = new RoomTokenDto { Token = token };
+            var tokenOperationResult = _roomService.GenerateRoomToken(roomDto.Name);
+            if (tokenOperationResult.IsFailed)
+                return WebApiResponses.GetErrorResponse(tokenOperationResult);
+
+            var tokenDto = new RoomTokenDto { Token = tokenOperationResult.Value };
             return Ok(tokenDto);
         }
     }

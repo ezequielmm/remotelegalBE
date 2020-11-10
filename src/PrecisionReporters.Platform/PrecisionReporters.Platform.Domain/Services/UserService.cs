@@ -21,7 +21,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly IVerifyUserService _verifyUserService;
         private readonly ITransactionHandler _transactionHandler;
         private readonly UrlPathConfiguration _urlPathConfiguration;
-        
+
         private User _newUser;
         private VerifyUser _verifyUser;
 
@@ -33,7 +33,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             _awsEmailService = awsEmailService;
             _verifyUserService = verifyUserService;
             _transactionHandler = transactionHandler;
-            _urlPathConfiguration = urlPathConfiguration.Value;            
+            _urlPathConfiguration = urlPathConfiguration.Value;
         }
 
         public async Task<User> SignUpAsync(User user)
@@ -50,7 +50,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 await _cognitoService.CreateAsync(user);
                 _verifyUser = await SaveVerifyUser(_newUser);
             });
-            
+
             var verificationLink = $"{_urlPathConfiguration.FrontendBaseUrl}{_urlPathConfiguration.VerifyUserUrl}{_verifyUser.Id}";
             var emailData = await SetVerifyEmailTemplate(user.EmailAddress, user.FirstName, verificationLink);
             await _awsEmailService.SetTemplateEmailRequest(emailData);
@@ -105,14 +105,14 @@ namespace PrecisionReporters.Platform.Domain.Services
         {
             return await Task.Run(() => new EmailTemplateInfo
             {
-                EmailTo = new List<string> { emailAddress },                
+                EmailTo = new List<string> { emailAddress },
                 TemplateName = ApplicationConstants.VerificationEmailTemplate,
-                TemplateData = new Dictionary<string, string> 
+                TemplateData = new Dictionary<string, string>
                 {
                     { "user-name", firstName },
                     { "verification-link", verificationLink }
                 }
-            });            
+            });
         }
     }
 }

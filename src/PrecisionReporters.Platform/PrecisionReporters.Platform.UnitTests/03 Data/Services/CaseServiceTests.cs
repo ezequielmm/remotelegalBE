@@ -90,13 +90,15 @@ namespace PrecisionReporters.Platform.UnitTests.Data.Services
 
             // Assert
             _caseRepositoryMock.Verify(mock => mock.GetById(It.Is<Guid>(a => a == id), It.IsAny<string>()), Times.Once());
-            Assert.NotNull(result);
-            Assert.IsType<Case>(result);
-            Assert.Equal(id, result.Id);
+            Assert.True(result.IsSuccess);
+
+            var foundCase = result.Value;
+            Assert.NotNull(foundCase);
+            Assert.Equal(id, foundCase.Id);
         }
 
         [Fact]
-        public async Task CreateCase_ShouldReturn_NewlyCretedCase_WithGivenName()
+        public async Task CreateCase_ShouldReturn_NewlyCreatedCase_WithGivenName()
         {
             // Arrange
             var name = "Test";
@@ -118,8 +120,11 @@ namespace PrecisionReporters.Platform.UnitTests.Data.Services
             // Assert
             _userServiceMock.Verify(mock => mock.GetUserByEmail(It.Is<string>(a => a == userEmail)), Times.Once);
             _caseRepositoryMock.Verify(mock => mock.Create(It.Is<Case>(a => a == newCase)), Times.Once());
-            Assert.NotNull(result);
-            Assert.Equal(name, result.Name);
+            Assert.True(result.IsSuccess);
+
+            var createdCase = result.Value;
+            Assert.NotNull(createdCase);
+            Assert.Equal(name, createdCase.Name);
         }
 
         [Theory]

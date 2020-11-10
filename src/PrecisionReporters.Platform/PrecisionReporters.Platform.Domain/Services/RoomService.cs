@@ -5,6 +5,8 @@ using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using FluentResults;
+using PrecisionReporters.Platform.Domain.Errors;
 
 namespace PrecisionReporters.Platform.Domain.Services
 {
@@ -21,34 +23,36 @@ namespace PrecisionReporters.Platform.Domain.Services
             _roomRepository = roomRepository;
         }
 
-        public async Task<Room> Create(Room room)
+        public async Task<Result<Room>> Create(Room room)
         {
             var newRoom = await _roomRepository.Create(room);
             await _twilioService.CreateRoom(newRoom.Name);
 
-            return room;
+            return Result.Ok(room);
         }
 
-        public async Task<Room> GetByName(string roomName)
+        public async Task<Result<Room>> GetByName(string roomName)
         {
-            return (await _roomRepository.GetByFilter(x => x.Name == roomName)).FirstOrDefault();
+            var matchingRooms = await _roomRepository.GetByFilter(x => x.Name == roomName);
+
+            if ((matchingRooms?.Count ?? 0) == 0)
+                return Result.Fail(new ResourceNotFoundError());
+
+            return Result.Ok(matchingRooms.First());
         }
 
-        public string GenerateRoomToken(string roomName)
+        public Result<string> GenerateRoomToken(string roomName)
         {
-            if (String.IsNullOrEmpty(roomName))
-            {
-                throw new InvalidArgumentException("Room name can not be null or empty");
-            }
+            if (string.IsNullOrEmpty(roomName))
+                return Result.Fail<string>(new InvalidInputError("Room name can not be null or empty"));
 
             if (GetByName(roomName).Result == null)
-            {
-                throw new NotFoundException($"The Room with name '{roomName}' doesn't exist");
-            }
+                return Result.Fail(new ResourceNotFoundError($"The Room with name '{roomName}' doesn't exist"));
 
             // get user from jwt token or session
             var username = $"user-{_random.Next(20)}";
-            return _twilioService.GenerateToken(roomName, username);
+            var twilioToken = _twilioService.GenerateToken(roomName, username);
+            return Result.Ok(twilioToken);
         }
     }
 }
