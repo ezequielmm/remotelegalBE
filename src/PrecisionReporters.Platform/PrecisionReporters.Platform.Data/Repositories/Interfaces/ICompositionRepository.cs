@@ -2,7 +2,8 @@
 
 namespace PrecisionReporters.Platform.Data.Repositories.Interfaces
 {
-    public interface IRoomRepository : IRepository<Room>
+    public interface ICompositionRepository : IRepository<Composition>
     {
+        
     }
 }

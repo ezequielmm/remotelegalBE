@@ -196,13 +196,45 @@ jobs:
         find: "TWILIO_APIKEYSECRET"
         replace: "${{ secrets.TWILIOCONFIG_APIKEYSECRET_DEV }}"
         exclude: "^$"
-    
-    - name: Replace Twilio ApiKeySID in QA task definition
+
+    - name: Replace Twilio ApiKeySecret in QA task definition
       uses: jacobtomlinson/gha-find-replace@master
       with:
         include: 'task-definition-qa.json'
         find: "TWILIO_APIKEYSECRET"
         replace: "${{ secrets.TWILIOCONFIG_APIKEYSECRET_QA }}"
+        exclude: "^$"
+
+    - name: Replace Twilio S3DestinationKey in DEV task definition
+      uses: jacobtomlinson/gha-find-replace@master
+      with:
+        include: 'task-definition-develop.json'
+        find: "TWILIO_DESTINATION_KEY"
+        replace: "${{ secrets.SERVICE_ACCOUNT_ACCESS_KEY_DEV }}"
+        exclude: "^$"
+
+    - name: Replace Twilio S3DestinationKey in QA task definition
+      uses: jacobtomlinson/gha-find-replace@master
+      with:
+        include: 'task-definition-qa.json'
+        find: "TWILIO_DESTINATION_KEY"
+        replace: "${{ secrets.SERVICE_ACCOUNT_ACCESS_KEY_QA }}"
+        exclude: "^$"
+
+    - name: Replace Twilio S3DestinationSecret in DEV task definition
+      uses: jacobtomlinson/gha-find-replace@master
+      with:
+        include: 'task-definition-develop.json'
+        find: "TWILIO_DESTINATION_SECRET"
+        replace: "${{ secrets.SERVICE_ACCOUNT_SECRET_ACCESS_KEY_DEV }}"
+        exclude: "^$"
+
+    - name: Replace Twilio S3DestinationSecret in QA task definition
+      uses: jacobtomlinson/gha-find-replace@master
+      with:
+        include: 'task-definition-qa.json'
+        find: "TWILIO_DESTINATION_SECRET"
+        replace: "${{ secrets.SERVICE_ACCOUNT_SECRET_ACCESS_KEY_QA }}"
         exclude: "^$"
 
     - name: Configure AWS Credentials

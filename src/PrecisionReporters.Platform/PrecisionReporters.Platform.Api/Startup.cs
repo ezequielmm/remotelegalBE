@@ -1,10 +1,10 @@
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Amazon.CognitoIdentityProvider;
 using Amazon.SimpleEmail;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using PrecisionReporters.Platform.Api.AppConfigurations;
@@ -21,6 +21,10 @@ using Amazon;
 using PrecisionReporters.Platform.Api.Middlewares;
 using PrecisionReporters.Platform.Data.Handlers.Interfaces;
 using PrecisionReporters.Platform.Data.Handlers;
+using PrecisionReporters.Platform.Api.Filters;
+using Amazon.Runtime;
+using Amazon.S3;
+using Amazon.S3.Transfer;
 
 namespace PrecisionReporters.Platform.Api
 {
@@ -28,7 +32,7 @@ namespace PrecisionReporters.Platform.Api
     {
         public Startup(IWebHostEnvironment env)
         {
-           
+
             var builder = new ConfigurationBuilder().SetBasePath(env.ContentRootPath)
                 .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
                 .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true)
@@ -50,6 +54,17 @@ namespace PrecisionReporters.Platform.Api
             var allowedDomains = appConfiguration.CorsConfiguration.GetOrigingsAsArray();
             var allowedMethods = appConfiguration.CorsConfiguration.Methods;
 
+            services.AddScoped<ITransferUtility>(sp =>
+            {
+                var appConfig = Configuration.GetApplicationConfig();
+
+                var awsTwilioBucketCredentials = new BasicAWSCredentials(appConfig.TwilioAccountConfiguration.S3DestinationKey,
+                    appConfig.TwilioAccountConfiguration.S3DestinationSecret);
+                var s3Client = new AmazonS3Client(awsTwilioBucketCredentials);
+
+                return new TransferUtility(s3Client);
+            });
+
             services.AddCors(options =>
             {
                 options.AddPolicy(name: AllowedOrigins,
@@ -70,8 +85,8 @@ namespace PrecisionReporters.Platform.Api
 
             services.AddHealthChecks();
 
-           // Appsettings
-            services.AddSingleton<IAppConfiguration>(appConfiguration);           
+            // Appsettings
+            services.AddSingleton<IAppConfiguration>(appConfiguration);
 
             //Configurations
             services.AddOptions();
@@ -79,13 +94,17 @@ namespace PrecisionReporters.Platform.Api
             {
                 x.FrontendBaseUrl = appConfiguration.UrlPathConfiguration.FrontendBaseUrl;
                 x.VerifyUserUrl = appConfiguration.UrlPathConfiguration.VerifyUserUrl;
-            });           
+            });
+
+            // Filters
+            services.AddScoped<ValidateTwilioRequestFilterAttribute>();
 
             // Mappers
             services.AddSingleton<IMapper<Case, CaseDto, CreateCaseDto>, CaseMapper>();
             services.AddSingleton<IMapper<Room, RoomDto, CreateRoomDto>, RoomMapper>();
             services.AddSingleton<IMapper<User, UserDto, CreateUserDto>, UserMapper>();
             services.AddSingleton<IMapper<VerifyUser, object, CreateVerifyUserDto>, VerifyUserMapper>();
+            services.AddSingleton<IMapper<Composition, CompositionDto, CallbackCompositionDto>, CompositionMapper>();
 
             // Services
             services.AddScoped<ICaseService, CaseService>();
@@ -95,6 +114,10 @@ namespace PrecisionReporters.Platform.Api
                 x.ApiKeySecret = appConfiguration.TwilioAccountConfiguration.ApiKeySecret;
                 x.ApiKeySid = appConfiguration.TwilioAccountConfiguration.ApiKeySid;
                 x.AuthToken = appConfiguration.TwilioAccountConfiguration.AuthToken;
+                x.S3DestinationBucket = appConfiguration.TwilioAccountConfiguration.S3DestinationBucket;
+                x.S3DestinationKey = appConfiguration.TwilioAccountConfiguration.S3DestinationKey;
+                x.S3DestinationSecret = appConfiguration.TwilioAccountConfiguration.S3DestinationSecret;
+                x.StatusCallbackUrl = appConfiguration.TwilioAccountConfiguration.StatusCallbackUrl;
             });
 
             services.AddScoped<IRoomService, RoomService>();
@@ -111,7 +134,7 @@ namespace PrecisionReporters.Platform.Api
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<IVerifyUserService, VerifyUserService>();
             services.AddTransient<IAwsEmailService, AwsEmailService>().Configure<EmailConfiguration>(x =>
-            {              
+            {
                 x.Sender = appConfiguration.EmailConfiguration.Sender;
             });
 
@@ -120,11 +143,14 @@ namespace PrecisionReporters.Platform.Api
             services.AddSingleton(typeof(IAmazonSimpleEmailService),
                 _ => new AmazonSimpleEmailServiceClient(appConfiguration.CognitoConfiguration.AWSAccessKey, appConfiguration.CognitoConfiguration.AWSSecretAccessKey, RegionEndpoint.USEast1));
 
+            services.AddScoped<ICompositionService, CompositionService>();
+
             // Repositories
             services.AddScoped<ICaseRepository, CaseRepository>();
             services.AddScoped<IRoomRepository, RoomRepository>();
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IVerifyUserRepository, VerifyUserRepository>();
+            services.AddScoped<ICompositionRepository, CompositionRepository>();
 
             services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseMySQL(appConfiguration.ConnectionStrings.MySqlConnection));
@@ -132,7 +158,7 @@ namespace PrecisionReporters.Platform.Api
             services.AddScoped<ITransactionHandler, TransactionHandler>();
             services.AddScoped<ITransactionInfo, TransactionInfo>();
 
-            // Enable Bearer token authentication           
+            // Enable Bearer token authentication
             services.AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -144,8 +170,8 @@ namespace PrecisionReporters.Platform.Api
                 options.Authority = appConfiguration.CognitoConfiguration.Authority;
             });
 
-            services.AddMvc();
-            
+            services.AddMvc()
+                .AddJsonOptions(opts => opts.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

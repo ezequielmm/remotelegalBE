@@ -6,5 +6,7 @@ namespace PrecisionReporters.Platform.Api.Dtos
     {
         [Required]
         public string Name { get; set; }
+        [Required]
+        public bool IsRecordingEnabled { get; set; }
     }
 }

@@ -9,9 +9,27 @@ namespace PrecisionReporters.Platform.Data.Entities
         [MaxLength(255)]
         public string Name { get; set; }
 
+        public string SId { get; set; }
+
+        [Required]
+        public RoomStatus Status { get; set; } = RoomStatus.Created; 
+
+        public DateTime? StartDate { get; set; }
+
+        public DateTime? EndDate { get; set; }
+
+        public bool IsRecordingEnabled { get; set; } = false;
+
+        public Composition Composition { get; set; }
+
         public override void CopyFrom(Room entity)
         {
-            throw new NotImplementedException();
+            Name = entity.Name;
+            SId = entity.SId;
+            Status = entity.Status;
+            StartDate = entity.StartDate;
+            EndDate = entity.EndDate;
+            IsRecordingEnabled = entity.IsRecordingEnabled;
         }
     }
 }

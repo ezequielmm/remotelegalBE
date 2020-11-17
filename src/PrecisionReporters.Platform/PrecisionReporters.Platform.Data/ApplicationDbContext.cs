@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PrecisionReporters.Platform.Data.Entities;
 
 namespace PrecisionReporters.Platform.Data
@@ -10,6 +11,7 @@ namespace PrecisionReporters.Platform.Data
         public DbSet<VerifyUser> VerifyUsers { get; set; }
 
         public DbSet<Room> Rooms { get; set; }
+        public DbSet<Composition> Compositions { get; set; }
         public DbSet<Member> Members { get; set; }
 
         public ApplicationDbContext(DbContextOptions options) : base(options) { }
@@ -19,6 +21,21 @@ namespace PrecisionReporters.Platform.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<User>(u => u.HasIndex(e => e.EmailAddress).IsUnique());
+
+            modelBuilder.Entity<Room>(x => x.HasIndex(i => i.Name).IsUnique());
+
+            modelBuilder.Entity<Room>()
+                .HasOne(x => x.Composition)
+                .WithOne(x => x.Room)
+                .HasForeignKey<Composition>(c => c.RoomId);
+
+            modelBuilder.Entity<Room>()
+                .Property(x => x.Status)
+                .HasConversion(new EnumToStringConverter<RoomStatus>());
+
+            modelBuilder.Entity<Composition>()
+                .Property(x => x.Status)
+                .HasConversion(new EnumToStringConverter<CompositionStatus>());
         }
     }
 }

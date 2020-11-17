@@ -5,13 +5,25 @@ namespace PrecisionReporters.Platform.Api.Mappers
 {
     public class RoomMapper : IMapper<Room, RoomDto, CreateRoomDto>
     {
+        private readonly IMapper<Composition, CompositionDto, CallbackCompositionDto> _compositionMapper;
+
+        public RoomMapper(IMapper<Composition, CompositionDto, CallbackCompositionDto> compositionMapper)
+        {
+            _compositionMapper = compositionMapper;
+        }
+
         public RoomDto ToDto(Room model)
         {
             return new RoomDto
             {
                 Id = model.Id,
                 CreationDate = model.CreationDate,
-                Name = model.Name
+                Name = model.Name,
+                IsRecordingEnabled = model.IsRecordingEnabled,
+                Status = model.Status.ToString(),
+                StartDate = model.StartDate,
+                EndDate = model.EndDate,
+                Composition = (model.Composition != null) ? _compositionMapper.ToDto(model.Composition) : null
             };
         }
 
@@ -19,7 +31,8 @@ namespace PrecisionReporters.Platform.Api.Mappers
         {
             return new Room
             {
-                Name = roomDto.Name
+                Name = roomDto.Name,
+                IsRecordingEnabled = roomDto.IsRecordingEnabled
             };
         }
 
@@ -27,7 +40,8 @@ namespace PrecisionReporters.Platform.Api.Mappers
         {
             return new Room
             {
-                Name = dto.Name
+                Name = dto.Name,
+                IsRecordingEnabled = dto.IsRecordingEnabled
             };
         }
     }

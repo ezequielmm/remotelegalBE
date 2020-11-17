@@ -54,6 +54,22 @@
                     "value": "TWILIO_APIKEYSECRET"
                 },
                 {
+                    "name": "AppConfiguration__TwilioAccountConfiguration__StatusCallbackUrl",
+                    "value": "https://api-dev.prdevelopment.net/api/compositions"
+                },
+                {
+                    "name": "AppConfiguration__TwilioAccountConfiguration__S3DestinationBucket",
+                    "value": "twilio-bucket"
+                },
+                {
+                    "name": "AppConfiguration__TwilioAccountConfiguration__S3DestinationKey",
+                    "value": "TWILIO_DESTINATION_KEY"
+                },
+                {
+                    "name": "AppConfiguration__TwilioAccountConfiguration__S3DestinationSecret",
+                    "value": "TWILIO_DESTINATION_SECRET"
+                },
+                {
                     "name": "AppConfiguration__EmailConfiguration__VerifyEmailSubject",
                     "value": "[DEV] Verify your Remote Legal account"
                 },

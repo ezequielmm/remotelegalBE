@@ -1,6 +1,5 @@
 ﻿using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Data.Repositories.Interfaces;
-using PrecisionReporters.Platform.Domain.Commons;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using System;
 using System.Linq;
@@ -14,20 +13,19 @@ namespace PrecisionReporters.Platform.Domain.Services
     {
         private readonly ITwilioService _twilioService;
         private readonly IRoomRepository _roomRepository;
+        private readonly ICompositionService _compositionService;
 
-        private readonly Random _random = new Random();
-
-        public RoomService(ITwilioService twilioService, IRoomRepository roomRepository)
+        public RoomService(ITwilioService twilioService, IRoomRepository roomRepository,
+            ICompositionService compositionService)
         {
             _twilioService = twilioService;
             _roomRepository = roomRepository;
+            _compositionService = compositionService;
         }
 
         public async Task<Result<Room>> Create(Room room)
         {
             var newRoom = await _roomRepository.Create(room);
-            await _twilioService.CreateRoom(newRoom.Name);
-
             return Result.Ok(room);
         }
 
@@ -41,18 +39,77 @@ namespace PrecisionReporters.Platform.Domain.Services
             return Result.Ok(matchingRooms.First());
         }
 
-        public Result<string> GenerateRoomToken(string roomName)
+        public async Task<Result<string>> GenerateRoomToken(string roomName, string identity)
         {
-            if (string.IsNullOrEmpty(roomName))
-                return Result.Fail<string>(new InvalidInputError("Room name can not be null or empty"));
+            var getRoomResult = await GetByName(roomName);
+            if (getRoomResult.IsFailed)
+            {
+                // TODO: Investigate how to obtain a result based on a previous operation. (JD)
+                return Result.Fail(getRoomResult.Errors.First());
+            }
 
-            if (GetByName(roomName).Result == null)
-                return Result.Fail(new ResourceNotFoundError($"The Room with name '{roomName}' doesn't exist"));
+            var room = getRoomResult.Value;
+            if (room.Status != RoomStatus.InProgress)
+                return Result.Fail(new InvalidInputError($"There was an error ending the the Room '{room.Name}'. It's not in progress. Current state: {room.Status}"));
 
-            // get user from jwt token or session
-            var username = $"user-{_random.Next(20)}";
-            var twilioToken = _twilioService.GenerateToken(roomName, username);
+            var twilioToken = _twilioService.GenerateToken(roomName, identity);
+
             return Result.Ok(twilioToken);
+        }
+
+        public async Task<Result<Room>> EndRoom(Room room)
+        {
+            if (room.Status == RoomStatus.InProgress)
+            {
+                var roomResource = await _twilioService.EndRoom(room.SId);
+
+                room.EndDate = DateTime.UtcNow;
+                room.Status = RoomStatus.Completed;
+
+                if (room.IsRecordingEnabled)
+                {
+                    var composition = await _twilioService.CreateComposition(roomResource);
+                    room.Composition = new Composition
+                    {
+                        SId = composition.Sid,
+                        Status = CompositionStatus.Queued,
+                        StartDate = DateTime.UtcNow,
+                        Url = composition.Url.AbsoluteUri
+                    };
+                }
+
+                await _roomRepository.Update(room);
+            }
+            else
+            {
+                return Result.Fail(new InvalidInputError($"There was an error ending the the Room '{room.Name}'. It's not in progress. Current state: {room.Status}"));
+            }
+
+            return Result.Ok(room);
+        }
+
+        public async Task<Result<Room>> StartRoom(Room room)
+        {
+            if (room.Status != RoomStatus.Created)
+                return Result.Fail(new InvalidInputError());
+
+            // TODO: Check for failures in this call, return Result<T>
+            var resourceRoom = await _twilioService.CreateRoom(room);
+
+            room.SId = resourceRoom.Sid;
+            room.Status = RoomStatus.InProgress;
+            room.StartDate = DateTime.UtcNow;
+
+            // TODO: Review possible failures from repository, return Result<T>
+            var updatedRoom = await _roomRepository.Update(room);
+
+            return Result.Ok(updatedRoom);
+        }
+
+        public async Task<Result<Room>> GetRoomBySId(string roomSid)
+        {
+            var room = await _roomRepository.GetFirstOrDefaultByFilter(x => x.SId == roomSid);
+            return Result.Ok(room);
         }
     }
 }
