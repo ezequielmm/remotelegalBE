@@ -10,6 +10,7 @@ namespace PrecisionReporters.Platform.Api.Mappers
         {
             return new CompositionDto
             {
+                Id = model.Id,
                 CreationDate = model.CreationDate,
                 Status = model.Status.ToString(),
                 StartDate = model.StartDate,

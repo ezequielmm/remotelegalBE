@@ -31,7 +31,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<Room>> GetByName(string roomName)
         {
-            var matchingRooms = await _roomRepository.GetByFilter(x => x.Name == roomName);
+            var matchingRooms = await _roomRepository.GetByFilter(x => x.Name == roomName, new[] { nameof(Room.Composition) });
 
             if ((matchingRooms?.Count ?? 0) == 0)
                 return Result.Fail(new ResourceNotFoundError());

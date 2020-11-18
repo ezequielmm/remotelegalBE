@@ -4,7 +4,7 @@ namespace PrecisionReporters.Platform.Api.Dtos
 {
     public class CompositionDto
     {
-        public string Id { get; set; }
+        public Guid Id { get; set; }
         public DateTime CreationDate { get; set; }
         public string Status { get; set; }
         public DateTime? StartDate { get; set; }
