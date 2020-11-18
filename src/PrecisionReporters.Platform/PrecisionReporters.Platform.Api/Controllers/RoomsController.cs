@@ -35,15 +35,21 @@ namespace PrecisionReporters.Platform.Api.Controllers
         public async Task<ActionResult<RoomDto>> CreateRoom(CreateRoomDto roomDto)
         {
             var getRoomResult = await _roomService.GetByName(roomDto.Name);
-            if (getRoomResult.IsFailed && getRoomResult.HasError<ResourceNotFoundError>())
+            if (getRoomResult.HasError<ResourceNotFoundError>())
             {
                 var createRoomResult = await _roomService.Create(_roomMapper.ToModel(roomDto));
                 if (createRoomResult.IsFailed)
                     return WebApiResponses.GetErrorResponse(createRoomResult);
-            }
 
-            var createdRoom = _roomMapper.ToDto(getRoomResult.Value);
-            return Created(nameof(GetRoom), createdRoom);
+                var createdRoom = _roomMapper.ToDto(createRoomResult.Value);
+
+                return Created(nameof(GetRoom), createdRoom);
+            }
+            else if (getRoomResult.IsFailed)
+                return WebApiResponses.GetErrorResponse(getRoomResult);
+
+            return Created(nameof(GetRoom), getRoomResult.Value);
+
         }
 
         /// <summary>
