@@ -61,7 +61,7 @@ namespace PrecisionReporters.Platform.Api.Filters
             // We could use methods from HttpRequest to build the final URL, but
             // Twilio requires us to use this format, so we use this one to be closer
             // to their documentation requirements.
-            return $"{request.Scheme}://{request.Host}{request.Path}{request.QueryString}";
+            return $"https://{request.Host}{request.Path}{request.QueryString}";
         }
     }
 }
