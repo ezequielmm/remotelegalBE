@@ -175,7 +175,8 @@ namespace PrecisionReporters.Platform.Api
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IAppConfiguration appConfiguration)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IAppConfiguration appConfiguration,
+            ApplicationDbContext db)
         {
             if (appConfiguration.ConfigurationFlags.IsDeveloperExceptionPageEnabled)
             {
@@ -211,6 +212,8 @@ namespace PrecisionReporters.Platform.Api
             {
                 endpoints.MapControllers();
             });
+
+            db.Database.Migrate();
         }
     }
 }
