@@ -32,6 +32,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             _twilioAccountConfiguration = twilioAccountConfiguration.Value ?? throw new ArgumentException(nameof(twilioAccountConfiguration));
             TwilioClient.Init(_twilioAccountConfiguration.AccountSid, _twilioAccountConfiguration.AuthToken);
             _fileTransferUtility = fileTransferUtility;
+            _log = log;
         }
 
         public async Task<RoomResource> CreateRoom(Room room)
