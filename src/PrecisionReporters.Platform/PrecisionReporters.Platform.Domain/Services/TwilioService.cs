@@ -16,6 +16,7 @@ using static Twilio.Rest.Video.V1.CompositionResource;
 using Twilio.Rest.Video.V1.Room;
 using System.Linq;
 using Amazon.S3.Model;
+using Microsoft.Extensions.Logging;
 
 namespace PrecisionReporters.Platform.Domain.Services
 {
@@ -23,9 +24,10 @@ namespace PrecisionReporters.Platform.Domain.Services
     {
         private readonly TwilioAccountConfiguration _twilioAccountConfiguration;
         private static ITransferUtility _fileTransferUtility;
+        private readonly ILogger<TwilioService> _log;
 
         public TwilioService(Microsoft.Extensions.Options.IOptions<TwilioAccountConfiguration> twilioAccountConfiguration,
-            ITransferUtility fileTransferUtility)
+            ITransferUtility fileTransferUtility, ILogger<TwilioService> log)
         {
             _twilioAccountConfiguration = twilioAccountConfiguration.Value ?? throw new ArgumentException(nameof(twilioAccountConfiguration));
             TwilioClient.Init(_twilioAccountConfiguration.AccountSid, _twilioAccountConfiguration.AuthToken);
@@ -101,6 +103,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         // TODO: move this code to a FileService? 
         public async Task<bool> GetCompositionMediaAsync(Composition composition)
         {
+            _log.LogDebug($"Downloading composition - SId: {composition.SId}");
             var request = (HttpWebRequest)WebRequest.Create($"https://video.twilio.com{composition.MediaUri}?Ttl=3600");
 
             request.Headers.Add("Authorization", "Basic " + Convert.ToBase64String(
@@ -126,6 +129,8 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             new WebClient().DownloadFileAsync(new Uri(mediaLocation), $"{composition.SId}.mp4");
 
+            _log.LogDebug($"Composition downloaded - SId: {composition.SId}");
+
             return true;
 
         }
@@ -136,6 +141,8 @@ namespace PrecisionReporters.Platform.Domain.Services
             var filePath = $"{composition.SId}.mp4";
             var file = new FileInfo(filePath);
             var keyName = $"recordings/{composition.Room.Name}/{composition.SId}.mp4";
+
+            _log.LogDebug($"Uploading composition - SId: {composition.SId} - keyName: {keyName}");
 
             try
             {
@@ -156,15 +163,20 @@ namespace PrecisionReporters.Platform.Domain.Services
                     // TODO: this location must be temporal and deleted after uploading is completed,
                     // TODO: move this code to a FileService? 
 
-                    Console.WriteLine("Upload completed");
+                    _log.LogDebug($"File uploaded {composition.SId}");
                     file.Delete();
-                    Console.WriteLine("File deleted");
+                    _log.LogDebug($"File deleted - {filePath}");
+                }
+                else
+                {
+                    _log.LogError($"File Not found - path: {filePath}");
                 }
                 
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.ToString());
+                _log.LogError(e, $"There was an error uploading the composition SId: {composition.SId}");
+                
                 if (file.Exists)
                 {
                     file.Delete();

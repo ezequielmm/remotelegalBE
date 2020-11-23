@@ -9,6 +9,8 @@ namespace PrecisionReporters.Platform.Api.Dtos
 
         public Guid Id { get; set; }
 
+        public string SId { get; set; }
+
         public DateTime CreationDate { get; set; }
 
         public bool IsRecordingEnabled { get; set; }

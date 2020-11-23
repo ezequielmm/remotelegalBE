@@ -17,6 +17,7 @@ namespace PrecisionReporters.Platform.Api.Mappers
             return new RoomDto
             {
                 Id = model.Id,
+                SId = model.SId,
                 CreationDate = model.CreationDate,
                 Name = model.Name,
                 IsRecordingEnabled = model.IsRecordingEnabled,
