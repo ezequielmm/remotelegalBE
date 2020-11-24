@@ -164,7 +164,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                     await _fileTransferUtility.S3Client.InitiateMultipartUploadAsync(initiateRequest);
 
                 // Upload parts
-                var contentLength = file.Length;
+                var contentLength = new FileInfo(filePath).Length;
                 var partSize = 5 * (long)Math.Pow(2, 20); // 5 MB
 
                 try
