@@ -25,6 +25,7 @@ using PrecisionReporters.Platform.Api.Filters;
 using Amazon.Runtime;
 using Amazon.S3;
 using Amazon.S3.Transfer;
+using System;
 
 namespace PrecisionReporters.Platform.Api
 {
@@ -60,7 +61,14 @@ namespace PrecisionReporters.Platform.Api
 
                 var awsTwilioBucketCredentials = new BasicAWSCredentials(appConfig.TwilioAccountConfiguration.S3DestinationKey,
                     appConfig.TwilioAccountConfiguration.S3DestinationSecret);
-                var s3Client = new AmazonS3Client(awsTwilioBucketCredentials);
+                var config = new AmazonS3Config
+                {
+                    Timeout = TimeSpan.FromMinutes(15),
+                    RetryMode = RequestRetryMode.Standard,
+                    MaxErrorRetry = 3
+                };
+
+                var s3Client = new AmazonS3Client(awsTwilioBucketCredentials, config);
 
                 return new TransferUtility(s3Client);
             });

@@ -17,6 +17,7 @@ using Twilio.Rest.Video.V1.Room;
 using System.Linq;
 using Amazon.S3.Model;
 using Microsoft.Extensions.Logging;
+using Amazon.Runtime;
 
 namespace PrecisionReporters.Platform.Domain.Services
 {
@@ -136,6 +137,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         }
 
+        // TODO: move this code to a FileService? 
         // TODO: PoC code, we can return and store some UploadResponse data into Composition Entity.
         public async Task<bool> UploadCompositionMediaAsync(Composition composition)
         {
@@ -145,47 +147,106 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             _log.LogDebug($"Uploading composition - SId: {composition.SId} - keyName: {keyName}");
 
-            try
+            if (file.Exists)
             {
-                if (file.Exists)
-                {
-                    PutObjectRequest request = new PutObjectRequest
-                    {
-                        BucketName = _twilioAccountConfiguration.S3DestinationBucket,
-                        Key = keyName
-                    };
+                // Create list to store upload part responses.
+                var uploadResponses = new List<UploadPartResponse>();
 
-                    using (FileStream stream = new FileStream(filePath, FileMode.Open))
+                // Setup information required to initiate the multipart upload.
+                var initiateRequest = new InitiateMultipartUploadRequest
+                {
+                    BucketName = _twilioAccountConfiguration.S3DestinationBucket,
+                    Key = keyName
+                };
+
+                // Initiate the upload.
+                var initResponse =
+                    await _fileTransferUtility.S3Client.InitiateMultipartUploadAsync(initiateRequest);
+
+                // Upload parts
+                var contentLength = file.Length;
+                var partSize = 5 * (long)Math.Pow(2, 20); // 5 MB
+
+                try
+                {
+                    _log.LogDebug("Uploading parts");
+
+                    long filePosition = 0;
+                    for (int i = 1; filePosition < contentLength; i++)
                     {
-                        request.InputStream = stream;
-                        PutObjectResponse response = await _fileTransferUtility.S3Client.PutObjectAsync(request);
+                        var uploadRequest = new UploadPartRequest
+                        {
+                            BucketName = _twilioAccountConfiguration.S3DestinationBucket,
+                            Key = keyName,
+                            UploadId = initResponse.UploadId,
+                            PartNumber = i,
+                            PartSize = partSize,
+                            FilePosition = filePosition,
+                            FilePath = filePath
+                        };
+
+                        // Track upload progress.
+                        uploadRequest.StreamTransferProgress +=
+                            new EventHandler<StreamTransferProgressArgs>(UploadPartProgressEventCallback);
+
+                        // Upload a part and add the response to our list.
+                        uploadResponses.Add(await _fileTransferUtility.S3Client.UploadPartAsync(uploadRequest));
+
+                        filePosition += partSize;
                     }
 
-                    // TODO: this location must be temporal and deleted after uploading is completed,
-                    // TODO: move this code to a FileService? 
+                    // Setup to complete the upload.
+                    var completeRequest = new CompleteMultipartUploadRequest
+                    {
+                        BucketName = _twilioAccountConfiguration.S3DestinationBucket,
+                        Key = keyName,
+                        UploadId = initResponse.UploadId
+                    };
+                    completeRequest.AddPartETags(uploadResponses);
+
+                    // Complete the upload.
+                    var completeUploadResponse =
+                        await _fileTransferUtility.S3Client.CompleteMultipartUploadAsync(completeRequest);
 
                     _log.LogDebug($"File uploaded {composition.SId}");
                     file.Delete();
                     _log.LogDebug($"File deleted - {filePath}");
                 }
-                else
+                catch (Exception exception)
                 {
-                    _log.LogError($"File Not found - path: {filePath}");
-                }
-                
-            }
-            catch (Exception e)
-            {
-                _log.LogError(e, $"There was an error uploading the composition SId: {composition.SId}");
-                
-                if (file.Exists)
-                {
-                    file.Delete();
-                }
+                    _log.LogError("An AmazonS3Exception was thrown: {0}", exception.Message);
 
+                    // Abort the upload.
+                    var abortMPURequest = new AbortMultipartUploadRequest
+                    {
+                        BucketName = _twilioAccountConfiguration.S3DestinationBucket,
+                        Key = keyName,
+                        UploadId = initResponse.UploadId
+                    };
+                    await _fileTransferUtility.S3Client.AbortMultipartUploadAsync(abortMPURequest);
+
+                    // Delete local file
+                    if (file.Exists)
+                    {
+                        file.Delete();
+                    }
+
+                    return false;
+                }
+            }
+            else
+            {
+                _log.LogError($"File Not found - path: {filePath}");
                 return false;
             }
+             
             return true;
+        }
+
+        private void UploadPartProgressEventCallback(object sender, StreamTransferProgressArgs e)
+        {
+            // Process event. 
+            _log.LogDebug("{0}/{1}", e.TransferredBytes, e.TotalBytes);
         }
     }
 }
