@@ -5,6 +5,7 @@ using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Domain.Commons;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using System.Threading.Tasks;
+using PrecisionReporters.Platform.Api.Helpers;
 
 namespace PrecisionReporters.Platform.Api.Controllers
 {
@@ -30,9 +31,12 @@ namespace PrecisionReporters.Platform.Api.Controllers
         public async Task<ActionResult<UserDto>> SignUpAsync(CreateUserDto createUserDto)
         {
             var user = _userMapper.ToModel(createUserDto);
-            var result = await _userService.SignUpAsync(user);
 
-            return Ok(_userMapper.ToDto(result));
+            var result = await _userService.SignUpAsync(user);
+            if (result.IsFailed)
+                return WebApiResponses.GetErrorResponse(result);
+
+            return Ok(_userMapper.ToDto(result.Value));
         }
 
         /// <summary>

@@ -14,6 +14,8 @@ using System;
 using System.Linq.Expressions;
 using System.Net;
 using System.Threading.Tasks;
+using FluentResults;
+using PrecisionReporters.Platform.Domain.Errors;
 using Xunit;
 
 namespace PrecisionReporters.Platform.UnitTests.Data.Services
@@ -46,7 +48,13 @@ namespace PrecisionReporters.Platform.UnitTests.Data.Services
             cognitoServiceMock.Setup(x => x.CreateAsync(It.IsAny<User>())).Verifiable();
 
             var transactionHandlerMock = new Mock<ITransactionHandler>();
-            transactionHandlerMock.Setup(x => x.RunAsync(It.IsAny<Func<Task>>(), It.IsAny<Func<Exception, Task>>())).Returns(async (Func<Task> action, Func<Exception, Task> exceptionHandler) => { await action(); });
+            transactionHandlerMock
+                .Setup(x => x.RunAsync(It.IsAny<Func<Task>>()))
+                .Returns(async (Func<Task> action) =>
+                {
+                    await action();
+                    return Result.Ok();
+                });
 
             var awsEmailServiceMock = new Mock<IAwsEmailService>();
             awsEmailServiceMock.Setup(x => x.SetTemplateEmailRequest(It.IsAny<EmailTemplateInfo>())).Verifiable();
@@ -60,19 +68,19 @@ namespace PrecisionReporters.Platform.UnitTests.Data.Services
             userRepositoryMock.Verify(x => x.Create(It.Is<User>(a => a == user)), Times.Once);
             verifyUserServiceMock.Verify(x => x.CreateVerifyUser(It.IsAny<VerifyUser>()), Times.Once);
             cognitoServiceMock.Verify(x => x.CreateAsync(It.IsAny<User>()), Times.Once);
-            transactionHandlerMock.Verify(x => x.RunAsync(It.IsAny<Func<Task>>(), It.IsAny<Func<Exception, Task>>()), Times.Once);
+            transactionHandlerMock.Verify(x => x.RunAsync(It.IsAny<Func<Task>>()), Times.Once);
             awsEmailServiceMock.Verify(x => x.SetTemplateEmailRequest(It.IsAny<EmailTemplateInfo>()), Times.Once);
 
             Assert.NotNull(result);
-            Assert.Equal(id, result.Id);
+            Assert.True(result.IsSuccess);
+            Assert.Equal(id, result.Value.Id);
         }
 
         [Fact]
-        public async Task SignUpAsync_ShouldThrow_ArgumentException_WhenEmailAlreadyExcist()
+        public async Task SignUpAsync_ShouldGiveConflictError_WhenEmailAlreadyExists()
         {
             // Arrange           
             var email = "User1@TestMail.com";
-            var errorMessage = $"User already exist: {email}";
             var id = Guid.NewGuid();
             var user = UserFactory.GetUserByGivenIdAndEmail(id, email);
 
@@ -83,8 +91,9 @@ namespace PrecisionReporters.Platform.UnitTests.Data.Services
             var service = InitializeService(userRepository: userRepositoryMock);
 
             // Assert
-            var ex = await Assert.ThrowsAsync<UserAlreadyExistException>(() => service.SignUpAsync(user));
-            Assert.Equal(errorMessage, ex.Message);
+            var result = await service.SignUpAsync(user);
+            Assert.True(result.IsFailed);
+            Assert.True(result.HasError<ResourceConflictError>());
         }
 
         [Fact]

@@ -163,8 +163,8 @@ namespace PrecisionReporters.Platform.Api
             services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseMySQL(appConfiguration.ConnectionStrings.MySqlConnection));
 
+            services.AddScoped<IDatabaseTransactionProvider, ApplicationDbContextTransactionProvider>();
             services.AddScoped<ITransactionHandler, TransactionHandler>();
-            services.AddScoped<ITransactionInfo, TransactionInfo>();
 
             // Enable Bearer token authentication
             services.AddAuthentication(options =>

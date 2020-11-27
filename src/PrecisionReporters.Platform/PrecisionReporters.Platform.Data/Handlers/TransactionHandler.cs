@@ -2,67 +2,67 @@
 using PrecisionReporters.Platform.Data.Handlers.Interfaces;
 using System;
 using System.Threading.Tasks;
+using FluentResults;
+using Microsoft.Extensions.Logging;
 
 namespace PrecisionReporters.Platform.Data.Handlers
 {
     public class TransactionHandler : ITransactionHandler
     {
-        private readonly ApplicationDbContext _dbContext;
-        private readonly ITransactionInfo _transactionInfo;
+        private readonly IDatabaseTransactionProvider _transactionProvider;
+        private readonly ILogger<TransactionHandler> _logger;
 
         /// <summary>
         /// Creates a TransactionHandler object for a specific database context.
         /// </summary>
-        /// <param name="dbContext">Database context to manage transactions</param>
-        /// <param name="transactionInfo"></param>
-        public TransactionHandler(ApplicationDbContext dbContext, ITransactionInfo transactionInfo)
+        /// <param name="transactionProvider">Database provider to manage transactions</param>
+        /// <param name="logger">Logger</param>
+        public TransactionHandler(IDatabaseTransactionProvider transactionProvider,
+            ILogger<TransactionHandler> logger)
         {
-            _dbContext = dbContext;
-            _transactionInfo = transactionInfo;
+            _transactionProvider = transactionProvider;
+            _logger = logger;
         }
 
         /// <summary>
         /// Performs an action within a transaction and commits it if no exception is thrown.
         /// </summary>
         /// <param name="actionToPerform">action to perform</param>
-        /// <param name="exceptionHandler">Action that will be performed if there is an exception</param>
-        public async Task RunAsync(Func<Task> actionToPerform, Func<Exception, Task> exceptionHandler = null)
+        public async Task<Result> RunAsync(Func<Task> actionToPerform)
         {
-            if (_dbContext.Database.CurrentTransaction == null)
+            if (_transactionProvider.CurrentTransaction != null)
             {
-                var strategy = _dbContext.Database.CreateExecutionStrategy();
-                await strategy.Execute(async () =>
-                {
-                    using (var transaction = await _dbContext.Database.BeginTransactionAsync())
-                    {
-                        try
-                        {
-                            await actionToPerform();
-                            // Update the record of what happened in this transaction just in case
-                            // SaveChangesAsync was never called
-                            var transactionId = transaction.TransactionId;
-                            _transactionInfo.UpdateTransactionInfo(transactionId, _dbContext.ChangeTracker);
-                            await transaction.CommitAsync();
-                        }
-                        catch (Exception ex)
-                        {
-                            await transaction.RollbackAsync();
-                            if (exceptionHandler != null)
-                            {
-                                await exceptionHandler(ex);
-                            }
-                            else
-                            {
-                                throw;
-                            }
-                        }
-                    }
-                });
+                // We are already within a transaction, so just execute normally
+                return await RunInternalAsync(actionToPerform);
             }
-            else
+
+            var strategy = _transactionProvider.CreateExecutionStrategy();
+            return await strategy.Execute(async () =>
             {
-                //We are already within a transaction, so just execute normally
+                await using var transaction = await _transactionProvider.BeginTransactionAsync();
+                var actionResult = await RunInternalAsync(actionToPerform);
+                if (actionResult.IsFailed)
+                {
+                    await transaction.RollbackAsync();
+                    return actionResult;
+                }
+
+                await transaction.CommitAsync();
+                return Result.Ok();
+            });
+        }
+
+        private async Task<Result> RunInternalAsync(Func<Task> actionToPerform)
+        {
+            try
+            {
                 await actionToPerform();
+                return Result.Ok();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error executing transaction operation.");
+                return Result.Fail(new ExceptionalError("Error executing transaction operation.", ex));
             }
         }
     }

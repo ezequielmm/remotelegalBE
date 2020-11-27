@@ -14,6 +14,9 @@ namespace PrecisionReporters.Platform.Api.Helpers
 
             if (result.HasError<ResourceNotFoundError>())
                 return new NotFoundResult();
+            
+            if (result.HasError<ResourceConflictError>())
+                return new ConflictResult();
 
             return new StatusCodeResult((int) HttpStatusCode.InternalServerError);
         }

@@ -9,6 +9,8 @@ using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using FluentResults;
+using PrecisionReporters.Platform.Domain.Errors;
 
 namespace PrecisionReporters.Platform.Domain.Services
 {
@@ -22,9 +24,6 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly ITransactionHandler _transactionHandler;
         private readonly UrlPathConfiguration _urlPathConfiguration;
 
-        private User _newUser;
-        private VerifyUser _verifyUser;
-
         public UserService(ILogger<UserService> log, IUserRepository userRepository, ICognitoService cognitoService, IAwsEmailService awsEmailService, IVerifyUserService verifyUserService, ITransactionHandler transactionHandler, IOptions<UrlPathConfiguration> urlPathConfiguration)
         {
             _log = log;
@@ -36,25 +35,30 @@ namespace PrecisionReporters.Platform.Domain.Services
             _urlPathConfiguration = urlPathConfiguration.Value;
         }
 
-        public async Task<User> SignUpAsync(User user)
+        public async Task<Result<User>> SignUpAsync(User user)
         {
             var userData = await _userRepository.GetFirstOrDefaultByFilter(x => x.EmailAddress.Equals(user.EmailAddress));
             if (userData != null)
-            {
-                throw new UserAlreadyExistException(user.EmailAddress);
-            }
+                return Result.Fail(new ResourceConflictError($"User with email {user.EmailAddress} already exists."));
 
-            await _transactionHandler.RunAsync(async () =>
+
+            User newUser = null;
+            VerifyUser verifyUser = null;
+            var transactionResult = await _transactionHandler.RunAsync(async () =>
             {
-                _newUser = await _userRepository.Create(user);
+                newUser = await _userRepository.Create(user);
                 await _cognitoService.CreateAsync(user);
-                _verifyUser = await SaveVerifyUser(_newUser);
+                verifyUser = await SaveVerifyUser(newUser);
             });
 
-            var verificationLink = $"{_urlPathConfiguration.FrontendBaseUrl}{_urlPathConfiguration.VerifyUserUrl}{_verifyUser.Id}";
+            if (transactionResult.IsFailed)
+                return transactionResult;
+
+            var verificationLink = $"{_urlPathConfiguration.FrontendBaseUrl}{_urlPathConfiguration.VerifyUserUrl}{verifyUser.Id}";
             var emailData = await SetVerifyEmailTemplate(user.EmailAddress, user.FirstName, verificationLink);
             await _awsEmailService.SetTemplateEmailRequest(emailData);
-            return _newUser;
+
+            return Result.Ok(newUser);
         }
 
         public async Task<VerifyUser> VerifyUser(Guid validationHash)
@@ -87,7 +91,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<User> GetUserByEmail(string userEmail)
         {
-            return await _userRepository.GetFirstOrDefaultByFilter(x=>x.EmailAddress == userEmail);
+            return await _userRepository.GetFirstOrDefaultByFilter(x=> x.EmailAddress == userEmail);
         }
 
         private async Task<VerifyUser> SaveVerifyUser(User user)
