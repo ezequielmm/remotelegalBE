@@ -20,7 +20,16 @@ namespace PrecisionReporters.Platform.Api.Dtos
         [MaxLength(255)]
         public string EmailAddress { get; set; }
 
-        [RegularExpression(@"^((\+[0-9]|)(\d{3})(?:[\).\s]?)(\d{3})(?:[-\.\s]?)(\d{4})(?!\d)|)$")]
+        [Required]
+        [RegularExpression(@"^\(?([2-9][0-8][0-9])\)?[-. ]?([2-9][0-9]{2})[-. ]?([0-9]{4})$")]
         public string PhoneNumber { get; set; }
+
+        [Required]
+        [MaxLength(50)]
+        public string CompanyName { get; set; }
+
+        [Required]
+        [MaxLength(150)]
+        public string CompanyAddress { get; set; }
     }
 }

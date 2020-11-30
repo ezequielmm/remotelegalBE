@@ -15,7 +15,9 @@ namespace PrecisionReporters.Platform.Api.Mappers
                 EmailAddress = model.EmailAddress,
                 PhoneNumber = model.PhoneNumber,
                 Password = model.Password,
-                CreationDate = model.CreationDate
+                CreationDate = model.CreationDate,
+                CompanyName = model.CompanyName,
+                CompanyAddress = model.CompanyAddress
             };
         }
 
@@ -29,7 +31,9 @@ namespace PrecisionReporters.Platform.Api.Mappers
                 EmailAddress = dto.EmailAddress,
                 PhoneNumber = dto.PhoneNumber,
                 Password = dto.Password,
-                CreationDate = dto.CreationDate
+                CreationDate = dto.CreationDate,
+                CompanyName = dto.CompanyName,
+                CompanyAddress = dto.CompanyAddress
             };
         }
 
@@ -41,7 +45,9 @@ namespace PrecisionReporters.Platform.Api.Mappers
                 LastName = dto.LastName,
                 EmailAddress = dto.EmailAddress,
                 PhoneNumber = dto.PhoneNumber,
-                Password = dto.Password
+                Password = dto.Password,
+                CompanyName = dto.CompanyName,
+                CompanyAddress = dto.CompanyAddress
             };
         }
     }

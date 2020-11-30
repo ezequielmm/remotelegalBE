@@ -15,7 +15,12 @@ namespace PrecisionReporters.Platform.Data.Entities
         [Required]
         [MaxLength(255)]
         public string EmailAddress { get; set; }
+        [Required]
         public string PhoneNumber { get; set; }
+        [Required]
+        public string CompanyName { get; set; }
+        [Required]
+        public string CompanyAddress { get; set; }
 
         public virtual ICollection<Member> MemberOn { get; set; }
 
@@ -27,6 +32,8 @@ namespace PrecisionReporters.Platform.Data.Entities
             PhoneNumber = entity.PhoneNumber;
             Password = entity.Password;
             CreationDate = entity.CreationDate;
+            CompanyName = entity.CompanyName;
+            CompanyAddress = entity.CompanyAddress;
         }
     }
 }

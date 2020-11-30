@@ -11,5 +11,7 @@ namespace PrecisionReporters.Platform.Api.Dtos
         public string EmailAddress { get; set; }     
         public string PhoneNumber { get; set; }
         public DateTime CreationDate { get; set; }
+        public string CompanyName { get; set; }
+        public string CompanyAddress { get; set; }
     }
 }
