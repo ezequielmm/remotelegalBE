@@ -14,10 +14,11 @@ namespace PrecisionReporters.Platform.Data.Entities
 
         [ForeignKey(nameof(AddedBy))]
         [Column(TypeName = "char(36)")]
-        public Guid? AddedById { get; set; }
+        public Guid AddedById { get; set; }
 
         public User AddedBy { get; set; }
         public virtual ICollection<Member> Members { get; set; }
+        public List<Deposition> Depositions { get; set; }
 
         public override void CopyFrom(Case entity)
         {

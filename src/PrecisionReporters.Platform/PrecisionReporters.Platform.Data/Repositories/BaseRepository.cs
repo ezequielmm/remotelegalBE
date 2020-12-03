@@ -61,13 +61,16 @@ namespace PrecisionReporters.Platform.Data.Repositories
             return await result.ToListAsync();
         }
 
-        public async Task<T> GetFirstOrDefaultByFilter(Expression<Func<T, bool>> filter = null, string include = "")
+        public async Task<T> GetFirstOrDefaultByFilter(Expression<Func<T, bool>> filter = null, string[] include = null)
         {
             IQueryable<T> query = _dbContext.Set<T>();
 
-            if (!string.IsNullOrEmpty(include))
+            if (include != null)
             {
-                query = query.Include(include);
+                foreach (var property in include)
+                {
+                    query = query.Include(property);
+                }
             }
 
             if (filter != null)
@@ -78,13 +81,16 @@ namespace PrecisionReporters.Platform.Data.Repositories
             return await query.FirstOrDefaultAsync();
         }
 
-        public async Task<T> GetById(Guid id, string include = "")
+        public async Task<T> GetById(Guid id, string[] include = null)
         {
             IQueryable<T> query = _dbContext.Set<T>();
 
-            if (!string.IsNullOrEmpty(include))
+            if (include!=null)
             {
-                query = query.Include(include);
+                foreach (var property in include)
+                {
+                    query = query.Include(property);
+                }
             }
 
             return await query.FirstOrDefaultAsync(x => x.Id == id);

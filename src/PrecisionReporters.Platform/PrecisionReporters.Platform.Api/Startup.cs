@@ -57,18 +57,18 @@ namespace PrecisionReporters.Platform.Api
 
             services.AddScoped<ITransferUtility>(sp =>
             {
-                var appConfig = Configuration.GetApplicationConfig();
-
-                var awsTwilioBucketCredentials = new BasicAWSCredentials(appConfig.TwilioAccountConfiguration.S3DestinationKey,
-                    appConfig.TwilioAccountConfiguration.S3DestinationSecret);
+                var awsBucketCredentials = new BasicAWSCredentials(appConfiguration.AwsStorageConfiguration.S3DestinationKey,
+                    appConfiguration.AwsStorageConfiguration.S3DestinationSecret);
                 var config = new AmazonS3Config
                 {
                     Timeout = TimeSpan.FromMinutes(15),
                     RetryMode = RequestRetryMode.Standard,
-                    MaxErrorRetry = 3
+                    MaxErrorRetry = 3,
+                    RegionEndpoint = RegionEndpoint.GetBySystemName(appConfiguration.AwsStorageConfiguration.S3BucketRegion)
                 };
 
-                var s3Client = new AmazonS3Client(awsTwilioBucketCredentials, config);
+
+                var s3Client = new AmazonS3Client(awsBucketCredentials, config);
 
                 return new TransferUtility(s3Client);
             });
@@ -113,6 +113,10 @@ namespace PrecisionReporters.Platform.Api
             services.AddSingleton<IMapper<User, UserDto, CreateUserDto>, UserMapper>();
             services.AddSingleton<IMapper<VerifyUser, object, CreateVerifyUserDto>, VerifyUserMapper>();
             services.AddSingleton<IMapper<Composition, CompositionDto, CallbackCompositionDto>, CompositionMapper>();
+            services.AddSingleton<IMapper<Deposition, DepositionDto, CreateDepositionDto>, DepositionMapper>();
+            services.AddSingleton<IMapper<DepositionDocument, DepositionDocumentDto, CreateDepositionDocumentDto>, DepositionDocumentMapper>();
+            services.AddSingleton<IMapper<Participant, ParticipantDto, CreateParticipantDto>, ParticipantMapper>();
+            services.AddSingleton<IMapper<Member, MemberDto, CreateMemberDto>, MemberMapper>();
 
             // Services
             services.AddScoped<ICaseService, CaseService>();
@@ -123,8 +127,6 @@ namespace PrecisionReporters.Platform.Api
                 x.ApiKeySid = appConfiguration.TwilioAccountConfiguration.ApiKeySid;
                 x.AuthToken = appConfiguration.TwilioAccountConfiguration.AuthToken;
                 x.S3DestinationBucket = appConfiguration.TwilioAccountConfiguration.S3DestinationBucket;
-                x.S3DestinationKey = appConfiguration.TwilioAccountConfiguration.S3DestinationKey;
-                x.S3DestinationSecret = appConfiguration.TwilioAccountConfiguration.S3DestinationSecret;
                 x.StatusCallbackUrl = appConfiguration.TwilioAccountConfiguration.StatusCallbackUrl;
             });
 
@@ -141,6 +143,12 @@ namespace PrecisionReporters.Platform.Api
 
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<IVerifyUserService, VerifyUserService>();
+            services.AddScoped<IAwsStorageService, AwsStorageService>();
+            services.AddScoped<IDepositionDocumentService, DepositionDocumentService>().Configure<DepositionDocumentConfiguration>(x =>
+            {
+                x.BucketName = appConfiguration.DepositionDocumentConfiguration.BucketName;
+            });
+            services.AddScoped<IDepositionService, DepositionService>();
             services.AddTransient<IAwsEmailService, AwsEmailService>().Configure<EmailConfiguration>(x =>
             {
                 x.Sender = appConfiguration.EmailConfiguration.Sender;
@@ -159,6 +167,8 @@ namespace PrecisionReporters.Platform.Api
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IVerifyUserRepository, VerifyUserRepository>();
             services.AddScoped<ICompositionRepository, CompositionRepository>();
+            services.AddScoped<IDepositionRepository, DepositionRepository>();
+            services.AddScoped<IDepositionDocumentRepository, DepositionDocumentRepository>();
 
             services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseMySQL(appConfiguration.ConnectionStrings.MySqlConnection));

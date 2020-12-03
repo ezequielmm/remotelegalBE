@@ -1,14 +1,16 @@
-﻿using PrecisionReporters.Platform.Data.Entities;
+﻿using FluentResults;
+using Microsoft.Extensions.Logging;
+using PrecisionReporters.Platform.Data.Entities;
+using PrecisionReporters.Platform.Data.Enums;
 using PrecisionReporters.Platform.Data.Repositories;
+using PrecisionReporters.Platform.Domain.Errors;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
-using PrecisionReporters.Platform.Data.Enums;
-using FluentResults;
-using PrecisionReporters.Platform.Domain.Errors;
+using PrecisionReporters.Platform.Domain.Commons;
 
 namespace PrecisionReporters.Platform.Domain.Services
 {
@@ -17,11 +19,17 @@ namespace PrecisionReporters.Platform.Domain.Services
         private const SortDirection DEFAULT_SORT_DIRECTION = SortDirection.Ascend;
         private readonly ICaseRepository _caseRepository;
         private readonly IUserService _userService;
+        private readonly IDepositionDocumentService _depositionDocumentService;
+        private readonly IDepositionService _depositionService;
+        private readonly ILogger<CaseService> _logger;
 
-        public CaseService(ICaseRepository caseRepository, IUserService userService)
+        public CaseService(ICaseRepository caseRepository, IUserService userService, IDepositionDocumentService depositionDocumentService, IDepositionService depositionService, ILogger<CaseService> logger)
         {
             _caseRepository = caseRepository;
             _userService = userService;
+            _logger = logger;
+            _depositionDocumentService = depositionDocumentService;
+            _depositionService = depositionService;
         }
 
         public async Task<List<Case>> GetCases(Expression<Func<Case, bool>> filter = null, string[] include = null)
@@ -29,9 +37,9 @@ namespace PrecisionReporters.Platform.Domain.Services
             return await _caseRepository.GetByFilter(filter, include);
         }
 
-        public async Task<Result<Case>> GetCaseById(Guid id)
+        public async Task<Result<Case>> GetCaseById(Guid id, string[] include = null)
         {
-            var foundCase = await _caseRepository.GetById(id, nameof(Case.AddedBy));
+            var foundCase = await _caseRepository.GetById(id, include);
             if (foundCase == null)
                 return Result.Fail(new ResourceNotFoundError($"Case with id {id} not found."));
 
@@ -57,7 +65,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (user == null)
                 return Result.Fail(new ResourceNotFoundError($"User with email {userEmail} not found"));
 
-            var includes = new string[] { nameof(Case.AddedBy), nameof(Case.Members) };
+            var includes = new[] { nameof(Case.AddedBy), nameof(Case.Members) };
 
             // TODO: Move this to BaseRepository and find a generic way to apply OrderBy
             Expression<Func<Case, object>> orderBy = sortedField switch
@@ -78,6 +86,70 @@ namespace PrecisionReporters.Platform.Domain.Services
                 return Result.Fail(new ResourceNotFoundError()); // TODO: What would cause foundCases to be null? Use the right type of error.
 
             return Result.Ok(foundCases);
+        }
+
+        public async Task<Result<Case>> ScheduleDepositions(string userEmail, Guid caseId, IEnumerable<Deposition> depositions, Dictionary<string, FileTransferInfo> files)
+        {
+            var user = await _userService.GetUserByEmail(userEmail);
+            if (user == null)
+                return Result.Fail(new ResourceNotFoundError($"User with email {userEmail} not found"));
+
+            var caseToUpdate = await _caseRepository.GetFirstOrDefaultByFilter(x => x.Id == caseId, new[] { nameof(Case.Depositions), nameof(Case.Members) });
+            if (caseToUpdate == null)
+                return Result.Fail(new ResourceNotFoundError($"Case with id {caseId} not found."));
+
+            var uploadedDocuments = new List<DepositionDocument>();
+
+            // Upload only files related to a caption
+            var filesToUpload = files.Where(f => depositions.Select(d => d.FileKey).ToList().Contains(f.Key));
+
+            foreach (var file in filesToUpload)
+            {
+                var documentResult = await _depositionDocumentService.UploadDocumentFile(file, user, $"{caseId.ToString()}/caption");
+                if (documentResult.IsFailed)
+                {
+                    _logger.LogError(new Exception(documentResult.Errors.First().Message), "Unable to load one or more documents to storage");
+                    _logger.LogInformation("Removing uploaded documents");
+                    await _depositionDocumentService.DeleteUploadedFiles(uploadedDocuments);
+                    return Result.Fail(new Error("Unable to upload one or more documents to deposition"));
+                }
+                uploadedDocuments.Add(documentResult.Value);
+            }
+
+            foreach (var deposition in depositions)
+            {
+                var depositionResult = await _depositionService.GenerateScheduledDeposition(deposition, uploadedDocuments);
+                if (depositionResult.IsFailed)
+                {
+                    await _depositionDocumentService.DeleteUploadedFiles(uploadedDocuments);
+                    return depositionResult.ToResult<Case>();
+                }
+
+                caseToUpdate.Depositions.Add(depositionResult.Value);
+
+                if (depositionResult.Value.Witness?.User != null)
+                    AddMemberToCase(depositionResult.Value.Witness.User, caseToUpdate);
+                AddMemberToCase(depositionResult.Value.Requester, caseToUpdate);
+            }
+
+            try
+            {
+                caseToUpdate = await _caseRepository.Update(caseToUpdate);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unable to schedule depositions");
+                await _depositionDocumentService.DeleteUploadedFiles(uploadedDocuments);
+                return Result.Fail(new ExceptionalError("Unable to schedule depositions", ex));
+            }
+
+            return Result.Ok(caseToUpdate);
+        }
+
+        private static void AddMemberToCase(User userToAdd, Case caseToUpdate)
+        {
+            if (userToAdd != null && caseToUpdate.Members.All(m => m.UserId != userToAdd.Id))
+                caseToUpdate.Members.Add(new Member { User = userToAdd });
         }
     }
 }

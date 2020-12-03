@@ -11,6 +11,7 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using PrecisionReporters.Platform.Data.Enums;
 using PrecisionReporters.Platform.Api.Helpers;
+using PrecisionReporters.Platform.Domain.Commons;
 
 namespace PrecisionReporters.Platform.Api.Controllers
 {
@@ -20,16 +21,14 @@ namespace PrecisionReporters.Platform.Api.Controllers
     public class CasesController : ControllerBase
     {
         private readonly ICaseService _caseService;
-        private readonly IUserService _userService;
         private readonly IMapper<Case, CaseDto, CreateCaseDto> _caseMapper;
+        private readonly IMapper<Deposition, DepositionDto, CreateDepositionDto> _depositionMapper;
 
-        public CasesController(ICaseService caseService,
-            IMapper<Case, CaseDto, CreateCaseDto> caseMapper,
-            IUserService userService)
+        public CasesController(ICaseService caseService, IMapper<Case, CaseDto, CreateCaseDto> caseMapper, IMapper<Deposition, DepositionDto, CreateDepositionDto> depositionMapper)
         {
             _caseService = caseService;
             _caseMapper = caseMapper;
-            _userService = userService;
+            _depositionMapper = depositionMapper;
         }
 
         /// <summary>
@@ -56,7 +55,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<CaseDto>> GetCaseById(Guid id)
         {
-            var findCaseResult = await _caseService.GetCaseById(id);
+            var findCaseResult = await _caseService.GetCaseById(id, new[] { nameof(Case.Members), nameof(Case.Depositions), nameof(Case.AddedBy) });
             if (findCaseResult.IsFailed)
                 return WebApiResponses.GetErrorResponse(findCaseResult);
 
@@ -69,7 +68,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
         /// </summary>
         /// <returns>A list with all cases</returns>
         [HttpGet]
-        public async Task<ActionResult<List<CaseDto>>> GetCasesForCurrentUser(CaseSortField? sortedField  = null, SortDirection? sortDirection = null)
+        public async Task<ActionResult<List<CaseDto>>> GetCasesForCurrentUser(CaseSortField? sortedField = null, SortDirection? sortDirection = null)
         {
             var userEmail = HttpContext.User.FindFirstValue(ClaimTypes.Email);
 
@@ -78,6 +77,49 @@ namespace PrecisionReporters.Platform.Api.Controllers
                 return WebApiResponses.GetErrorResponse(getCasesResult);
 
             return Ok(getCasesResult.Value.Select(c => _caseMapper.ToDto(c)));
+        }
+
+        /// <summary>
+        /// Adds new depositions to a case
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="casePatchDto"></param>
+        /// <returns>Updated case with the scheduled depositions</returns>
+        [HttpPatch("{id}")]
+        public async Task<ActionResult<CaseWithDepositionsDto>> ScheduleDepositions(Guid id, CasePatchDto casePatchDto)
+        {
+            var userEmail = HttpContext.User.FindFirstValue(ClaimTypes.Email);
+
+            if (casePatchDto.Depositions == null)
+                return BadRequest("Depositions missing");
+
+            var files = new Dictionary<string, FileTransferInfo>();
+            foreach (var file in Request.Form.Files)
+            {
+                var fileTransferInfo = new FileTransferInfo
+                {
+                    FileStream = file.OpenReadStream(),
+                    Name = file.FileName,
+                    Length = file.Length
+                };
+                files.Add(file.Name,fileTransferInfo);
+            }
+
+            var getCasesResult = await _caseService.ScheduleDepositions(userEmail, id, casePatchDto.Depositions.Select(d => _depositionMapper.ToModel(d)), files);
+            if (getCasesResult.IsFailed)
+                return WebApiResponses.GetErrorResponse(getCasesResult);
+
+            var caseToUpdate = getCasesResult.Value;
+            var caseWithDepositions = new CaseWithDepositionsDto
+            {
+                Id = caseToUpdate.Id,
+                CreationDate = caseToUpdate.CreationDate,
+                Name = caseToUpdate.Name,
+                CaseNumber = caseToUpdate.CaseNumber,
+                AddedById = caseToUpdate.AddedById,
+                Depositions = caseToUpdate.Depositions.Select(d => _depositionMapper.ToDto(d)).ToList()
+            };
+            return new ObjectResult(caseWithDepositions);
         }
     }
 }

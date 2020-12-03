@@ -11,9 +11,9 @@ namespace PrecisionReporters.Platform.Data.Repositories.Interfaces
     {
         Task<T> Create(T entity);
         Task<T> Update(T entity);
-        Task<T> GetFirstOrDefaultByFilter(Expression<Func<T, bool>> filter = null, string include = "");
+        Task<T> GetFirstOrDefaultByFilter(Expression<Func<T, bool>> filter = null, string[] include = null);
         Task<List<T>> GetByFilter(Expression<Func<T, bool>> filter = null, string[] include = null);
         Task<List<T>> GetByFilter(Expression<Func<T, object>> orderBy, SortDirection sortDirection, Expression<Func<T, bool>> filter = null, string[] include = null);
-        Task<T> GetById(Guid id, string include = "");
+        Task<T> GetById(Guid id, string[] include = null);
     }
 }

@@ -13,16 +13,16 @@ namespace PrecisionReporters.Platform.Domain.Services
         public VerifyUserService(IVerifyUserRepository verifyUserRepository)
         {
             _verifyUserRepository = verifyUserRepository;
-        }       
+        }
 
         public async Task<VerifyUser> GetVerifyUserById(Guid id)
         {
-            return await _verifyUserRepository.GetById(id, nameof(VerifyUser.User));
+            return await _verifyUserRepository.GetById(id, new []{ nameof(VerifyUser.User) });
         }
 
         public async Task<VerifyUser> GetVerifyUserByUserId(Guid userId)
         {
-            return await _verifyUserRepository.GetFirstOrDefaultByFilter(x => x.User.Id.Equals(userId), nameof(VerifyUser.User));
+            return await _verifyUserRepository.GetFirstOrDefaultByFilter(x => x.User.Id.Equals(userId), new[] { nameof(VerifyUser.User) });
         }
 
         public async Task<VerifyUser> CreateVerifyUser(VerifyUser newVerifyUser)

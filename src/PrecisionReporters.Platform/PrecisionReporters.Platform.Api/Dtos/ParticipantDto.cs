@@ -1,15 +1,15 @@
 ﻿using System;
-using System.Collections.Generic;
-using PrecisionReporters.Platform.Api.Controllers;
 
 namespace PrecisionReporters.Platform.Api.Dtos
 {
-    public class CaseDto
+    public class ParticipantDto
     {
         public Guid Id { get; set; }
         public DateTimeOffset CreationDate { get; set; }
         public string Name { get; set; }
-        public string CaseNumber { get; set; }
-        public Guid AddedById { get; set; }
+        public string Email { get; set; }
+        public string Phone { get; set; }
+        public string Role { get; set; }
+        public UserOutputDto User { get; set; }
     }
 }

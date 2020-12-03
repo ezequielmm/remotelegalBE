@@ -27,7 +27,7 @@ namespace PrecisionReporters.Platform.UnitTests.Data.Services
         public UserServiceTests()
         {
             _urlPathConfiguration = ConfigurationFactory.GetUrlPathConfiguration();
-        }  
+        }
 
         [Fact]
         public async Task SignUpAsync_ShouldReturn_NewUser()
@@ -37,9 +37,9 @@ namespace PrecisionReporters.Platform.UnitTests.Data.Services
             var email = "User1@TestMail.com";
             var user = UserFactory.GetUserByGivenIdAndEmail(id, email);
             var verifyUser = VerifyUserFactory.GetVerifyUser(user);
-            
+
             var userRepositoryMock = new Mock<IUserRepository>();
-            userRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<string>())).ReturnsAsync((User)null);
+            userRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<string[]>())).ReturnsAsync((User)null);
             userRepositoryMock.Setup(x => x.Create(It.IsAny<User>())).ReturnsAsync(user);
 
             var verifyUserServiceMock = new Mock<IVerifyUserService>();
@@ -64,7 +64,7 @@ namespace PrecisionReporters.Platform.UnitTests.Data.Services
             var result = await service.SignUpAsync(user);
 
             //Assert
-            userRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<string>()), Times.Once);
+            userRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<string[]>()), Times.Once);
             userRepositoryMock.Verify(x => x.Create(It.Is<User>(a => a == user)), Times.Once);
             verifyUserServiceMock.Verify(x => x.CreateVerifyUser(It.IsAny<VerifyUser>()), Times.Once);
             cognitoServiceMock.Verify(x => x.CreateAsync(It.IsAny<User>()), Times.Once);
@@ -85,7 +85,7 @@ namespace PrecisionReporters.Platform.UnitTests.Data.Services
             var user = UserFactory.GetUserByGivenIdAndEmail(id, email);
 
             var userRepositoryMock = new Mock<IUserRepository>();
-            userRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<string>())).ReturnsAsync(user);
+            userRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<string[]>())).ReturnsAsync(user);
 
             // Act
             var service = InitializeService(userRepository: userRepositoryMock);
@@ -103,9 +103,9 @@ namespace PrecisionReporters.Platform.UnitTests.Data.Services
             var id = Guid.NewGuid();
             var email = "User1@TestMail.com";
             var user = UserFactory.GetUserByGivenEmail(email);
-            
+
             var dateNow = DateTime.UtcNow;
-            var verifyUser = VerifyUserFactory.GetVerifyUserByGivenId(id, dateNow, user);            
+            var verifyUser = VerifyUserFactory.GetVerifyUserByGivenId(id, dateNow, user);
 
             var usedVerifyUser = VerifyUserFactory.GetVerifyUserByGivenId(id, dateNow, user);
 
@@ -173,11 +173,11 @@ namespace PrecisionReporters.Platform.UnitTests.Data.Services
             var service = InitializeService(verifyUserService: verifyUserServiceMock, log: logMock);
 
             // Act
-            var ex = await  Assert.ThrowsAsync<HashExpiredOrAlreadyUsedException>(async () => await service.VerifyUser(verifyUser.Id));
-            
+            var ex = await Assert.ThrowsAsync<HashExpiredOrAlreadyUsedException>(async () => await service.VerifyUser(verifyUser.Id));
+
             // Assert
             verifyUserServiceMock.Verify(x => x.GetVerifyUserById(It.IsAny<Guid>()), Times.Once);
-            Assert.Single(logMock.Invocations);           
+            Assert.Single(logMock.Invocations);
             Assert.Equal(expectedErrorMessage, ex.Message);
         }
 
@@ -189,7 +189,7 @@ namespace PrecisionReporters.Platform.UnitTests.Data.Services
             var verifyUser = VerifyUserFactory.GetVerifyUserByGivenId(Guid.NewGuid(), DateTime.Now, user);
 
             var userRepositoryMock = new Mock<IUserRepository>();
-            userRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<string>())).ReturnsAsync(user);
+            userRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<string[]>())).ReturnsAsync(user);
             var verifyUserServiceMock = new Mock<IVerifyUserService>();
             verifyUserServiceMock.Setup(x => x.GetVerifyUserByUserId(It.IsAny<Guid>())).ReturnsAsync(verifyUser);
             var awsEmailServiceMock = new Mock<IAwsEmailService>();
@@ -200,7 +200,7 @@ namespace PrecisionReporters.Platform.UnitTests.Data.Services
             await service.ResendVerificationEmailAsync(email);
 
             // Assert
-            userRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<string>()), Times.Once);
+            userRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<string[]>()), Times.Once);
             verifyUserServiceMock.Verify(x => x.GetVerifyUserByUserId(It.Is<Guid>((a) => a == user.Id)), Times.Once);
             awsEmailServiceMock.Verify(x => x.SetTemplateEmailRequest(It.IsAny<EmailTemplateInfo>()), Times.Once);
         }

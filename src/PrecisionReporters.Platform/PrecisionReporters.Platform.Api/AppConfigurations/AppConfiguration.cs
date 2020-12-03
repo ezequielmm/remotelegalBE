@@ -14,5 +14,7 @@ namespace PrecisionReporters.Platform.Api
         public EmailConfiguration EmailConfiguration { get; set; }
         public UrlPathConfiguration UrlPathConfiguration { get; set; }
         public CorsConfiguration CorsConfiguration { get; set; }
+        public DepositionDocumentConfiguration DepositionDocumentConfiguration { get; set; }
+        public AwsStorageConfiguration AwsStorageConfiguration { get; set; }
     }
 }

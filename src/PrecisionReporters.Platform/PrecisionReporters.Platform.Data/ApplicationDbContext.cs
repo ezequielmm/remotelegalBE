@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PrecisionReporters.Platform.Data.Entities;
+using PrecisionReporters.Platform.Data.Enums;
 
 namespace PrecisionReporters.Platform.Data
 {
@@ -9,10 +10,12 @@ namespace PrecisionReporters.Platform.Data
         public DbSet<Case> Cases { get; set; }
         public DbSet<User> Users { get; set; }
         public DbSet<VerifyUser> VerifyUsers { get; set; }
-
         public DbSet<Room> Rooms { get; set; }
         public DbSet<Composition> Compositions { get; set; }
         public DbSet<Member> Members { get; set; }
+        public DbSet<Deposition> Depositions { get; set; }
+        public DbSet<DepositionDocument> DepositionDocuments { get; set; }
+        public DbSet<Participant> Participants { get; set; }
 
         public ApplicationDbContext(DbContextOptions options) : base(options) { }
 
@@ -36,6 +39,10 @@ namespace PrecisionReporters.Platform.Data
             modelBuilder.Entity<Composition>()
                 .Property(x => x.Status)
                 .HasConversion(new EnumToStringConverter<CompositionStatus>());
+
+            modelBuilder.Entity<Participant>()
+                .Property(p => p.Role)
+                .HasConversion(new EnumToStringConverter<ParticipantRole>());
         }
     }
 }

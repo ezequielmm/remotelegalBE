@@ -1,6 +1,7 @@
 ﻿using PrecisionReporters.Platform.Api.Dtos;
 using PrecisionReporters.Platform.Data.Entities;
 using System;
+using System.Linq;
 
 namespace PrecisionReporters.Platform.Api.Mappers
 {
@@ -14,7 +15,7 @@ namespace PrecisionReporters.Platform.Api.Mappers
                 CreationDate = model.CreationDate,
                 Name = model.Name,
                 CaseNumber = model.CaseNumber,
-                AddedBy = $"{model.AddedBy.FirstName} {model.AddedBy.LastName}"
+                AddedById = model.AddedById,
             };
         }
 
@@ -23,9 +24,9 @@ namespace PrecisionReporters.Platform.Api.Mappers
             return new Case
             {
                 Id = dto.Id,
-                CreationDate = dto.CreationDate,
+                CreationDate = dto.CreationDate.UtcDateTime,
                 Name = dto.Name,
-                CaseNumber = dto.CaseNumber
+                CaseNumber = dto.CaseNumber,
             };
         }
 

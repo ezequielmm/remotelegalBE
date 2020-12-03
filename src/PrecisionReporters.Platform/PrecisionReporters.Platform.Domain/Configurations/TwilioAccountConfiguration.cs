@@ -8,8 +8,6 @@
         public string ApiKeySid { get; set; }
         public string ApiKeySecret { get; set; }
         public string S3DestinationBucket { get; set; }
-        public string S3DestinationKey { get; set; }
-        public string S3DestinationSecret { get; set; }
         public string StatusCallbackUrl { get; set; }
     }
 }

@@ -66,12 +66,20 @@
                     "value": "twilio-bucket"
                 },
                 {
-                    "name": "AppConfiguration__TwilioAccountConfiguration__S3DestinationKey",
+                    "name": "AppConfiguration__AwsStorageConfiguration__S3DestinationKey",
                     "value": "TWILIO_DESTINATION_KEY"
                 },
                 {
-                    "name": "AppConfiguration__TwilioAccountConfiguration__S3DestinationSecret",
+                    "name": "AppConfiguration__AwsStorageConfiguration__S3DestinationSecret",
                     "value": "TWILIO_DESTINATION_SECRET"
+                },
+                {
+                    "name": "AppConfiguration__AwsStorageConfiguration__S3BucketRegion",
+                    "value": "AWSSTORAGE_BUCKETREGION_SECRET"
+                },
+                {
+                    "name": "AppConfiguration__DepositionDocumentConfiguration__BucketName",
+                    "value": "DEPOSITIONDOCUMENT_BUCKETNAME_SECRET"
                 },
                 {
                     "name": "AppConfiguration__EmailConfiguration__VerifyEmailSubject",
