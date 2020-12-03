@@ -1,10 +1,12 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using FluentResults;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Data.Handlers.Interfaces;
 using PrecisionReporters.Platform.Data.Repositories.Interfaces;
 using PrecisionReporters.Platform.Domain.Commons;
 using PrecisionReporters.Platform.Domain.Configurations;
+using PrecisionReporters.Platform.Domain.Errors;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -23,7 +25,6 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly IVerifyUserService _verifyUserService;
         private readonly ITransactionHandler _transactionHandler;
         private readonly UrlPathConfiguration _urlPathConfiguration;
-
         public UserService(ILogger<UserService> log, IUserRepository userRepository, ICognitoService cognitoService, IAwsEmailService awsEmailService, IVerifyUserService verifyUserService, ITransactionHandler transactionHandler, IOptions<UrlPathConfiguration> urlPathConfiguration)
         {
             _log = log;
@@ -89,9 +90,11 @@ namespace PrecisionReporters.Platform.Domain.Services
             await _awsEmailService.SetTemplateEmailRequest(emailData);
         }
 
-        public async Task<User> GetUserByEmail(string userEmail)
+        public async Task<Result<User>> GetUserByEmail(string userEmail)
         {
-            return await _userRepository.GetFirstOrDefaultByFilter(x=> x.EmailAddress == userEmail);
+            var user = await _userRepository.GetFirstOrDefaultByFilter(x => x.EmailAddress == userEmail);
+
+            return user == null ? Result.Fail<User>(new ResourceNotFoundError($"User with email {userEmail} not found.")) : Result.Ok(user);
         }
 
         private async Task<VerifyUser> SaveVerifyUser(User user)

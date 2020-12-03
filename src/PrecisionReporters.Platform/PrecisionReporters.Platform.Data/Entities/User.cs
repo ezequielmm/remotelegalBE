@@ -21,6 +21,7 @@ namespace PrecisionReporters.Platform.Data.Entities
         public string CompanyName { get; set; }
         [Required]
         public string CompanyAddress { get; set; }
+		public bool IsAdmin { get; set; }
 
         public virtual ICollection<Member> MemberOn { get; set; }
 
@@ -34,6 +35,7 @@ namespace PrecisionReporters.Platform.Data.Entities
             CreationDate = entity.CreationDate;
             CompanyName = entity.CompanyName;
             CompanyAddress = entity.CompanyAddress;
+			IsAdmin = entity.IsAdmin;
         }
     }
 }

@@ -104,7 +104,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
 
             var userServiceMock = new Mock<IUserService>();
-            userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(deposition.Requester);
+            userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(deposition.Requester));
 
             var service = InitializeService(userService: userServiceMock);
 
@@ -131,7 +131,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var errorMessage = $"Requester with email {deposition.Requester.EmailAddress} not found";
 
             var userServiceMock = new Mock<IUserService>();
-            userServiceMock.Setup(x => x.GetUserByEmail(It.Is<string>(a => a == fakeEmail))).ReturnsAsync(deposition.Requester);
+            userServiceMock.Setup(x => x.GetUserByEmail(It.Is<string>(a => a == fakeEmail))).ReturnsAsync(Result.Ok(deposition.Requester));
 
             var service = InitializeService(userService: userServiceMock);
 
@@ -164,7 +164,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
 
             var userServiceMock = new Mock<IUserService>();
-            userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(new User());
+            userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(new User()));
 
             var service = InitializeService(userService: userServiceMock);
 
@@ -199,7 +199,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             documents.Add(captionDocument);
 
             var userServiceMock = new Mock<IUserService>();
-            userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(new User());
+            userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(new User()));
 
             var service = InitializeService(userService: userServiceMock);
 

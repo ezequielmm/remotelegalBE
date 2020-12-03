@@ -1,8 +1,11 @@
 ﻿using FluentResults;
 using Microsoft.Extensions.Logging;
+using FluentResults;
+using Microsoft.Extensions.Logging;
 using Moq;
 using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Data.Enums;
+using PrecisionReporters.Platform.Data.Handlers.Interfaces;
 using PrecisionReporters.Platform.Data.Repositories;
 using PrecisionReporters.Platform.Domain.Commons;
 using PrecisionReporters.Platform.Domain.Services;
@@ -25,6 +28,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         private readonly Mock<IDepositionDocumentService> _depositionDocumentServiceMock;
         private readonly Mock<IDepositionService> _depositionServiceMock;
         private readonly Mock<ILogger<CaseService>> _loggerMock;
+        private readonly Mock<ITransactionHandler> _transactionHandlerMock;
+        private readonly Mock<IPermissionService> _permissionServiceMock;
 
         private readonly List<Case> _cases = new List<Case>();
 
@@ -32,19 +37,28 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         {
             // Setup
             _caseRepositoryMock = new Mock<ICaseRepository>();
+            _transactionHandlerMock = new Mock<ITransactionHandler>();
+            _permissionServiceMock = new Mock<IPermissionService>();
 
             _caseRepositoryMock
                 .Setup(x => x.GetByFilter(It.IsAny<Expression<Func<Case, bool>>>(), It.IsAny<string[]>()))
                 .ReturnsAsync(_cases);
             _caseRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>()))
                 .ReturnsAsync(() => _cases.FirstOrDefault());
+            _transactionHandlerMock
+                 .Setup(x => x.RunAsync(It.IsAny<Func<Task>>()))
+                .Returns(async (Func<Task> action) =>
+                {
+                    await action();
+                    return Result.Ok();
+                });
 
             _userServiceMock = new Mock<IUserService>();
             _depositionDocumentServiceMock = new Mock<IDepositionDocumentService>();
             _depositionServiceMock = new Mock<IDepositionService>();
             _loggerMock = new Mock<ILogger<CaseService>>();
             _service = new CaseService(_caseRepositoryMock.Object, _userServiceMock.Object,
-                _depositionDocumentServiceMock.Object, _depositionServiceMock.Object, _loggerMock.Object);
+                _depositionDocumentServiceMock.Object, _depositionServiceMock.Object, _loggerMock.Object, _transactionHandlerMock.Object, _permissionServiceMock.Object);
         }
 
         public void Dispose()
@@ -120,8 +134,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var name = "Test";
             var userEmail = "TestUser@mail.com";
             var user = UserFactory.GetUserByGivenEmail(userEmail);
-            var newCase = new Case {CreationDate = DateTime.Now, Name = name};
-            _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(user);
+            var newCase = new Case { CreationDate = DateTime.Now, Name = name };
+            _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(user));
             _caseRepositoryMock.Setup(x => x.Create(It.IsAny<Case>()))
                 .Returns<Case>((a) =>
                 {
@@ -129,6 +143,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                     return Task.FromResult(a);
                 })
                 .Verifiable();
+            _permissionServiceMock.Setup(s => s.AddUserRole(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<ResourceType>(), It.IsAny<RoleName>())).Returns(Task.FromResult(Result.Ok()));
 
             // Act
             var result = await _service.CreateCase(userEmail, newCase);
@@ -141,6 +156,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var createdCase = result.Value;
             Assert.NotNull(createdCase);
             Assert.Equal(name, createdCase.Name);
+            _permissionServiceMock.Verify(m => m.AddUserRole(It.Is<Guid>(x => x == user.Id), It.Is<Guid>(x => x == createdCase.Id), It.Is<ResourceType>(x => x == ResourceType.Case), It.Is<RoleName>(x => x == RoleName.CaseAdmin)));
         }
 
         [Theory]
@@ -164,7 +180,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 }
             };
 
-            _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(user);
+            _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(user));
             _caseRepositoryMock.Setup(x => x.GetByFilter(It.IsAny<Expression<Func<Case, object>>>(),
                     It.IsAny<SortDirection>(), It.IsAny<Expression<Func<Case, bool>>>(), It.IsAny<string[]>()))
                 .ReturnsAsync(userCases);
@@ -186,9 +202,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         {
             // Arrange
             var userEmail = "testUser@mail.com";
-            var errorMessage = $"User with email {userEmail} not found";
 
-            _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync((User) null);
+            _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Fail(new Error()));
 
             // Act
             var result = await _service.ScheduleDepositions(userEmail, Guid.NewGuid(), null, null);
@@ -198,7 +213,6 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             Assert.NotNull(result);
             Assert.IsType<Result<Case>>(result);
             Assert.True(result.IsFailed);
-            Assert.Contains(errorMessage, result.Errors[0].Message);
         }
 
         [Fact]
@@ -210,7 +224,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var caseId = Guid.NewGuid();
             var errorMessage = $"Case with id {caseId} not found.";
 
-            _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(user);
+            _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(user));
             _caseRepositoryMock
                 .Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Case, bool>>>(), It.IsAny<string[]>()))
                 .ReturnsAsync((Case) null);
@@ -254,7 +268,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var logInformationMessage = "Removing uploaded documents";
             var errorMessage = "Unable to upload one or more documents to deposition";
 
-            _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(user);
+            _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(user));
             _caseRepositoryMock
                 .Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Case, bool>>>(), It.IsAny<string[]>()))
                 .ReturnsAsync(new Case {Id = caseId});
@@ -317,7 +331,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             var errorMessage = "TestErrorMessageResult";
 
-            _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(user);
+            _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(user));
             _caseRepositoryMock
                 .Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Case, bool>>>(), It.IsAny<string[]>()))
                 .ReturnsAsync(new Case {Id = caseId});
@@ -372,7 +386,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var logErrorMessage = "Unable to schedule depositions";
             var errorMessage = "Unable to schedule depositions";
 
-            _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(user);
+            _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(user));
             _caseRepositoryMock
                 .Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Case, bool>>>(), It.IsAny<string[]>()))
                 .ReturnsAsync(new Case {Id = caseId, Depositions = new List<Deposition>()});
@@ -434,7 +448,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 files.Add(fileKey, file);
             }
 
-            _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(user);
+            _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(user));
             _caseRepositoryMock
                 .Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Case, bool>>>(), It.IsAny<string[]>()))
                 .ReturnsAsync(new Case {Id = caseId, Depositions = new List<Deposition>()});

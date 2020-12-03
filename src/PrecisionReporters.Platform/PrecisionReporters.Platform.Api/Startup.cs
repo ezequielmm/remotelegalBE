@@ -26,6 +26,9 @@ using Amazon.Runtime;
 using Amazon.S3;
 using Amazon.S3.Transfer;
 using System;
+using Microsoft.AspNetCore.Authorization;
+using PrecisionReporters.Platform.Api.Authorization.Handlers;
+using PrecisionReporters.Platform.Api.Authorization;
 
 namespace PrecisionReporters.Platform.Api
 {
@@ -107,6 +110,10 @@ namespace PrecisionReporters.Platform.Api
             // Filters
             services.AddScoped<ValidateTwilioRequestFilterAttribute>();
 
+            // Authorization
+            services.AddScoped<IAuthorizationHandler, UserAuthorizeHandler>();
+            services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
+
             // Mappers
             services.AddSingleton<IMapper<Case, CaseDto, CreateCaseDto>, CaseMapper>();
             services.AddSingleton<IMapper<Room, RoomDto, CreateRoomDto>, RoomMapper>();
@@ -141,6 +148,7 @@ namespace PrecisionReporters.Platform.Api
                 x.UserPoolId = appConfiguration.CognitoConfiguration.UserPoolId;
             });
 
+            services.AddScoped<IPermissionService, PermissionService>();
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<IVerifyUserService, VerifyUserService>();
             services.AddScoped<IAwsStorageService, AwsStorageService>();
@@ -169,6 +177,8 @@ namespace PrecisionReporters.Platform.Api
             services.AddScoped<ICompositionRepository, CompositionRepository>();
             services.AddScoped<IDepositionRepository, DepositionRepository>();
             services.AddScoped<IDepositionDocumentRepository, DepositionDocumentRepository>();
+            services.AddScoped<IUserResourceRoleRepository, UserResourceRoleRepository>();
+            services.AddScoped<IRoleRepository, RoleRepository>();
 
             services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseMySQL(appConfiguration.ConnectionStrings.MySqlConnection));

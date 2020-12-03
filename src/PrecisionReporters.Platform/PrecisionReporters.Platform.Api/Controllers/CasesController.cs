@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using PrecisionReporters.Platform.Data.Enums;
 using PrecisionReporters.Platform.Api.Helpers;
 using PrecisionReporters.Platform.Domain.Commons;
+using PrecisionReporters.Platform.Api.Authorization.Attributes;
 
 namespace PrecisionReporters.Platform.Api.Controllers
 {
@@ -42,6 +43,8 @@ namespace PrecisionReporters.Platform.Api.Controllers
             var userEmail = HttpContext.User.FindFirstValue(ClaimTypes.Email);
             var caseModel = _caseMapper.ToModel(caseDto);
             var createCaseResult = await _caseService.CreateCase(userEmail, caseModel);
+            if (createCaseResult.IsFailed)
+                return WebApiResponses.GetErrorResponse(createCaseResult);
 
             var createdCase = _caseMapper.ToDto(createCaseResult.Value);
             return Ok(createdCase);
@@ -53,7 +56,8 @@ namespace PrecisionReporters.Platform.Api.Controllers
         /// <param name="id"></param>
         /// <returns>Case with the given Id</returns>
         [HttpGet("{id}")]
-        public async Task<ActionResult<CaseDto>> GetCaseById(Guid id)
+        [UserAuthorize(ResourceType.Case, ResourceAction.View)]
+        public async Task<ActionResult<CaseDto>> GetCaseById([ResourceId(ResourceType.Case)] Guid id)
         {
             var findCaseResult = await _caseService.GetCaseById(id, new[] { nameof(Case.Members), nameof(Case.Depositions), nameof(Case.AddedBy) });
             if (findCaseResult.IsFailed)

@@ -45,16 +45,16 @@ namespace PrecisionReporters.Platform.Domain.Services
             {
                 return Result.Fail(new ResourceNotFoundError($"Requester with email {deposition.Requester.EmailAddress} not found"));
             }
-            deposition.Requester = requester;
+            deposition.Requester = requester.Value;
 
             if (deposition.Witness != null)
             {
                 if (!string.IsNullOrWhiteSpace(deposition.Witness.Email))
                 {
                     var witnessUser = await _userService.GetUserByEmail(deposition.Witness.Email);
-                    if (witnessUser != null)
+                    if (witnessUser.IsSuccess)
                     {
-                        deposition.Witness.User = witnessUser;
+                        deposition.Witness.User = witnessUser.Value;
                     }
                 }
             }

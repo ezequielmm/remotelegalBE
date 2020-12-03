@@ -11,6 +11,8 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using PrecisionReporters.Platform.Domain.Commons;
+using PrecisionReporters.Platform.Data.Handlers.Interfaces;
+using Microsoft.Extensions.Logging;
 
 namespace PrecisionReporters.Platform.Domain.Services
 {
@@ -22,14 +24,18 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly IDepositionDocumentService _depositionDocumentService;
         private readonly IDepositionService _depositionService;
         private readonly ILogger<CaseService> _logger;
+		private readonly ITransactionHandler _transactionHandler;
+        private readonly IPermissionService _permissionService;
 
-        public CaseService(ICaseRepository caseRepository, IUserService userService, IDepositionDocumentService depositionDocumentService, IDepositionService depositionService, ILogger<CaseService> logger)
+        public CaseService(ICaseRepository caseRepository, IUserService userService, IDepositionDocumentService depositionDocumentService, IDepositionService depositionService, ILogger<CaseService> logger, ITransactionHandler transactionHandler, IPermissionService permissionService)
         {
             _caseRepository = caseRepository;
             _userService = userService;
             _logger = logger;
             _depositionDocumentService = depositionDocumentService;
             _depositionService = depositionService;
+			_transactionHandler = transactionHandler;
+            _permissionService = permissionService;
         }
 
         public async Task<List<Case>> GetCases(Expression<Func<Case, bool>> filter = null, string[] include = null)
@@ -48,22 +54,40 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<Case>> CreateCase(string userEmail, Case newCase)
         {
-            var user = await _userService.GetUserByEmail(userEmail);
-            if (user == null)
-                return Result.Fail(new ResourceNotFoundError($"User with email {userEmail} not found."));
+            var userResult = await _userService.GetUserByEmail(userEmail);
+            if (userResult.IsFailed)
+            {
+                return userResult.ToResult<Case>();
+            }
 
-            newCase.AddedBy = user;
-            newCase.Members = new List<Member> { new Member { User = user } };
+            var user = userResult.Value;
+            Result<Case> caseCreationResult = null;
+            var transactionResult = await _transactionHandler.RunAsync(async () =>
+            {
+                newCase.AddedBy = user;
+                newCase.Members = new List<Member> { new Member { User = user } };
 
-            var createdCase = await _caseRepository.Create(newCase);
-            return Result.Ok(createdCase);
+                var createdCase = await _caseRepository.Create(newCase);
+
+                var roleCreationResult = await _permissionService.AddUserRole(user.Id, createdCase.Id, ResourceType.Case, RoleName.CaseAdmin);
+                caseCreationResult = !roleCreationResult.IsFailed ? Result.Ok(createdCase) : Result.Fail<Case>(new UnexpectedError("There was an error trying to create a case"));
+            });
+
+            if (transactionResult.IsFailed)
+            {
+                return transactionResult;
+            }
+
+            return caseCreationResult;
         }
 
         public async Task<Result<List<Case>>> GetCasesForUser(string userEmail, CaseSortField? sortedField = null, SortDirection? sortDirection = null)
         {
-            var user = await _userService.GetUserByEmail(userEmail);
-            if (user == null)
-                return Result.Fail(new ResourceNotFoundError($"User with email {userEmail} not found"));
+            var userResult = await _userService.GetUserByEmail(userEmail);
+            if (userResult.IsFailed)
+            {
+                return userResult.ToResult<List<Case>>();
+            }
 
             var includes = new[] { nameof(Case.AddedBy), nameof(Case.Members) };
 
@@ -78,7 +102,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             var foundCases = await _caseRepository.GetByFilter(
                 orderBy,
                 sortDirection ?? DEFAULT_SORT_DIRECTION,
-                x => x.Members.Any(m => m.UserId == user.Id),
+                x => x.Members.Any(m => m.UserId == userResult.Value.Id),
                 includes);
 
             // note: empty list is ok, null is an error
@@ -90,9 +114,9 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<Case>> ScheduleDepositions(string userEmail, Guid caseId, IEnumerable<Deposition> depositions, Dictionary<string, FileTransferInfo> files)
         {
-            var user = await _userService.GetUserByEmail(userEmail);
-            if (user == null)
-                return Result.Fail(new ResourceNotFoundError($"User with email {userEmail} not found"));
+            var userResult = await _userService.GetUserByEmail(userEmail);
+            if (userResult.IsFailed)
+                return userResult.ToResult<Case>();
 
             var caseToUpdate = await _caseRepository.GetFirstOrDefaultByFilter(x => x.Id == caseId, new[] { nameof(Case.Depositions), nameof(Case.Members) });
             if (caseToUpdate == null)
@@ -105,7 +129,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             foreach (var file in filesToUpload)
             {
-                var documentResult = await _depositionDocumentService.UploadDocumentFile(file, user, $"{caseId.ToString()}/caption");
+                var documentResult = await _depositionDocumentService.UploadDocumentFile(file, userResult.Value, $"{caseId.ToString()}/caption");
                 if (documentResult.IsFailed)
                 {
                     _logger.LogError(new Exception(documentResult.Errors.First().Message), "Unable to load one or more documents to storage");

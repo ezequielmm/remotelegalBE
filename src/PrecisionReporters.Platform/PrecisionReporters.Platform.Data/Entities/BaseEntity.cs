@@ -14,5 +14,7 @@ namespace PrecisionReporters.Platform.Data.Entities
         public DateTime CreationDate { get; set; }
 
         public abstract void CopyFrom(T entity);
+
+        // TODO: add protected method for copying Id and Creation date to be called on each implementation of CopyFrom
     }
 }
