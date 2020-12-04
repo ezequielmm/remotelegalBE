@@ -46,7 +46,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         public async Task<Result<Deposition>> GenerateScheduledDeposition(Deposition deposition, List<DepositionDocument> uploadedDocuments)
         {
             var requester = await _userService.GetUserByEmail(deposition.Requester.EmailAddress);
-            if (requester == null)
+            if (requester.IsFailed)
             {
                 return Result.Fail(new ResourceNotFoundError($"Requester with email {deposition.Requester.EmailAddress} not found"));
             }

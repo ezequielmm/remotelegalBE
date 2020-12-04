@@ -117,19 +117,17 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         }
 
         [Fact]
-        public async Task GenerateScheduledDeposition_ShouldReturnError_WhenRequesterIsNull()
+        public async Task GenerateScheduledDeposition_ShouldReturnError_WhenEmailAddressIsNotFound()
         {
             // Arrange
             var depositionId = Guid.NewGuid();
             var caseId = Guid.NewGuid();
             var deposition = DepositionFactory.GetDeposition(depositionId, caseId);
-            _depositions.Add(deposition);
             var depositionDocuments = DepositionFactory.GetDepositionDocumentList();
-            var fakeEmail = "fake@email.com";
             var errorMessage = $"Requester with email {deposition.Requester.EmailAddress} not found";
 
             var userServiceMock = new Mock<IUserService>();
-            userServiceMock.Setup(x => x.GetUserByEmail(It.Is<string>(a => a == fakeEmail))).ReturnsAsync(Result.Ok(deposition.Requester));
+            userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Fail(new Error ("Mocked error")));
 
             var service = InitializeService(userService: userServiceMock);
 
