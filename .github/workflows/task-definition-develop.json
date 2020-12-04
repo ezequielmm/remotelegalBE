@@ -75,11 +75,11 @@
                 },
                 {
                     "name": "AppConfiguration__AwsStorageConfiguration__S3BucketRegion",
-                    "value": "AWSSTORAGE_BUCKETREGION_SECRET"
+                    "value": "us-east-1"
                 },
                 {
                     "name": "AppConfiguration__DepositionDocumentConfiguration__BucketName",
-                    "value": "DEPOSITIONDOCUMENT_BUCKETNAME_SECRET"
+                    "value": "deposition-documents-dev"
                 },
                 {
                     "name": "AppConfiguration__EmailConfiguration__VerifyEmailSubject",
