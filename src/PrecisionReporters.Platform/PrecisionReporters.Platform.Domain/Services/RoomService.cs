@@ -1,11 +1,13 @@
-﻿using PrecisionReporters.Platform.Data.Entities;
+﻿using FluentResults;
+using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Data.Repositories.Interfaces;
+using PrecisionReporters.Platform.Domain.Commons;
+using PrecisionReporters.Platform.Domain.Errors;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-using FluentResults;
-using PrecisionReporters.Platform.Domain.Errors;
+using Twilio.Exceptions;
 
 namespace PrecisionReporters.Platform.Domain.Services
 {
@@ -13,19 +15,25 @@ namespace PrecisionReporters.Platform.Domain.Services
     {
         private readonly ITwilioService _twilioService;
         private readonly IRoomRepository _roomRepository;
-        private readonly ICompositionService _compositionService;
 
-        public RoomService(ITwilioService twilioService, IRoomRepository roomRepository,
-            ICompositionService compositionService)
+        public RoomService(ITwilioService twilioService, IRoomRepository roomRepository)
         {
             _twilioService = twilioService;
             _roomRepository = roomRepository;
-            _compositionService = compositionService;
         }
 
         public async Task<Result<Room>> Create(Room room)
         {
             var newRoom = await _roomRepository.Create(room);
+            return Result.Ok(newRoom);
+        }
+
+        public async Task<Result<Room>> GetById(Guid roomId)
+        {
+            var room = await _roomRepository.GetFirstOrDefaultByFilter(x => x.Id == roomId, new[] { nameof(Room.Composition) });
+            if (room == null)
+                return Result.Fail(new ResourceNotFoundError());
+
             return Result.Ok(room);
         }
 
@@ -90,18 +98,24 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<Room>> StartRoom(Room room)
         {
+            var updatedRoom = room;
             if (room.Status != RoomStatus.Created)
-                return Result.Fail(new InvalidInputError());
+                return Result.Fail(new InvalidStatusError());
 
-            // TODO: Check for failures in this call, return Result<T>
-            var resourceRoom = await _twilioService.CreateRoom(room);
+            try
+            {
+                var resourceRoom = await _twilioService.CreateRoom(room);
+                room.SId = resourceRoom.Sid;
+                room.Status = RoomStatus.InProgress;
+                room.StartDate = DateTime.UtcNow;
 
-            room.SId = resourceRoom.Sid;
-            room.Status = RoomStatus.InProgress;
-            room.StartDate = DateTime.UtcNow;
-
-            // TODO: Review possible failures from repository, return Result<T>
-            var updatedRoom = await _roomRepository.Update(room);
+                // TODO: Review possible failures from repository, return Result<T>
+                updatedRoom = await _roomRepository.Update(room);
+            }
+            catch (ApiException ex) when (ex.Message == ApplicationConstants.RoomExistError)
+            {
+                //We shouldn't throw an exception if room is already started.
+            }
 
             return Result.Ok(updatedRoom);
         }

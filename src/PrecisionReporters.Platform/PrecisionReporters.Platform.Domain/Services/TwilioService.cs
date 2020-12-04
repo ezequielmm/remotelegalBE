@@ -56,7 +56,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             grant.Room = roomName;
             var grants = new HashSet<IGrant> { grant };
             var token = new Token(_twilioAccountConfiguration.AccountSid, _twilioAccountConfiguration.ApiKeySid,
-                _twilioAccountConfiguration.ApiKeySecret, identity: username.ToString(), grants: grants);
+                _twilioAccountConfiguration.ApiKeySecret, identity: username.ToString(), grants: grants); //TODO: identity should be object with Email, Name, Role
 
             return token.ToJwt();
         }
