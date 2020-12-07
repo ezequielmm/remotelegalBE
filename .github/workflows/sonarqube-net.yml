@@ -17,4 +17,5 @@ jobs:
           projectName: prp-be
           sonarHostname: https://sonarqube.prdevelopment.net/
           buildCommand: dotnet build ./src/PrecisionReporters.Platform/PrecisionReporters.Platform.sln
+          testCommand: dotnet test ./src/PrecisionReporters.Platform/PrecisionReporters.Platform.sln
           sonarOrganisation: default-organization
