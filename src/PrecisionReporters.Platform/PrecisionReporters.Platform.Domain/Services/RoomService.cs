@@ -104,8 +104,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             try
             {
-                var resourceRoom = await _twilioService.CreateRoom(room);
-                room.SId = resourceRoom.Sid;
+                room = await _twilioService.CreateRoom(room);
                 room.Status = RoomStatus.InProgress;
                 room.StartDate = DateTime.UtcNow;
 

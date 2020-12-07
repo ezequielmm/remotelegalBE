@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using PrecisionReporters.Platform.Data.Entities;
+using PrecisionReporters.Platform.Domain.Commons;
 using PrecisionReporters.Platform.Domain.Configurations;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using System;
@@ -10,7 +11,6 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
-using PrecisionReporters.Platform.Domain.Commons;
 using Twilio;
 using Twilio.Jwt.AccessToken;
 using Twilio.Rest.Video.V1;
@@ -34,14 +34,16 @@ namespace PrecisionReporters.Platform.Domain.Services
             _awsStorageService = awsStorageService;
         }
 
-        public async Task<RoomResource> CreateRoom(Room room)
+        public async Task<Room> CreateRoom(Room room)
         {
             var roomResource = await RoomResource.CreateAsync(
                 uniqueName: room.Name,
                 recordParticipantsOnConnect: room.IsRecordingEnabled,
                 type: RoomResource.RoomTypeEnum.Group
                 );
-            return roomResource;
+
+            room.SId = roomResource?.Sid;
+            return room;
         }
 
         public async Task<RoomResource> GetRoom(string name)

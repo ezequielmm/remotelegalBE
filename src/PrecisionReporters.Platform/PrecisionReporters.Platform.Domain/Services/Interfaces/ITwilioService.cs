@@ -1,12 +1,12 @@
-﻿using System.Threading.Tasks;
-using PrecisionReporters.Platform.Data.Entities;
+﻿using PrecisionReporters.Platform.Data.Entities;
+using System.Threading.Tasks;
 using Twilio.Rest.Video.V1;
 
 namespace PrecisionReporters.Platform.Domain.Services.Interfaces
 {
     public interface ITwilioService
     {
-        Task<RoomResource> CreateRoom(Room room);
+        Task<Room> CreateRoom(Room room);
 
         Task<RoomResource> GetRoom(string roomName);
 
