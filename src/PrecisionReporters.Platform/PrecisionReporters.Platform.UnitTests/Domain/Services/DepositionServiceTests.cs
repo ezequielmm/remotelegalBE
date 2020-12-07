@@ -261,6 +261,36 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             Assert.True(result.IsSuccess);
         }
 
+        [Fact]
+        public async Task JoinDeposition_ShouldReturnJoinDepositionInfo_WhenDepositionWithoutWitnessIdExist()
+        {
+            // Arrange
+            var token = Guid.NewGuid().ToString();
+            var identity = Guid.NewGuid().ToString();
+            var depositionId = Guid.NewGuid();
+            var caseId = Guid.NewGuid();
+            var deposition = DepositionFactory.GetDepositionWithoutWitness(depositionId, caseId);
+            _depositions.Add(deposition);
+
+            var depositionRepositoryMock = new Mock<IDepositionRepository>();
+            depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(() => _depositions.FirstOrDefault());
+
+            var roomServiceMock = new Mock<IRoomService>();
+            roomServiceMock.Setup(x => x.StartRoom(It.IsAny<Room>())).Verifiable();
+            roomServiceMock.Setup(x => x.GenerateRoomToken(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(Result.Ok(token));
+
+            var depositionService = InitializeService(depositionRepository: depositionRepositoryMock, roomService: roomServiceMock);
+
+            // Act
+            var result = await depositionService.JoinDeposition(depositionId, identity);
+
+            // Assert
+            depositionRepositoryMock.Verify(mock => mock.GetById(It.Is<Guid>(a => a == depositionId), It.IsAny<string[]>()), Times.Once());
+            Assert.NotNull(result);
+            Assert.True(result.IsSuccess);
+            Assert.Null(result.Value.WitnessEmail);
+        }
+
         private DepositionService InitializeService(
             Mock<IDepositionRepository> depositionRepository = null,
             Mock<IUserService> userService = null,

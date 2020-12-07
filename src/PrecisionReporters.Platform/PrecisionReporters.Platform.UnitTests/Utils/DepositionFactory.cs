@@ -9,6 +9,19 @@ namespace PrecisionReporters.Platform.UnitTests.Utils
     {
         public static Deposition GetDeposition(Guid depositionId, Guid caseId)
         {
+            var depositon = GetDepositionWithoutWitness(depositionId, caseId);
+            depositon.Witness = new Participant
+            {
+                Id = Guid.NewGuid(),
+                Name = "witness1",
+                Email = "witness@email.com"
+            };
+            return depositon;
+        }
+
+
+        public static Deposition GetDepositionWithoutWitness(Guid depositionId, Guid caseId)
+        {
             return new Deposition
             {
                 Id = depositionId,
@@ -34,12 +47,6 @@ namespace PrecisionReporters.Platform.UnitTests.Utils
                     Id = Guid.NewGuid(),
                     Name = "DepositionDocument_1",
                     FileKey = "fileKey"
-                },
-                Witness = new Participant
-                {
-                    Id = Guid.NewGuid(),
-                    Name = "witness1",
-                    Email = "witness@email.com"
                 }
             };
         }
@@ -93,7 +100,7 @@ namespace PrecisionReporters.Platform.UnitTests.Utils
                 StartDate = DateTime.Now,
                 EndDate = DateTime.Now.AddHours(5),
                 WitnessId = Guid.NewGuid(),
-                CreationDate = DateTime.UtcNow,               
+                CreationDate = DateTime.UtcNow,
                 Room = new Room
                 {
                     Id = Guid.NewGuid(),

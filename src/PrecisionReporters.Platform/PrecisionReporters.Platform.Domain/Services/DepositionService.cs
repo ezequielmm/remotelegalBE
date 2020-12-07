@@ -96,7 +96,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             var joinDepositionInfo = new JoinDepositionDto
             {
-                WitnessEmail = depositionResult.Value.Witness.Email,
+                WitnessEmail = depositionResult.Value.Witness?.Email,
                 Token = token.Value
             };
 
