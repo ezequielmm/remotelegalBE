@@ -2,15 +2,17 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PrecisionReporters.Platform.Data;
 
 namespace PrecisionReporters.Platform.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20201202151054_AddDepositionStatus")]
+    partial class AddDepositionStatus
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -250,70 +252,6 @@ namespace PrecisionReporters.Platform.Data.Migrations
                     b.ToTable("Participants");
                 });
 
-            modelBuilder.Entity("PrecisionReporters.Platform.Data.Entities.Role", b =>
-                {
-                    b.Property<string>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("char(36)");
-
-                    b.Property<DateTime>("CreationDate")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Roles");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = "c7f87850-e176-4865-b26b-cedac420a0c8",
-                            CreationDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            Name = "CaseAdmin"
-                        });
-                });
-
-            modelBuilder.Entity("PrecisionReporters.Platform.Data.Entities.RolePermission", b =>
-                {
-                    b.Property<string>("RoleId")
-                        .HasColumnType("char(36)");
-
-                    b.Property<string>("Action")
-                        .HasColumnType("varchar(767)");
-
-                    b.Property<DateTime>("CreationDate")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime");
-
-                    b.HasKey("RoleId", "Action");
-
-                    b.ToTable("RolePermissions");
-
-                    b.HasData(
-                        new
-                        {
-                            RoleId = "c7f87850-e176-4865-b26b-cedac420a0c8",
-                            Action = "Delete",
-                            CreationDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
-                        },
-                        new
-                        {
-                            RoleId = "c7f87850-e176-4865-b26b-cedac420a0c8",
-                            Action = "Update",
-                            CreationDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
-                        },
-                        new
-                        {
-                            RoleId = "c7f87850-e176-4865-b26b-cedac420a0c8",
-                            Action = "View",
-                            CreationDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
-                        });
-                });
-
             modelBuilder.Entity("PrecisionReporters.Platform.Data.Entities.Room", b =>
                 {
                     b.Property<string>("Id")
@@ -380,9 +318,6 @@ namespace PrecisionReporters.Platform.Data.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<bool>("IsAdmin")
-                        .HasColumnType("bit");
-
                     b.Property<string>("LastName")
                         .IsRequired()
                         .HasColumnType("text");
@@ -397,32 +332,6 @@ namespace PrecisionReporters.Platform.Data.Migrations
                         .IsUnique();
 
                     b.ToTable("Users");
-                });
-
-            modelBuilder.Entity("PrecisionReporters.Platform.Data.Entities.UserResourceRole", b =>
-                {
-                    b.Property<string>("RoleId")
-                        .HasColumnType("char(36)");
-
-                    b.Property<string>("ResourceId")
-                        .HasColumnType("char(36)");
-
-                    b.Property<string>("UserId")
-                        .HasColumnType("char(36)");
-
-                    b.Property<DateTime>("CreationDate")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime");
-
-                    b.Property<string>("ResourceType")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasKey("RoleId", "ResourceId", "UserId");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("UserResourceRoles");
                 });
 
             modelBuilder.Entity("PrecisionReporters.Platform.Data.Entities.VerifyUser", b =>
@@ -472,7 +381,7 @@ namespace PrecisionReporters.Platform.Data.Migrations
                         .WithMany()
                         .HasForeignKey("CaptionId");
 
-                    b.HasOne("PrecisionReporters.Platform.Data.Entities.Case", "Case")
+                    b.HasOne("PrecisionReporters.Platform.Data.Entities.Case", null)
                         .WithMany("Depositions")
                         .HasForeignKey("CaseId");
 
@@ -528,30 +437,6 @@ namespace PrecisionReporters.Platform.Data.Migrations
                     b.HasOne("PrecisionReporters.Platform.Data.Entities.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId");
-                });
-
-            modelBuilder.Entity("PrecisionReporters.Platform.Data.Entities.RolePermission", b =>
-                {
-                    b.HasOne("PrecisionReporters.Platform.Data.Entities.Role", "Role")
-                        .WithMany()
-                        .HasForeignKey("RoleId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("PrecisionReporters.Platform.Data.Entities.UserResourceRole", b =>
-                {
-                    b.HasOne("PrecisionReporters.Platform.Data.Entities.Role", "Role")
-                        .WithMany()
-                        .HasForeignKey("RoleId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("PrecisionReporters.Platform.Data.Entities.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
                 });
 
             modelBuilder.Entity("PrecisionReporters.Platform.Data.Entities.VerifyUser", b =>

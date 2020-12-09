@@ -9,12 +9,18 @@ namespace PrecisionReporters.Platform.Api.Mappers
         private readonly IMapper<Participant, ParticipantDto, CreateParticipantDto> _participantMapper;
         private readonly IMapper<Room, RoomDto, CreateRoomDto> _rooMapper;
         private readonly IMapper<DepositionDocument, DepositionDocumentDto, CreateDepositionDocumentDto> _depositionDocumentMapper;
+        private readonly IMapper<Case, CaseDto, CreateCaseDto> _caseMapper;
+        private readonly IMapper<User, UserDto, CreateUserDto> _userMapper;
 
-        public DepositionMapper(IMapper<Participant, ParticipantDto, CreateParticipantDto> participantMapper, IMapper<Room, RoomDto, CreateRoomDto> rooMapper, IMapper<DepositionDocument, DepositionDocumentDto, CreateDepositionDocumentDto> depositionDocumentMapper)
+        public DepositionMapper(IMapper<Participant, ParticipantDto, CreateParticipantDto> participantMapper, IMapper<Room, RoomDto,
+            CreateRoomDto> rooMapper, IMapper<DepositionDocument, DepositionDocumentDto, CreateDepositionDocumentDto> depositionDocumentMapper,
+            IMapper<Case, CaseDto, CreateCaseDto> caseMapper, IMapper<User, UserDto, CreateUserDto> userMapper)
         {
             _participantMapper = participantMapper;
             _rooMapper = rooMapper;
             _depositionDocumentMapper = depositionDocumentMapper;
+            _caseMapper = caseMapper;
+            _userMapper = userMapper;
         }
 
         public Deposition ToModel(DepositionDto dto)
@@ -63,18 +69,14 @@ namespace PrecisionReporters.Platform.Api.Mappers
                 EndDate = model.EndDate,
                 Witness = model.Witness != null ? _participantMapper.ToDto(model.Witness) : null,
                 Participants = model.Participants?.Select(p => _participantMapper.ToDto(p)).ToList(),
-                Requester = new RequesterUserOutputDto
-                {
-                    Id= model.Requester.Id,
-                    FirstName = model.Requester.FirstName,
-                    LastName = model.Requester.LastName,
-                    EmailAddress = model.Requester.EmailAddress,
-                    PhoneNumber = model.Requester.PhoneNumber
-                },
+                Requester = _userMapper.ToDto(model.Requester),
                 Details = model.Details,
                 Room = model.Room != null ? _rooMapper.ToDto(model.Room) : null,
                 Caption = model.Caption != null ? _depositionDocumentMapper.ToDto(model.Caption) : null,
-                Documents = model.Documents?.Select(d => _depositionDocumentMapper.ToDto(d)).ToList()
+                Documents = model.Documents?.Select(d => _depositionDocumentMapper.ToDto(d)).ToList(),
+                Status = model.Status,
+                CaseName = model.Case.Name,
+                CaseNumber = model.Case.CaseNumber
             };
         }
     }

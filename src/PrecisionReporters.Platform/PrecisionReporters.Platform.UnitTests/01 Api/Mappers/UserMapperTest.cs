@@ -61,7 +61,6 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Mappers
             Assert.Equal(userDto.CompanyName, user.CompanyName);
             Assert.Equal(userDto.CompanyAddress, user.CompanyAddress);
             Assert.Equal(userDto.EmailAddress, user.EmailAddress);
-            Assert.Equal(userDto.Password, user.Password);
         }
     }
 }

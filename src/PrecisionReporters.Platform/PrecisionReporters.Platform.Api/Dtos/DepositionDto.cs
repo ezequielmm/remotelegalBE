@@ -1,5 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+using PrecisionReporters.Platform.Data.Entities;
 
 namespace PrecisionReporters.Platform.Api.Dtos
 {
@@ -13,10 +16,14 @@ namespace PrecisionReporters.Platform.Api.Dtos
         public DepositionDocumentDto Caption { get; set; }
         public ParticipantDto Witness { get; set; }
         public bool IsVideoRecordingNeeded { get; set; }
-        public RequesterUserOutputDto Requester { get; set; }
+        public UserDto Requester { get; set; }
         public List<ParticipantDto> Participants { get; set; }
         public string Details { get; set; }
         public RoomDto Room { get; set; }
         public List<DepositionDocumentDto> Documents { get; set; }
+        [JsonConverter(typeof(StringEnumConverter))]
+        public DepositionStatus Status { get; set; }
+        public string CaseName { get; internal set; }
+        public string CaseNumber { get; internal set; }
     }
 }

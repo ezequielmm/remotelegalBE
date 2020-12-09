@@ -48,6 +48,14 @@ namespace PrecisionReporters.Platform.Data
                 .Property(p => p.Role)
                 .HasConversion(new EnumToStringConverter<ParticipantRole>());
 
+            modelBuilder.Entity<Deposition>()
+                .Property(x => x.Status)
+                .HasConversion(new EnumToStringConverter<DepositionStatus>());
+
+            modelBuilder.Entity<Case>()
+                .HasMany(x => x.Depositions)
+                .WithOne(x => x.Case);
+                
             modelBuilder.Entity<UserResourceRole>().Property(x => x.ResourceType).HasConversion(new EnumToStringConverter<ResourceType>());
 
             modelBuilder.Entity<RolePermission>().HasKey(x => new { x.RoleId, x.Action });

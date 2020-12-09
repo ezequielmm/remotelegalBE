@@ -1,15 +1,16 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using PrecisionReporters.Platform.Api.Dtos;
-using PrecisionReporters.Platform.Api.Helpers;
-using PrecisionReporters.Platform.Api.Mappers;
-using PrecisionReporters.Platform.Data.Entities;
-using PrecisionReporters.Platform.Domain.Commons;
-using PrecisionReporters.Platform.Domain.Dtos;
-using PrecisionReporters.Platform.Domain.Services.Interfaces;
-using System;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using PrecisionReporters.Platform.Api.Dtos;
+using PrecisionReporters.Platform.Api.Mappers;
+using PrecisionReporters.Platform.Data.Entities;
+using PrecisionReporters.Platform.Data.Enums;
+using PrecisionReporters.Platform.Domain.Dtos;
+using PrecisionReporters.Platform.Domain.Services.Interfaces;
 
 namespace PrecisionReporters.Platform.Api.Controllers
 {
@@ -19,10 +20,22 @@ namespace PrecisionReporters.Platform.Api.Controllers
     public class DepositionsController : ControllerBase
     {
         private readonly IDepositionService _depositionService;
+        private readonly IMapper<Deposition, DepositionDto, CreateDepositionDto> _depositionMapper;
 
-        public DepositionsController(IDepositionService depositionService)
+        public DepositionsController(IDepositionService depositionService,
+            IMapper<Deposition, DepositionDto, CreateDepositionDto> depositionMapper)
         {
             _depositionService = depositionService;
+            _depositionMapper = depositionMapper;
+        }
+
+        [HttpGet]
+        public async Task<ActionResult<List<DepositionDto>>> GetDepositions(DepositionStatus? status, DepositionSortField? sortedField,
+            SortDirection? sortDirection)
+        {
+            var depositions = await _depositionService.GetDepositionsByStatus(status, sortedField, sortDirection);
+            
+            return Ok(depositions.Select(c => _depositionMapper.ToDto(c)));
         }
 
         // <summary>

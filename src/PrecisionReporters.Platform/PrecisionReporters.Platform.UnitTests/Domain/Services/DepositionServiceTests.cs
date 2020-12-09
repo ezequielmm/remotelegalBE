@@ -1,6 +1,7 @@
 ﻿using FluentResults;
 using Moq;
 using PrecisionReporters.Platform.Data.Entities;
+using PrecisionReporters.Platform.Data.Enums;
 using PrecisionReporters.Platform.Data.Repositories.Interfaces;
 using PrecisionReporters.Platform.Domain.Services;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
@@ -16,7 +17,29 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 {
     public class DepositionServiceTests : IDisposable
     {
-        private readonly List<Deposition> _depositions = new List<Deposition>();        
+        private readonly DepositionService _depositionService;
+        private readonly Mock<IDepositionRepository> _depositionRepositoryMock;
+        private readonly Mock<IUserService> _userServiceMock;
+
+        private readonly List<Deposition> _depositions = new List<Deposition>();
+
+        public DepositionServiceTests()
+        {
+            // Setup
+            _depositionRepositoryMock = new Mock<IDepositionRepository>();
+
+            _depositionRepositoryMock.Setup(x => x.GetByFilter(It.IsAny<Expression<Func<Deposition, bool>>>(), It.IsAny<string[]>())).ReturnsAsync(_depositions);
+
+            _depositionRepositoryMock.Setup(x => x.GetByFilter(It.IsAny<Expression<Func<Deposition, object>>>(), It.IsAny<SortDirection>(), It.IsAny<Expression<Func<Deposition, bool>>>(), It.IsAny<string[]>())).ReturnsAsync(_depositions);
+
+            _depositionRepositoryMock.Setup(x => x.GetByStatus(It.IsAny<Expression<Func<Deposition, object>>>(), It.IsAny<SortDirection>(), It.IsAny<Expression<Func<Deposition, bool>>>(), It.IsAny<string[]>())).ReturnsAsync(_depositions);
+
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(() => _depositions.FirstOrDefault());
+
+            _userServiceMock = new Mock<IUserService>();
+
+            _depositionService = new DepositionService(_depositionRepositoryMock.Object, _userServiceMock.Object, null);
+        }       
 
         public void Dispose()
         {
@@ -158,7 +181,6 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 }
             };
 
-
             var userServiceMock = new Mock<IUserService>();
             userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(new User()));
 
@@ -209,6 +231,40 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         }
 
         [Fact]
+        public async Task GetDepositionsDepositionsByStatus_ShouldReturnAllDepositions_WhenStatusParameterIsNull()
+        {
+            _depositions.AddRange(DepositionFactory.GetDepositionList());
+
+            // Act
+            var result = await _depositionService.GetDepositionsByStatus(null, null);
+
+            Assert.NotEmpty(result);
+            _depositionRepositoryMock.Verify(r => r.GetByStatus(It.IsAny<Expression<Func<Deposition, object>>>(),
+                It.IsAny<SortDirection>(),
+                It.Is<Expression<Func<Deposition, bool>>>((x => x == null)),
+                It.IsAny<string[]>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task GetDepositionsDepositionsByStatus_ShouldReturnPendingDepositions_WhenStatusParameterIsPending()
+        {
+            _depositions.AddRange(DepositionFactory.GetDepositionList());
+
+            _depositionRepositoryMock.Setup(x => x.GetByStatus(
+                It.IsAny<Expression<Func<Deposition, object>>>(),
+                It.IsAny<SortDirection>(),
+                It.IsAny<Expression<Func<Deposition, bool>>>(),
+                It.IsAny<string[]>()))
+                .ReturnsAsync(_depositions.FindAll(x => x.Status == DepositionStatus.Pending));
+
+            // Act
+            var result = await _depositionService.GetDepositionsByStatus(DepositionStatus.Pending, null);
+
+            _depositionRepositoryMock.Verify(r => r.GetByStatus(It.IsAny<Expression<Func<Deposition, object>>>(),
+                It.IsAny<SortDirection>(),
+                It.Is<Expression<Func<Deposition, bool>>>(x => x != null),
+                It.IsAny<string[]>()), Times.Once);
+        }
         public async Task JoinDeposition_ShouldReturnError_WhenDepositionIdDoesNotExist()
         {
             // Arrange

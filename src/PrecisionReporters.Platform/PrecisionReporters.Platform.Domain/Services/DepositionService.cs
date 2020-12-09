@@ -5,9 +5,8 @@ using System.Linq.Expressions;
 using System.Threading.Tasks;
 using FluentResults;
 using PrecisionReporters.Platform.Data.Entities;
-using PrecisionReporters.Platform.Data.Handlers.Interfaces;
+using PrecisionReporters.Platform.Data.Enums;
 using PrecisionReporters.Platform.Data.Repositories.Interfaces;
-using PrecisionReporters.Platform.Domain.Commons;
 using PrecisionReporters.Platform.Domain.Dtos;
 using PrecisionReporters.Platform.Domain.Errors;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
@@ -76,6 +75,34 @@ namespace PrecisionReporters.Platform.Domain.Services
             };
 
             return Result.Ok(deposition);
+        }
+
+        public async Task<List<Deposition>> GetDepositionsByStatus(DepositionStatus? status, DepositionSortField? sortedField,
+            SortDirection? sortDirection = null)
+        {
+            var includes = new[] { nameof(Deposition.Requester), nameof(Deposition.Participants),
+                nameof(Deposition.Witness), nameof(Deposition.Case)};
+
+            Expression<Func<Deposition, bool>> filter = x => x.Status == status;
+
+            Expression<Func<Deposition, object>> orderBy = sortedField switch
+            {
+                DepositionSortField.Details => x => x.Details,
+                DepositionSortField.Status => x => x.Status,
+                DepositionSortField.CaseNumber => x => x.Case.CaseNumber,
+                DepositionSortField.CaseName => x => x.Case.Name,
+                DepositionSortField.Company => x => x.Requester.CompanyName,
+                DepositionSortField.Requester => x => x.Requester.LastName,
+                _ => x => x.StartDate,
+            };
+
+            var depositions = await _depositionRepository.GetByStatus(
+                orderBy,
+                sortDirection ?? SortDirection.Ascend,
+                status != null ? filter : null,
+                includes);
+
+            return depositions;
         }
 
         public async Task<Result<JoinDepositionDto>> JoinDeposition(Guid id, string identity)

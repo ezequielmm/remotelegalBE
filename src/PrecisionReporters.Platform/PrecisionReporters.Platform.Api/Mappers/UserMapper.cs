@@ -14,7 +14,6 @@ namespace PrecisionReporters.Platform.Api.Mappers
                 LastName = model.LastName,
                 EmailAddress = model.EmailAddress,
                 PhoneNumber = model.PhoneNumber,
-                Password = model.Password,
                 CreationDate = model.CreationDate,
                 CompanyName = model.CompanyName,
                 CompanyAddress = model.CompanyAddress
@@ -30,7 +29,6 @@ namespace PrecisionReporters.Platform.Api.Mappers
                 LastName = dto.LastName,
                 EmailAddress = dto.EmailAddress,
                 PhoneNumber = dto.PhoneNumber,
-                Password = dto.Password,
                 CreationDate = dto.CreationDate,
                 CompanyName = dto.CompanyName,
                 CompanyAddress = dto.CompanyAddress

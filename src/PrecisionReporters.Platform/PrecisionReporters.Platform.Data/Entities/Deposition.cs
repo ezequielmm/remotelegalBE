@@ -31,6 +31,10 @@ namespace PrecisionReporters.Platform.Data.Entities
         [ForeignKey(nameof(Room))]
         public Guid? RoomId { get; set; }
         public Room Room { get; set; }
+        [Required]
+        public DepositionStatus Status { get; set; } = DepositionStatus.Pending;
+
+        public Case Case { get; set; }
 
         public override void CopyFrom(Deposition entity)
         {
