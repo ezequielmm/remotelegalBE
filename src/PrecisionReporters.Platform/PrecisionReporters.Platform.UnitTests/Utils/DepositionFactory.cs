@@ -121,5 +121,23 @@ namespace PrecisionReporters.Platform.UnitTests.Utils
                 }
             };
         }
+
+        public static Deposition GetDepositionWithParticipantEmail(string participantEmail)
+        {
+            return new Deposition
+            {
+                Participants = new List<Participant>
+                {
+                    new Participant
+                    {
+                        Email = participantEmail
+                    }
+                },
+                Requester = new User
+                {
+                    EmailAddress = "requester@email.com"
+                }
+            };
+        }
     }
 }

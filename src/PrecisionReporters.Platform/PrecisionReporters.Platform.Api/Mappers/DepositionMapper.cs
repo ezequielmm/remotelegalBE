@@ -54,7 +54,8 @@ namespace PrecisionReporters.Platform.Api.Mappers
                 Requester = new User { EmailAddress = dto.RequesterEmail },
                 Details = dto.Details,
                 IsVideoRecordingNeeded = dto.IsVideoRecordingNeeded ,
-                FileKey = dto.Caption
+                FileKey = dto.Caption,
+                Participants = dto.Participants?.Select(p=>_participantMapper.ToModel(p)).ToList()
             };
         }
 

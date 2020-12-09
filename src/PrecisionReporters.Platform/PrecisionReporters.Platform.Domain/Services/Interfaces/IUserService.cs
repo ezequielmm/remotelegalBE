@@ -2,7 +2,8 @@
 using PrecisionReporters.Platform.Data.Entities;
 using System;
 using System.Threading.Tasks;
-using FluentResults;
+using System.Collections.Generic;
+using System.Linq.Expressions;
 
 namespace PrecisionReporters.Platform.Domain.Services.Interfaces
 {
@@ -12,5 +13,6 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
         Task<VerifyUser> VerifyUser(Guid verifyuserId);
         Task ResendVerificationEmailAsync(string email);
         Task<Result<User>> GetUserByEmail(string email);
+        Task<List<User>> GetUsersByFilter(Expression<Func<User, bool>> filter = null, string[] include = null);
     }
 }

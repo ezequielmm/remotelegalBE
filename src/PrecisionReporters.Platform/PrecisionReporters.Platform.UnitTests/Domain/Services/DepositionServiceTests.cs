@@ -196,6 +196,28 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         }
 
         [Fact]
+        public async Task GenerateScheduledDeposition_ShouldCall_GetUsersByFilter_WhenParticipantsHaveEmail()
+        {
+            // Arrange
+            var participantEmail = "testParticipant@mail.com";
+            Deposition deposition = DepositionFactory.GetDepositionWithParticipantEmail(participantEmail);
+
+            var userServiceMock = new Mock<IUserService>();
+            userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(new User()));
+            userServiceMock.Setup(x => x.GetUsersByFilter(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<string[]>())).ReturnsAsync(new List<User> { new User { EmailAddress = participantEmail } });
+
+            var service = InitializeService(userService: userServiceMock);
+
+            // Act
+            var result = await service.GenerateScheduledDeposition(deposition, null);
+
+            // Assert
+            userServiceMock.Verify(mock => mock.GetUsersByFilter(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<string[]>()), Times.Once());
+            Assert.NotNull(result);
+            Assert.True(result.IsSuccess);
+        }
+
+        [Fact]
         public async Task GenerateScheduledDeposition_ShouldTakeCaptionFile_WhenDepositionFileKeyNotEmpty()
         {
             // Arrange

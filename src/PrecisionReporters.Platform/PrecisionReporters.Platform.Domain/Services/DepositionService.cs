@@ -63,6 +63,15 @@ namespace PrecisionReporters.Platform.Domain.Services
                 }
             }
 
+            if (deposition.Participants != null)
+            {
+                var participantUsers = await _userService.GetUsersByFilter(x => deposition.Participants.Select(p => p.Email).Contains(x.EmailAddress));
+                foreach (var participant in deposition.Participants.Where(participant => !string.IsNullOrWhiteSpace(participant.Email)))
+                {
+                    participant.User = participantUsers.Find(x => x.EmailAddress == participant.Email);
+                }
+            }
+
             // If caption has a FileKey, find the matching document. If it doesn't has a FileKey, remove caption
             deposition.Caption = !string.IsNullOrWhiteSpace(deposition.FileKey) ? uploadedDocuments.First(d => d.FileKey == deposition.FileKey) : null;
 
@@ -107,7 +116,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<JoinDepositionDto>> JoinDeposition(Guid id, string identity)
         {
-            
+
             var depositionResult = await GetDepositionById(id);
             if (depositionResult.IsFailed)
                 return Result.Fail(new ResourceNotFoundError($"Deposition with id {id} not found."));

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
 namespace PrecisionReporters.Platform.Api.Dtos
@@ -18,5 +19,6 @@ namespace PrecisionReporters.Platform.Api.Dtos
         public string RequesterEmail { get; set; }
         [MaxLength(500)]
         public string Details { get; set; }
+        public List<CreateParticipantDto> Participants { get; set; }
     }
 }

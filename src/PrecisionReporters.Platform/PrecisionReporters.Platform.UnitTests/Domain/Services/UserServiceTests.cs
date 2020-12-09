@@ -1,4 +1,5 @@
 ﻿using Amazon.CognitoIdentityProvider.Model;
+using FluentResults;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -7,18 +8,18 @@ using PrecisionReporters.Platform.Data.Handlers.Interfaces;
 using PrecisionReporters.Platform.Data.Repositories.Interfaces;
 using PrecisionReporters.Platform.Domain.Commons;
 using PrecisionReporters.Platform.Domain.Configurations;
+using PrecisionReporters.Platform.Domain.Errors;
 using PrecisionReporters.Platform.Domain.Services;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using PrecisionReporters.Platform.UnitTests.Utils;
 using System;
+using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Net;
 using System.Threading.Tasks;
-using FluentResults;
-using PrecisionReporters.Platform.Domain.Errors;
 using Xunit;
 
-namespace PrecisionReporters.Platform.UnitTests.Data.Services
+namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 {
     public class UserServiceTests
     {
@@ -203,6 +204,42 @@ namespace PrecisionReporters.Platform.UnitTests.Data.Services
             userRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<string[]>()), Times.Once);
             verifyUserServiceMock.Verify(x => x.GetVerifyUserByUserId(It.Is<Guid>((a) => a == user.Id)), Times.Once);
             awsEmailServiceMock.Verify(x => x.SetTemplateEmailRequest(It.IsAny<EmailTemplateInfo>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task GetUsersByFilter_ShouldReturnFailure_IfRepositoryReturnsNull()
+        {
+            // Arrange
+            var userRepositoryMock = new Mock<IUserRepository>();
+            userRepositoryMock.Setup(x => x.GetByFilter(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<string[]>())).ReturnsAsync(new List<User>());
+            var service = InitializeService(userRepository: userRepositoryMock);
+
+            // Act
+            var result = await service.GetUsersByFilter();
+
+            // Assert
+            userRepositoryMock.Verify(x => x.GetByFilter(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<string[]>()), Times.Once);
+            Assert.NotNull(result);
+            Assert.IsType<List<User>>(result);
+            Assert.Empty(result);
+        }
+
+        [Fact]
+        public async Task GetUsersByFilter_ShouldReturnSuccess_IfRepositoryReturnsAtLeastAUser()
+        {
+            // Arrange
+            var userRepositoryMock = new Mock<IUserRepository>();
+            userRepositoryMock.Setup(x => x.GetByFilter(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<string[]>())).ReturnsAsync(new List<User> { new User() });
+            var service = InitializeService(userRepository: userRepositoryMock);
+
+            // Act
+            var result = await service.GetUsersByFilter();
+
+            // Assert
+            userRepositoryMock.Verify(x => x.GetByFilter(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<string[]>()), Times.Once);
+            Assert.NotNull(result);
+            Assert.IsType<List<User>>(result);
+            Assert.NotEmpty(result);
         }
 
         private UserService InitializeService(

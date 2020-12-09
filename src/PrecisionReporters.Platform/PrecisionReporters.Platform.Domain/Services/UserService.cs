@@ -11,8 +11,7 @@ using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using FluentResults;
-using PrecisionReporters.Platform.Domain.Errors;
+using System.Linq.Expressions;
 
 namespace PrecisionReporters.Platform.Domain.Services
 {
@@ -95,6 +94,11 @@ namespace PrecisionReporters.Platform.Domain.Services
             var user = await _userRepository.GetFirstOrDefaultByFilter(x => x.EmailAddress == userEmail);
 
             return user == null ? Result.Fail<User>(new ResourceNotFoundError($"User with email {userEmail} not found.")) : Result.Ok(user);
+        }
+
+        public async Task<List<User>> GetUsersByFilter(Expression<Func<User, bool>> filter = null, string[] include = null)
+        {
+            return await _userRepository.GetByFilter(filter, include);
         }
 
         private async Task<VerifyUser> SaveVerifyUser(User user)

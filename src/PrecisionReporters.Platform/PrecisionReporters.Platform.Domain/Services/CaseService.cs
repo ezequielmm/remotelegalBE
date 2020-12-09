@@ -12,7 +12,6 @@ using System.Linq.Expressions;
 using System.Threading.Tasks;
 using PrecisionReporters.Platform.Domain.Commons;
 using PrecisionReporters.Platform.Data.Handlers.Interfaces;
-using Microsoft.Extensions.Logging;
 
 namespace PrecisionReporters.Platform.Domain.Services
 {
@@ -153,6 +152,13 @@ namespace PrecisionReporters.Platform.Domain.Services
 
                 if (depositionResult.Value.Witness?.User != null)
                     AddMemberToCase(depositionResult.Value.Witness.User, caseToUpdate);
+
+                if (depositionResult.Value.Participants != null)
+                    foreach (var participant in depositionResult.Value.Participants.Where(participant => participant.User != null))
+                    {
+                        AddMemberToCase(participant.User, caseToUpdate);
+                    }
+
                 AddMemberToCase(depositionResult.Value.Requester, caseToUpdate);
             }
 
@@ -170,7 +176,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             return Result.Ok(caseToUpdate);
         }
 
-        private static void AddMemberToCase(User userToAdd, Case caseToUpdate)
+        private void AddMemberToCase(User userToAdd, Case caseToUpdate)
         {
             if (userToAdd != null && caseToUpdate.Members.All(m => m.UserId != userToAdd.Id))
                 caseToUpdate.Members.Add(new Member { User = userToAdd });
