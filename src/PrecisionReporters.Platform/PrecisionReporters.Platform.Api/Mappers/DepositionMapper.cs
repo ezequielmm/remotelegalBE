@@ -1,6 +1,7 @@
-﻿using System.Linq;
-using PrecisionReporters.Platform.Api.Dtos;
+﻿using PrecisionReporters.Platform.Api.Dtos;
 using PrecisionReporters.Platform.Data.Entities;
+using System;
+using System.Linq;
 
 namespace PrecisionReporters.Platform.Api.Mappers
 {
@@ -9,17 +10,15 @@ namespace PrecisionReporters.Platform.Api.Mappers
         private readonly IMapper<Participant, ParticipantDto, CreateParticipantDto> _participantMapper;
         private readonly IMapper<Room, RoomDto, CreateRoomDto> _rooMapper;
         private readonly IMapper<DepositionDocument, DepositionDocumentDto, CreateDepositionDocumentDto> _depositionDocumentMapper;
-        private readonly IMapper<Case, CaseDto, CreateCaseDto> _caseMapper;
         private readonly IMapper<User, UserDto, CreateUserDto> _userMapper;
 
         public DepositionMapper(IMapper<Participant, ParticipantDto, CreateParticipantDto> participantMapper, IMapper<Room, RoomDto,
             CreateRoomDto> rooMapper, IMapper<DepositionDocument, DepositionDocumentDto, CreateDepositionDocumentDto> depositionDocumentMapper,
-            IMapper<Case, CaseDto, CreateCaseDto> caseMapper, IMapper<User, UserDto, CreateUserDto> userMapper)
+            IMapper<User, UserDto, CreateUserDto> userMapper)
         {
             _participantMapper = participantMapper;
             _rooMapper = rooMapper;
             _depositionDocumentMapper = depositionDocumentMapper;
-            _caseMapper = caseMapper;
             _userMapper = userMapper;
         }
 
@@ -53,9 +52,9 @@ namespace PrecisionReporters.Platform.Api.Mappers
                 // TODO: Remove the creation of a new user and instead fulfill RequesterId property
                 Requester = new User { EmailAddress = dto.RequesterEmail },
                 Details = dto.Details,
-                IsVideoRecordingNeeded = dto.IsVideoRecordingNeeded ,
+                IsVideoRecordingNeeded = dto.IsVideoRecordingNeeded,
                 FileKey = dto.Caption,
-                Participants = dto.Participants?.Select(p=>_participantMapper.ToModel(p)).ToList()
+                Participants = dto.Participants?.Select(p => _participantMapper.ToModel(p)).ToList()
             };
         }
 
@@ -65,9 +64,9 @@ namespace PrecisionReporters.Platform.Api.Mappers
             {
                 Id = model.Id,
                 CreationDate = model.CreationDate,
-                StartDate = model.StartDate,
+                StartDate = new DateTimeOffset(model.StartDate, TimeSpan.Zero),
                 TimeZone = model.TimeZone,
-                EndDate = model.EndDate,
+                EndDate = model.EndDate.HasValue ? new DateTimeOffset(model.EndDate.Value, TimeSpan.Zero) : (DateTimeOffset?)null,
                 Witness = model.Witness != null ? _participantMapper.ToDto(model.Witness) : null,
                 Participants = model.Participants?.Select(p => _participantMapper.ToDto(p)).ToList(),
                 Requester = _userMapper.ToDto(model.Requester),
