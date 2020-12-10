@@ -67,11 +67,11 @@
                 },
                 {
                     "name": "AppConfiguration__AwsStorageConfiguration__S3DestinationKey",
-                    "value": "TWILIO_DESTINATION_SECRET"
+                    "value": "TWILIO_DESTINATION_KEY"
                 },
                 {
                     "name": "AppConfiguration__AwsStorageConfiguration__S3DestinationSecret",
-                    "value": "[QA] Verify your Remote Legal account"
+                    "value": "TWILIO_DESTINATION_SECRET"
                 },
                 {
                     "name": "AppConfiguration__AwsStorageConfiguration__S3BucketRegion",
@@ -80,6 +80,10 @@
                 {
                     "name": "AppConfiguration__DepositionDocumentConfiguration__BucketName",
                     "value": "deposition-documents-qa"
+                },
+                {
+                    "name": "AppConfiguration__EmailConfiguration__VerifyEmailSubject",
+                    "value": "[QA] Verify your Remote Legal account"
                 },
                 {
                     "name": "AppConfiguration__ConfigurationFlags__IsDeveloperExceptionPageEnabled",
