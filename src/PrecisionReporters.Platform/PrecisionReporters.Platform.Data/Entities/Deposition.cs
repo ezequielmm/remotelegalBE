@@ -10,6 +10,7 @@ namespace PrecisionReporters.Platform.Data.Entities
         [Required]
         public DateTime StartDate { get; set; }
         public DateTime? EndDate { get; set; }
+        public DateTime? CompleteDate { get; set; }
         [Required]
         public string TimeZone { get; set; }
         public string Details { get; set; }
@@ -40,6 +41,7 @@ namespace PrecisionReporters.Platform.Data.Entities
         {
             StartDate = entity.StartDate;
             EndDate = entity.EndDate;
+            CompleteDate = entity.CompleteDate;
             TimeZone = entity.TimeZone;
             Caption = entity.Caption;
             Details = entity.Details;
@@ -47,6 +49,7 @@ namespace PrecisionReporters.Platform.Data.Entities
             Requester = entity.Requester;
             Participants = entity.Participants;
             Documents = entity.Documents;
+            Status = entity.Status;
         }
     }
 }

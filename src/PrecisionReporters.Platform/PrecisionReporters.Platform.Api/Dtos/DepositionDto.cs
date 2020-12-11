@@ -12,6 +12,7 @@ namespace PrecisionReporters.Platform.Api.Dtos
         public DateTimeOffset CreationDate { get; set; }
         public DateTimeOffset StartDate { get; set; }
         public DateTimeOffset? EndDate { get; set; }
+        public DateTimeOffset? CompleteDate { get; set; }
         public string TimeZone { get; set; }
         public DepositionDocumentDto Caption { get; set; }
         public ParticipantDto Witness { get; set; }

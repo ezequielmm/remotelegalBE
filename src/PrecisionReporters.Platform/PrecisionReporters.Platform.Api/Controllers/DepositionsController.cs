@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PrecisionReporters.Platform.Api.Dtos;
+using PrecisionReporters.Platform.Api.Helpers;
 using PrecisionReporters.Platform.Api.Mappers;
 using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Data.Enums;
@@ -50,6 +51,36 @@ namespace PrecisionReporters.Platform.Api.Controllers
             var joinDepositionInfoResult = await _depositionService.JoinDeposition(id, identity);             
 
             return Ok(joinDepositionInfoResult.Value);
-        }       
+        }
+
+        // <summary>
+        /// End an existing Deposition
+        /// </summary>
+        /// <param name="depositionId">DepositionId to End.</param>
+        /// <returns>DepositionDto object.</returns>
+        [HttpPost("{id}/end")]
+        public async Task<ActionResult<DepositionDto>> EndDeposition(Guid id)
+        {
+            var endDepositionResult = await _depositionService.EndDeposition(id);
+            if (endDepositionResult.IsFailed)
+                return WebApiResponses.GetErrorResponse(endDepositionResult);
+
+            return Ok(_depositionMapper.ToDto(endDepositionResult.Value));
+        }
+
+        // <summary>
+        /// Get an existing Deposition
+        /// </summary>
+        /// <param name="depositionId">DepositionId to End.</param>
+        /// <returns>DepositionDto object.</returns>
+        [HttpGet("{id}")]
+        public async Task<ActionResult<DepositionDto>> GetDeposition(Guid id)
+        {
+            var endDepositionResult = await _depositionService.GetDepositionById(id);
+            if (endDepositionResult.IsFailed)
+                return WebApiResponses.GetErrorResponse(endDepositionResult);
+
+            return Ok(_depositionMapper.ToDto(endDepositionResult.Value));
+        }
     }
 }

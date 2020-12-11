@@ -34,7 +34,8 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<Deposition>> GetDepositionById(Guid id)
         {
-            var includes = new[] { nameof(Deposition.Witness), nameof(Deposition.Room) };
+            var includes = new[] { nameof(Deposition.Witness), nameof(Deposition.Room),
+                nameof(Deposition.Requester), nameof(Deposition.Case), nameof(Deposition.Participants) };
             var deposition = await _depositionRepository.GetById(id, includes);
             if (deposition == null)
                 return Result.Fail(new ResourceNotFoundError($"Deposition with id {id} not found."));
@@ -137,6 +138,24 @@ namespace PrecisionReporters.Platform.Domain.Services
             };
 
             return Result.Ok(joinDepositionInfo);
+        }
+
+        public async Task<Result<Deposition>> EndDeposition(Guid id)
+        {
+            var depositionResult = await GetDepositionById(id);
+            if (depositionResult.IsFailed)
+                return Result.Fail(new ResourceNotFoundError($"Deposition with id {id} not found."));
+
+            var deposition = depositionResult.Value;
+            var roomResult = await _roomService.EndRoom(deposition.Room);
+            if (roomResult.IsFailed)
+                return roomResult.ToResult<Deposition>();
+
+            deposition.CompleteDate = DateTime.UtcNow;
+            deposition.Status = DepositionStatus.Complete;
+
+            var updatedDeposition = await _depositionRepository.Update(deposition);
+            return Result.Ok(updatedDeposition);
         }
     }
 }

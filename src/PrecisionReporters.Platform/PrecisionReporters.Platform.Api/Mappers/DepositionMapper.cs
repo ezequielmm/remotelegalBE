@@ -31,6 +31,7 @@ namespace PrecisionReporters.Platform.Api.Mappers
                 StartDate = dto.StartDate.UtcDateTime,
                 TimeZone = dto.TimeZone,
                 EndDate = dto.EndDate?.UtcDateTime,
+                CompleteDate = dto.CompleteDate?.UtcDateTime,
                 Witness = dto.Witness != null ? _participantMapper.ToModel(dto.Witness) : null,
                 Participants = dto.Participants?.Select(p => _participantMapper.ToModel(p)).ToList(),
                 RequesterId = dto.Requester.Id,
@@ -76,7 +77,8 @@ namespace PrecisionReporters.Platform.Api.Mappers
                 Documents = model.Documents?.Select(d => _depositionDocumentMapper.ToDto(d)).ToList(),
                 Status = model.Status,
                 CaseName = model.Case.Name,
-                CaseNumber = model.Case.CaseNumber
+                CaseNumber = model.Case.CaseNumber,
+                CompleteDate = model.CompleteDate
             };
         }
     }

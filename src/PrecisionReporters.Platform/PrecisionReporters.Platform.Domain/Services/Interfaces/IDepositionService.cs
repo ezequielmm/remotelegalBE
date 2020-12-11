@@ -16,5 +16,6 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
         Task<Result<Deposition>> GenerateScheduledDeposition(Deposition deposition, List<DepositionDocument> uploadedDocuments);
         Task<List<Deposition>> GetDepositionsByStatus(DepositionStatus? status, DepositionSortField? sortedField, SortDirection? sortDirection);
         Task<Result<JoinDepositionDto>> JoinDeposition(Guid id, string identity);
+        Task<Result<Deposition>> EndDeposition(Guid id);
     }
 }

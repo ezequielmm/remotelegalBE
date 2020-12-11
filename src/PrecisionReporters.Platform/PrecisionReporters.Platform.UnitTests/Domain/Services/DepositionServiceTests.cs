@@ -20,6 +20,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         private readonly DepositionService _depositionService;
         private readonly Mock<IDepositionRepository> _depositionRepositoryMock;
         private readonly Mock<IUserService> _userServiceMock;
+        private readonly Mock<IRoomService> _roomServiceMock;
 
         private readonly List<Deposition> _depositions = new List<Deposition>();
 
@@ -38,7 +39,9 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             _userServiceMock = new Mock<IUserService>();
 
-            _depositionService = new DepositionService(_depositionRepositoryMock.Object, _userServiceMock.Object, null);
+            _roomServiceMock = new Mock<IRoomService>();
+
+            _depositionService = new DepositionService(_depositionRepositoryMock.Object, _userServiceMock.Object, _roomServiceMock.Object);
         }       
 
         public void Dispose()
@@ -367,6 +370,62 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             Assert.NotNull(result);
             Assert.True(result.IsSuccess);
             Assert.Null(result.Value.WitnessEmail);
+        }
+
+        [Fact]
+        public async Task EndDeposition_ShouldReturnError_WhenDepositionIdDoesNotExist()
+        {
+            // Arrange
+            var depositionId = Guid.NewGuid();
+            var caseId = Guid.NewGuid();
+            var deposition = DepositionFactory.GetDeposition(depositionId, caseId);
+            _depositions.Add(deposition);
+            var errorMessage = $"Deposition with id {depositionId} not found.";
+            var identity = Guid.NewGuid().ToString();
+
+            var depositionRepositoryMock = new Mock<IDepositionRepository>();
+            depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync((Deposition)null);
+
+            var depositionService = InitializeService(depositionRepository: depositionRepositoryMock);
+            // Act
+            var result = await depositionService.EndDeposition(depositionId);
+
+            // Assert
+            depositionRepositoryMock.Verify(mock => mock.GetById(It.Is<Guid>(a => a == depositionId), It.IsAny<string[]>()), Times.Once());
+
+            Assert.Equal(result.Errors[0].Message, errorMessage);
+            Assert.True(result.IsFailed);
+        }
+
+        [Fact]
+        public async Task EndDeposition_ShouldReturnDepositionDto_WhenDepositionIdExist()
+        {
+            // Arrange
+            var token = Guid.NewGuid().ToString();
+            var identity = Guid.NewGuid().ToString();
+            var depositionId = Guid.NewGuid();
+            var caseId = Guid.NewGuid();
+            var deposition = DepositionFactory.GetDeposition(depositionId, caseId);
+            _depositions.Add(deposition);
+
+            var depositionRepositoryMock = new Mock<IDepositionRepository>();
+            depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(() => _depositions.FirstOrDefault());
+
+            var roomServiceMock = new Mock<IRoomService>();
+            //roomServiceMock.Setup(x => x.EndRoom(It.IsAny<Room>())).Verifiable();
+            roomServiceMock.Setup(x => x.EndRoom(It.IsAny<Room>())).ReturnsAsync(() => Result.Ok(new Room()));
+
+            var depositionService = InitializeService(depositionRepository: depositionRepositoryMock, roomService: roomServiceMock);
+
+            // Act
+            var result = await depositionService.EndDeposition(depositionId);
+
+            // Assert
+            depositionRepositoryMock.Verify(mock => mock.GetById(It.Is<Guid>(a => a == depositionId), It.IsAny<string[]>()), Times.Once());
+            depositionRepositoryMock.Verify(mock => mock.Update(It.Is<Deposition>(d => d.Status == DepositionStatus.Complete && d.CompleteDate.HasValue)), Times.Once());
+            roomServiceMock.Verify(mock => mock.EndRoom(It.IsAny<Room>()), Times.Once());
+            Assert.NotNull(result);
+            Assert.True(result.IsSuccess);
         }
 
         private DepositionService InitializeService(

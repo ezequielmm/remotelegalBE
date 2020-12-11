@@ -5,6 +5,7 @@
         Pending, 
         Approved, 
         Ready, 
-        Canceled
+        Canceled,
+        Complete
     }
 }
