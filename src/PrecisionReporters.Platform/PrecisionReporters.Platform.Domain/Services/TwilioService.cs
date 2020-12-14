@@ -46,9 +46,9 @@ namespace PrecisionReporters.Platform.Domain.Services
             return room;
         }
 
-        public async Task<RoomResource> GetRoom(string name)
+        public async Task<RoomResource> GetRoom(string roomName)
         {
-            var roomResource = await RoomResource.FetchAsync(pathSid: name);
+            var roomResource = await RoomResource.FetchAsync(pathSid: roomName);
             return roomResource;
         }
 
@@ -112,24 +112,23 @@ namespace PrecisionReporters.Platform.Domain.Services
                 Encoding.ASCII.GetBytes($"{_twilioAccountConfiguration.ApiKeySid}:{_twilioAccountConfiguration.ApiKeySecret}")));
             request.AllowAutoRedirect = false;
 
-            WebResponse response;
             string responseBody = "";
             try
             {
-                response = request.GetResponse();
+                await request.GetResponseAsync();
             }
             catch (WebException e)
             {
                 if (e.Message.Contains("302"))
                 {
-                    response = e.Response;
-                    responseBody = new StreamReader(response.GetResponseStream()).ReadToEnd();
+                    using var streamReader = new StreamReader(e.Response.GetResponseStream());
+                    responseBody = await streamReader.ReadToEndAsync();
                 }
             }
 
             var mediaLocation = JsonConvert.DeserializeObject<Dictionary<string, string>>(responseBody)["redirect_to"];
 
-            new WebClient().DownloadFileAsync(new Uri(mediaLocation), $"{composition.SId}.mp4");
+            await new WebClient().DownloadFileTaskAsync(new Uri(mediaLocation), $"{composition.SId}.mp4");
 
             _log.LogDebug($"Composition downloaded - SId: {composition.SId}");
 

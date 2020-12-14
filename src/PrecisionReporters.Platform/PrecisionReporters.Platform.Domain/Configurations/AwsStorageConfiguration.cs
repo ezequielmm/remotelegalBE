@@ -1,6 +1,4 @@
-﻿using Amazon;
-
-namespace PrecisionReporters.Platform.Api.AppConfigurations.Sections
+﻿namespace PrecisionReporters.Platform.Api.AppConfigurations.Sections
 {
     public class AwsStorageConfiguration
     {

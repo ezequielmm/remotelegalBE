@@ -28,12 +28,12 @@ namespace PrecisionReporters.Platform.Api.Mappers
             };
         }
 
-        public Room ToModel(RoomDto roomDto)
+        public Room ToModel(RoomDto dto)
         {
             return new Room
             {
-                Name = roomDto.Name,
-                IsRecordingEnabled = roomDto.IsRecordingEnabled
+                Name = dto.Name,
+                IsRecordingEnabled = dto.IsRecordingEnabled
             };
         }
 

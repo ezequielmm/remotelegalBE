@@ -1,5 +1,4 @@
 ﻿using PrecisionReporters.Platform.Data.Enums;
-using System;
 
 namespace PrecisionReporters.Platform.Data.Entities
 {

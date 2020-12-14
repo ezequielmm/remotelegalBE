@@ -1,6 +1,5 @@
 ﻿using Amazon.CognitoIdentityProvider;
 using Amazon.CognitoIdentityProvider.Model;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Domain.Configurations;
@@ -12,13 +11,11 @@ namespace PrecisionReporters.Platform.Domain.Services
 {
     public class CognitoService : ICognitoService
     {
-        private readonly ILogger<CognitoService> _log;
         private readonly CognitoConfiguration _cognitoConfiguration;
-        private IAmazonCognitoIdentityProvider _cognitoClient;
+        private readonly IAmazonCognitoIdentityProvider _cognitoClient;
 
-        public CognitoService(ILogger<CognitoService> log, IOptions<CognitoConfiguration> cognitoConfiguration, IAmazonCognitoIdentityProvider cognitoClient)
+        public CognitoService(IOptions<CognitoConfiguration> cognitoConfiguration, IAmazonCognitoIdentityProvider cognitoClient)
         {
-            _log = log;
             _cognitoConfiguration = cognitoConfiguration.Value;
             _cognitoClient = cognitoClient;
         }

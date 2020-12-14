@@ -12,9 +12,9 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
 
         string GenerateToken(string roomName, string username);
 
-        Task<RoomResource> EndRoom(string Sid);
+        Task<RoomResource> EndRoom(string roomSid);
 
-        Task<CompositionResource> CreateComposition(RoomResource roomSid);
+        Task<CompositionResource> CreateComposition(RoomResource room);
 
         Task<bool> GetCompositionMediaAsync(Composition composition);
 

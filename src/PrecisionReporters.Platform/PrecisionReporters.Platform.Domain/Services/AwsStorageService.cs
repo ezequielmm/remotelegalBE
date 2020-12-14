@@ -79,8 +79,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 completeRequest.AddPartETags(uploadResponses);
 
                 // Complete the upload.
-                var completeUploadResponse =
-                    await _fileTransferUtility.S3Client.CompleteMultipartUploadAsync(completeRequest);
+                await _fileTransferUtility.S3Client.CompleteMultipartUploadAsync(completeRequest);
 
                 _logger.LogDebug($"File uploaded {keyName}");
 

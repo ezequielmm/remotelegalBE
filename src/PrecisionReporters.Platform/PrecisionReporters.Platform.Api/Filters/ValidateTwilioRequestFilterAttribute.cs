@@ -14,27 +14,28 @@ namespace PrecisionReporters.Platform.Api.Filters
     public class ValidateTwilioRequestFilterAttribute : ActionFilterAttribute
     {
         private readonly RequestValidator _requestValidator;
-        private readonly TwilioAccountConfiguration _twilioAccountConfiguration;
         private readonly ILogger<ValidateTwilioRequestFilterAttribute> _log;
 
         public ValidateTwilioRequestFilterAttribute(IOptions<TwilioAccountConfiguration> twilioAccountConfiguration,
             ILogger<ValidateTwilioRequestFilterAttribute> log)
         {
-            _twilioAccountConfiguration = twilioAccountConfiguration.Value ?? throw new ArgumentException(nameof(twilioAccountConfiguration));
-            _requestValidator = new RequestValidator(_twilioAccountConfiguration.AuthToken);
+            if (twilioAccountConfiguration == null)
+                throw new ArgumentException(nameof(twilioAccountConfiguration));
+
+            _requestValidator = new RequestValidator(twilioAccountConfiguration.Value.AuthToken);
             _log = log;
         }
 
-        public override void OnActionExecuting(ActionExecutingContext actionContext)
+        public override void OnActionExecuting(ActionExecutingContext context)
         {
-            var context = actionContext.HttpContext;
-            if (!IsValidRequest(context.Request))
+            var httpContext = context.HttpContext;
+            if (!IsValidRequest(httpContext.Request))
             {
-                actionContext.HttpContext.Response.StatusCode = StatusCodes.Status403Forbidden;
-                actionContext.Result = new BadRequestObjectResult(actionContext.ModelState);
+                context.HttpContext.Response.StatusCode = StatusCodes.Status403Forbidden;
+                context.Result = new BadRequestObjectResult(context.ModelState);
             }
 
-            base.OnActionExecuting(actionContext);
+            base.OnActionExecuting(context);
         }
 
         private bool IsValidRequest(HttpRequest request)

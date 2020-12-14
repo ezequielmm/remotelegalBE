@@ -1,8 +1,7 @@
-﻿using PrecisionReporters.Platform.Data.Entities;
-using System.Threading.Tasks;
-using FluentResults;
-using System.Collections.Generic;
+﻿using FluentResults;
+using PrecisionReporters.Platform.Data.Entities;
 using System;
+using System.Threading.Tasks;
 
 namespace PrecisionReporters.Platform.Domain.Services.Interfaces
 {

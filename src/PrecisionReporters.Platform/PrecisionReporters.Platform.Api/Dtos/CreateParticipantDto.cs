@@ -12,7 +12,6 @@ namespace PrecisionReporters.Platform.Api.Dtos
         [RegularExpression(@"^\(?([2-9][0-8][0-9])\)?[-. ]?([2-9][0-9]{2})[-. ]?([0-9]{4})$")]
         public string Phone { get; set; }
         [Required]
-        //TODO: This property should be an enum
         public ParticipantRole Role { get; set; }
     }
 }

@@ -70,7 +70,7 @@ namespace PrecisionReporters.Platform.UnitTests._03_Data.Handlers
         [Fact]
         public async Task RunAsync_WhenNoTransaction_AndOperationThrows_RollsBackNewTransaction()
         {
-            var result = await _transactionHandler.RunAsync(async () => throw new FakeException());
+            var result = await _transactionHandler.RunAsync(() => throw new FakeException());
             
             Assert.True(result.IsFailed);
             _databaseTransactionProviderMock.Verify(db => db.BeginTransactionAsync());
@@ -83,9 +83,10 @@ namespace PrecisionReporters.Platform.UnitTests._03_Data.Handlers
         {
             private bool _wasCalled = false;
 
-            public async Task ActionMethod()
+            public Task ActionMethod()
             {
                 _wasCalled = true;
+                return Task.CompletedTask;
             }
 
             public void VerifyWasCalled()

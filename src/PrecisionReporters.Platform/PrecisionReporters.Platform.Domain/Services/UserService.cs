@@ -61,13 +61,15 @@ namespace PrecisionReporters.Platform.Domain.Services
             return Result.Ok(newUser);
         }
 
-        public async Task<VerifyUser> VerifyUser(Guid validationHash)
+        public async Task<VerifyUser> VerifyUser(Guid verifyuserId)
         {
-            var verifyUser = await _verifyUserService.GetVerifyUserById(validationHash);
+            var verifyUser = await _verifyUserService.GetVerifyUserById(verifyuserId);
 
             if (verifyUser.CreationDate < DateTime.UtcNow.AddDays(-1) || verifyUser.IsUsed)
             {
                 _log.LogWarning(ApplicationConstants.VerificationCodeException);
+
+                // TODO: return a result and remove this exception from the project
                 throw new HashExpiredOrAlreadyUsedException(ApplicationConstants.VerificationCodeException);
             }
 
@@ -89,11 +91,11 @@ namespace PrecisionReporters.Platform.Domain.Services
             await _awsEmailService.SetTemplateEmailRequest(emailData);
         }
 
-        public async Task<Result<User>> GetUserByEmail(string userEmail)
+        public async Task<Result<User>> GetUserByEmail(string email)
         {
-            var user = await _userRepository.GetFirstOrDefaultByFilter(x => x.EmailAddress == userEmail);
+            var user = await _userRepository.GetFirstOrDefaultByFilter(x => x.EmailAddress == email);
 
-            return user == null ? Result.Fail<User>(new ResourceNotFoundError($"User with email {userEmail} not found.")) : Result.Ok(user);
+            return user == null ? Result.Fail<User>(new ResourceNotFoundError($"User with email {email} not found.")) : Result.Ok(user);
         }
 
         public async Task<List<User>> GetUsersByFilter(Expression<Func<User, bool>> filter = null, string[] include = null)

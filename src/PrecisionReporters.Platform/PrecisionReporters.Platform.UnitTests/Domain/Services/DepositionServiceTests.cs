@@ -261,7 +261,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _depositions.AddRange(DepositionFactory.GetDepositionList());
 
             // Act
-            var result = await _depositionService.GetDepositionsByStatus(null, null);
+            var result = await _depositionService.GetDepositionsByStatus(null, null, null);
 
             Assert.NotEmpty(result);
             _depositionRepositoryMock.Verify(r => r.GetByStatus(It.IsAny<Expression<Func<Deposition, object>>>(),
@@ -283,13 +283,15 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 .ReturnsAsync(_depositions.FindAll(x => x.Status == DepositionStatus.Pending));
 
             // Act
-            var result = await _depositionService.GetDepositionsByStatus(DepositionStatus.Pending, null);
+            var result = await _depositionService.GetDepositionsByStatus(DepositionStatus.Pending, null, null);
 
             _depositionRepositoryMock.Verify(r => r.GetByStatus(It.IsAny<Expression<Func<Deposition, object>>>(),
                 It.IsAny<SortDirection>(),
                 It.Is<Expression<Func<Deposition, bool>>>(x => x != null),
                 It.IsAny<string[]>()), Times.Once);
         }
+
+        [Fact]
         public async Task JoinDeposition_ShouldReturnError_WhenDepositionIdDoesNotExist()
         {
             // Arrange

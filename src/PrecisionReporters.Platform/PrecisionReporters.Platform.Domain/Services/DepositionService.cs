@@ -52,15 +52,12 @@ namespace PrecisionReporters.Platform.Domain.Services
             }
             deposition.Requester = requester.Value;
 
-            if (deposition.Witness != null)
+            if (deposition.Witness != null && !string.IsNullOrWhiteSpace(deposition.Witness.Email))
             {
-                if (!string.IsNullOrWhiteSpace(deposition.Witness.Email))
+                var witnessUser = await _userService.GetUserByEmail(deposition.Witness.Email);
+                if (witnessUser.IsSuccess)
                 {
-                    var witnessUser = await _userService.GetUserByEmail(deposition.Witness.Email);
-                    if (witnessUser.IsSuccess)
-                    {
-                        deposition.Witness.User = witnessUser.Value;
-                    }
+                    deposition.Witness.User = witnessUser.Value;
                 }
             }
 
@@ -88,7 +85,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         }
 
         public async Task<List<Deposition>> GetDepositionsByStatus(DepositionStatus? status, DepositionSortField? sortedField,
-            SortDirection? sortDirection = null)
+            SortDirection? sortDirection)
         {
             var includes = new[] { nameof(Deposition.Requester), nameof(Deposition.Participants),
                 nameof(Deposition.Witness), nameof(Deposition.Case)};

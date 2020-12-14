@@ -1,6 +1,6 @@
 ﻿namespace PrecisionReporters.Platform.Domain.Commons
 {
-    public class ApplicationConstants
+    public static class ApplicationConstants
     {
         public const string VerificationCodeException = "Verification Code is already used or out of date.";
         public const string VerificationEmailTemplate = "VerificationEmailTemplate";

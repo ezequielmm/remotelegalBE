@@ -22,6 +22,11 @@ namespace TestMultipart.ModelBinding
             if (bindingContext == null)
                 throw new ArgumentNullException(nameof(bindingContext));
 
+            await BindModel(bindingContext);
+        }
+
+        private async Task BindModel(ModelBindingContext bindingContext)
+        {
             // Retrieve the form part containing the JSON
             var valueResult = bindingContext.ValueProvider.GetValue(bindingContext.FieldName);
             if (valueResult == ValueProviderResult.None)

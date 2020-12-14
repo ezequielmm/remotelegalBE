@@ -16,7 +16,7 @@ namespace PrecisionReporters.Platform.Domain.Services
     public class AwsEmailService : IAwsEmailService
     {
         private readonly ILogger<AwsEmailService> _logger;
-        private IAmazonSimpleEmailService _emailService;
+        private readonly IAmazonSimpleEmailService _emailService;
         private readonly EmailConfiguration _emailConfiguration;
 
         public AwsEmailService(ILogger<AwsEmailService> logger, IAmazonSimpleEmailService emailService, IOptions<EmailConfiguration> emailConfiguration)

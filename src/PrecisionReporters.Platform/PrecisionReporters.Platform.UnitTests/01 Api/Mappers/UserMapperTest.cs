@@ -18,7 +18,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Mappers
         }
 
         [Fact]
-        public async Task MapToModel_ShouldReturn_NewUser()
+        public void MapToModel_ShouldReturn_NewUser()
         {
             _createUserDto = new CreateUserDto
             {
@@ -41,7 +41,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Mappers
         }
 
         [Fact]
-        public async Task MapToDto_ShouldReturn_NewUserDto()
+        public void MapToDto_ShouldReturn_NewUserDto()
         {
             var user = new User
             {

@@ -98,7 +98,6 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<Room>> StartRoom(Room room)
         {
-            var updatedRoom = room;
             if (room.Status != RoomStatus.Created)
                 return Result.Fail(new InvalidStatusError());
 
@@ -109,14 +108,15 @@ namespace PrecisionReporters.Platform.Domain.Services
                 room.StartDate = DateTime.UtcNow;
 
                 // TODO: Review possible failures from repository, return Result<T>
-                updatedRoom = await _roomRepository.Update(room);
+                var updatedRoom = await _roomRepository.Update(room);
+                return Result.Ok(updatedRoom);
             }
             catch (ApiException ex) when (ex.Message == ApplicationConstants.RoomExistError)
             {
                 //We shouldn't throw an exception if room is already started.
             }
 
-            return Result.Ok(updatedRoom);
+            return Result.Ok(room);
         }
 
         public async Task<Result<Room>> GetRoomBySId(string roomSid)

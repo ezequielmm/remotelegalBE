@@ -1,7 +1,6 @@
-﻿using System.Threading.Tasks;
-using Amazon.S3.Model;
-using FluentResults;
+﻿using FluentResults;
 using PrecisionReporters.Platform.Domain.Commons;
+using System.Threading.Tasks;
 
 namespace PrecisionReporters.Platform.Domain.Services.Interfaces
 {

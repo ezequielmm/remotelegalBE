@@ -1,5 +1,4 @@
 ﻿using System;
-using PrecisionReporters.Platform.Data.Entities;
 
 namespace PrecisionReporters.Platform.Api.Dtos
 {

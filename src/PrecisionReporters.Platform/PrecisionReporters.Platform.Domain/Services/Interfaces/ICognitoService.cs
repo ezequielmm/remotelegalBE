@@ -1,6 +1,5 @@
 ﻿using Amazon.CognitoIdentityProvider.Model;
 using PrecisionReporters.Platform.Data.Entities;
-using System;
 using System.Threading.Tasks;
 
 namespace PrecisionReporters.Platform.Domain.Services.Interfaces

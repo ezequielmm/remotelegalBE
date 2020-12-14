@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace PrecisionReporters.Platform.Data.Entities
+﻿namespace PrecisionReporters.Platform.Data.Entities
 {
     public class VerifyUser : BaseEntity<VerifyUser>
     {

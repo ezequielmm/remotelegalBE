@@ -34,9 +34,9 @@ namespace PrecisionReporters.Platform.Domain.Services
             return Result.Ok();
         }
 
-        public async Task<Result<Composition>> GetCompositionByRoom(Guid roomId)
+        public async Task<Result<Composition>> GetCompositionByRoom(Guid roomSid)
         {
-            var composition = await _compositionRepository.GetFirstOrDefaultByFilter(x => x.RoomId == roomId);
+            var composition = await _compositionRepository.GetFirstOrDefaultByFilter(x => x.RoomId == roomSid);
             if (composition == null)
                 return Result.Fail(new ResourceNotFoundError());
 
@@ -49,24 +49,24 @@ namespace PrecisionReporters.Platform.Domain.Services
             return await _compositionRepository.Update(composition);
         }
 
-        public async Task<Result<Composition>> UpdateCompositionCallback(Composition compositionUpdated)
+        public async Task<Result<Composition>> UpdateCompositionCallback(Composition composition)
         {
-            var composition = await _compositionRepository.GetFirstOrDefaultByFilter(x => x.SId == compositionUpdated.SId);
-            if (composition == null)
+            var compositionToUpdate = await _compositionRepository.GetFirstOrDefaultByFilter(x => x.SId == composition.SId);
+            if (compositionToUpdate == null)
                 return Result.Fail(new ResourceNotFoundError());
 
-            composition.Status = compositionUpdated.Status;
+            compositionToUpdate.Status = composition.Status;
 
-            if (composition.Status == CompositionStatus.Available)
+            if (compositionToUpdate.Status == CompositionStatus.Available)
             {
-                composition.MediaUri = compositionUpdated.MediaUri;
+                compositionToUpdate.MediaUri = composition.MediaUri;
                 var storeCompositionResult = await StoreCompositionMediaAsync(composition);
-                composition.Status = storeCompositionResult.IsSuccess
+                compositionToUpdate.Status = storeCompositionResult.IsSuccess
                     ? CompositionStatus.Stored
                     : CompositionStatus.UploadFailed;
             }
 
-            var updatedComposition = await UpdateComposition(composition);
+            var updatedComposition = await UpdateComposition(compositionToUpdate);
             return Result.Ok(updatedComposition);
         }
     }

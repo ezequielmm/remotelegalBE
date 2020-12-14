@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using PrecisionReporters.Platform.Api.Controllers;
 
 namespace PrecisionReporters.Platform.Api.Dtos
 {
