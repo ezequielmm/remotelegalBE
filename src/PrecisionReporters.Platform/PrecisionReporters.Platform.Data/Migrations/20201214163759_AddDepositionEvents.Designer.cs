@@ -2,15 +2,17 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PrecisionReporters.Platform.Data;
 
 namespace PrecisionReporters.Platform.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20201214163759_AddDepositionEvents")]
+    partial class AddDepositionEvents
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -113,9 +115,6 @@ namespace PrecisionReporters.Platform.Data.Migrations
 
                     b.Property<DateTime?>("EndDate")
                         .HasColumnType("datetime");
-
-                    b.Property<bool>("IsOnTheRecord")
-                        .HasColumnType("bit");
 
                     b.Property<bool>("IsVideoRecordingNeeded")
                         .HasColumnType("bit");

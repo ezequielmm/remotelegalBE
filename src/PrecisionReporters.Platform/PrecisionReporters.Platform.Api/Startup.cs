@@ -124,6 +124,7 @@ namespace PrecisionReporters.Platform.Api
             services.AddSingleton<IMapper<DepositionDocument, DepositionDocumentDto, CreateDepositionDocumentDto>, DepositionDocumentMapper>();
             services.AddSingleton<IMapper<Participant, ParticipantDto, CreateParticipantDto>, ParticipantMapper>();
             services.AddSingleton<IMapper<Member, MemberDto, CreateMemberDto>, MemberMapper>();
+            services.AddSingleton<IMapper<DepositionEvent, DepositionEventDto, CreateDepositionEventDto>, DepositionEventMapper>();
 
             // Services
             services.AddScoped<ICaseService, CaseService>();

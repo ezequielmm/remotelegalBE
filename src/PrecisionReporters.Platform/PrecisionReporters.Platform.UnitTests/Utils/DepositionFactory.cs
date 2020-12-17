@@ -16,6 +16,7 @@ namespace PrecisionReporters.Platform.UnitTests.Utils
                 Name = "witness1",
                 Email = "witness@email.com"
             };
+            depositon.Events = new List<DepositionEvent>();
             return depositon;
         }
 

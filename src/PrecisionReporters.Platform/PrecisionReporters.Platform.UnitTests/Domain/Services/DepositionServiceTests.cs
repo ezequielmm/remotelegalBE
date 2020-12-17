@@ -414,7 +414,6 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(() => _depositions.FirstOrDefault());
 
             var roomServiceMock = new Mock<IRoomService>();
-            //roomServiceMock.Setup(x => x.EndRoom(It.IsAny<Room>())).Verifiable();
             roomServiceMock.Setup(x => x.EndRoom(It.IsAny<Room>())).ReturnsAsync(() => Result.Ok(new Room()));
 
             var depositionService = InitializeService(depositionRepository: depositionRepositoryMock, roomService: roomServiceMock);
@@ -429,6 +428,141 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             Assert.NotNull(result);
             Assert.True(result.IsSuccess);
         }
+
+        [Fact]
+        public async Task GoOnRecord_ShouldReturnOnRecordTrue_WhenOnRecordIsTrue()
+        {
+            // Arrange
+            var depositionId = Guid.NewGuid();
+            var caseId = Guid.NewGuid();
+            var deposition = DepositionFactory.GetDeposition(depositionId, caseId);
+            
+            var IsOnRecord = true;
+            deposition.IsOnTheRecord = !IsOnRecord;
+            _depositions.Add(deposition);
+
+            var depositionRepositoryMock = new Mock<IDepositionRepository>();
+            depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(() => _depositions.FirstOrDefault());
+            depositionRepositoryMock.Setup(x => x.Update(It.IsAny<Deposition>())).ReturnsAsync(() => _depositions.FirstOrDefault());
+
+            var userServiceMock = new Mock<IUserService>();
+            userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(new User()));
+
+            var depositionService = InitializeService(userService: userServiceMock, depositionRepository: depositionRepositoryMock);
+
+            // Act
+            var result = await depositionService.GoOnTheRecord(depositionId, IsOnRecord, "user@mail.com");
+
+            // Assert
+            depositionRepositoryMock.Verify(mock => mock.GetById(It.Is<Guid>(a => a == depositionId), It.IsAny<string[]>()), Times.Once());
+            depositionRepositoryMock.Verify(mock => mock.Update(It.Is<Deposition>(d => d.IsOnTheRecord == IsOnRecord)), Times.Once());
+
+            Assert.NotNull(result);
+            Assert.True(result.IsSuccess);
+            Assert.True(result.Value.IsOnTheRecord);
+            Assert.NotEmpty(result.Value.Events);
+        }
+
+        [Fact]
+        public async Task GoOnRecord_ShouldFail_WhenOnRecordParameterIsTheSameAsCurrentValue()
+        {
+            // Arrange
+            var depositionId = Guid.NewGuid();
+            var caseId = Guid.NewGuid();
+            var deposition = DepositionFactory.GetDeposition(depositionId, caseId);
+
+            var IsOnRecord = true;
+            deposition.IsOnTheRecord = !IsOnRecord;
+            deposition.IsOnTheRecord = IsOnRecord;
+            _depositions.Add(deposition);
+
+            var depositionRepositoryMock = new Mock<IDepositionRepository>();
+            depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(() => _depositions.FirstOrDefault());
+            depositionRepositoryMock.Setup(x => x.Update(It.IsAny<Deposition>())).ReturnsAsync(() => _depositions.FirstOrDefault());
+
+            var userServiceMock = new Mock<IUserService>();
+            userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(new User()));
+
+            var depositionService = InitializeService(userService: userServiceMock, depositionRepository: depositionRepositoryMock);
+
+            // Act
+            var result = await depositionService.GoOnTheRecord(depositionId, IsOnRecord, "user@mail.com");
+
+            // Assert
+            depositionRepositoryMock.Verify(mock => mock.GetById(It.Is<Guid>(a => a == depositionId), It.IsAny<string[]>()), Times.Once());
+            depositionRepositoryMock.Verify(mock => mock.Update(It.Is<Deposition>(d => d.IsOnTheRecord == IsOnRecord)), Times.Never());
+
+            Assert.True(result.IsFailed);
+        }
+
+        [Fact]
+        public async Task GoOnRecord_ShouldReturnOnRecordFalse_WhenOnRecordIsFalse()
+        {
+            // Arrange
+            var depositionId = Guid.NewGuid();
+            var caseId = Guid.NewGuid();
+            var deposition = DepositionFactory.GetDeposition(depositionId, caseId);
+            var IsOnRecord = false;
+            deposition.IsOnTheRecord = !IsOnRecord;
+            _depositions.Add(deposition);
+
+            var depositionRepositoryMock = new Mock<IDepositionRepository>();
+            depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(() => _depositions.FirstOrDefault());
+            depositionRepositoryMock.Setup(x => x.Update(It.IsAny<Deposition>())).ReturnsAsync(() => _depositions.FirstOrDefault());
+
+            var userServiceMock = new Mock<IUserService>();
+            userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(new User()));
+
+            var depositionService = InitializeService(userService: userServiceMock, depositionRepository: depositionRepositoryMock);
+
+            // Act
+            var result = await depositionService.GoOnTheRecord(depositionId, IsOnRecord, "user@mail.com");
+
+            // Assert
+            depositionRepositoryMock.Verify(mock => mock.GetById(It.Is<Guid>(a => a == depositionId), It.IsAny<string[]>()), Times.Once());
+            depositionRepositoryMock.Verify(mock => mock.Update(It.Is<Deposition>(d => d.IsOnTheRecord == IsOnRecord)), Times.Once());
+
+            Assert.NotNull(result);
+            Assert.True(result.IsSuccess);
+            Assert.True(!result.Value.IsOnTheRecord);
+            Assert.NotEmpty(result.Value.Events);
+        }
+
+        [Fact]
+        public async Task AddEvent_ShouldReturnADepositionWithAEvent_WhenAEventIsAdded()
+        {
+            // Arrange
+            var depositionId = Guid.NewGuid();
+            var caseId = Guid.NewGuid();
+            var deposition = DepositionFactory.GetDeposition(depositionId, caseId);
+            _depositions.Add(deposition);
+
+            var depositionRepositoryMock = new Mock<IDepositionRepository>();
+            depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(() => _depositions.FirstOrDefault());
+            depositionRepositoryMock.Setup(x => x.Update(It.IsAny<Deposition>())).ReturnsAsync(() => _depositions.FirstOrDefault());
+
+            var userServiceMock = new Mock<IUserService>();
+            userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(new User()));
+
+            var depositionService = InitializeService(userService: userServiceMock, depositionRepository: depositionRepositoryMock);
+
+            var depositionEvent = new DepositionEvent
+            {
+                CreationDate = DateTime.UtcNow,
+                EventType = EventType.EndDeposition
+            };
+            // Act
+            var result = await depositionService.AddDepositionEvent(depositionId, depositionEvent, "user@mail.com");
+
+            // Assert
+            depositionRepositoryMock.Verify(mock => mock.GetById(It.Is<Guid>(a => a == depositionId), It.IsAny<string[]>()), Times.Once());
+            depositionRepositoryMock.Verify(mock => mock.Update(It.Is<Deposition>(d => d.Events[0].EventType == EventType.EndDeposition)), Times.Once());
+
+            Assert.NotNull(result);
+            Assert.True(result.IsSuccess);
+            Assert.NotEmpty(result.Value.Events);
+        }
+
 
         private DepositionService InitializeService(
             Mock<IDepositionRepository> depositionRepository = null,

@@ -37,6 +37,10 @@ namespace PrecisionReporters.Platform.Data.Entities
 
         public Case Case { get; set; }
 
+        public List<DepositionEvent> Events { get; set; }
+
+        public bool IsOnTheRecord { get; set; } = false;
+
         public override void CopyFrom(Deposition entity)
         {
             StartDate = entity.StartDate;
@@ -50,6 +54,8 @@ namespace PrecisionReporters.Platform.Data.Entities
             Participants = entity.Participants;
             Documents = entity.Documents;
             Status = entity.Status;
+            Events = entity.Events;
+            IsOnTheRecord = entity.IsOnTheRecord;
         }
     }
 }

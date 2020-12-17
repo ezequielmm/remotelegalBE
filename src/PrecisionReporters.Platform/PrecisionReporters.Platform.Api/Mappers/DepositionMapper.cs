@@ -11,15 +11,18 @@ namespace PrecisionReporters.Platform.Api.Mappers
         private readonly IMapper<Room, RoomDto, CreateRoomDto> _rooMapper;
         private readonly IMapper<DepositionDocument, DepositionDocumentDto, CreateDepositionDocumentDto> _depositionDocumentMapper;
         private readonly IMapper<User, UserDto, CreateUserDto> _userMapper;
+        private readonly IMapper<DepositionEvent, DepositionEventDto, CreateDepositionEventDto> _depositionEventMapper;
 
         public DepositionMapper(IMapper<Participant, ParticipantDto, CreateParticipantDto> participantMapper, IMapper<Room, RoomDto,
             CreateRoomDto> rooMapper, IMapper<DepositionDocument, DepositionDocumentDto, CreateDepositionDocumentDto> depositionDocumentMapper,
-            IMapper<User, UserDto, CreateUserDto> userMapper)
+            IMapper<User, UserDto, CreateUserDto> userMapper,
+            IMapper<DepositionEvent, DepositionEventDto, CreateDepositionEventDto> depositionEventMapper)
         {
             _participantMapper = participantMapper;
             _rooMapper = rooMapper;
             _depositionDocumentMapper = depositionDocumentMapper;
             _userMapper = userMapper;
+            _depositionEventMapper = depositionEventMapper;
         }
 
         public Deposition ToModel(DepositionDto dto)
@@ -78,7 +81,8 @@ namespace PrecisionReporters.Platform.Api.Mappers
                 Status = model.Status,
                 CaseName = model.Case.Name,
                 CaseNumber = model.Case.CaseNumber,
-                CompleteDate = model.CompleteDate
+                CompleteDate = model.CompleteDate,
+                IsOnTheRecord = model.IsOnTheRecord
             };
         }
     }

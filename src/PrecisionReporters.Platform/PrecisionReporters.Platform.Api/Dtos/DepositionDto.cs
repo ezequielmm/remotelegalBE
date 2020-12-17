@@ -26,5 +26,6 @@ namespace PrecisionReporters.Platform.Api.Dtos
         public DepositionStatus Status { get; set; }
         public string CaseName { get; internal set; }
         public string CaseNumber { get; internal set; }
+        public bool IsOnTheRecord { get; set; }
     }
 }

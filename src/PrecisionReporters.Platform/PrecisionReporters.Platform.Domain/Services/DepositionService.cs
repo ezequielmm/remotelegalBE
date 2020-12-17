@@ -34,8 +34,14 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<Deposition>> GetDepositionById(Guid id)
         {
-            var includes = new[] { nameof(Deposition.Witness), nameof(Deposition.Room),
-                nameof(Deposition.Requester), nameof(Deposition.Case), nameof(Deposition.Participants) };
+            var includes = new[] {
+                nameof(Deposition.Witness),
+                nameof(Deposition.Room),
+                nameof(Deposition.Requester),
+                nameof(Deposition.Case),
+                nameof(Deposition.Participants),
+                nameof(Deposition.Events)
+            };
             var deposition = await _depositionRepository.GetById(id, includes);
             if (deposition == null)
                 return Result.Fail(new ResourceNotFoundError($"Deposition with id {id} not found."));
@@ -151,6 +157,52 @@ namespace PrecisionReporters.Platform.Domain.Services
             deposition.CompleteDate = DateTime.UtcNow;
             deposition.Status = DepositionStatus.Complete;
 
+            var updatedDeposition = await _depositionRepository.Update(deposition);
+            return Result.Ok(updatedDeposition);
+        }
+
+        public async Task<Result<Deposition>> AddDepositionEvent(Guid id, DepositionEvent depositionEvent, string userEmail)
+        {
+            var depositionResult = await GetDepositionById(id);
+            if (depositionResult.IsFailed)
+                return Result.Fail(new ResourceNotFoundError($"Deposition with id {id} not found."));
+
+            var userResult = await _userService.GetUserByEmail(userEmail);
+            if (userResult.IsFailed)
+                return userResult.ToResult<Deposition>();
+
+            var deposition = depositionResult.Value;
+            depositionEvent.User = userResult.Value;
+            deposition.Events.Add(depositionEvent);
+            var updatedDeposition = await _depositionRepository.Update(deposition);
+            return Result.Ok(updatedDeposition);
+        }
+
+        public async Task<Result<Deposition>> GoOnTheRecord(Guid id, bool onTheRecord, string userEmail)
+        {
+            var depositionResult = await GetDepositionById(id);
+            if (depositionResult.IsFailed)
+                return Result.Fail(new ResourceNotFoundError($"Deposition with id {id} not found."));
+
+            var deposition = depositionResult.Value;
+
+            if (deposition.IsOnTheRecord == onTheRecord)
+            {
+                return Result.Fail(new InvalidInputError($"The current deposition is already in status onTheRecord: {onTheRecord}"));
+            }
+
+            var userResult = await _userService.GetUserByEmail(userEmail);
+            if (userResult.IsFailed)
+                return userResult.ToResult<Deposition>();
+
+            
+            var depositionEvent = new DepositionEvent
+            {
+                EventType = onTheRecord ? EventType.OnTheRecord : EventType.OffTheRecord,
+                User = userResult.Value
+            };
+            deposition.Events.Add(depositionEvent);
+            deposition.IsOnTheRecord = onTheRecord;
             var updatedDeposition = await _depositionRepository.Update(deposition);
             return Result.Ok(updatedDeposition);
         }

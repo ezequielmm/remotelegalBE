@@ -20,6 +20,7 @@ namespace PrecisionReporters.Platform.Data
         public DbSet<Role> Roles { get; set; }
         public DbSet<RolePermission> RolePermissions { get; set; }
         public DbSet<UserResourceRole> UserResourceRoles { get; set; }
+        public DbSet<DepositionEvent> DepositionEvents { get; set; }
 
         public ApplicationDbContext(DbContextOptions options) : base(options) { }
 
@@ -55,6 +56,10 @@ namespace PrecisionReporters.Platform.Data
             modelBuilder.Entity<Case>()
                 .HasMany(x => x.Depositions)
                 .WithOne(x => x.Case);
+
+            modelBuilder.Entity<DepositionEvent>()
+                .Property(x => x.EventType)
+                .HasConversion(new EnumToStringConverter<EventType>());
                 
             modelBuilder.Entity<UserResourceRole>().Property(x => x.ResourceType).HasConversion(new EnumToStringConverter<ResourceType>());
 

@@ -5,6 +5,7 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using PrecisionReporters.Platform.Api.Dtos;
 using PrecisionReporters.Platform.Api.Helpers;
 using PrecisionReporters.Platform.Api.Mappers;
@@ -22,12 +23,15 @@ namespace PrecisionReporters.Platform.Api.Controllers
     {
         private readonly IDepositionService _depositionService;
         private readonly IMapper<Deposition, DepositionDto, CreateDepositionDto> _depositionMapper;
+        private readonly IMapper<DepositionEvent, DepositionEventDto, CreateDepositionEventDto> _depositionEventMapper;
 
         public DepositionsController(IDepositionService depositionService,
-            IMapper<Deposition, DepositionDto, CreateDepositionDto> depositionMapper)
+            IMapper<Deposition, DepositionDto, CreateDepositionDto> depositionMapper,
+            IMapper<DepositionEvent, DepositionEventDto, CreateDepositionEventDto> depositionEventMapper)
         {
             _depositionService = depositionService;
             _depositionMapper = depositionMapper;
+            _depositionEventMapper = depositionEventMapper;
         }
 
         [HttpGet]
@@ -81,6 +85,23 @@ namespace PrecisionReporters.Platform.Api.Controllers
                 return WebApiResponses.GetErrorResponse(endDepositionResult);
 
             return Ok(_depositionMapper.ToDto(endDepositionResult.Value));
+        }
+
+        // <summary>
+        /// Change On Record status to a Deposition
+        /// </summary>
+        /// <param name="depositionId">DepositionId to add the OnRecord / OffRecord event.</param>
+        /// <param name="onTheRecord">Status OnTheRecord / OffTheRecord event.</param>
+        /// <returns>DepositionDto object.</returns>
+        [HttpPost("{id}/record")]
+        public async Task<ActionResult<DepositionDto>> DepositionRecord(Guid id, [FromQuery, BindRequired] bool onTheRecord)
+        {
+            var userEmail = HttpContext.User.FindFirstValue(ClaimTypes.Email);
+            var goOnTheRecordResult = await _depositionService.GoOnTheRecord(id, onTheRecord, userEmail);
+            if (goOnTheRecordResult.IsFailed)
+                return WebApiResponses.GetErrorResponse(goOnTheRecordResult);
+
+            return Ok(_depositionMapper.ToDto(goOnTheRecordResult.Value));
         }
     }
 }
