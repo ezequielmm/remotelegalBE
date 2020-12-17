@@ -1,11 +1,11 @@
 ﻿using FluentResults;
 using PrecisionReporters.Platform.Data.Entities;
+using PrecisionReporters.Platform.Data.Enums;
 using PrecisionReporters.Platform.Domain.Dtos;
 using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
-using PrecisionReporters.Platform.Data.Enums;
 
 namespace PrecisionReporters.Platform.Domain.Services.Interfaces
 {
@@ -13,7 +13,8 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
     {
         Task<List<Deposition>> GetDepositions(Expression<Func<Deposition, bool>> filter = null, string[] include = null);
         Task<Result<Deposition>> GetDepositionById(Guid id);
-        Task<Result<Deposition>> GenerateScheduledDeposition(Deposition deposition, List<DepositionDocument> uploadedDocuments);
+        Task<Result<Deposition>> GetDepositionByIdWithDocumentUsers(Guid id);
+        Task<Result<Deposition>> GenerateScheduledDeposition(Deposition deposition, List<Document> uploadedDocuments);
         Task<List<Deposition>> GetDepositionsByStatus(DepositionStatus? status, DepositionSortField? sortedField, SortDirection? sortDirection);
         Task<Result<JoinDepositionDto>> JoinDeposition(Guid id, string identity);
         Task<Result<Deposition>> EndDeposition(Guid id);

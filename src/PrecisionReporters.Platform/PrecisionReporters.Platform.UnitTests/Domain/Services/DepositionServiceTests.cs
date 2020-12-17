@@ -42,7 +42,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _roomServiceMock = new Mock<IRoomService>();
 
             _depositionService = new DepositionService(_depositionRepositoryMock.Object, _userServiceMock.Object, _roomServiceMock.Object);
-        }       
+        }
 
         public void Dispose()
         {
@@ -124,7 +124,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var depositionId = Guid.NewGuid();
             var caseId = Guid.NewGuid();
             var deposition = DepositionFactory.GetDeposition(depositionId, caseId);
-            var depositionDocuments = DepositionFactory.GetDepositionDocumentList();
+            var depositionDocuments = DepositionFactory.GetDocumentList();
 
 
             var userServiceMock = new Mock<IUserService>();
@@ -149,11 +149,11 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var depositionId = Guid.NewGuid();
             var caseId = Guid.NewGuid();
             var deposition = DepositionFactory.GetDeposition(depositionId, caseId);
-            var depositionDocuments = DepositionFactory.GetDepositionDocumentList();
+            var depositionDocuments = DepositionFactory.GetDocumentList();
             var errorMessage = $"Requester with email {deposition.Requester.EmailAddress} not found";
 
             var userServiceMock = new Mock<IUserService>();
-            userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Fail(new Error ("Mocked error")));
+            userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Fail(new Error("Mocked error")));
 
             var service = InitializeService(userService: userServiceMock);
 
@@ -233,12 +233,12 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 },
                 FileKey = fileKey
             };
-            var captionDocument = new DepositionDocument
+            var captionDocument = new Document
             {
                 FileKey = fileKey
             };
 
-            var documents = DepositionFactory.GetDepositionDocumentList();
+            var documents = DepositionFactory.GetDocumentList();
             documents.Add(captionDocument);
 
             var userServiceMock = new Mock<IUserService>();
@@ -303,7 +303,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var identity = Guid.NewGuid().ToString();
 
             var depositionRepositoryMock = new Mock<IDepositionRepository>();
-            depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync((Deposition) null);
+            depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync((Deposition)null);
 
             var depositionService = InitializeService(depositionRepository: depositionRepositoryMock);
             // Act
@@ -325,12 +325,12 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var caseId = Guid.NewGuid();
             var deposition = DepositionFactory.GetDeposition(depositionId, caseId);
             _depositions.Add(deposition);
-            
+
             var depositionRepositoryMock = new Mock<IDepositionRepository>();
             depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(() => _depositions.FirstOrDefault());
 
             var roomServiceMock = new Mock<IRoomService>();
-            roomServiceMock.Setup(x => x.StartRoom(It.IsAny<Room>())).Verifiable();         
+            roomServiceMock.Setup(x => x.StartRoom(It.IsAny<Room>())).Verifiable();
             roomServiceMock.Setup(x => x.GenerateRoomToken(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(Result.Ok(token));
 
             var depositionService = InitializeService(depositionRepository: depositionRepositoryMock, roomService: roomServiceMock);
@@ -563,13 +563,11 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             Assert.NotEmpty(result.Value.Events);
         }
 
-
         private DepositionService InitializeService(
             Mock<IDepositionRepository> depositionRepository = null,
             Mock<IUserService> userService = null,
             Mock<IRoomService> roomService = null)
         {
-
             var depositionRepositoryMock = depositionRepository ?? new Mock<IDepositionRepository>();
             var userServiceMock = userService ?? new Mock<IUserService>();
             var roomServiceMock = roomService ?? new Mock<IRoomService>();
@@ -577,7 +575,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             return new DepositionService(
                 depositionRepositoryMock.Object,
                 userServiceMock.Object,
-                roomServiceMock.Object                
+                roomServiceMock.Object
                 );
         }
     }

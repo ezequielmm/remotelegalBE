@@ -3,9 +3,9 @@ using PrecisionReporters.Platform.Data.Repositories.Interfaces;
 
 namespace PrecisionReporters.Platform.Data.Repositories
 {
-    public class DepositionDocumentRepository: BaseRepository<DepositionDocument>, IDepositionDocumentRepository
+    public class DocumentRepository: BaseRepository<DepositionDocument>, IDocumentRepository
     {
-        public DepositionDocumentRepository(ApplicationDbContext dbcontext) : base(dbcontext)
+        public DocumentRepository(ApplicationDbContext dbcontext) : base(dbcontext)
         {
         }
     }

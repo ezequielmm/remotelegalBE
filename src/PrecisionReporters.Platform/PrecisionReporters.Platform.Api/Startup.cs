@@ -121,6 +121,7 @@ namespace PrecisionReporters.Platform.Api
             services.AddSingleton<IMapper<VerifyUser, object, CreateVerifyUserDto>, VerifyUserMapper>();
             services.AddSingleton<IMapper<Composition, CompositionDto, CallbackCompositionDto>, CompositionMapper>();
             services.AddSingleton<IMapper<Deposition, DepositionDto, CreateDepositionDto>, DepositionMapper>();
+            services.AddSingleton<IMapper<Document, DocumentDto, CreateDocumentDto>, DocumentMapper>();
             services.AddSingleton<IMapper<DepositionDocument, DepositionDocumentDto, CreateDepositionDocumentDto>, DepositionDocumentMapper>();
             services.AddSingleton<IMapper<Participant, ParticipantDto, CreateParticipantDto>, ParticipantMapper>();
             services.AddSingleton<IMapper<Member, MemberDto, CreateMemberDto>, MemberMapper>();
@@ -153,9 +154,11 @@ namespace PrecisionReporters.Platform.Api
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<IVerifyUserService, VerifyUserService>();
             services.AddScoped<IAwsStorageService, AwsStorageService>();
-            services.AddScoped<IDepositionDocumentService, DepositionDocumentService>().Configure<DepositionDocumentConfiguration>(x =>
+            services.AddScoped<IDocumentService, DocumentService>().Configure<DocumentConfiguration>(x =>
             {
-                x.BucketName = appConfiguration.DepositionDocumentConfiguration.BucketName;
+                x.BucketName = appConfiguration.DocumentConfiguration.BucketName;
+                x.AcceptedFileExtensions = appConfiguration.DocumentConfiguration.AcceptedFileExtensions;
+                x.MaxFileSize = appConfiguration.DocumentConfiguration.MaxFileSize;
             });
             services.AddScoped<IDepositionService, DepositionService>();
             services.AddTransient<IAwsEmailService, AwsEmailService>().Configure<EmailConfiguration>(x =>
@@ -177,9 +180,10 @@ namespace PrecisionReporters.Platform.Api
             services.AddScoped<IVerifyUserRepository, VerifyUserRepository>();
             services.AddScoped<ICompositionRepository, CompositionRepository>();
             services.AddScoped<IDepositionRepository, DepositionRepository>();
-            services.AddScoped<IDepositionDocumentRepository, DepositionDocumentRepository>();
+            services.AddScoped<IDocumentRepository, DocumentRepository>();
             services.AddScoped<IUserResourceRoleRepository, UserResourceRoleRepository>();
             services.AddScoped<IRoleRepository, RoleRepository>();
+            services.AddScoped<IDocumentUserDepositionRepository, DocumentUserDepositionRepository>();
 
             services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseMySQL(appConfiguration.ConnectionStrings.MySqlConnection));

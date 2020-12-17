@@ -20,18 +20,18 @@ namespace PrecisionReporters.Platform.Domain.Services
         private const SortDirection DEFAULT_SORT_DIRECTION = SortDirection.Ascend;
         private readonly ICaseRepository _caseRepository;
         private readonly IUserService _userService;
-        private readonly IDepositionDocumentService _depositionDocumentService;
+        private readonly IDocumentService _documentService;
         private readonly IDepositionService _depositionService;
         private readonly ILogger<CaseService> _logger;
 		private readonly ITransactionHandler _transactionHandler;
         private readonly IPermissionService _permissionService;
 
-        public CaseService(ICaseRepository caseRepository, IUserService userService, IDepositionDocumentService depositionDocumentService, IDepositionService depositionService, ILogger<CaseService> logger, ITransactionHandler transactionHandler, IPermissionService permissionService)
+        public CaseService(ICaseRepository caseRepository, IUserService userService, IDocumentService documentService, IDepositionService depositionService, ILogger<CaseService> logger, ITransactionHandler transactionHandler, IPermissionService permissionService)
         {
             _caseRepository = caseRepository;
             _userService = userService;
             _logger = logger;
-            _depositionDocumentService = depositionDocumentService;
+            _documentService = documentService;
             _depositionService = depositionService;
 			_transactionHandler = transactionHandler;
             _permissionService = permissionService;
@@ -121,19 +121,19 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (caseToUpdate == null)
                 return Result.Fail(new ResourceNotFoundError($"Case with id {caseId} not found."));
 
-            var uploadedDocuments = new List<DepositionDocument>();
+            var uploadedDocuments = new List<Document>();
 
             // Upload only files related to a caption
             var filesToUpload = files.Where(f => depositions.Select(d => d.FileKey).ToList().Contains(f.Key));
 
             foreach (var file in filesToUpload)
             {
-                var documentResult = await _depositionDocumentService.UploadDocumentFile(file, userResult.Value, $"{caseId.ToString()}/caption");
+                var documentResult = await _documentService.UploadDocumentFile(file, userResult.Value, $"{caseId}/caption");
                 if (documentResult.IsFailed)
                 {
                     _logger.LogError(new Exception(documentResult.Errors.First().Message), "Unable to load one or more documents to storage");
                     _logger.LogInformation("Removing uploaded documents");
-                    await _depositionDocumentService.DeleteUploadedFiles(uploadedDocuments);
+                    await _documentService.DeleteUploadedFiles(uploadedDocuments);
                     return Result.Fail(new Error("Unable to upload one or more documents to deposition"));
                 }
                 uploadedDocuments.Add(documentResult.Value);
@@ -144,7 +144,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 var depositionResult = await _depositionService.GenerateScheduledDeposition(deposition, uploadedDocuments);
                 if (depositionResult.IsFailed)
                 {
-                    await _depositionDocumentService.DeleteUploadedFiles(uploadedDocuments);
+                    await _documentService.DeleteUploadedFiles(uploadedDocuments);
                     return depositionResult.ToResult<Case>();
                 }
 
@@ -169,7 +169,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Unable to schedule depositions");
-                await _depositionDocumentService.DeleteUploadedFiles(uploadedDocuments);
+                await _documentService.DeleteUploadedFiles(uploadedDocuments);
                 return Result.Fail(new ExceptionalError("Unable to schedule depositions", ex));
             }
 

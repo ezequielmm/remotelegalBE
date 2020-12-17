@@ -1,7 +1,5 @@
 ﻿using FluentResults;
 using Microsoft.Extensions.Logging;
-using FluentResults;
-using Microsoft.Extensions.Logging;
 using Moq;
 using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Data.Enums;
@@ -25,7 +23,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         private readonly CaseService _service;
         private readonly Mock<ICaseRepository> _caseRepositoryMock;
         private readonly Mock<IUserService> _userServiceMock;
-        private readonly Mock<IDepositionDocumentService> _depositionDocumentServiceMock;
+        private readonly Mock<IDocumentService> _documentServiceMock;
         private readonly Mock<IDepositionService> _depositionServiceMock;
         private readonly Mock<ILogger<CaseService>> _loggerMock;
         private readonly Mock<ITransactionHandler> _transactionHandlerMock;
@@ -54,11 +52,11 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 });
 
             _userServiceMock = new Mock<IUserService>();
-            _depositionDocumentServiceMock = new Mock<IDepositionDocumentService>();
+            _documentServiceMock = new Mock<IDocumentService>();
             _depositionServiceMock = new Mock<IDepositionService>();
             _loggerMock = new Mock<ILogger<CaseService>>();
             _service = new CaseService(_caseRepositoryMock.Object, _userServiceMock.Object,
-                _depositionDocumentServiceMock.Object, _depositionServiceMock.Object, _loggerMock.Object, _transactionHandlerMock.Object, _permissionServiceMock.Object);
+                _documentServiceMock.Object, _depositionServiceMock.Object, _loggerMock.Object, _transactionHandlerMock.Object, _permissionServiceMock.Object);
         }
 
         public void Dispose()
@@ -272,7 +270,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _caseRepositoryMock
                 .Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Case, bool>>>(), It.IsAny<string[]>()))
                 .ReturnsAsync(new Case {Id = caseId});
-            _depositionDocumentServiceMock
+            _documentServiceMock
                 .Setup(x => x.UploadDocumentFile(It.IsAny<KeyValuePair<string, FileTransferInfo>>(), It.IsAny<User>(),
                     It.IsAny<string>()))
                 .ReturnsAsync(Result.Fail("Unable to upload document"));
@@ -284,7 +282,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _caseRepositoryMock.Verify(
                 x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Case, bool>>>(), It.IsAny<string[]>()),
                 Times.Once);
-            _depositionDocumentServiceMock.Verify(x => x.UploadDocumentFile(
+            _documentServiceMock.Verify(x => x.UploadDocumentFile(
                 It.IsAny<KeyValuePair<string, FileTransferInfo>>(),
                 It.Is<User>(a => a == user),
                 It.Is<string>(a => a.Contains(caseId.ToString()))), Times.Once);
@@ -300,7 +298,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 It.Is<It.IsAnyType>((v, t) => v.ToString() == logInformationMessage),
                 null,
                 It.Is<Func<It.IsAnyType, Exception, string>>((v, t) => true)), Times.Once);
-            _depositionDocumentServiceMock.Verify(x => x.DeleteUploadedFiles(It.IsAny<List<DepositionDocument>>()),
+            _documentServiceMock.Verify(x => x.DeleteUploadedFiles(It.IsAny<List<Document>>()),
                 Times.Once);
             Assert.NotNull(result);
             Assert.IsType<Result<Case>>(result);
@@ -335,26 +333,26 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _caseRepositoryMock
                 .Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Case, bool>>>(), It.IsAny<string[]>()))
                 .ReturnsAsync(new Case {Id = caseId});
-            _depositionDocumentServiceMock
+            _documentServiceMock
                 .Setup(x => x.UploadDocumentFile(It.IsAny<KeyValuePair<string, FileTransferInfo>>(), It.IsAny<User>(),
                     It.IsAny<string>()))
                 .ReturnsAsync(Result.Ok());
             _depositionServiceMock
-                .Setup(x => x.GenerateScheduledDeposition(It.IsAny<Deposition>(), It.IsAny<List<DepositionDocument>>()))
+                .Setup(x => x.GenerateScheduledDeposition(It.IsAny<Deposition>(), It.IsAny<List<Document>>()))
                 .ReturnsAsync(Result.Fail(errorMessage));
 
             // Act
             var result = await _service.ScheduleDepositions(userEmail, caseId, depositions, files);
 
             // Assert
-            _depositionDocumentServiceMock.Verify(x => x.UploadDocumentFile(
+            _documentServiceMock.Verify(x => x.UploadDocumentFile(
                 It.IsAny<KeyValuePair<string, FileTransferInfo>>(),
                 It.Is<User>(a => a == user),
                 It.Is<string>(a => a.Contains(caseId.ToString()))), Times.Exactly(depositions.Count));
             _depositionServiceMock.Verify(
-                x => x.GenerateScheduledDeposition(It.IsAny<Deposition>(), It.IsAny<List<DepositionDocument>>()),
+                x => x.GenerateScheduledDeposition(It.IsAny<Deposition>(), It.IsAny<List<Document>>()),
                 Times.Once);
-            _depositionDocumentServiceMock.Verify(x => x.DeleteUploadedFiles(It.IsAny<List<DepositionDocument>>()),
+            _documentServiceMock.Verify(x => x.DeleteUploadedFiles(It.IsAny<List<Document>>()),
                 Times.Once);
             Assert.NotNull(result);
             Assert.IsType<Result<Case>>(result);
@@ -390,13 +388,13 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _caseRepositoryMock
                 .Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Case, bool>>>(), It.IsAny<string[]>()))
                 .ReturnsAsync(new Case {Id = caseId, Depositions = new List<Deposition>()});
-            _depositionDocumentServiceMock
+            _documentServiceMock
                 .Setup(x => x.UploadDocumentFile(It.IsAny<KeyValuePair<string, FileTransferInfo>>(), It.IsAny<User>(),
                     It.IsAny<string>()))
                 .ReturnsAsync(Result.Ok());
             _depositionServiceMock
                 .SetupSequence(x =>
-                    x.GenerateScheduledDeposition(It.IsAny<Deposition>(), It.IsAny<List<DepositionDocument>>()))
+                    x.GenerateScheduledDeposition(It.IsAny<Deposition>(), It.IsAny<List<Document>>()))
                 .ReturnsAsync(Result.Ok(depositions[0]))
                 .ReturnsAsync(Result.Ok(depositions[1]));
             _caseRepositoryMock.Setup(x => x.Update(It.IsAny<Case>())).ThrowsAsync(new Exception("TestException"));
@@ -405,12 +403,12 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var result = await _service.ScheduleDepositions(userEmail, caseId, depositions, files);
 
             // Assert
-            _depositionDocumentServiceMock.Verify(x => x.UploadDocumentFile(
+            _documentServiceMock.Verify(x => x.UploadDocumentFile(
                 It.IsAny<KeyValuePair<string, FileTransferInfo>>(),
                 It.Is<User>(a => a == user),
                 It.Is<string>(a => a.Contains(caseId.ToString()))), Times.Exactly(depositions.Count));
             _depositionServiceMock.Verify(
-                x => x.GenerateScheduledDeposition(It.IsAny<Deposition>(), It.IsAny<List<DepositionDocument>>()),
+                x => x.GenerateScheduledDeposition(It.IsAny<Deposition>(), It.IsAny<List<Document>>()),
                 Times.Exactly(depositions.Count));
             _caseRepositoryMock.Verify(x => x.Update(It.Is<Case>(a => a.Id == caseId)), Times.Once);
             _loggerMock.Verify(x => x.Log(
@@ -419,7 +417,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 It.Is<It.IsAnyType>((v, t) => v.ToString() == logErrorMessage),
                 It.IsAny<Exception>(),
                 It.Is<Func<It.IsAnyType, Exception, string>>((v, t) => true)), Times.Once);
-            _depositionDocumentServiceMock.Verify(x => x.DeleteUploadedFiles(It.IsAny<List<DepositionDocument>>()),
+            _documentServiceMock.Verify(x => x.DeleteUploadedFiles(It.IsAny<List<Document>>()),
                 Times.Once);
             Assert.NotNull(result);
             Assert.IsType<Result<Case>>(result);
@@ -452,13 +450,13 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _caseRepositoryMock
                 .Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Case, bool>>>(), It.IsAny<string[]>()))
                 .ReturnsAsync(new Case {Id = caseId, Depositions = new List<Deposition>()});
-            _depositionDocumentServiceMock
+            _documentServiceMock
                 .Setup(x => x.UploadDocumentFile(It.IsAny<KeyValuePair<string, FileTransferInfo>>(), It.IsAny<User>(),
                     It.IsAny<string>()))
                 .ReturnsAsync(Result.Ok());
             _depositionServiceMock
                 .SetupSequence(x =>
-                    x.GenerateScheduledDeposition(It.IsAny<Deposition>(), It.IsAny<List<DepositionDocument>>()))
+                    x.GenerateScheduledDeposition(It.IsAny<Deposition>(), It.IsAny<List<Document>>()))
                 .ReturnsAsync(Result.Ok(depositions[0]))
                 .ReturnsAsync(Result.Ok(depositions[1]));
             _caseRepositoryMock.Setup(x => x.Update(It.IsAny<Case>())).ReturnsAsync(new Case {Id = caseId});
@@ -467,12 +465,12 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var result = await _service.ScheduleDepositions(userEmail, caseId, depositions, files);
 
             // Assert
-            _depositionDocumentServiceMock.Verify(x => x.UploadDocumentFile(
+            _documentServiceMock.Verify(x => x.UploadDocumentFile(
                 It.IsAny<KeyValuePair<string, FileTransferInfo>>(),
                 It.Is<User>(a => a == user),
                 It.Is<string>(a => a.Contains(caseId.ToString()))), Times.Exactly(depositions.Count));
             _depositionServiceMock.Verify(
-                x => x.GenerateScheduledDeposition(It.IsAny<Deposition>(), It.IsAny<List<DepositionDocument>>()),
+                x => x.GenerateScheduledDeposition(It.IsAny<Deposition>(), It.IsAny<List<Document>>()),
                 Times.Exactly(depositions.Count));
             _caseRepositoryMock.Verify(x => x.Update(It.Is<Case>(a => a.Id == caseId)), Times.Once);
             _loggerMock.Verify(x => x.Log(
@@ -481,7 +479,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 It.Is<It.IsAnyType>((v, t) => true),
                 It.IsAny<Exception>(),
                 It.Is<Func<It.IsAnyType, Exception, string>>((v, t) => true)), Times.Never);
-            _depositionDocumentServiceMock.Verify(x => x.DeleteUploadedFiles(It.IsAny<List<DepositionDocument>>()), Times.Never);
+            _documentServiceMock.Verify(x => x.DeleteUploadedFiles(It.IsAny<List<Document>>()), Times.Never);
             Assert.NotNull(result);
             Assert.IsType<Result<Case>>(result);
             Assert.True(result.IsSuccess);

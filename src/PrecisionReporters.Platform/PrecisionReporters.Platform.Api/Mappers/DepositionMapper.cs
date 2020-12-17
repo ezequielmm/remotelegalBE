@@ -9,20 +9,19 @@ namespace PrecisionReporters.Platform.Api.Mappers
     {
         private readonly IMapper<Participant, ParticipantDto, CreateParticipantDto> _participantMapper;
         private readonly IMapper<Room, RoomDto, CreateRoomDto> _rooMapper;
+        private readonly IMapper<Document, DocumentDto, CreateDocumentDto> _documentMapper;
         private readonly IMapper<DepositionDocument, DepositionDocumentDto, CreateDepositionDocumentDto> _depositionDocumentMapper;
         private readonly IMapper<User, UserDto, CreateUserDto> _userMapper;
-        private readonly IMapper<DepositionEvent, DepositionEventDto, CreateDepositionEventDto> _depositionEventMapper;
 
         public DepositionMapper(IMapper<Participant, ParticipantDto, CreateParticipantDto> participantMapper, IMapper<Room, RoomDto,
-            CreateRoomDto> rooMapper, IMapper<DepositionDocument, DepositionDocumentDto, CreateDepositionDocumentDto> depositionDocumentMapper,
-            IMapper<User, UserDto, CreateUserDto> userMapper,
-            IMapper<DepositionEvent, DepositionEventDto, CreateDepositionEventDto> depositionEventMapper)
+            CreateRoomDto> rooMapper, IMapper<Document, DocumentDto, CreateDocumentDto> documentMapper,
+            IMapper<User, UserDto, CreateUserDto> userMapper, IMapper<DepositionDocument, DepositionDocumentDto, CreateDepositionDocumentDto> depositionDocumentMapper)
         {
             _participantMapper = participantMapper;
             _rooMapper = rooMapper;
-            _depositionDocumentMapper = depositionDocumentMapper;
+            _documentMapper = documentMapper;
             _userMapper = userMapper;
-            _depositionEventMapper = depositionEventMapper;
+            _depositionDocumentMapper = depositionDocumentMapper;
         }
 
         public Deposition ToModel(DepositionDto dto)
@@ -40,7 +39,7 @@ namespace PrecisionReporters.Platform.Api.Mappers
                 RequesterId = dto.Requester.Id,
                 Details = dto.Details,
                 Room = _rooMapper.ToModel(dto.Room),
-                Caption = dto.Caption != null ? _depositionDocumentMapper.ToModel(dto.Caption) : null,
+                Caption = dto.Caption != null ? _documentMapper.ToModel(dto.Caption) : null,
                 Documents = dto.Documents?.Select(d => _depositionDocumentMapper.ToModel(d)).ToList()
             };
         }
@@ -76,9 +75,10 @@ namespace PrecisionReporters.Platform.Api.Mappers
                 Requester = _userMapper.ToDto(model.Requester),
                 Details = model.Details,
                 Room = model.Room != null ? _rooMapper.ToDto(model.Room) : null,
-                Caption = model.Caption != null ? _depositionDocumentMapper.ToDto(model.Caption) : null,
+                Caption = model.Caption != null ? _documentMapper.ToDto(model.Caption) : null,
                 Documents = model.Documents?.Select(d => _depositionDocumentMapper.ToDto(d)).ToList(),
                 Status = model.Status,
+                CaseId = model.CaseId,
                 CaseName = model.Case.Name,
                 CaseNumber = model.Case.CaseNumber,
                 CompleteDate = model.CompleteDate,

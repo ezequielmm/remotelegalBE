@@ -22,6 +22,7 @@ namespace PrecisionReporters.Platform.Data.Entities
         [Required]
         public string CompanyAddress { get; set; }
 		public bool IsAdmin { get; set; }
+        public List<DocumentUserDeposition> DocumentUserDepositions { get; set; }
 
         public virtual ICollection<Member> MemberOn { get; set; }
 

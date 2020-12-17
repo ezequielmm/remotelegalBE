@@ -1,7 +1,10 @@
-﻿namespace PrecisionReporters.Platform.Api.Dtos
+﻿using System;
+
+namespace PrecisionReporters.Platform.Api.Dtos
 {
     public class CreateDepositionDocumentDto
     {
-        public string Name { get; set; }
+        public Guid DocumentId { get; set; }
+        public Guid DepositionId { get; set; }
     }
 }

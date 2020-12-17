@@ -14,7 +14,7 @@ namespace PrecisionReporters.Platform.Api.Dtos
         public DateTimeOffset? EndDate { get; set; }
         public DateTimeOffset? CompleteDate { get; set; }
         public string TimeZone { get; set; }
-        public DepositionDocumentDto Caption { get; set; }
+        public DocumentDto Caption { get; set; }
         public ParticipantDto Witness { get; set; }
         public bool IsVideoRecordingNeeded { get; set; }
         public UserDto Requester { get; set; }
@@ -24,6 +24,7 @@ namespace PrecisionReporters.Platform.Api.Dtos
         public List<DepositionDocumentDto> Documents { get; set; }
         [JsonConverter(typeof(StringEnumConverter))]
         public DepositionStatus Status { get; set; }
+        public Guid CaseId { get; set; }
         public string CaseName { get; internal set; }
         public string CaseNumber { get; internal set; }
         public bool IsOnTheRecord { get; set; }

@@ -16,6 +16,8 @@ namespace PrecisionReporters.Platform.Data
         public DbSet<Member> Members { get; set; }
         public DbSet<Deposition> Depositions { get; set; }
         public DbSet<DepositionDocument> DepositionDocuments { get; set; }
+        public DbSet<Document> Documents { get; set; }
+        public DbSet<DocumentUserDeposition> DocumentUserDepositions { get; set; }
         public DbSet<Participant> Participants { get; set; }
         public DbSet<Role> Roles { get; set; }
         public DbSet<RolePermission> RolePermissions { get; set; }

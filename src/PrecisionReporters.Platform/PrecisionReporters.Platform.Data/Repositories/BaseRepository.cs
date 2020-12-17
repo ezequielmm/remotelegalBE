@@ -24,6 +24,14 @@ namespace PrecisionReporters.Platform.Data.Repositories
             return entity;
         }
 
+        public async Task<List<T>> CreateRange(List<T> entities)
+        {
+            await _dbContext.Set<T>().AddRangeAsync(entities);
+            await _dbContext.SaveChangesAsync();
+            return entities;
+        }
+
+
         public async Task<T> Update(T entity)
         {
             var editedEntity = await _dbContext.Set<T>().FirstOrDefaultAsync(e => e.Id == entity.Id);

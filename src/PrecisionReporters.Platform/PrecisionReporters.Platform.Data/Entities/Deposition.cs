@@ -19,10 +19,13 @@ namespace PrecisionReporters.Platform.Data.Entities
         public string FileKey { get; set; }
         public List<Participant> Participants { get; set; }
         public List<DepositionDocument> Documents { get; set; }
+        public List<DocumentUserDeposition> DocumentUserDepositions {get;set;}
+        [Required]
+        public DepositionStatus Status { get; set; } = DepositionStatus.Pending;
 
         [ForeignKey(nameof(Caption))]
         public Guid? CaptionId { get; set; }
-        public DepositionDocument Caption { get; set; }
+        public Document Caption { get; set; }
         [ForeignKey(nameof(Witness))]
         public Guid? WitnessId { get; set; }
         public Participant Witness { get; set; }
@@ -32,9 +35,8 @@ namespace PrecisionReporters.Platform.Data.Entities
         [ForeignKey(nameof(Room))]
         public Guid? RoomId { get; set; }
         public Room Room { get; set; }
-        [Required]
-        public DepositionStatus Status { get; set; } = DepositionStatus.Pending;
-
+        [ForeignKey(nameof(Case))]
+        public Guid CaseId { get; set; }
         public Case Case { get; set; }
 
         public List<DepositionEvent> Events { get; set; }

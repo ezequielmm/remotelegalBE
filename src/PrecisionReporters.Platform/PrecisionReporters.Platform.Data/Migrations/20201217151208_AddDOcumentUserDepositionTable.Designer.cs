@@ -2,15 +2,17 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PrecisionReporters.Platform.Data;
 
 namespace PrecisionReporters.Platform.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20201217151208_AddDOcumentUserDepositionTable")]
+    partial class AddDOcumentUserDepositionTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -114,9 +116,6 @@ namespace PrecisionReporters.Platform.Data.Migrations
 
                     b.Property<DateTime?>("EndDate")
                         .HasColumnType("datetime");
-
-                    b.Property<bool>("IsOnTheRecord")
-                        .HasColumnType("bit");
 
                     b.Property<bool>("IsVideoRecordingNeeded")
                         .HasColumnType("bit");
@@ -251,38 +250,6 @@ namespace PrecisionReporters.Platform.Data.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("DocumentUserDepositions");
-                });
-
-            modelBuilder.Entity("PrecisionReporters.Platform.Data.Entities.DepositionEvent", b =>
-                {
-                    b.Property<string>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("char(36)");
-
-                    b.Property<DateTime>("CreationDate")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime");
-
-                    b.Property<string>("DepositionId")
-                        .HasColumnType("char(36)");
-
-                    b.Property<string>("Details")
-                        .HasColumnType("text");
-
-                    b.Property<string>("EventType")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("UserId")
-                        .HasColumnType("char(36)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("DepositionId");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("DepositionEvents");
                 });
 
             modelBuilder.Entity("PrecisionReporters.Platform.Data.Entities.Member", b =>
@@ -636,17 +603,6 @@ namespace PrecisionReporters.Platform.Data.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-                });
-
-            modelBuilder.Entity("PrecisionReporters.Platform.Data.Entities.DepositionEvent", b =>
-                {
-                    b.HasOne("PrecisionReporters.Platform.Data.Entities.Deposition", null)
-                        .WithMany("Events")
-                        .HasForeignKey("DepositionId");
-
-                    b.HasOne("PrecisionReporters.Platform.Data.Entities.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId");
                 });
 
             modelBuilder.Entity("PrecisionReporters.Platform.Data.Entities.Member", b =>

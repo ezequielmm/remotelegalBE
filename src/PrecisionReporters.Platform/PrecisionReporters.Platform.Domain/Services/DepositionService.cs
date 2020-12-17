@@ -1,15 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Linq.Expressions;
-using System.Threading.Tasks;
-using FluentResults;
+﻿using FluentResults;
 using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Data.Enums;
 using PrecisionReporters.Platform.Data.Repositories.Interfaces;
 using PrecisionReporters.Platform.Domain.Dtos;
 using PrecisionReporters.Platform.Domain.Errors;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
+using System.Threading.Tasks;
 
 namespace PrecisionReporters.Platform.Domain.Services
 {
@@ -34,22 +34,16 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<Deposition>> GetDepositionById(Guid id)
         {
-            var includes = new[] {
-                nameof(Deposition.Witness),
-                nameof(Deposition.Room),
-                nameof(Deposition.Requester),
-                nameof(Deposition.Case),
-                nameof(Deposition.Participants),
-                nameof(Deposition.Events)
-            };
-            var deposition = await _depositionRepository.GetById(id, includes);
-            if (deposition == null)
-                return Result.Fail(new ResourceNotFoundError($"Deposition with id {id} not found."));
-
-            return Result.Ok(deposition);
+            return await GetByIdWithIncludes(id);
         }
 
-        public async Task<Result<Deposition>> GenerateScheduledDeposition(Deposition deposition, List<DepositionDocument> uploadedDocuments)
+        public async Task<Result<Deposition>> GetDepositionByIdWithDocumentUsers(Guid id)
+        {
+            var include = new[] { nameof(Deposition.DocumentUserDepositions) };
+            return await GetByIdWithIncludes(id, include);
+        }
+
+        public async Task<Result<Deposition>> GenerateScheduledDeposition(Deposition deposition, List<Document> uploadedDocuments)
         {
             var requester = await _userService.GetUserByEmail(deposition.Requester.EmailAddress);
             if (requester.IsFailed)
@@ -120,23 +114,22 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<JoinDepositionDto>> JoinDeposition(Guid id, string identity)
         {
-
-            var depositionResult = await GetDepositionById(id);
-            if (depositionResult.IsFailed)
+            var deposition = await _depositionRepository.GetById(id, new[] { nameof(Deposition.Witness), nameof(Deposition.Room) });
+            if (deposition == null)
                 return Result.Fail(new ResourceNotFoundError($"Deposition with id {id} not found."));
 
-            if (depositionResult.Value.Room.Status == RoomStatus.Created)
+            if (deposition.Room.Status == RoomStatus.Created)
             {
-                await _roomService.StartRoom(depositionResult.Value.Room);
+                await _roomService.StartRoom(deposition.Room);
             }
 
-            var token = await _roomService.GenerateRoomToken(depositionResult.Value.Room.Name, identity);
+            var token = await _roomService.GenerateRoomToken(deposition.Room.Name, identity);
             if (token.IsFailed)
                 return token.ToResult<JoinDepositionDto>();
 
             var joinDepositionInfo = new JoinDepositionDto
             {
-                WitnessEmail = depositionResult.Value.Witness?.Email,
+                WitnessEmail = deposition.Witness?.Email,
                 Token = token.Value
             };
 
@@ -145,11 +138,10 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<Deposition>> EndDeposition(Guid id)
         {
-            var depositionResult = await GetDepositionById(id);
-            if (depositionResult.IsFailed)
+            var deposition = await _depositionRepository.GetById(id, new[] { nameof(Deposition.Room) });
+            if (deposition == null)
                 return Result.Fail(new ResourceNotFoundError($"Deposition with id {id} not found."));
 
-            var deposition = depositionResult.Value;
             var roomResult = await _roomService.EndRoom(deposition.Room);
             if (roomResult.IsFailed)
                 return roomResult.ToResult<Deposition>();
@@ -160,31 +152,28 @@ namespace PrecisionReporters.Platform.Domain.Services
             var updatedDeposition = await _depositionRepository.Update(deposition);
             return Result.Ok(updatedDeposition);
         }
-
+       
         public async Task<Result<Deposition>> AddDepositionEvent(Guid id, DepositionEvent depositionEvent, string userEmail)
         {
-            var depositionResult = await GetDepositionById(id);
-            if (depositionResult.IsFailed)
+            var depositionResult = await _depositionRepository.GetById(id, new[] { nameof(Deposition.Events) });
+            if (depositionResult == null)
                 return Result.Fail(new ResourceNotFoundError($"Deposition with id {id} not found."));
 
             var userResult = await _userService.GetUserByEmail(userEmail);
             if (userResult.IsFailed)
                 return userResult.ToResult<Deposition>();
 
-            var deposition = depositionResult.Value;
             depositionEvent.User = userResult.Value;
-            deposition.Events.Add(depositionEvent);
-            var updatedDeposition = await _depositionRepository.Update(deposition);
+            depositionResult.Events.Add(depositionEvent);
+            var updatedDeposition = await _depositionRepository.Update(depositionResult);
             return Result.Ok(updatedDeposition);
         }
 
         public async Task<Result<Deposition>> GoOnTheRecord(Guid id, bool onTheRecord, string userEmail)
         {
-            var depositionResult = await GetDepositionById(id);
-            if (depositionResult.IsFailed)
+            var deposition = await _depositionRepository.GetById(id, new[] { nameof(Deposition.Events) });
+            if (deposition == null)
                 return Result.Fail(new ResourceNotFoundError($"Deposition with id {id} not found."));
-
-            var deposition = depositionResult.Value;
 
             if (deposition.IsOnTheRecord == onTheRecord)
             {
@@ -205,6 +194,15 @@ namespace PrecisionReporters.Platform.Domain.Services
             deposition.IsOnTheRecord = onTheRecord;
             var updatedDeposition = await _depositionRepository.Update(deposition);
             return Result.Ok(updatedDeposition);
+        }
+
+        private async Task<Result<Deposition>> GetByIdWithIncludes(Guid id, string[] include = null)
+        {
+            var deposition = await _depositionRepository.GetById(id, include);
+            if (deposition == null)
+                return Result.Fail(new ResourceNotFoundError($"Deposition with id {id} not found."));
+
+            return Result.Ok(deposition);
         }
     }
 }

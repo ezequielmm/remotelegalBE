@@ -1,7 +1,6 @@
 ﻿using PrecisionReporters.Platform.Data.Entities;
 using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace PrecisionReporters.Platform.UnitTests.Utils
 {
@@ -43,7 +42,7 @@ namespace PrecisionReporters.Platform.UnitTests.Utils
                     Name = $"{caseId}_{Guid.NewGuid()}",
                     IsRecordingEnabled = true
                 },
-                Caption = new DepositionDocument
+                Caption = new Document
                 {
                     Id = Guid.NewGuid(),
                     Name = "DepositionDocument_1",
@@ -74,17 +73,17 @@ namespace PrecisionReporters.Platform.UnitTests.Utils
             };
         }
 
-        public static List<DepositionDocument> GetDepositionDocumentList()
+        public static List<Document> GetDocumentList()
         {
-            return new List<DepositionDocument>
+            return new List<Document>
             {
-                new DepositionDocument
+                new Document
                 {
                      Id = Guid.NewGuid(),
                      Name = "DepositionDocument_1",
                      FileKey = "DepositionDocument_1_FileKye"
                 },
-                new DepositionDocument
+                new Document
                 {
                     Id = Guid.NewGuid(),
                     Name = "DepositionDocument_2",
@@ -108,7 +107,7 @@ namespace PrecisionReporters.Platform.UnitTests.Utils
                     Name = $"{caseId}_{Guid.NewGuid()}",
                     IsRecordingEnabled = true
                 },
-                Caption = new DepositionDocument
+                Caption = new Document
                 {
                     Id = Guid.NewGuid(),
                     Name = "DepositionDocument_1",

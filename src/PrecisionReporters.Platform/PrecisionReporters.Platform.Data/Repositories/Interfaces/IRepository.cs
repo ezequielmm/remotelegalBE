@@ -10,6 +10,7 @@ namespace PrecisionReporters.Platform.Data.Repositories.Interfaces
     public interface IRepository<T> where T : BaseEntity<T>
     {
         Task<T> Create(T entity);
+        Task<List<T>> CreateRange(List<T> entities);
         Task<T> Update(T entity);
         Task<T> GetFirstOrDefaultByFilter(Expression<Func<T, bool>> filter = null, string[] include = null);
         Task<List<T>> GetByFilter(Expression<Func<T, bool>> filter = null, string[] include = null);

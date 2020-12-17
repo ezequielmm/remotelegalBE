@@ -78,7 +78,7 @@
                     "value": "us-east-1"
                 },
                 {
-                    "name": "AppConfiguration__DepositionDocumentConfiguration__BucketName",
+                    "name": "AppConfiguration__DocumentConfiguration__BucketName",
                     "value": "deposition-documents-qa"
                 },
                 {
