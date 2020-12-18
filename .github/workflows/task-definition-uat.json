@@ -1,0 +1,136 @@
+{
+    "containerDefinitions": [
+        {
+            "name": "prp-be-container-uat",
+            "image": "747865543072.dkr.ecr.us-east-1.amazonaws.com/prp-be:latest",
+            "cpu": 0,
+            "portMappings": [
+                {
+                    "containerPort": 80,
+                    "hostPort": 80,
+                    "protocol": "tcp"
+                }
+            ],
+            "essential": true,
+            "environment": [
+                {
+                    "name": "AppConfiguration__CognitoConfiguration__AWSRegion",
+                    "value": "us-east-1"
+                },
+                {
+                    "name": "AppConfiguration__CognitoConfiguration__AWSAccessKey",
+                    "value": "ACCESS_KEY"
+                },
+                {
+                    "name": "AppConfiguration__CognitoConfiguration__AWSSecretAccessKey",
+                    "value": "SECRET_ACCESS_KEY"
+                },
+                {
+                    "name": "AppConfiguration__CognitoConfiguration__ClientId",
+                    "value": "CLIENT_ID"
+                },
+                {
+                    "name": "AppConfiguration__CognitoConfiguration__UserPoolId",
+                    "value": "USER_POOL_ID"
+                },
+                {
+                    "name": "AppConfiguration__CognitoConfiguration__Authority",
+                    "value": "AUTHORITY"
+                },
+                {
+                    "name": "AppConfiguration__TwilioAccountConfiguration__AccountSid",
+                    "value": "TWILIO_ACCOUNTSID"
+                },
+                {
+                    "name": "AppConfiguration__TwilioAccountConfiguration__AuthToken",
+                    "value": "TWILIO_AUTHTOKEN"
+                },
+                {
+                    "name": "AppConfiguration__TwilioAccountConfiguration__ApiKeySid",
+                    "value": "TWILIO_APIKEYSID"
+                },
+                {
+                    "name": "AppConfiguration__TwilioAccountConfiguration__ApiKeySecret",
+                    "value": "TWILIO_APIKEYSECRET"
+                },
+                {
+                    "name": "AppConfiguration__TwilioAccountConfiguration__StatusCallbackUrl",
+                    "value": "https://api-uat.prdevelopment.net/api/compositions"
+                },
+                {
+                    "name": "AppConfiguration__TwilioAccountConfiguration__S3DestinationBucket",
+                    "value": "twilio-bucket-uat"
+                },
+                {
+                    "name": "AppConfiguration__TwilioAccountConfiguration__S3DestinationKey",
+                    "value": "TWILIO_DESTINATION_KEY"
+                },
+                {
+                    "name": "AppConfiguration__AwsStorageConfiguration__S3DestinationKey",
+                    "value": "TWILIO_DESTINATION_KEY"
+                },
+                {
+                    "name": "AppConfiguration__AwsStorageConfiguration__S3DestinationSecret",
+                    "value": "TWILIO_DESTINATION_SECRET"
+                },
+                {
+                    "name": "AppConfiguration__AwsStorageConfiguration__S3BucketRegion",
+                    "value": "us-east-1"
+                },
+                {
+                    "name": "AppConfiguration__DocumentConfiguration__BucketName",
+                    "value": "deposition-documents-uat"
+                },
+                {
+                    "name": "AppConfiguration__EmailConfiguration__VerifyEmailSubject",
+                    "value": "[UAT] Verify your Remote Legal account"
+                },
+                {
+                    "name": "AppConfiguration__ConfigurationFlags__IsDeveloperExceptionPageEnabled",
+                    "value": "true"
+                },
+                {
+                    "name": "AppConfiguration__ConfigurationFlags__IsSwaggerUiEnabled",
+                    "value": "true"
+                },
+                {
+                    "name": "AppConfiguration__ConfigurationFlags__IsShowErrorMessageEnabled",
+                    "value": "true"
+                },
+                {
+                    "name": "AppConfiguration__UrlPathConfiguration__FrontendBaseUrl",
+                    "value": "https://prp-uat.prdevelopment.net/"
+                },
+                {
+                    "name": "AppConfiguration__CorsConfiguration__Origins",
+                    "value": "https://*.prdevelopment.net"
+                },
+                {
+                    "name": "AppConfiguration__ConnectionStrings__MySqlConnection",
+                    "value": "CONNECTION_STRING"
+                }
+            ],
+            "mountPoints": [],
+            "volumesFrom": [],
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-group": "/ecs/prp-be-task-uat",
+                    "awslogs-region": "us-east-1",
+                    "awslogs-stream-prefix": "ecs"
+                }
+            }
+        }
+    ],
+    "family": "prp-be-task-uat",
+    "taskRoleArn": "arn:aws:iam::747865543072:role/prp-uat-ecs-task-execution-role",
+    "executionRoleArn": "arn:aws:iam::747865543072:role/prp-uat-ecs-task-execution-role",
+    "networkMode": "awsvpc",
+    "volumes": [],
+    "placementConstraints": [],
+    "requiresCompatibilities": [
+        "FARGATE"
+    ],
+    "cpu": "512",
+    "memory": "1024"
+}
