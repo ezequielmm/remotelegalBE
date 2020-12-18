@@ -1,11 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using PrecisionReporters.Platform.Api.Dtos;
 using PrecisionReporters.Platform.Api.Helpers;
+using PrecisionReporters.Platform.Api.Mappers;
+using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Domain.Commons;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 
@@ -18,10 +22,12 @@ namespace PrecisionReporters.Platform.Api.Controllers
     public class DocumentsController : ControllerBase
     {
         private readonly IDocumentService _documentService;
+        private readonly IMapper<Document, DocumentDto, CreateDocumentDto> _documentMapper;
 
-        public DocumentsController(IDocumentService documentService)
+        public DocumentsController(IDocumentService documentService, IMapper<Document, DocumentDto, CreateDocumentDto> documentMapper)
         {
             _documentService = documentService;
+            _documentMapper = documentMapper;
         }
 
         /// <summary>
@@ -53,6 +59,21 @@ namespace PrecisionReporters.Platform.Api.Controllers
                 return WebApiResponses.GetErrorResponse(depositionWithNewFilesResult);
 
             return Ok();
+        }
+
+        /// <summary>
+        /// Gets a list of documents from a deposition uploaded by the user, or documents shared with the user
+        /// </summary>
+        /// <param name="depositionId"></param>
+        /// <returns>List of documents information</returns>
+        [HttpGet("Depositions/{depositionId}/MyExhibits")]
+        public async Task<ActionResult<List<DocumentDto>>> GetMyExhibits(Guid depositionId)
+        {
+            var identity = HttpContext.User.FindFirstValue(ClaimTypes.Email);
+            var documentsResult = await _documentService.GetExhibitsForUser(depositionId, identity);
+            if (documentsResult.IsFailed)
+                return WebApiResponses.GetErrorResponse(documentsResult);
+            return Ok(documentsResult.Value.Select(d => _documentMapper.ToDto(d)));
         }
     }
 }

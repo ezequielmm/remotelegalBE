@@ -14,5 +14,6 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
         Task DeleteUploadedFiles(List<Document> uploadedDocuments);
         Result ValidateFiles(List<FileTransferInfo> files);
         Task<Result> UploadDocuments(Guid id, string identity, List<FileTransferInfo> files);
+        Task<Result<List<Document>>> GetExhibitsForUser(Guid depositionId, string identity);
     }
 }

@@ -101,7 +101,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 {
                     _logger.LogError(new Exception(documentResult.Errors.First().Message), "Unable to load one or more documents to storage");
                     _logger.LogInformation("Removing uploaded documents");
-                    await DeleteUploadedFiles(uploadedDocuments.Select(d=>d.Document).ToList());
+                    await DeleteUploadedFiles(uploadedDocuments.Select(d => d.Document).ToList());
                     return documentResult.ToResult();
                 }
 
@@ -120,6 +120,21 @@ namespace PrecisionReporters.Platform.Domain.Services
             }
 
             return Result.Ok();
+        }
+
+        public async Task<Result<List<Document>>> GetExhibitsForUser(Guid depositionId, string identity)
+        {
+            var userResult = await _userService.GetUserByEmail(identity);
+            if (userResult.IsFailed)
+                return userResult.ToResult<List<Document>>();
+
+            var depositionResult = await _depositionService.GetDepositionById(depositionId);
+            if (depositionResult.IsFailed)
+                return depositionResult.ToResult<List<Document>>();
+
+            var documentUserDeposition = await _documentUserDepositionRepository.GetByFilter(x => x.DepositionId == depositionId && x.UserId == userResult.Value.Id, new[] { nameof(DocumentUserDeposition.Document) });
+
+            return Result.Ok(documentUserDeposition.Select(d => d.Document).ToList());
         }
 
         private async Task<Result<Document>> UploadFileToStorage(FileTransferInfo file, User user, string fileName, string parentPath)

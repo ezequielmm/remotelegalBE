@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 using FluentResults;
@@ -581,6 +582,87 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             Assert.NotNull(result);
             Assert.IsType<Result>(result);
             Assert.True(result.IsSuccess);
+        }
+
+        [Fact]
+        public async Task GetExhibitsForUser__ShouldReturnResultFail_IfUserNotFound()
+        {
+            // Arrange
+            var userEmail = "notExisitingUser@mail.com";
+            var expectedError = $"User with email {userEmail} not found.";
+            var userServiceMock = new Mock<IUserService>();
+            userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Fail(new ResourceNotFoundError(expectedError)));
+
+            var service = InitializeService(userService: userServiceMock);
+
+            // Act
+            var result = await service.GetExhibitsForUser(Guid.NewGuid(), userEmail);
+
+            // Assert
+            userServiceMock.Verify(x => x.GetUserByEmail(It.Is<string>(a => a == userEmail)), Times.Once);
+            Assert.NotNull(result);
+            Assert.IsType<Result<List<Document>>>(result);
+            Assert.True(result.IsFailed);
+            Assert.Contains(expectedError, result.Errors.Select(e => e.Message));
+        }
+
+        [Fact]
+        public async Task GetExhibitsForUser_ShouldReturnResultFail_IfDepositionNotFound()
+        {
+            // Arrange
+            var userEmail = "User@mail.com";
+            var depositionId = Guid.NewGuid();
+            var expectedError = $"Deposition with id {depositionId} not found.";
+            var userServiceMock = new Mock<IUserService>();
+            userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(new User()));
+            var depositionServiceyMock = new Mock<IDepositionService>();
+            depositionServiceyMock.Setup(x => x.GetDepositionById(It.IsAny<Guid>())).ReturnsAsync(Result.Fail(new Error(expectedError)));
+
+            var service = InitializeService(userService: userServiceMock, depositionService: depositionServiceyMock);
+
+            // Act
+            var result = await service.GetExhibitsForUser(depositionId, userEmail);
+
+            // Assert
+            userServiceMock.Verify(x => x.GetUserByEmail(It.Is<string>(a => a == userEmail)), Times.Once);
+            depositionServiceyMock.Verify(x => x.GetDepositionById(It.Is<Guid>(a => a == depositionId)), Times.Once);
+            Assert.NotNull(result);
+            Assert.IsType<Result<List<Document>>>(result);
+            Assert.True(result.IsFailed);
+            Assert.Contains(expectedError, result.Errors.Select(e => e.Message));
+        }
+
+        [Fact]
+        public async Task GetExhibitsForUser_ShouldReturn_ListOfDocuments()
+        {
+            // Arrange
+            var userEmail = "User@mail.com";
+            var depositionId = Guid.NewGuid();
+            var documentUserDeposition = new DocumentUserDeposition
+            {
+                Document = new Document()
+            };
+            var userServiceMock = new Mock<IUserService>();
+            userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(new User()));
+            var depositionServiceyMock = new Mock<IDepositionService>();
+            depositionServiceyMock.Setup(x => x.GetDepositionById(It.IsAny<Guid>())).ReturnsAsync(Result.Ok(new Deposition()));
+            var documentUserDepositionRepositoryMock = new Mock<IDocumentUserDepositionRepository>();
+            documentUserDepositionRepositoryMock
+                .Setup(x => x.GetByFilter(It.IsAny<Expression<Func<DocumentUserDeposition, bool>>>(), It.IsAny<string[]>()))
+                .ReturnsAsync(new List<DocumentUserDeposition> { documentUserDeposition });
+            var service = InitializeService(userService: userServiceMock, depositionService: depositionServiceyMock, documentUserDepositionRepository: documentUserDepositionRepositoryMock);
+
+            // Act
+            var result = await service.GetExhibitsForUser(depositionId, userEmail);
+
+            // Assert
+            userServiceMock.Verify(x => x.GetUserByEmail(It.Is<string>(a => a == userEmail)), Times.Once);
+            depositionServiceyMock.Verify(x => x.GetDepositionById(It.Is<Guid>(a => a == depositionId)), Times.Once);
+            documentUserDepositionRepositoryMock.Verify(x => x.GetByFilter(It.IsAny<Expression<Func<DocumentUserDeposition, bool>>>(), It.Is<string[]>(a => a.Contains(nameof(DocumentUserDeposition.Document)))), Times.Once);
+            Assert.NotNull(result);
+            Assert.IsType<Result<List<Document>>>(result);
+            Assert.True(result.IsSuccess);
+            Assert.NotEmpty(result.Value);
         }
 
         private DocumentService InitializeService(
