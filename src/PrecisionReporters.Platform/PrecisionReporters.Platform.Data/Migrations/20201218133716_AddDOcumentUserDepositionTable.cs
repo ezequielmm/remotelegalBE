@@ -8,6 +8,7 @@ namespace PrecisionReporters.Platform.Data.Migrations
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.Sql("ALTER TABLE DepositionDocuments DROP FOREIGN KEY FK_DepositionDocuments_Users_AddedById;");
             migrationBuilder.Sql("ALTER TABLE DepositionDocuments DROP FOREIGN KEY FK_DepositionDocuments_Depositions_DepositionId;");
             migrationBuilder.Sql("ALTER TABLE Depositions DROP FOREIGN KEY FK_Depositions_DepositionDocuments_CaptionId;");
             migrationBuilder.Sql("ALTER TABLE Depositions DROP FOREIGN KEY FK_Depositions_Cases_CaseId;");
@@ -175,18 +176,10 @@ namespace PrecisionReporters.Platform.Data.Migrations
 
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropForeignKey(
-                name: "FK_DepositionDocuments_Depositions_DepositionId",
-                table: "DepositionDocuments");
-
-            migrationBuilder.DropForeignKey(
-                name: "FK_DepositionDocuments_Documents_DocumentId",
-                table: "DepositionDocuments");
-
-            migrationBuilder.DropForeignKey(
-                name: "FK_Depositions_Documents_CaptionId",
-                table: "Depositions");
-
+            migrationBuilder.Sql("ALTER TABLE DepositionDocuments DROP FOREIGN KEY FK_DepositionDocuments_Depositions_DepositionId;");
+            migrationBuilder.Sql("ALTER TABLE Depositions DROP FOREIGN KEY FK_Depositions_DepositionDocuments_CaptionId;");
+            migrationBuilder.Sql("ALTER TABLE Depositions DROP FOREIGN KEY FK_Depositions_Cases_CaseId;");
+           
             migrationBuilder.DropForeignKey(
                 name: "FK_Depositions_Cases_CaseId",
                 table: "Depositions");
