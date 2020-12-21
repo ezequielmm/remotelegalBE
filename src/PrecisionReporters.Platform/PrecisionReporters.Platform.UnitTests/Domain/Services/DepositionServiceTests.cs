@@ -260,13 +260,29 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         {
             _depositions.AddRange(DepositionFactory.GetDepositionList());
 
+
+            var depositionRepositoryMock = new Mock<IDepositionRepository>();
+
+            depositionRepositoryMock.Setup(x => x.GetByStatus(
+                It.IsAny<Expression<Func<Deposition, object>>>(),
+                It.IsAny<SortDirection>(),
+                It.IsAny<Expression<Func<Deposition, bool>>>(),
+                It.IsAny<string[]>()))
+                .ReturnsAsync(_depositions.FindAll(x => x.Status == DepositionStatus.Pending));
+
+            var userServiceMock = new Mock<IUserService>();
+            userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(new User { IsAdmin = true }));
+
+            var service = InitializeService(userService: userServiceMock, depositionRepository: depositionRepositoryMock);
+
+
             // Act
-            var result = await _depositionService.GetDepositionsByStatus(null, null, null);
+            var result = await service.GetDepositionsByStatus(null, null, null, "fake_user@mail.com");
 
             Assert.NotEmpty(result);
-            _depositionRepositoryMock.Verify(r => r.GetByStatus(It.IsAny<Expression<Func<Deposition, object>>>(),
+            depositionRepositoryMock.Verify(r => r.GetByStatus(It.IsAny<Expression<Func<Deposition, object>>>(),
                 It.IsAny<SortDirection>(),
-                It.Is<Expression<Func<Deposition, bool>>>((x => x == null)),
+                It.Is<Expression<Func<Deposition, bool>>>((x => x != null)),
                 It.IsAny<string[]>()), Times.Once);
         }
 
@@ -275,17 +291,25 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         {
             _depositions.AddRange(DepositionFactory.GetDepositionList());
 
-            _depositionRepositoryMock.Setup(x => x.GetByStatus(
+
+            var depositionRepositoryMock = new Mock<IDepositionRepository>();
+
+            depositionRepositoryMock.Setup(x => x.GetByStatus(
                 It.IsAny<Expression<Func<Deposition, object>>>(),
                 It.IsAny<SortDirection>(),
                 It.IsAny<Expression<Func<Deposition, bool>>>(),
                 It.IsAny<string[]>()))
                 .ReturnsAsync(_depositions.FindAll(x => x.Status == DepositionStatus.Pending));
 
-            // Act
-            var result = await _depositionService.GetDepositionsByStatus(DepositionStatus.Pending, null, null);
+            var userServiceMock = new Mock<IUserService>();
+            userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(new User { IsAdmin = true}));
 
-            _depositionRepositoryMock.Verify(r => r.GetByStatus(It.IsAny<Expression<Func<Deposition, object>>>(),
+            var service = InitializeService(userService: userServiceMock, depositionRepository: depositionRepositoryMock);
+
+            // Act
+            var result = await service.GetDepositionsByStatus(DepositionStatus.Pending, null, null, "fake_user@mail.com");
+
+            depositionRepositoryMock.Verify(r => r.GetByStatus(It.IsAny<Expression<Func<Deposition, object>>>(),
                 It.IsAny<SortDirection>(),
                 It.Is<Expression<Func<Deposition, bool>>>(x => x != null),
                 It.IsAny<string[]>()), Times.Once);

@@ -12,5 +12,6 @@ namespace PrecisionReporters.Platform.Api.Dtos
         public DateTime CreationDate { get; set; }
         public string CompanyName { get; set; }
         public string CompanyAddress { get; set; }
+        public bool IsAdmin { get; set; }
     }
 }

@@ -85,14 +85,22 @@ namespace PrecisionReporters.Platform.Domain.Services
         }
 
         public async Task<List<Deposition>> GetDepositionsByStatus(DepositionStatus? status, DepositionSortField? sortedField,
-            SortDirection? sortDirection)
+            SortDirection? sortDirection, string userEmail)
         {
+            
+            var userResult = await _userService.GetUserByEmail(userEmail);
+
             var includes = new[] { nameof(Deposition.Requester), nameof(Deposition.Participants),
                 nameof(Deposition.Witness), nameof(Deposition.Case)};
 
-            Expression<Func<Deposition, bool>> filter = x => x.Status == status;
+            Expression<Func<Deposition, bool>> filter = x => status != null ? x.Status == status : true;
 
-            Expression<Func<Deposition, object>> orderBy = sortedField switch
+            if (userResult.IsFailed || !userResult.Value.IsAdmin)
+            {
+                filter = x => (status != null ? x.Status == status : true) && (x.Participants.Any(p => p.Email == userEmail) || x.Requester.EmailAddress == userEmail);
+            }
+
+            Expression <Func<Deposition, object>> orderBy = sortedField switch
             {
                 DepositionSortField.Details => x => x.Details,
                 DepositionSortField.Status => x => x.Status,
@@ -106,7 +114,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             var depositions = await _depositionRepository.GetByStatus(
                 orderBy,
                 sortDirection ?? SortDirection.Ascend,
-                status != null ? filter : null,
+                filter,
                 includes);
 
             return depositions;

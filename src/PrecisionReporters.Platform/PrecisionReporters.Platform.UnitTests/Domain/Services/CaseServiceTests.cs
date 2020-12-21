@@ -1,4 +1,9 @@
-﻿using FluentResults;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
+using System.Threading.Tasks;
+using FluentResults;
 using Microsoft.Extensions.Logging;
 using Moq;
 using PrecisionReporters.Platform.Data.Entities;
@@ -9,11 +14,6 @@ using PrecisionReporters.Platform.Domain.Commons;
 using PrecisionReporters.Platform.Domain.Services;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using PrecisionReporters.Platform.UnitTests.Utils;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Linq.Expressions;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace PrecisionReporters.Platform.UnitTests.Domain.Services

@@ -38,8 +38,9 @@ namespace PrecisionReporters.Platform.Api.Controllers
         public async Task<ActionResult<List<DepositionDto>>> GetDepositions(DepositionStatus? status, DepositionSortField? sortedField,
             SortDirection? sortDirection)
         {
-            var depositions = await _depositionService.GetDepositionsByStatus(status, sortedField, sortDirection);
-
+            var userEmail = HttpContext.User.FindFirstValue(ClaimTypes.Email);
+            var depositions = await _depositionService.GetDepositionsByStatus(status, sortedField, sortDirection, userEmail);
+            
             return Ok(depositions.Select(c => _depositionMapper.ToDto(c)));
         }
 

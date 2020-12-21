@@ -4,6 +4,7 @@ using PrecisionReporters.Platform.Api.Helpers;
 using PrecisionReporters.Platform.Api.Mappers;
 using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
+using System.Security.Claims;
 using System.Threading.Tasks;
 
 namespace PrecisionReporters.Platform.Api.Controllers
@@ -62,6 +63,23 @@ namespace PrecisionReporters.Platform.Api.Controllers
         {
             await _userService.ResendVerificationEmailAsync(dto.EmailAddress);
             return Ok();
+        }
+
+        /// <summary>
+        /// Gets the logged in user
+        /// </summary>
+        /// <returns>The current User logged in</returns>
+        [HttpGet]
+        [Route("currentUser")]
+        public async Task<ActionResult<UserDto>> GetCurrentUser()
+        {
+            var email = HttpContext.User.FindFirstValue(ClaimTypes.Email);
+
+            var userResult = await _userService.GetUserByEmail(email);
+            if (userResult.IsFailed)
+                return WebApiResponses.GetErrorResponse(userResult);
+
+            return Ok(_userMapper.ToDto(userResult.Value));
         }
     }
 }
