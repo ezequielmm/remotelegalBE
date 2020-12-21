@@ -8,10 +8,10 @@ namespace PrecisionReporters.Platform.Data.Migrations
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.Sql("ALTER TABLE DepositionDocuments DROP FOREIGN KEY FK_DepositionDocuments_Users_AddedById;");
-            migrationBuilder.Sql("ALTER TABLE DepositionDocuments DROP FOREIGN KEY FK_DepositionDocuments_Depositions_DepositionId;");
-            migrationBuilder.Sql("ALTER TABLE Depositions DROP FOREIGN KEY FK_Depositions_DepositionDocuments_CaptionId;");
-            migrationBuilder.Sql("ALTER TABLE Depositions DROP FOREIGN KEY FK_Depositions_Cases_CaseId;");
+            migrationBuilder.Sql(GetDropForeignKeyStatement("DepositionDocuments", "FK_DepositionDocuments_Users_AddedById"));
+            migrationBuilder.Sql(GetDropForeignKeyStatement("DepositionDocuments", "FK_DepositionDocuments_Depositions_DepositionId"));
+            migrationBuilder.Sql(GetDropForeignKeyStatement("Depositions", "FK_Depositions_DepositionDocuments_CaptionId"));
+            migrationBuilder.Sql(GetDropForeignKeyStatement("Depositions", "FK_Depositions_Cases_CaseId"));
 
             migrationBuilder.DropIndex(
                 name: "IX_DepositionDocuments_AddedById",
@@ -172,6 +172,20 @@ namespace PrecisionReporters.Platform.Data.Migrations
                 principalTable: "Cases",
                 principalColumn: "Id",
                 onDelete: ReferentialAction.Cascade);
+        }
+
+        private string GetDropForeignKeyStatement(string tableName, string fkName)
+        {
+            return @$"set @var:=if((SELECT true FROM information_schema.TABLE_CONSTRAINTS WHERE
+                    CONSTRAINT_SCHEMA = DATABASE() AND
+                    TABLE_NAME        = '{tableName}' AND
+                    CONSTRAINT_NAME   = '{fkName}' AND
+                    CONSTRAINT_TYPE   = 'FOREIGN KEY') = true,'ALTER TABLE {tableName}
+                    drop foreign key {fkName}','select 1');
+
+                    prepare stmt from @var;
+                    execute stmt;
+                    deallocate prepare stmt;";
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)
