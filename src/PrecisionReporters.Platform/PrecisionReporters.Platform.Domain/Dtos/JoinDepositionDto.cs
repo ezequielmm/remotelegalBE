@@ -4,5 +4,6 @@
     {
         public string WitnessEmail { get; set; }
         public string Token { get; set; }
+        public string TimeZone { get; set; }
     }
 }

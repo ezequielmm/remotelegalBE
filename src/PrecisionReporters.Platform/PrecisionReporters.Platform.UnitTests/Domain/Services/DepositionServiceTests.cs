@@ -337,6 +337,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             depositionRepositoryMock.Verify(mock => mock.GetById(It.Is<Guid>(a => a == depositionId), It.IsAny<string[]>()), Times.Once());
             Assert.Equal(result.Errors[0].Message, errorMessage);
             Assert.True(result.IsFailed);
+            Assert.NotNull(deposition.TimeZone);
+            Assert.Equal("EST", deposition.TimeZone);
         }
 
         [Fact]
@@ -366,6 +368,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             depositionRepositoryMock.Verify(mock => mock.GetById(It.Is<Guid>(a => a == depositionId), It.IsAny<string[]>()), Times.Once());
             Assert.NotNull(result);
             Assert.True(result.IsSuccess);
+            Assert.NotNull(deposition.TimeZone);
+            Assert.Equal("EST", deposition.TimeZone);
         }
 
         [Fact]

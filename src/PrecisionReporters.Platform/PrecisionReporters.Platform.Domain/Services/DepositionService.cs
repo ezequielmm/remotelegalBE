@@ -138,7 +138,8 @@ namespace PrecisionReporters.Platform.Domain.Services
             var joinDepositionInfo = new JoinDepositionDto
             {
                 WitnessEmail = deposition.Witness?.Email,
-                Token = token.Value
+                Token = token.Value,
+                TimeZone = deposition.TimeZone
             };
 
             return Result.Ok(joinDepositionInfo);

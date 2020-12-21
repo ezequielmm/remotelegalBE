@@ -47,7 +47,8 @@ namespace PrecisionReporters.Platform.UnitTests.Utils
                     Id = Guid.NewGuid(),
                     Name = "DepositionDocument_1",
                     FileKey = "fileKey"
-                }
+                },
+                TimeZone = "EST"
             };
         }
 
