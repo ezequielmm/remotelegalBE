@@ -10,13 +10,13 @@ namespace PrecisionReporters.Platform.Api.Helpers
         public static ActionResult GetErrorResponse(Result result)
         {
             if (result.HasError<InvalidInputError>())
-                return new BadRequestResult();
+                return new BadRequestObjectResult (result.Errors);
 
             if (result.HasError<ResourceNotFoundError>())
-                return new NotFoundResult();
+                return new NotFoundObjectResult(result.Errors);
             
             if (result.HasError<ResourceConflictError>())
-                return new ConflictResult();
+                return new ConflictObjectResult(result.Errors);
 
             return new StatusCodeResult((int) HttpStatusCode.InternalServerError);
         }
