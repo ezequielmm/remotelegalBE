@@ -34,7 +34,9 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<Deposition>> GetDepositionById(Guid id)
         {
-            return await GetByIdWithIncludes(id);
+            var includes = new[] { nameof(Deposition.Requester), nameof(Deposition.Participants),
+                nameof(Deposition.Witness), nameof(Deposition.Case)};
+            return await GetByIdWithIncludes(id, includes);
         }
 
         public async Task<Result<Deposition>> GetDepositionByIdWithDocumentUsers(Guid id)
@@ -180,10 +182,14 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<Deposition>> GoOnTheRecord(Guid id, bool onTheRecord, string userEmail)
         {
-            var deposition = await _depositionRepository.GetById(id, new[] { nameof(Deposition.Events) });
-            if (deposition == null)
-                return Result.Fail(new ResourceNotFoundError($"Deposition with id {id} not found."));
+            var includes = new[] { nameof(Deposition.Requester), nameof(Deposition.Participants),
+                nameof(Deposition.Witness), nameof(Deposition.Case), nameof(Deposition.Events)};
 
+            var depositionResult = await GetByIdWithIncludes(id, includes);
+            if (depositionResult.IsFailed)
+                return depositionResult;
+
+            var deposition = depositionResult.Value;
             if (deposition.IsOnTheRecord == onTheRecord)
             {
                 return Result.Fail(new InvalidInputError($"The current deposition is already in status onTheRecord: {onTheRecord}"));

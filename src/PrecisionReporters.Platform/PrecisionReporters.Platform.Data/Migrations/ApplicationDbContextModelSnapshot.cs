@@ -195,6 +195,7 @@ namespace PrecisionReporters.Platform.Data.Migrations
                         .HasColumnType("datetime");
 
                     b.Property<string>("DepositionId")
+                        .IsRequired()
                         .HasColumnType("char(36)");
 
                     b.Property<string>("Details")
@@ -610,9 +611,11 @@ namespace PrecisionReporters.Platform.Data.Migrations
 
             modelBuilder.Entity("PrecisionReporters.Platform.Data.Entities.DepositionEvent", b =>
                 {
-                    b.HasOne("PrecisionReporters.Platform.Data.Entities.Deposition", null)
+                    b.HasOne("PrecisionReporters.Platform.Data.Entities.Deposition", "Deposition")
                         .WithMany("Events")
-                        .HasForeignKey("DepositionId");
+                        .HasForeignKey("DepositionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("PrecisionReporters.Platform.Data.Entities.User", "User")
                         .WithMany()

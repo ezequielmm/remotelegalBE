@@ -1,4 +1,6 @@
 ﻿using PrecisionReporters.Platform.Data.Enums;
+using System;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace PrecisionReporters.Platform.Data.Entities
 {
@@ -9,6 +11,10 @@ namespace PrecisionReporters.Platform.Data.Entities
         public User User { get; set; }
 
         public string Details { get; set; }
+
+        public Deposition Deposition { get; set; }
+        [ForeignKey(nameof(Deposition))]
+        public Guid DepositionId { get; set; }
 
         public override void CopyFrom(DepositionEvent entity)
         {
