@@ -13,26 +13,6 @@ namespace PrecisionReporters.Platform.Data.Migrations
             migrationBuilder.Sql(GetDropForeignKeyStatement("Depositions", "FK_Depositions_DepositionDocuments_CaptionId"));
             migrationBuilder.Sql(GetDropForeignKeyStatement("Depositions", "FK_Depositions_Cases_CaseId"));
 
-            migrationBuilder.DropIndex(
-                name: "IX_DepositionDocuments_AddedById",
-                table: "DepositionDocuments");
-
-            migrationBuilder.DropColumn(
-                name: "AddedById",
-                table: "DepositionDocuments");
-
-            migrationBuilder.DropColumn(
-                name: "FilePath",
-                table: "DepositionDocuments");
-
-            migrationBuilder.DropColumn(
-                name: "Name",
-                table: "DepositionDocuments");
-
-            migrationBuilder.DropColumn(
-                name: "Type",
-                table: "DepositionDocuments");
-
             migrationBuilder.AlterColumn<string>(
                 name: "CaseId",
                 table: "Depositions",
@@ -40,6 +20,8 @@ namespace PrecisionReporters.Platform.Data.Migrations
                 oldClrType: typeof(string),
                 oldType: "char(36)",
                 oldNullable: true);
+
+            migrationBuilder.Sql("UPDATE DepositionDocuments dd SET DepositionId = (SELECT Id FROM Depositions d WHERE d.CaptionId = dd.Id) WHERE dd.DepositionId IS NULL");
 
             migrationBuilder.AlterColumn<string>(
                 name: "DepositionId",
@@ -116,6 +98,11 @@ namespace PrecisionReporters.Platform.Data.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
+            migrationBuilder.Sql(@"INSERT INTO Documents (`Id`,  `CreationDate`, `Name`, `DisplayName`, `Type`, `FilePath`, `Size`, `AddedById`)
+                                    SELECT Id, CreationDate, Name, Name, Type, FilePath, 0, AddedById FROM DepositionDocuments");
+
+            migrationBuilder.Sql("UPDATE DepositionDocuments SET DocumentId = Id");
+
             migrationBuilder.CreateIndex(
                 name: "IX_DepositionDocuments_DocumentId",
                 table: "DepositionDocuments",
@@ -172,6 +159,26 @@ namespace PrecisionReporters.Platform.Data.Migrations
                 principalTable: "Cases",
                 principalColumn: "Id",
                 onDelete: ReferentialAction.Cascade);
+
+            migrationBuilder.DropIndex(
+                name: "IX_DepositionDocuments_AddedById",
+                table: "DepositionDocuments");
+
+            migrationBuilder.DropColumn(
+                name: "AddedById",
+                table: "DepositionDocuments");
+
+            migrationBuilder.DropColumn(
+                name: "FilePath",
+                table: "DepositionDocuments");
+
+            migrationBuilder.DropColumn(
+                name: "Name",
+                table: "DepositionDocuments");
+
+            migrationBuilder.DropColumn(
+                name: "Type",
+                table: "DepositionDocuments");
         }
 
         private string GetDropForeignKeyStatement(string tableName, string fkName)
