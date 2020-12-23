@@ -3,10 +3,6 @@ name: Manual Deployment
 on:
   workflow_dispatch:
     inputs:
-      environment:
-        description: 'Environment'
-        required: true
-        default: 'uat'
       image:
         description: 'IMAGE:TAG'
         required: true
@@ -14,103 +10,145 @@ on:
 jobs:
   pack-deploy:
     runs-on: ubuntu-latest
+    if: contains('
+      refs/heads/uat
+      refs/heads/prod
+      ', github.ref)
     steps:
     - uses: actions/checkout@v2
+    - name: Extract Branch Name
+      id: extract-branch
+      shell: bash
+      run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
+
+    - name: Set environment variables
+      id: env-vars
+      run: |
+        if [ $BRANCH == 'uat' ] 
+        then 
+            echo ::set-output name=connection-string::${{ secrets.CONNECTIONSTRING_UAT }}
+            echo ::set-output name=cognitoconfig-secretaccesskey::${{ secrets.COGNITOCONFIG_SECRETACCESSKEY_UAT }}
+            echo ::set-output name=cognitoconfig-accesskey::${{ secrets.COGNITOCONFIG_ACCESSKEY_UAT }}
+            echo ::set-output name=cognitoconfig-client-id::${{ secrets.COGNITOCONFIG_CLIENTID_UAT }}
+            echo ::set-output name=cognitoconfig-userpool-id::${{ secrets.COGNITOCONFIG_USERPOOLID_UAT }}
+            echo ::set-output name=cognitoconfig-authority::${{ secrets.COGNITOCONFIG_AUTHORITY_UAT }}
+            echo ::set-output name=twilioconfig-accounts-id::${{ secrets.TWILIOCONFIG_ACCOUNTSID_QA }}
+            echo ::set-output name=twilioconfig-authtoken::${{ secrets.TWILIOCONFIG_AUTHTOKEN_QA }}
+            echo ::set-output name=twilioconfig-apikeys-id::${{ secrets.TWILIOCONFIG_APIKEYSID_QA }}
+            echo ::set-output name=twilioconfig-apisecretkey::${{ secrets.TWILIOCONFIG_APIKEYSECRET_QA }}
+            echo ::set-output name=service-account-accesskey::${{ secrets.SERVICE_ACCOUNT_ACCESS_KEY_QA }}
+            echo ::set-output name=service-account-secretaccesskey::${{ secrets.SERVICE_ACCOUNT_SECRET_ACCESS_KEY_QA }}
+        else 
+            echo ::set-output name=connection-string::${{ secrets.CONNECTIONSTRING_PROD }}
+            echo ::set-output name=cognitoconfig-secretaccesskey::${{ secrets.COGNITOCONFIG_SECRETACCESSKEY_PROD }}
+            echo ::set-output name=cognitoconfig-accesskey::${{ secrets.COGNITOCONFIG_ACCESSKEY_PROD }}
+            echo ::set-output name=cognitoconfig-client-id::${{ secrets.COGNITOCONFIG_CLIENTID_PROD }}
+            echo ::set-output name=cognitoconfig-userpool-id::${{ secrets.COGNITOCONFIG_USERPOOLID_PROD }}
+            echo ::set-output name=cognitoconfig-authority::${{ secrets.COGNITOCONFIG_AUTHORITY_PROD }}
+            echo ::set-output name=twilioconfig-accounts-id::${{ secrets.TWILIOCONFIG_ACCOUNTSID_PROD }}
+            echo ::set-output name=twilioconfig-authtoken::${{ secrets.TWILIOCONFIG_AUTHTOKEN_PROD }}
+            echo ::set-output name=twilioconfig-apikeys-id::${{ secrets.TWILIOCONFIG_APIKEYSID_PROD }}
+            echo ::set-output name=twilioconfig-apisecretkey::${{ secrets.TWILIOCONFIG_APIKEYSECRET_PROD }}
+            echo ::set-output name=service-account-accesskey::${{ secrets.SERVICE_ACCOUNT_ACCESS_KEY_PROD }}
+            echo ::set-output name=service-account-secretaccesskey::${{ secrets.SERVICE_ACCOUNT_SECRET_ACCESS_KEY_PROD }}
+        fi 
+      env:
+        BRANCH: ${{ steps.extract-branch.outputs.branch }}
     
-    - name: Replace ConnectionStrings in QA task definition
+    - name: Replace ConnectionStrings in task definition
       uses: jacobtomlinson/gha-find-replace@master
       with:
-        include: 'task-definition-qa.json'
+        include: 'task-definition-${{ steps.extract-branch.outputs.branch }}.json'
         find: "CONNECTION_STRING"
-        replace: "${{ secrets.CONNECTIONSTRING_UAT }}"
+        replace: "${{ steps.env-vars.outputs.connection-string }}"
         exclude: "^$"
   
-    - name: Replace Cognito Secret Access Key in QA task definition
+    - name: Replace Cognito Secret Access Key in task definition
       uses: jacobtomlinson/gha-find-replace@master
       with:
-        include: 'task-definition-qa.json'
+        include: 'task-definition-${{ steps.extract-branch.outputs.branch }}.json'
         find: "SECRET_ACCESS_KEY"
-        replace: "${{ secrets.COGNITOCONFIG_SECRETACCESSKEY_UAT }}"
+        replace: "${{ steps.env-vars.outputs.cognitoconfig-secretaccesskey }}"
         exclude: "^$"
 
-    - name: Replace Cognito Access Key in QA task definition
+    - name: Replace Cognito Access Key in task definition
       uses: jacobtomlinson/gha-find-replace@master
       with:
-        include: 'task-definition-qa.json'
+        include: 'task-definition-${{ steps.extract-branch.outputs.branch }}.json'
         find: "ACCESS_KEY"
-        replace: "${{ secrets.COGNITOCONFIG_ACCESSKEY_UAT }}"
+        replace: "${{ steps.env-vars.outputs.cognitoconfig-accesskey }}"
         exclude: "^$"
     
-    - name: Replace Cognito Client ID in QA task definition
+    - name: Replace Cognito Client ID in task definition
       uses: jacobtomlinson/gha-find-replace@master
       with:
-        include: 'task-definition-qa.json'
+        include: 'task-definition-${{ steps.extract-branch.outputs.branch }}.json'
         find: "CLIENT_ID"
-        replace: "${{ secrets.COGNITOCONFIG_CLIENTID_UAT }}"
+        replace: "${{ steps.env-vars.outputs.cognitoconfig-client-id }}"
         exclude: "^$"
     
-    - name: Replace Cognito User Pool in QA task definition
+    - name: Replace Cognito User Pool in task definition
       uses: jacobtomlinson/gha-find-replace@master
       with:
-        include: 'task-definition-qa.json'
+        include: 'task-definition-${{ steps.extract-branch.outputs.branch }}.json'
         find: "USER_POOL_ID"
-        replace: "${{ secrets.COGNITOCONFIG_USERPOOLID_UAT }}"
+        replace: "${{ steps.env-vars.outputs.cognitoconfig-userpool-id }}"
         exclude: "^$"
     
-    - name: Replace Cognito Authority in QA task definition
+    - name: Replace Cognito Authority in task definition
       uses: jacobtomlinson/gha-find-replace@master
       with:
-        include: 'task-definition-qa.json'
+        include: 'task-definition-${{ steps.extract-branch.outputs.branch }}.json'
         find: "AUTHORITY"
-        replace: "${{ secrets.COGNITOCONFIG_AUTHORITY_UAT }}"
+        replace: "${{ steps.env-vars.outputs.cognitoconfig-authority }}"
         exclude: "^$"
     
-    - name: Replace Twilio AccountSid in QA task definition
+    - name: Replace Twilio AccountSid in task definition
       uses: jacobtomlinson/gha-find-replace@master
       with:
-        include: 'task-definition-qa.json'
+        include: 'task-definition-${{ steps.extract-branch.outputs.branch }}.json'
         find: "TWILIO_ACCOUNTSID"
-        replace: "${{ secrets.TWILIOCONFIG_ACCOUNTSID_QA }}"
+        replace: "${{ steps.env-vars.outputs.twilioconfig-accounts-id }}"
         exclude: "^$"
     
-    - name: Replace Twilio AccountSid in QA task definition
+    - name: Replace Twilio AccountSid in task definition
       uses: jacobtomlinson/gha-find-replace@master
       with:
-        include: 'task-definition-qa.json'
+        include: 'task-definition-${{ steps.extract-branch.outputs.branch }}.json'
         find: "TWILIO_AUTHTOKEN"
-        replace: "${{ secrets.TWILIOCONFIG_AUTHTOKEN_QA }}"
+        replace: "${{ steps.env-vars.outputs.twilioconfig-authtoken }}"
         exclude: "^$"
     
-    - name: Replace Twilio ApiKeySID in QA task definition
+    - name: Replace Twilio ApiKeySID in task definition
       uses: jacobtomlinson/gha-find-replace@master
       with:
-        include: 'task-definition-qa.json'
+        include: 'task-definition-${{ steps.extract-branch.outputs.branch }}.json'
         find: "TWILIO_APIKEYSID"
-        replace: "${{ secrets.TWILIOCONFIG_APIKEYSID_QA }}"
+        replace: "${{ steps.env-vars.outputs.twilioconfig-apikeys-id }}"
         exclude: "^$"
 
-    - name: Replace Twilio ApiKeySecret in QA task definition
+    - name: Replace Twilio ApiKeySecret in task definition
       uses: jacobtomlinson/gha-find-replace@master
       with:
-        include: 'task-definition-qa.json'
+        include: 'task-definition-${{ steps.extract-branch.outputs.branch }}.json'
         find: "TWILIO_APIKEYSECRET"
-        replace: "${{ secrets.TWILIOCONFIG_APIKEYSECRET_QA }}"
+        replace: "${{ steps.env-vars.outputs.twilioconfig-apisecretkey }}"
         exclude: "^$"
 
-    - name: Replace Twilio S3DestinationKey in QA task definition
+    - name: Replace Twilio S3DestinationKey in task definition
       uses: jacobtomlinson/gha-find-replace@master
       with:
-        include: 'task-definition-qa.json'
+        include: 'task-definition-${{ steps.extract-branch.outputs.branch }}.json'
         find: "TWILIO_DESTINATION_KEY"
-        replace: "${{ secrets.SERVICE_ACCOUNT_ACCESS_KEY_QA }}"
+        replace: "${{ steps.env-vars.outputs.service-account-accesskey }}"
         exclude: "^$"
 
-    - name: Replace Twilio S3DestinationSecret in QA task definition
+    - name: Replace Twilio S3DestinationSecret in task definition
       uses: jacobtomlinson/gha-find-replace@master
       with:
-        include: 'task-definition-qa.json'
+        include: 'task-definition-${{ steps.extract-branch.outputs.branch }}.json'
         find: "TWILIO_DESTINATION_SECRET"
-        replace: "${{ secrets.SERVICE_ACCOUNT_SECRET_ACCESS_KEY_QA }}"
+        replace: "${{ steps.env-vars.outputs.service-account-secretaccesskey }}"
         exclude: "^$"
 
     - name: Configure AWS Credentials
@@ -123,13 +161,13 @@ jobs:
       id: task-def
       uses: aws-actions/amazon-ecs-render-task-definition@v1
       with:
-        task-definition: ./.github/workflows/task-definition-qa.json
-        container-name: prp-be-container-${{ github.event.inputs.environment }}
+        task-definition: ./.github/workflows/task-definition-${{ steps.extract-branch.outputs.branch }}.json
+        container-name: prp-be-container-${{ steps.extract-branch.outputs.branch }}
         image: ${{ github.event.inputs.image }}
     - name: Update Amazon ECS Cluster Service
       uses: aws-actions/amazon-ecs-deploy-task-definition@v1
       with:
         task-definition: ${{ steps.task-def.outputs.task-definition }}
-        service: prp-be-srv-${{ github.event.inputs.environment }}
-        cluster: prp-cluster-${{ github.event.inputs.environment }}
+        service: prp-be-srv-${{ steps.extract-branch.outputs.branch }}
+        cluster: prp-cluster-${{ steps.extract-branch.outputs.branch }}
         wait-for-service-stability: true
