@@ -1,34 +1,35 @@
-using System.Text.Json.Serialization;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Amazon;
 using Amazon.CognitoIdentityProvider;
+using Amazon.Runtime;
+using Amazon.S3;
+using Amazon.S3.Transfer;
 using Amazon.SimpleEmail;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using PrecisionReporters.Platform.Api.AppConfigurations;
+using PrecisionReporters.Platform.Api.Authorization;
+using PrecisionReporters.Platform.Api.Authorization.Handlers;
 using PrecisionReporters.Platform.Api.Dtos;
+using PrecisionReporters.Platform.Api.Filters;
 using PrecisionReporters.Platform.Api.Mappers;
+using PrecisionReporters.Platform.Api.Middlewares;
+using PrecisionReporters.Platform.Api.WebSockets;
 using PrecisionReporters.Platform.Data;
 using PrecisionReporters.Platform.Data.Entities;
+using PrecisionReporters.Platform.Data.Handlers;
+using PrecisionReporters.Platform.Data.Handlers.Interfaces;
 using PrecisionReporters.Platform.Data.Repositories;
 using PrecisionReporters.Platform.Data.Repositories.Interfaces;
 using PrecisionReporters.Platform.Domain.Configurations;
 using PrecisionReporters.Platform.Domain.Services;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
-using Amazon;
-using PrecisionReporters.Platform.Api.Middlewares;
-using PrecisionReporters.Platform.Data.Handlers.Interfaces;
-using PrecisionReporters.Platform.Data.Handlers;
-using PrecisionReporters.Platform.Api.Filters;
-using Amazon.Runtime;
-using Amazon.S3;
-using Amazon.S3.Transfer;
 using System;
-using Microsoft.AspNetCore.Authorization;
-using PrecisionReporters.Platform.Api.Authorization.Handlers;
-using PrecisionReporters.Platform.Api.Authorization;
+using System.Text.Json.Serialization;
 
 namespace PrecisionReporters.Platform.Api
 {
@@ -127,6 +128,9 @@ namespace PrecisionReporters.Platform.Api
             services.AddSingleton<IMapper<Member, MemberDto, CreateMemberDto>, MemberMapper>();
             services.AddSingleton<IMapper<DepositionEvent, DepositionEventDto, CreateDepositionEventDto>, DepositionEventMapper>();
 
+            // Websockets
+            services.AddTransient<ITranscriptionsHandler, TranscriptionsHandler>();
+
             // Services
             services.AddScoped<ICaseService, CaseService>();
             services.AddScoped<ITwilioService, TwilioService>().Configure<TwilioAccountConfiguration>(x =>
@@ -172,6 +176,20 @@ namespace PrecisionReporters.Platform.Api
                 _ => new AmazonSimpleEmailServiceClient(appConfiguration.CognitoConfiguration.AWSAccessKey, appConfiguration.CognitoConfiguration.AWSSecretAccessKey, RegionEndpoint.USEast1));
 
             services.AddScoped<ICompositionService, CompositionService>();
+            services.AddTransient<ITranscriptionService, TranscriptionService>();
+            services.Configure<GcpConfiguration>(x =>
+            {
+                x.type = appConfiguration.GcpConfiguration.type;
+                x.project_id = appConfiguration.GcpConfiguration.project_id;
+                x.private_key_id = appConfiguration.GcpConfiguration.private_key_id;
+                x.private_key = appConfiguration.GcpConfiguration.private_key;
+                x.client_email = appConfiguration.GcpConfiguration.client_email;
+                x.client_id = appConfiguration.GcpConfiguration.client_id;
+                x.auth_uri = appConfiguration.GcpConfiguration.auth_uri;
+                x.token_uri = appConfiguration.GcpConfiguration.token_uri;
+                x.auth_provider_x509_cert_url = appConfiguration.GcpConfiguration.auth_provider_x509_cert_url;
+                x.client_x509_cert_url = appConfiguration.GcpConfiguration.client_x509_cert_url;
+            });
 
             // Repositories
             services.AddScoped<ICaseRepository, CaseRepository>();
@@ -243,7 +261,29 @@ namespace PrecisionReporters.Platform.Api
 
             app.UseEndpoints(endpoints =>
             {
-                endpoints.MapControllers();
+                endpoints.MapControllers();                
+            });
+
+            app.UseWebSockets();
+            app.Use(async (context, next) =>
+            {
+                if (context.Request.Path == "/transcriptions")
+                {
+                    if (context.WebSockets.IsWebSocketRequest)
+                    {
+                        var webSocket = await context.WebSockets.AcceptWebSocketAsync();
+                        var handler = app.ApplicationServices.GetRequiredService<ITranscriptionsHandler>();
+                        await handler.HandleConnection(context, webSocket);
+                    }
+                    else
+                    {
+                        context.Response.StatusCode = 400;
+                    }
+                }
+                else
+                {
+                    await next();
+                }
             });
 
             db.Database.Migrate();

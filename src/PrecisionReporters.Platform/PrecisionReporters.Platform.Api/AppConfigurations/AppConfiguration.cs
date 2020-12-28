@@ -16,5 +16,6 @@ namespace PrecisionReporters.Platform.Api
         public CorsConfiguration CorsConfiguration { get; set; }
         public DocumentConfiguration DocumentConfiguration { get; set; }
         public AwsStorageConfiguration AwsStorageConfiguration { get; set; }
+        public GcpConfiguration GcpConfiguration { get; set; }
     }
 }
