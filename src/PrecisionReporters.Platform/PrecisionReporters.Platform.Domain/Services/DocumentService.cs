@@ -67,13 +67,11 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public Result ValidateFiles(List<FileTransferInfo> files)
         {
-            var rejectedFiles = files.Where(f => f.Length > _documentsConfiguration.MaxFileSize || !_documentsConfiguration.AcceptedFileExtensions.Contains(Path.GetExtension(f.Name)));
-            if (rejectedFiles.Any())
-            {
-                var rejectedFileNames = rejectedFiles.Select(f => f.Name).ToList();
-                var errorMessage = "Files too big or format not accepted. Files rejected were: ";
-                return Result.Fail(new InvalidInputError(string.Concat(errorMessage, string.Join(",", rejectedFileNames))));
-            }
+            if (files.Any(f => f.Length > _documentsConfiguration.MaxFileSize))
+                return Result.Fail(new InvalidInputError("Exhibit size exceeds the allowed limit"));
+
+            if (files.Any(f => !_documentsConfiguration.AcceptedFileExtensions.Contains(Path.GetExtension(f.Name))))
+                return Result.Fail(new InvalidInputError("Failed to upload the file. Please try again"));
 
             return Result.Ok();
         }

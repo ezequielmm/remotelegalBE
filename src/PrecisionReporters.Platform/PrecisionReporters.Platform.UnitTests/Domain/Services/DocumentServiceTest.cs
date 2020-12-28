@@ -346,16 +346,11 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         }
 
         [Fact]
-        public void ValidateFiles_ShouldReturnFail_WithAllTheNamesOfRejectedFiles()
+        public void ValidateFiles_ShouldReturnFail_WithFilesTooBig()
         {
             // Arrange
             var maxSize = 52428800;
 
-            var fileWithWrongExtension = new FileTransferInfo
-            {
-                Length = 100,
-                Name = $"file.not"
-            };
             var fileTooBig = new FileTransferInfo
             {
                 Length = maxSize + 10,
@@ -367,17 +362,43 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 Name = $"file.doc"
             };
 
+            var expectedError = "Exhibit size exceeds the allowed limit";
             var service = InitializeService();
             // Act
-            var result = service.ValidateFiles(new List<FileTransferInfo> { fileWithWrongExtension, fileTooBig, correctFile });
+            var result = service.ValidateFiles(new List<FileTransferInfo> { fileTooBig, correctFile });
 
             // Assert
             Assert.NotNull(result);
             Assert.IsType<Result>(result);
             Assert.True(result.IsFailed);
-            Assert.Contains(fileWithWrongExtension.Name, result.Errors[0].Message);
-            Assert.Contains(fileTooBig.Name, result.Errors[0].Message);
-            Assert.DoesNotContain(correctFile.Name, result.Errors[0].Message);
+            Assert.Contains(expectedError, result.Errors[0].Message);
+        }
+
+        [Fact]
+        public void ValidateFiles_ShouldReturnFail_WithFilesNotAccepted()
+        {
+            // Arrange
+            var fileWithWrongExtension = new FileTransferInfo
+            {
+                Length = 100,
+                Name = $"file.not"
+            };
+            var correctFile = new FileTransferInfo
+            {
+                Length = 100,
+                Name = $"file.doc"
+            };
+
+            var expectedError = "Failed to upload the file. Please try again";
+            var service = InitializeService();
+            // Act
+            var result = service.ValidateFiles(new List<FileTransferInfo> { fileWithWrongExtension, correctFile });
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.IsType<Result>(result);
+            Assert.True(result.IsFailed);
+            Assert.Contains(expectedError, result.Errors[0].Message);
         }
 
         [Fact]
