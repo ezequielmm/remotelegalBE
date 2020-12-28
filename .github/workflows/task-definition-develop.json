@@ -123,7 +123,7 @@
                 },
                 {
                     "name": "AppConfiguration__GcpConfiguration__client_id",
-                    "value": "GCP_CLIENT_ID"
+                    "value": "GCP_CLIENTID"
                 }
             ],
             "mountPoints": [],

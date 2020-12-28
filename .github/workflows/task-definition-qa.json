@@ -108,6 +108,22 @@
                 {
                     "name": "AppConfiguration__ConnectionStrings__MySqlConnection",
                     "value": "CONNECTION_STRING"
+                },
+                {
+                    "name": "AppConfiguration__GcpConfiguration__private_key_id",
+                    "value": "GCP_PRIVATE_KEY_ID"
+                },
+                {
+                    "name": "AppConfiguration__GcpConfiguration__private_key",
+                    "value": "GCP_PRIVATE_KEY_CONTRACT"
+                },
+                {
+                    "name": "AppConfiguration__GcpConfiguration__client_email",
+                    "value": "GCP_CLIENT_EMAIL"
+                },
+                {
+                    "name": "AppConfiguration__GcpConfiguration__client_id",
+                    "value": "GCP_CLIENTID"
                 }
             ],
             "mountPoints": [],

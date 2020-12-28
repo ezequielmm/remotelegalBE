@@ -242,7 +242,7 @@ jobs:
       with:
         include: 'task-definition-develop.json'
         find: "GCP_PRIVATE_KEY_ID"
-        replace: "${{ secrets.GCPCONFIG_PRIVATE_KEY_ID }}"
+        replace: "${{ secrets.GCP_PRIVATE_KEY_ID }}"
         exclude: "^$"
     
     - name: Replace GCP private_key_id in QA task definition
@@ -250,7 +250,7 @@ jobs:
       with:
         include: 'task-definition-qa.json'
         find: "GCP_PRIVATE_KEY_ID"
-        replace: "${{ secrets.GCPCONFIG_PRIVATE_KEY_ID }}"
+        replace: "${{ secrets.GCP_PRIVATE_KEY_ID }}"
         exclude: "^$"
     
     - name: Replace GCP private_key in DEV task definition
@@ -258,7 +258,7 @@ jobs:
       with:
         include: 'task-definition-develop.json'
         find: "GCP_PRIVATE_KEY_CONTRACT"
-        replace: "${{ secrets.GCPCONFIG_PRIVATE_KEY }}"
+        replace: "${{ secrets.GCP_PRIVATE_KEY_CONTRACT }}"
         exclude: "^$"
     
     - name: Replace GCP private_key in QA task definition
@@ -266,7 +266,7 @@ jobs:
       with:
         include: 'task-definition-qa.json'
         find: "GCP_PRIVATE_KEY_CONTRACT"
-        replace: "${{ secrets.GCPCONFIG_PRIVATE_KEY }}"
+        replace: "${{ secrets.GCP_PRIVATE_KEY_CONTRACT }}"
         exclude: "^$"
 
     - name: Replace GCP client_email in DEV task definition
@@ -274,7 +274,7 @@ jobs:
       with:
         include: 'task-definition-develop.json'
         find: "GCP_CLIENT_EMAIL"
-        replace: "${{ secrets.GCPCONFIG_CLIENT_EMAIL }}"
+        replace: "${{ secrets.GCP_CLIENT_EMAIL }}"
         exclude: "^$"
     
     - name: Replace GCP client_email in QA task definition
@@ -282,23 +282,23 @@ jobs:
       with:
         include: 'task-definition-qa.json'
         find: "GCP_CLIENT_EMAIL"
-        replace: "${{ secrets.GCPCONFIG_CLIENT_EMAIL }}"
+        replace: "${{ secrets.GCP_CLIENT_EMAIL }}"
         exclude: "^$"
         
     - name: Replace GCP client_id in DEV task definition
       uses: jacobtomlinson/gha-find-replace@master
       with:
         include: 'task-definition-develop.json'
-        find: "GCP_CLIENT_ID"
-        replace: "${{ secrets.GCPCONFIG_CLIENT_ID }}"
+        find: "GCP_CLIENTID"
+        replace: "${{ secrets.GCP_CLIENT_ID }}"
         exclude: "^$"
     
     - name: Replace GCP client_id in QA task definition
       uses: jacobtomlinson/gha-find-replace@master
       with:
         include: 'task-definition-qa.json'
-        find: "GCP_CLIENT_ID"
-        replace: "${{ secrets.GCPCONFIG_CLIENT_ID }}"
+        find: "GCP_CLIENTID"
+        replace: "${{ secrets.GCP_CLIENT_ID }}"
         exclude: "^$"
         
     - name: Configure AWS Credentials
