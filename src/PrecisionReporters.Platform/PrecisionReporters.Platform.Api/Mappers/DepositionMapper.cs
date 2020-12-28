@@ -72,7 +72,7 @@ namespace PrecisionReporters.Platform.Api.Mappers
                 EndDate = model.EndDate.HasValue ? new DateTimeOffset(model.EndDate.Value, TimeSpan.Zero) : (DateTimeOffset?)null,
                 Witness = model.Witness != null ? _participantMapper.ToDto(model.Witness) : null,
                 Participants = model.Participants?.Select(p => _participantMapper.ToDto(p)).ToList(),
-                Requester = _userMapper.ToDto(model.Requester),
+                Requester = model.Requester != null ? _userMapper.ToDto(model.Requester) : null,
                 Details = model.Details,
                 Room = model.Room != null ? _rooMapper.ToDto(model.Room) : null,
                 Caption = model.Caption != null ? _documentMapper.ToDto(model.Caption) : null,
