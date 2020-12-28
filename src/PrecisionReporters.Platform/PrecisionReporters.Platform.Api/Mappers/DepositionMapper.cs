@@ -79,8 +79,8 @@ namespace PrecisionReporters.Platform.Api.Mappers
                 Documents = model.Documents?.Select(d => _depositionDocumentMapper.ToDto(d)).ToList(),
                 Status = model.Status,
                 CaseId = model.CaseId,
-                CaseName = model.Case.Name,
-                CaseNumber = model.Case.CaseNumber,
+                CaseName = model.Case?.Name,
+                CaseNumber = model.Case?.CaseNumber,
                 CompleteDate = model.CompleteDate,
                 IsOnTheRecord = model.IsOnTheRecord
             };
