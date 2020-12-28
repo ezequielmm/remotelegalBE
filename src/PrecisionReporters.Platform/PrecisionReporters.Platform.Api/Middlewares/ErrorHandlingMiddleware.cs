@@ -36,7 +36,11 @@ namespace PrecisionReporters.Platform.Api.Middlewares
             }
             catch (Exception ex)
             {
-                context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+                if (context.WebSockets != null && !context.WebSockets.IsWebSocketRequest)
+                {
+                    context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+                }
+
                 await HandleExceptionAsync(context, ex);
             }
         }
