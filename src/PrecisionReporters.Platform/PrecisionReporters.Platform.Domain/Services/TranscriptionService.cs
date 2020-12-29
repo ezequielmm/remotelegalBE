@@ -2,6 +2,7 @@
 using Google.Protobuf;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using PrecisionReporters.Platform.Domain.Configurations;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using System;
@@ -16,7 +17,6 @@ namespace PrecisionReporters.Platform.Domain.Services
 {
     public class TranscriptionService : ITranscriptionService
     {
-        private readonly string _filePath;
         private const int SampleRate = 44100;
         private const int ChannelCount = 1;
         private const int BytesPerSample = 2;
@@ -57,10 +57,9 @@ namespace PrecisionReporters.Platform.Domain.Services
         /// </summary>
         private ValueTask<bool> _serverResponseAvailableTask;
 
-        public TranscriptionService(IHostingEnvironment env, IOptions<GcpConfiguration> gcpConfiguration)
+        public TranscriptionService(IHostingEnvironment env) //, IOptions<GcpConfiguration> gcpConfiguration
         {
-            _filePath = env.ContentRootPath;
-            _gcpConfiguration = gcpConfiguration.Value;
+            //_gcpConfiguration = gcpConfiguration.Value;
             _client = GetGCPCredentials();
         }
 
@@ -202,12 +201,40 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         private SpeechClient GetGCPCredentials()
         {
-            var gcpCredentials = JsonSerializer.Serialize(_gcpConfiguration);
+            var credentials = new Credentials
+            {
+                type = "service_account",
+                project_id = "our-service-296819",
+                private_key_id = "11e1ad2df8d1735e5114e37552874522140540fb",
+                private_key = "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDnNnA3TPK/k+9O\n5uMuVNLwIGYeAdrjSz0xnUhBrs9B8MZ3jk7KcHmu3TdGzNFslAciWxHbYgqWk9eQ\nmUf92fXu1w8kHSBbZYYx7rJytDHkyUn3cSvqyXMa5jXwTg1XQH4Nd7fyf0RhEvp6\nY814j0TO9YTB6+xI2V2gopgL+hTM6g6wWjIu23oQBLq+wmASti/SGX6xV3xVns8W\nYRcXyvVuCm2HEuQuzkS5gl07gmCfelcNyCXUgNbLT+qICZVEjd5F54bCVNy21klU\nj2eVFQrE97Oq6lBmNmagEPPfXlhyOXvqNI/4zZTbovVqtYKz3VSdPwJptbpWUJKA\ngSv9bVNfAgMBAAECggEAG+uc/XCTV8MbgOGsyWmA13JyImmC7zOkvhsKILRlXsce\nkE1lAlk2uIEKLciJ+Zyeh+2LaHycXraXr2RzJxps8lyR/YBu6dqGq/zxG5za8Y/F\nGNZXwVB2T+dA2DX0snadQi8UzXnE3hwWlzT6GPbkDkHjuC8vJ1ToU3+O8NNQM7ZN\nMKNU1ZNMIbE/ZJPYwmXORfWLGXfyjgVletKvtjqch1a9dJfE8Jsa/U3+lDaDPT5Q\nNrjoJaNba2AlPODKtoNxQBJEDaEM2ZWCyan5ZK5eh/lzxlMWfygot3na6WBrr39S\nQ7yPBWvlZGzzKTobUi5v6PFCRjn6m6VIQtYC0pxVoQKBgQD2BTMblKPNiCY4QWdg\nERjyAFEJ6+Z8s3yR/fG0C2PGNHdozeMD0snpSQIJpvOFDblpFjo3eiPKmmxFduHM\nuPSBYNAqQxI3HNsAKysfQbALI4Gryd7R+6vMgrUssl2WHuKJ+2F3Ov7hoIKgr6Xe\nxRa6IhJxKiqdBYLjJI/lxY/P9wKBgQDwl3fo9ngOMFs1HpnnzWL+bO3ATYbdaRLs\nBmEziEjRWnaXaNw9gkAmHfuTO+PSESdLnNCrLnOHBiO8+KKGICKGYWMNDfFftblp\n7J43KQbT0hzS5pSvtMplVcEkr4PtWcbPrL5vLNwhZZ7CYkIFObNzXEbLXITP4yXu\nwcOszh2N2QKBgQDiv2oaaoYKogiv4sAXj8qRCW+nmE/n8TnICOjjy3ebL7I62z/3\nvyivpcWGBeT+ZebUj1L63MzuKCPQZkC5AmMAd62EtiqstyC16BOnjFBoA8K5Bacj\nnDT8mh/H4WFWQoMDL7jmPm66n8iltx5G0xoeVdbvjDCYZoL7PTCPUuY4gwKBgCAP\nPwZHGZZicTTx3/ZYkxFuOHxAmHEWmFPlQbyZM4LaOCVS7s4vdhbeNfDXsTMD4CWe\nPtwgs3pRoh+DTjzrOU6I2acarYhgcdWglzCogeVmATtFSJjlUXcRZ0xZKw5MwUZZ\nMYMlCixVG0OxzjReDQCZUkG1EWmWTi6zmTyEtsF5AoGAf6LRMotPBN1oj3g1e/50\n3Z4Uilk6Bf+ZKt+8UUZ4xndJqA9bHvU0KFFQunkz8KDk+601NjQfFQNdGLp/W2I4\ndlYQ8vvEMEvjPpAh/txEdd0N48sagbaMFCfRnRmfLzSHsVTerzzRVAqgZkP/qSIF\nEpQrFGXj84U1cSjOo+NwclQ=\n-----END PRIVATE KEY-----\n",
+                client_email = "remotelegal-text-to-speech@our-service-296819.iam.gserviceaccount.com",
+                client_id = "103840798119114557579",
+                auth_uri = "https://accounts.google.com/o/oauth2/auth",
+                token_uri = "https://oauth2.googleapis.com/token",
+                auth_provider_x509_cert_url = "https://www.googleapis.com/oauth2/v1/certs",
+                client_x509_cert_url = "https://www.googleapis.com/robot/v1/metadata/x509/remotelegal-text-to-speech%40our-service-296819.iam.gserviceaccount.com"
+            };
+            
+            var gcpCredentials = JsonConvert.SerializeObject(credentials);
             var speechClient = new SpeechClientBuilder
             {
                 JsonCredentials = gcpCredentials
             };
             return speechClient.Build();
+        }
+
+        private class Credentials
+        {
+            public string type { get; set; }
+            public string project_id { get; set; }
+            public string private_key_id { get; set; }
+            public string private_key { get; set; }
+            public string client_email { get; set; }
+            public string client_id { get; set; }
+            public string auth_uri { get; set; }
+            public string token_uri { get; set; }
+            public string auth_provider_x509_cert_url { get; set; }
+            public string client_x509_cert_url { get; set; }
         }
     }
 }
