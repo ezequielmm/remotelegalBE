@@ -45,7 +45,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             return await GetByIdWithIncludes(id, include);
         }
 
-        public async Task<Result<Deposition>> GenerateScheduledDeposition(Deposition deposition, List<Document> uploadedDocuments)
+        public async Task<Result<Deposition>> GenerateScheduledDeposition(Deposition deposition, List<Document> uploadedDocuments, User addedBy)
         {
             var requester = await _userService.GetUserByEmail(deposition.Requester.EmailAddress);
             if (requester.IsFailed)
@@ -53,6 +53,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 return Result.Fail(new ResourceNotFoundError($"Requester with email {deposition.Requester.EmailAddress} not found"));
             }
             deposition.Requester = requester.Value;
+            deposition.AddedBy = addedBy;
 
             if (deposition.Witness != null && !string.IsNullOrWhiteSpace(deposition.Witness.Email))
             {
@@ -99,7 +100,11 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             if (userResult.IsFailed || !userResult.Value.IsAdmin)
             {
-                filter = x => (status != null ? x.Status == status : true) && (x.Participants.Any(p => p.Email == userEmail) || x.Requester.EmailAddress == userEmail);
+                filter = x => (status != null ? x.Status == status : true) &&
+                    (x.Participants.Any(p => p.Email == userEmail)
+                        || x.Requester.EmailAddress == userEmail
+                        || x.AddedBy.EmailAddress == userEmail
+                        || (x.Witness != null && x.Witness.Email == userEmail));
             }
 
             Expression <Func<Deposition, object>> orderBy = sortedField switch

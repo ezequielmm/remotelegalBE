@@ -141,7 +141,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             foreach (var deposition in depositions)
             {
-                var depositionResult = await _depositionService.GenerateScheduledDeposition(deposition, uploadedDocuments);
+                var depositionResult = await _depositionService.GenerateScheduledDeposition(deposition, uploadedDocuments, userResult.Value);
                 if (depositionResult.IsFailed)
                 {
                     await _documentService.DeleteUploadedFiles(uploadedDocuments);

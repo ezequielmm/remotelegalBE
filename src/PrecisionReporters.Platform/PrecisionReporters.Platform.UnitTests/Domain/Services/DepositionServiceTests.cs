@@ -133,7 +133,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var service = InitializeService(userService: userServiceMock);
 
             // Act
-            var result = await service.GenerateScheduledDeposition(deposition, depositionDocuments);
+            var result = await service.GenerateScheduledDeposition(deposition, depositionDocuments, deposition.Requester);
 
             // Assert
             userServiceMock.Verify(mock => mock.GetUserByEmail(It.Is<string>(a => a == deposition.Requester.EmailAddress)), Times.Once());
@@ -158,7 +158,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var service = InitializeService(userService: userServiceMock);
 
             // Act
-            var result = await service.GenerateScheduledDeposition(deposition, depositionDocuments);
+            var result = await service.GenerateScheduledDeposition(deposition, depositionDocuments, null);
 
             // Assert
             userServiceMock.Verify(mock => mock.GetUserByEmail(It.Is<string>(a => a == deposition.Requester.EmailAddress)), Times.Once());
@@ -190,7 +190,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var service = InitializeService(userService: userServiceMock);
 
             // Act
-            var result = await service.GenerateScheduledDeposition(deposition, null);
+            var result = await service.GenerateScheduledDeposition(deposition, null, null);
 
             // Assert
             userServiceMock.Verify(mock => mock.GetUserByEmail(It.Is<string>(a => a == witnessEmail)), Times.Once());
@@ -212,7 +212,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var service = InitializeService(userService: userServiceMock);
 
             // Act
-            var result = await service.GenerateScheduledDeposition(deposition, null);
+            var result = await service.GenerateScheduledDeposition(deposition, null, null);
 
             // Assert
             userServiceMock.Verify(mock => mock.GetUsersByFilter(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<string[]>()), Times.Once());
@@ -247,7 +247,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var service = InitializeService(userService: userServiceMock);
 
             // Act
-            var result = await service.GenerateScheduledDeposition(deposition, documents);
+            var result = await service.GenerateScheduledDeposition(deposition, documents, null);
 
             //Assert
             Assert.NotNull(result);

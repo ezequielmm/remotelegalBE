@@ -43,6 +43,12 @@ namespace PrecisionReporters.Platform.Data.Entities
 
         public bool IsOnTheRecord { get; set; } = false;
 
+        [ForeignKey(nameof(AddedBy))]
+        [Column(TypeName = "char(36)")]
+        public Guid AddedById { get; set; }
+
+        public User AddedBy { get; set; }
+
         public override void CopyFrom(Deposition entity)
         {
             StartDate = entity.StartDate;
