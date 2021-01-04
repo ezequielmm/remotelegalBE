@@ -6,10 +6,12 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using PrecisionReporters.Platform.Api.Authorization.Attributes;
 using PrecisionReporters.Platform.Api.Dtos;
 using PrecisionReporters.Platform.Api.Helpers;
 using PrecisionReporters.Platform.Api.Mappers;
 using PrecisionReporters.Platform.Data.Entities;
+using PrecisionReporters.Platform.Data.Enums;
 using PrecisionReporters.Platform.Domain.Commons;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 
@@ -74,6 +76,23 @@ namespace PrecisionReporters.Platform.Api.Controllers
             if (documentsResult.IsFailed)
                 return WebApiResponses.GetErrorResponse(documentsResult);
             return Ok(documentsResult.Value.Select(d => _documentMapper.ToDto(d)));
+        }
+
+        /// <summary>
+        /// Gets the public url of a file. This url exipres after deposition end or after 2 hours if deposition doesn't have an end date
+        /// </summary>
+        /// <param name="id">Document identifier</param>
+        /// <returns></returns>
+        [HttpGet("[controller]/{id}")]
+        [UserAuthorize(ResourceType.Document, ResourceAction.View)]
+        public async Task<ActionResult<string>> GetFileSignedUrl (Guid id) 
+        {
+            var identity = HttpContext.User.FindFirstValue(ClaimTypes.Email);
+            var fileSignedUrlResult = await _documentService.GetFileSignedUrl(identity, id);
+            if (fileSignedUrlResult.IsFailed)
+                return WebApiResponses.GetErrorResponse(fileSignedUrlResult);
+
+            return Ok(fileSignedUrlResult.Value);
         }
     }
 }

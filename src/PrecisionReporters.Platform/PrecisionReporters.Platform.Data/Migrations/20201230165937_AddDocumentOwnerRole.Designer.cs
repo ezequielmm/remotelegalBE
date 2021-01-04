@@ -2,15 +2,17 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PrecisionReporters.Platform.Data;
 
 namespace PrecisionReporters.Platform.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20201230165937_AddDocumentOwnerRole")]
+    partial class AddDocumentOwnerRole
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -95,10 +97,6 @@ namespace PrecisionReporters.Platform.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("char(36)");
 
-                    b.Property<string>("AddedById")
-                        .IsRequired()
-                        .HasColumnType("char(36)");
-
                     b.Property<string>("CaptionId")
                         .HasColumnType("char(36)");
 
@@ -147,8 +145,6 @@ namespace PrecisionReporters.Platform.Data.Migrations
                         .HasColumnType("char(36)");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("AddedById");
 
                     b.HasIndex("CaptionId");
 
@@ -599,12 +595,6 @@ namespace PrecisionReporters.Platform.Data.Migrations
 
             modelBuilder.Entity("PrecisionReporters.Platform.Data.Entities.Deposition", b =>
                 {
-                    b.HasOne("PrecisionReporters.Platform.Data.Entities.User", "AddedBy")
-                        .WithMany()
-                        .HasForeignKey("AddedById")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("PrecisionReporters.Platform.Data.Entities.Document", "Caption")
                         .WithMany()
                         .HasForeignKey("CaptionId");

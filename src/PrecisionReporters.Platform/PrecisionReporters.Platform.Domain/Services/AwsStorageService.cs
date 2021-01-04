@@ -7,6 +7,7 @@ using Amazon.S3.Model;
 using Amazon.S3.Transfer;
 using FluentResults;
 using Microsoft.Extensions.Logging;
+using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Domain.Commons;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 
@@ -109,6 +110,11 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (response.HttpStatusCode != HttpStatusCode.OK)
                 return Result.Fail($"Unable to delete file {key} from bucket {bucketName}");
             return Result.Ok();
+        }
+
+        public string GetFilePublicUri(Document document, string bucketName, DateTime expirationDate)
+        {
+            return _fileTransferUtility.S3Client.GetPreSignedURL(new GetPreSignedUrlRequest { BucketName = bucketName, Key = document.FilePath, Expires = expirationDate });
         }
 
         private void UploadPartProgressEventCallback(object sender, StreamTransferProgressArgs e)

@@ -163,6 +163,7 @@ namespace PrecisionReporters.Platform.Api
                 x.BucketName = appConfiguration.DocumentConfiguration.BucketName;
                 x.AcceptedFileExtensions = appConfiguration.DocumentConfiguration.AcceptedFileExtensions;
                 x.MaxFileSize = appConfiguration.DocumentConfiguration.MaxFileSize;
+                x.PreSignedUrlValidHours = appConfiguration.DocumentConfiguration.PreSignedUrlValidHours;
             });
             services.AddScoped<IDepositionService, DepositionService>();
             services.AddTransient<IAwsEmailService, AwsEmailService>().Configure<EmailConfiguration>(x =>

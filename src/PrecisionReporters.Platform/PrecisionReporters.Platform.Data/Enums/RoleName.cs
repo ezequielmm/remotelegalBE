@@ -2,6 +2,7 @@
 {
     public enum RoleName
     {
-        CaseAdmin
+        CaseAdmin,
+        DocumentOwner
     }
 }

@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using PrecisionReporters.Platform.Data.Entities;
+using PrecisionReporters.Platform.Data.Enums;
+using PrecisionReporters.Platform.Data.Handlers.Interfaces;
 using PrecisionReporters.Platform.Data.Repositories.Interfaces;
 using PrecisionReporters.Platform.Domain.Commons;
 using PrecisionReporters.Platform.Domain.Configurations;
@@ -22,10 +24,12 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly IUserService _userService;
         private readonly IDepositionService _depositionService;
         private readonly IDocumentUserDepositionRepository _documentUserDepositionRepository;
+        private readonly IPermissionService _permissionService;
+        private readonly ITransactionHandler _transactionHandler;
         private readonly ILogger<DocumentService> _logger;
         private readonly DocumentConfiguration _documentsConfiguration;
 
-        public DocumentService(IAwsStorageService awsStorageService, IOptions<DocumentConfiguration> documentConfigurations, ILogger<DocumentService> logger, IUserService userService, IDepositionService depositionService, IDocumentUserDepositionRepository documentUserDepositionRepository)
+        public DocumentService(IAwsStorageService awsStorageService, IOptions<DocumentConfiguration> documentConfigurations, ILogger<DocumentService> logger, IUserService userService, IDepositionService depositionService, IDocumentUserDepositionRepository documentUserDepositionRepository, IPermissionService permissionService, ITransactionHandler transactionHandler)
         {
             _awsStorageService = awsStorageService;
             _documentsConfiguration = documentConfigurations.Value ?? throw new ArgumentException(nameof(documentConfigurations));
@@ -33,6 +37,8 @@ namespace PrecisionReporters.Platform.Domain.Services
             _userService = userService;
             _depositionService = depositionService;
             _documentUserDepositionRepository = documentUserDepositionRepository;
+            _permissionService = permissionService;
+            _transactionHandler = transactionHandler;
         }
 
         public async Task<Result<Document>> UploadDocumentFile(KeyValuePair<string, FileTransferInfo> file, User user, string parentPath)
@@ -105,19 +111,39 @@ namespace PrecisionReporters.Platform.Domain.Services
 
                 uploadedDocuments.Add(new DocumentUserDeposition { Deposition = deposition, Document = documentResult.Value, User = userResult.Value });
             }
+            var documentCreationResult = Result.Ok();
 
-            try
+            var transactionResult = await _transactionHandler.RunAsync(async () =>
             {
-                await _documentUserDepositionRepository.CreateRange(uploadedDocuments);
-            }
-            catch (Exception ex)
+                try
+                {
+                    uploadedDocuments = await _documentUserDepositionRepository.CreateRange(uploadedDocuments);
+                    foreach (var document in uploadedDocuments)
+                    {
+                        var documentPermissionResult = await _permissionService.AddUserRole(document.UserId, document.DocumentId, ResourceType.Document, RoleName.DocumentOwner);
+                        if (documentPermissionResult.IsFailed)
+                        {
+                            _logger.LogError("Unable to create documents permissions");
+                            await DeleteUploadedFiles(uploadedDocuments.Select(d => d.Document).ToList());
+                            documentCreationResult = Result.Fail(new Error("Unable to create document permissions"));
+                            break;
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Unable to add documents to deposition");
+                    await DeleteUploadedFiles(uploadedDocuments.Select(d => d.Document).ToList());
+                    documentCreationResult = Result.Fail(new ExceptionalError("Unable to add documents to deposition", ex));
+                }
+            });
+
+            if (transactionResult.IsFailed)
             {
-                _logger.LogError(ex, "Unable to add documents to deposition");
-                await DeleteUploadedFiles(uploadedDocuments.Select(d => d.Document).ToList());
-                return Result.Fail(new ExceptionalError("Unable to add documents to deposition", ex));
+                return transactionResult;
             }
 
-            return Result.Ok();
+            return documentCreationResult;
         }
 
         public async Task<Result<List<Document>>> GetExhibitsForUser(Guid depositionId, string identity)
@@ -133,6 +159,22 @@ namespace PrecisionReporters.Platform.Domain.Services
             var documentUserDeposition = await _documentUserDepositionRepository.GetByFilter(x => x.DepositionId == depositionId && x.UserId == userResult.Value.Id, new[] { nameof(DocumentUserDeposition.Document) });
 
             return Result.Ok(documentUserDeposition.Select(d => d.Document).ToList());
+        }
+
+        public async Task<Result<string>> GetFileSignedUrl(string userEmail, Guid documentId)
+        {
+            var userResult = await _userService.GetUserByEmail(userEmail);
+            if (userResult.IsFailed)
+                return userResult.ToResult<string>();
+
+            var documentUserDeposition = await _documentUserDepositionRepository.GetFirstOrDefaultByFilter(x => x.User == userResult.Value && x.DocumentId == documentId, new[] { nameof(DocumentUserDeposition.Document) });
+            if (documentUserDeposition == null)
+                return Result.Fail(new ResourceNotFoundError($"Could not find any document with Id {documentId} for user {userEmail}"));
+
+            var expirationDate = DateTime.UtcNow.AddHours(_documentsConfiguration.PreSignedUrlValidHours);
+            var signedUrl = _awsStorageService.GetFilePublicUri(documentUserDeposition.Document, _documentsConfiguration.BucketName, expirationDate);
+
+            return Result.Ok(signedUrl);
         }
 
         private async Task<Result<Document>> UploadFileToStorage(FileTransferInfo file, User user, string fileName, string parentPath)

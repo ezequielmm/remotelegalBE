@@ -9,5 +9,6 @@ namespace PrecisionReporters.Platform.Domain.Configurations
         public string BucketName { get; set; }
         public long MaxFileSize { get; set; }
         public IReadOnlyList<string> AcceptedFileExtensions { get; set; }
+        public int PreSignedUrlValidHours { get; set; }
     }
 }

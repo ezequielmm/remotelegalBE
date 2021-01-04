@@ -3,6 +3,7 @@
     public enum ResourceType
     {
         Deposition,
-        Case
+        Case,
+        Document
     }
 }
