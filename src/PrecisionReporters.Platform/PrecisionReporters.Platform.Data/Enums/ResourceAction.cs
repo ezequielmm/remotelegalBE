@@ -5,6 +5,9 @@
         View,
         Create,
         Update,
-        Delete
+        Delete,
+        EndDeposition,
+        Recording,
+        UploadDocument
     }
 }

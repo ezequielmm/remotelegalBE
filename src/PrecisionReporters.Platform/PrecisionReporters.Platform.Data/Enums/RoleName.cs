@@ -3,6 +3,8 @@
     public enum RoleName
     {
         CaseAdmin,
+        DepositionCourtReporter,
+        DepositionAttendee,
         DocumentOwner
     }
 }

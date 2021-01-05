@@ -64,15 +64,6 @@ namespace PrecisionReporters.Platform.Domain.Services
                 }
             }
 
-            if (deposition.Participants != null)
-            {
-                var participantUsers = await _userService.GetUsersByFilter(x => deposition.Participants.Select(p => p.Email).Contains(x.EmailAddress));
-                foreach (var participant in deposition.Participants.Where(participant => !string.IsNullOrWhiteSpace(participant.Email)))
-                {
-                    participant.User = participantUsers.Find(x => x.EmailAddress == participant.Email);
-                }
-            }
-
             // If caption has a FileKey, find the matching document. If it doesn't has a FileKey, remove caption
             deposition.Caption = !string.IsNullOrWhiteSpace(deposition.FileKey) ? uploadedDocuments.First(d => d.FileKey == deposition.FileKey) : null;
 
@@ -168,7 +159,25 @@ namespace PrecisionReporters.Platform.Domain.Services
             var updatedDeposition = await _depositionRepository.Update(deposition);
             return Result.Ok(updatedDeposition);
         }
-       
+
+        public async Task<Result<Participant>> GetDepositionParticipantByEmail(Guid id, string participantEmail)
+        {
+            var depositionResult = await GetDepositionById(id);
+            if (depositionResult.IsFailed)
+                return depositionResult.ToResult<Participant>();
+
+            var participant = depositionResult.Value.Participants.FirstOrDefault(p => p.Email == participantEmail);
+
+            if (participant == null)
+                return Result.Fail(new ResourceNotFoundError($"Participant with email {participantEmail} not found"));
+
+            var userResult = await _userService.GetUserByEmail(participantEmail);
+            if (!userResult.IsFailed)
+                participant.User = userResult.Value;
+
+            return Result.Ok(participant);
+        }
+        
         public async Task<Result<Deposition>> AddDepositionEvent(Guid id, DepositionEvent depositionEvent, string userEmail)
         {
             var depositionResult = await _depositionRepository.GetById(id, new[] { nameof(Deposition.Events) });

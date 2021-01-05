@@ -1,6 +1,6 @@
 ﻿namespace PrecisionReporters.Platform.Data.Enums
 {
-    public enum ParticipantRole
+    public enum ParticipantType
     {
         Witness,
         Attorney,

@@ -6,6 +6,7 @@ using PrecisionReporters.Platform.Data.Repositories.Interfaces;
 using PrecisionReporters.Platform.Domain.Services;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using System;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Xunit;
@@ -25,7 +26,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _userResourceRoleRepositoryMock = new Mock<IUserResourceRoleRepository>();
             _userServiceMock = new Mock<IUserService>();
 
-            _permissionService = new PermissionService(_roleRepositoryMock.Object, _userResourceRoleRepositoryMock.Object, _userServiceMock.Object);
+            _permissionService = new PermissionService(_roleRepositoryMock.Object, _userResourceRoleRepositoryMock.Object,
+                _userServiceMock.Object);
         }
 
         public void Dispose()
@@ -111,6 +113,32 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             // Assert
             Assert.True(result.IsSuccess);
             _userResourceRoleRepositoryMock.Verify(r => r.Create(It.IsAny<UserResourceRole>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task GetParticipantPermissions_ShouldFailForNullParticipant()
+        {
+            // Arrange
+            Participant participant = null;
+            // Act
+            var result = await _permissionService.GetDepositionUserPermissions(participant, Guid.NewGuid());
+
+            // Assert
+            Assert.True(result.IsFailed);
+        }
+
+        [Fact]
+        public async Task GetParticipantPermissions_ShouldReturnACompleteListForAnAdmin()
+        {
+            // Arrange
+            var participant = new Participant();
+            // Act
+            var result = await _permissionService.GetDepositionUserPermissions(participant, Guid.NewGuid(), true);
+            var expectedResult = Enum.GetValues(typeof(ResourceAction)).Cast<ResourceAction>().ToList();
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(result.Value, expectedResult);
         }
     }
 }

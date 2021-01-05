@@ -5,6 +5,8 @@ using PrecisionReporters.Platform.Data.Repositories.Interfaces;
 using PrecisionReporters.Platform.Domain.Errors;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace PrecisionReporters.Platform.Domain.Services
@@ -54,6 +56,24 @@ namespace PrecisionReporters.Platform.Domain.Services
             }
 
             return await _userResourceRoleRepository.CheckUserHasPermissionForAction(userResult.Value.Id, resourceType, resourceId, resourceAction);
+        }
+
+        public async Task<Result<List<ResourceAction>>> GetDepositionUserPermissions(Participant participant, Guid depositionId, bool isAdmin = false)
+        {
+            if (isAdmin)
+            {
+                var adminPermissions = Enum.GetValues(typeof(ResourceAction)).Cast<ResourceAction>().ToList(); // return all ResourceAction if IsAdmin
+                return Result.Ok(adminPermissions);
+            }
+
+            if (participant == null)
+                return Result.Fail(new ResourceNotFoundError("Participant can not be null"));
+
+            if (participant.User == null)
+                return Result.Fail(new ResourceNotFoundError("Participant User can not be null"));
+
+            var permissions = await _userResourceRoleRepository.GetUserActionsForResource(participant.User.Id, ResourceType.Deposition, depositionId);
+            return Result.Ok(permissions);
         }
     }
 }

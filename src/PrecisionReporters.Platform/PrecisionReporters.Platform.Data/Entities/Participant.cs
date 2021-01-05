@@ -8,7 +8,7 @@ namespace PrecisionReporters.Platform.Data.Entities
     public class Participant : BaseEntity<Participant>
     {
         [Required]
-        public ParticipantRole Role { get; set; }
+        public ParticipantType Role { get; set; }
         public string Name { get; set; }
         public string Email { get; set; }
         public string Phone { get; set; }
@@ -16,6 +16,9 @@ namespace PrecisionReporters.Platform.Data.Entities
         [ForeignKey(nameof(User))]
         public Guid? UserId { get; set; }
         public User User { get; set; }
+
+        [ForeignKey(nameof(Deposition))]
+        public Guid? DepositionId { get; set; }
 
         public override void CopyFrom(Participant entity)
         {

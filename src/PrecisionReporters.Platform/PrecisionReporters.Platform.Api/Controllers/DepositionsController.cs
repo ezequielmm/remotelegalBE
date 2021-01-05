@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
+using PrecisionReporters.Platform.Api.Authorization.Attributes;
 using PrecisionReporters.Platform.Api.Dtos;
 using PrecisionReporters.Platform.Api.Helpers;
 using PrecisionReporters.Platform.Api.Mappers;
@@ -64,7 +65,8 @@ namespace PrecisionReporters.Platform.Api.Controllers
         /// <param name="depositionId">DepositionId to End.</param>
         /// <returns>DepositionDto object.</returns>
         [HttpPost("{id}/end")]
-        public async Task<ActionResult<DepositionDto>> EndDeposition(Guid id)
+        [UserAuthorize(ResourceType.Deposition, ResourceAction.EndDeposition)]
+        public async Task<ActionResult<DepositionDto>> EndDeposition([ResourceId(ResourceType.Deposition)]Guid id)
         {
             var endDepositionResult = await _depositionService.EndDeposition(id);
             if (endDepositionResult.IsFailed)
@@ -95,6 +97,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
         /// <param name="onTheRecord">Status OnTheRecord / OffTheRecord event.</param>
         /// <returns>DepositionDto object.</returns>
         [HttpPost("{id}/record")]
+        [UserAuthorize(ResourceType.Deposition, ResourceAction.Recording)]
         public async Task<ActionResult<DepositionDto>> DepositionRecord(Guid id, [FromQuery, BindRequired] bool onTheRecord)
         {
             var userEmail = HttpContext.User.FindFirstValue(ClaimTypes.Email);

@@ -16,7 +16,7 @@ namespace PrecisionReporters.Platform.Api.Mappers
                 Email = dto.Email,
                 Name = dto.Name,
                 Phone = dto.Phone,
-                Role = Enum.Parse<ParticipantRole>(dto.Role, true),
+                Role = Enum.Parse<ParticipantType>(dto.Role, true),
                 UserId = dto.User.Id
             };
         }

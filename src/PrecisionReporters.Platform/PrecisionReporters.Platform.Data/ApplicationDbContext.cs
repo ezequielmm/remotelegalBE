@@ -49,7 +49,7 @@ namespace PrecisionReporters.Platform.Data
 
             modelBuilder.Entity<Participant>()
                 .Property(p => p.Role)
-                .HasConversion(new EnumToStringConverter<ParticipantRole>());
+                .HasConversion(new EnumToStringConverter<ParticipantType>());
 
             modelBuilder.Entity<Deposition>()
                 .Property(x => x.Status)

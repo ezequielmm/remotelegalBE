@@ -286,7 +286,6 @@ namespace PrecisionReporters.Platform.Api
                     await next();
                 }
             });
-
             db.Database.Migrate();
         }
     }

@@ -2,15 +2,17 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PrecisionReporters.Platform.Data;
 
 namespace PrecisionReporters.Platform.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20201230171623_AddCourtReporterAndAttendee")]
+    partial class AddCourtReporterAndAttendee
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -95,10 +97,6 @@ namespace PrecisionReporters.Platform.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("char(36)");
 
-                    b.Property<string>("AddedById")
-                        .IsRequired()
-                        .HasColumnType("char(36)");
-
                     b.Property<string>("CaptionId")
                         .HasColumnType("char(36)");
 
@@ -147,8 +145,6 @@ namespace PrecisionReporters.Platform.Data.Migrations
                         .HasColumnType("char(36)");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("AddedById");
 
                     b.HasIndex("CaptionId");
 
@@ -393,12 +389,6 @@ namespace PrecisionReporters.Platform.Data.Migrations
                             Id = "997d199c-3b9a-4103-a320-130b02890a5b",
                             CreationDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Name = "DepositionAttendee"
-                        },
-                        new
-                        {
-                            Id = "ef7db7d6-4aae-11eb-b378-0242ac130002",
-                            CreationDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            Name = "DocumentOwner"
                         });
                 });
 
@@ -445,32 +435,14 @@ namespace PrecisionReporters.Platform.Data.Migrations
                         },
                         new
                         {
-                            RoleId = "ef7db7d6-4aae-11eb-b378-0242ac130002",
-                            Action = "Delete",
-                            CreationDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
-                        },
-                        new
-                        {
                             RoleId = "6c73879b-cce3-47ea-9b80-12e1c4d1285e",
                             Action = "Recording",
                             CreationDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
                         {
-                            RoleId = "ef7db7d6-4aae-11eb-b378-0242ac130002",
-                            Action = "Update",
-                            CreationDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
-                        },
-                        new
-                        {
                             RoleId = "997d199c-3b9a-4103-a320-130b02890a5b",
                             Action = "UploadDocument",
-                            CreationDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
-                        },
-                        new
-                        {
-                            RoleId = "ef7db7d6-4aae-11eb-b378-0242ac130002",
-                            Action = "View",
                             CreationDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         });
                 });
@@ -629,12 +601,6 @@ namespace PrecisionReporters.Platform.Data.Migrations
 
             modelBuilder.Entity("PrecisionReporters.Platform.Data.Entities.Deposition", b =>
                 {
-                    b.HasOne("PrecisionReporters.Platform.Data.Entities.User", "AddedBy")
-                        .WithMany()
-                        .HasForeignKey("AddedById")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("PrecisionReporters.Platform.Data.Entities.Document", "Caption")
                         .WithMany()
                         .HasForeignKey("CaptionId");

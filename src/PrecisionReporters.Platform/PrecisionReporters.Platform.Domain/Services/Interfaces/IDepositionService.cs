@@ -18,6 +18,7 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
         Task<List<Deposition>> GetDepositionsByStatus(DepositionStatus? status, DepositionSortField? sortedField, SortDirection? sortDirection, string userEmail);
         Task<Result<JoinDepositionDto>> JoinDeposition(Guid id, string identity);
         Task<Result<Deposition>> EndDeposition(Guid id);
+        Task<Result<Participant>> GetDepositionParticipantByEmail(Guid id, string participantEmail);
         Task<Result<Deposition>> AddDepositionEvent(Guid id, DepositionEvent depositionEvent, string userEmail);
         Task<Result<Deposition>> GoOnTheRecord(Guid id, bool onRecord, string userEmail);
     }

@@ -131,8 +131,9 @@ namespace PrecisionReporters.Platform.UnitTests.Utils
                 {
                     new Participant
                     {
-                        Email = participantEmail
-                    }
+                        Email = participantEmail,
+                        UserId = Guid.NewGuid()
+        }
                 },
                 Requester = new User
                 {

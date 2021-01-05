@@ -165,6 +165,8 @@ namespace PrecisionReporters.Platform.Domain.Services
             try
             {
                 caseToUpdate = await _caseRepository.Update(caseToUpdate);
+                //TODO refactor and move this method to a DepositionService
+                await AddParticipantsAsync(caseToUpdate);
             }
             catch (Exception ex)
             {
@@ -174,6 +176,26 @@ namespace PrecisionReporters.Platform.Domain.Services
             }
 
             return Result.Ok(caseToUpdate);
+        }
+
+        private async Task AddParticipantsAsync(Case caseToUpdate)
+        {
+            if (caseToUpdate.Depositions != null)
+            {
+                foreach (var deposition in caseToUpdate.Depositions)
+                {
+                    if (deposition.Participants != null)
+                    {
+                        var participantUsers = await _userService.GetUsersByFilter(x => deposition.Participants.Select(p => p.Email).Contains(x.EmailAddress));
+                        foreach (var participant in deposition.Participants.Where(participant => !string.IsNullOrWhiteSpace(participant.Email)))
+                        {
+                            participant.User = participantUsers.Find(x => x.EmailAddress == participant.Email);
+
+                            await _permissionService.AddUserRole(participant.User.Id, deposition.Id, ResourceType.Deposition, ParticipantType.CourtReporter == participant.Role ? RoleName.DepositionCourtReporter : RoleName.DepositionAttendee);
+                        }
+                    }
+                }
+            }
         }
 
         private void AddMemberToCase(User userToAdd, Case caseToUpdate)
