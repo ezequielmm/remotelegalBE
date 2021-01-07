@@ -98,7 +98,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
         /// <returns>DepositionDto object.</returns>
         [HttpPost("{id}/record")]
         [UserAuthorize(ResourceType.Deposition, ResourceAction.Recording)]
-        public async Task<ActionResult<DepositionDto>> DepositionRecord(Guid id, [FromQuery, BindRequired] bool onTheRecord)
+        public async Task<ActionResult<DepositionDto>> DepositionRecord([ResourceId(ResourceType.Deposition)] Guid id, [FromQuery, BindRequired] bool onTheRecord)
         {
             var userEmail = HttpContext.User.FindFirstValue(ClaimTypes.Email);
             var goOnTheRecordResult = await _depositionService.GoOnTheRecord(id, onTheRecord, userEmail);
