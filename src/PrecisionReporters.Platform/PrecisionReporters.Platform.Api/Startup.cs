@@ -30,6 +30,7 @@ using PrecisionReporters.Platform.Domain.Services;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using System;
 using System.Text.Json.Serialization;
+using System.Threading.Tasks;
 
 namespace PrecisionReporters.Platform.Api
 {
@@ -37,7 +38,6 @@ namespace PrecisionReporters.Platform.Api
     {
         public Startup(IWebHostEnvironment env)
         {
-
             var builder = new ConfigurationBuilder().SetBasePath(env.ContentRootPath)
                 .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
                 .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true)
@@ -203,6 +203,7 @@ namespace PrecisionReporters.Platform.Api
             services.AddScoped<IUserResourceRoleRepository, UserResourceRoleRepository>();
             services.AddScoped<IRoleRepository, RoleRepository>();
             services.AddScoped<IDocumentUserDepositionRepository, DocumentUserDepositionRepository>();
+            services.AddTransient<ITranscriptionRepository, TranscriptionRepository>();
 
             services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseMySQL(appConfiguration.ConnectionStrings.MySqlConnection));
@@ -220,6 +221,18 @@ namespace PrecisionReporters.Platform.Api
             {
                 options.Audience = appConfiguration.CognitoConfiguration.ClientId;
                 options.Authority = appConfiguration.CognitoConfiguration.Authority;
+                options.Events = new JwtBearerEvents
+                {
+                    OnMessageReceived = context =>
+                    {
+                        var accessToken = context.Request.Query["token"];
+                        if (!string.IsNullOrEmpty(accessToken))
+                        {
+                            context.Token = accessToken;
+                        }
+                        return Task.CompletedTask;
+                    }
+                };
             });
 
             services.AddMvc()
@@ -260,32 +273,13 @@ namespace PrecisionReporters.Platform.Api
 
             app.UseHealthChecks("/healthcheck");
 
+            app.UseWebSockets();
+
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();                
             });
 
-            app.UseWebSockets();
-            app.Use(async (context, next) =>
-            {
-                if (context.Request.Path == "/transcriptions")
-                {
-                    if (context.WebSockets.IsWebSocketRequest)
-                    {
-                        var webSocket = await context.WebSockets.AcceptWebSocketAsync();
-                        var handler = app.ApplicationServices.GetRequiredService<ITranscriptionsHandler>();
-                        await handler.HandleConnection(context, webSocket);
-                    }
-                    else
-                    {
-                        context.Response.StatusCode = 400;
-                    }
-                }
-                else
-                {
-                    await next();
-                }
-            });
             db.Database.Migrate();
         }
     }

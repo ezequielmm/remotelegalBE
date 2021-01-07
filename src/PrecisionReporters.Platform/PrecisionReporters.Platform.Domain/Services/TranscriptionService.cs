@@ -1,9 +1,11 @@
 ﻿using Google.Cloud.Speech.V1;
 using Google.Protobuf;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using PrecisionReporters.Platform.Data.Entities;
+using PrecisionReporters.Platform.Data.Repositories.Interfaces;
 using PrecisionReporters.Platform.Domain.Configurations;
+using PrecisionReporters.Platform.Domain.Dtos;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using System;
 using System.Collections.Concurrent;
@@ -16,13 +18,24 @@ namespace PrecisionReporters.Platform.Domain.Services
 {
     public class TranscriptionService : ITranscriptionService
     {
+        private readonly ITranscriptionRepository _transcriptionRepository;
+        private readonly IUserRepository _userRepository;
+        private readonly SpeechClient _client;
+        private readonly GcpConfiguration _gcpConfiguration;
+
         private const int SampleRate = 44100;
         private const int ChannelCount = 1;
         private const int BytesPerSample = 2;
         private const int BytesPerSecond = SampleRate * ChannelCount * BytesPerSample;
         private static readonly TimeSpan s_streamTimeLimit = TimeSpan.FromSeconds(290);
-        private readonly SpeechClient _client;
-        private readonly GcpConfiguration _gcpConfiguration;
+
+        public TranscriptionService(IOptions<GcpConfiguration> gcpConfiguration, ITranscriptionRepository transcriptionRepository, IUserRepository userRepository)
+        {
+            _transcriptionRepository = transcriptionRepository;
+            _userRepository = userRepository;
+            _gcpConfiguration = gcpConfiguration.Value;
+            _client = GetGCPCredentials();
+        }
 
         /// <summary>
         /// Audio chunks that haven't yet been processed at all.
@@ -56,26 +69,37 @@ namespace PrecisionReporters.Platform.Domain.Services
         /// </summary>
         private ValueTask<bool> _serverResponseAvailableTask;
 
-        public TranscriptionService(IOptions<GcpConfiguration> gcpConfiguration)
-        {
-            _gcpConfiguration = gcpConfiguration.Value;
-            _client = GetGCPCredentials();
-        }
-
-        public async Task<string> RecognizeAsync(byte[] audioChunk)
+        public async Task<TranscriptionDto> RecognizeAsync(byte[] audioChunk, string userEmail, string depositionId)
         {
             _audioBuffer.Add(ByteString.CopyFrom(audioChunk, 0, audioChunk.Length));
-            return await RunAsync();
+            return await RunAsync(userEmail, depositionId);
         }
 
-        private async Task<string> RunAsync()
+        private async Task<TranscriptionDto> RunAsync(string userEmail, string depositionId)
         {
             await MaybeStartStreamAsync();
 
-            var transcript = ProcessResponses();
+            var transcription = ProcessResponses();
+
+            if (!string.IsNullOrEmpty(transcription.Transcript))
+            {
+                //TODO: Add user parameter for thi method
+                var user = await _userRepository.GetFirstOrDefaultByFilter(x => x.EmailAddress == userEmail);
+
+                var transcriptionEntity = new Transcription
+                {
+                    DepositionId = new Guid(depositionId),
+                    UserId = user.Id,
+                    Text = transcription.Transcript,
+                    GcpDateTime = transcription.TimeOffset
+                };
+
+                await _transcriptionRepository.Create(transcriptionEntity);
+            }
+
             await TransferAudioChunkAsync();
 
-            return transcript;
+            return transcription;
         }
 
         /// <summary>
@@ -118,7 +142,8 @@ namespace PrecisionReporters.Platform.Domain.Services
                         LanguageCode = "en-US",
                         MaxAlternatives = 1,
                         EnableAutomaticPunctuation = true,
-                        UseEnhanced = true
+                        UseEnhanced = true,
+                        EnableWordTimeOffsets = true
                     },
                     InterimResults = false,
                 }
@@ -135,9 +160,9 @@ namespace PrecisionReporters.Platform.Domain.Services
         /// Processes responses received so far from the server,
         /// returning whether "exit" or "quit" have been heard.
         /// </summary>
-        private string ProcessResponses()
+        private TranscriptionDto ProcessResponses()
         {
-            var transcript = string.Empty;
+            var transcription = new TranscriptionDto();
 
             while (_serverResponseAvailableTask.IsCompleted && _serverResponseAvailableTask.Result)
             {
@@ -151,8 +176,8 @@ namespace PrecisionReporters.Platform.Domain.Services
                 var finalResult = response.Results.FirstOrDefault(r => r.IsFinal);
                 if (finalResult != null)
                 {
-                    transcript = finalResult.Alternatives[0].Transcript;
-                    Trace.WriteLine($"Transcript: {transcript}");
+                    transcription.Transcript = finalResult.Alternatives[0].Transcript;
+                    Trace.WriteLine($"Transcript: {transcription.Transcript}");
 
                     TimeSpan resultEndTime = finalResult.ResultEndTime.ToTimeSpan();
 
@@ -175,9 +200,12 @@ namespace PrecisionReporters.Platform.Domain.Services
                         _processingBuffer.RemoveFirst();
                         removed++;
                     }
+
+                    transcription.TimeOffset = DateTime.UtcNow;
                 }
             }
-            return transcript;
+
+            return transcription;
         }
 
         /// <summary>

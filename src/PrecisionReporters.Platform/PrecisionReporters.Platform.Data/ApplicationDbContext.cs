@@ -23,6 +23,7 @@ namespace PrecisionReporters.Platform.Data
         public DbSet<RolePermission> RolePermissions { get; set; }
         public DbSet<UserResourceRole> UserResourceRoles { get; set; }
         public DbSet<DepositionEvent> DepositionEvents { get; set; }
+        public DbSet<Transcription> Transcriptions { get; set; }
 
         public ApplicationDbContext(DbContextOptions options) : base(options) { }
 
