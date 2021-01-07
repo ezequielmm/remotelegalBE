@@ -1,6 +1,7 @@
 ﻿using PrecisionReporters.Platform.Api.Dtos;
 using PrecisionReporters.Platform.Data.Entities;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace PrecisionReporters.Platform.Api.Mappers
@@ -57,7 +58,9 @@ namespace PrecisionReporters.Platform.Api.Mappers
                 Details = dto.Details,
                 IsVideoRecordingNeeded = dto.IsVideoRecordingNeeded,
                 FileKey = dto.Caption,
-                Participants = dto.Participants?.Select(p => _participantMapper.ToModel(p)).ToList()
+                Participants = dto.Participants != null
+                    ? dto.Participants.Select(p => _participantMapper.ToModel(p)).ToList()
+                    : new List<Participant>()
             };
         }
 

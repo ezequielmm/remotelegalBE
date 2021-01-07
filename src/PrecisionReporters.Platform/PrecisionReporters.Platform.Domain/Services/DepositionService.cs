@@ -47,12 +47,18 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<Deposition>> GenerateScheduledDeposition(Deposition deposition, List<Document> uploadedDocuments, User addedBy)
         {
-            var requester = await _userService.GetUserByEmail(deposition.Requester.EmailAddress);
-            if (requester.IsFailed)
+            var requesterResult = await _userService.GetUserByEmail(deposition.Requester.EmailAddress);
+            if (requesterResult.IsFailed)
             {
                 return Result.Fail(new ResourceNotFoundError($"Requester with email {deposition.Requester.EmailAddress} not found"));
             }
-            deposition.Requester = requester.Value;
+            deposition.Requester = requesterResult.Value;
+            //Adding Requester as a Participant
+            if (deposition.Participants == null)
+                deposition.Participants = new List<Participant>();
+
+            deposition.Participants.Add(new Participant(deposition.Requester, ParticipantType.Observer));
+
             deposition.AddedBy = addedBy;
 
             if (deposition.Witness != null && !string.IsNullOrWhiteSpace(deposition.Witness.Email))
@@ -165,6 +171,9 @@ namespace PrecisionReporters.Platform.Domain.Services
             var depositionResult = await GetDepositionById(id);
             if (depositionResult.IsFailed)
                 return depositionResult.ToResult<Participant>();
+
+            if (depositionResult.Value.Witness != null && depositionResult.Value.Witness.Email == participantEmail)
+                return Result.Ok(depositionResult.Value.Witness);
 
             var participant = depositionResult.Value.Participants.FirstOrDefault(p => p.Email == participantEmail);
 

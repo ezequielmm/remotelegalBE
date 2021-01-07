@@ -28,5 +28,17 @@ namespace PrecisionReporters.Platform.Data.Entities
             Phone = entity.Phone;
             User = entity.User;
         }
+
+        public Participant() {}
+
+        public Participant(User user, ParticipantType role)
+        {
+            Email = user.EmailAddress;
+            Name = user.FirstName;
+            Phone = user.PhoneNumber;
+            Role = role;
+            UserId = user.Id;
+            User = user;
+        }
     }
 }

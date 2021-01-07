@@ -194,6 +194,11 @@ namespace PrecisionReporters.Platform.Domain.Services
                             await _permissionService.AddUserRole(participant.User.Id, deposition.Id, ResourceType.Deposition, ParticipantType.CourtReporter == participant.Role ? RoleName.DepositionCourtReporter : RoleName.DepositionAttendee);
                         }
                     }
+
+                    if (deposition.Witness?.User != null)
+                    {
+                        await _permissionService.AddUserRole(deposition.Witness.User.Id, deposition.Id, ResourceType.Deposition, RoleName.DepositionAttendee);
+                    }
                 }
             }
         }

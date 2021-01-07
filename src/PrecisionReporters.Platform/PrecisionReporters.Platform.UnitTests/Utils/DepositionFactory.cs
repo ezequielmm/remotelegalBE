@@ -8,15 +8,16 @@ namespace PrecisionReporters.Platform.UnitTests.Utils
     {
         public static Deposition GetDeposition(Guid depositionId, Guid caseId)
         {
-            var depositon = GetDepositionWithoutWitness(depositionId, caseId);
-            depositon.Witness = new Participant
+            var deposition = GetDepositionWithoutWitness(depositionId, caseId);
+            deposition.Witness = new Participant
             {
                 Id = Guid.NewGuid(),
                 Name = "witness1",
                 Email = "witness@email.com"
             };
-            depositon.Events = new List<DepositionEvent>();
-            return depositon;
+            deposition.Events = new List<DepositionEvent>();
+            deposition.Participants = new List<Participant>();
+            return deposition;
         }
 
 
@@ -133,7 +134,7 @@ namespace PrecisionReporters.Platform.UnitTests.Utils
                     {
                         Email = participantEmail,
                         UserId = Guid.NewGuid()
-        }
+                    }
                 },
                 Requester = new User
                 {

@@ -32,8 +32,8 @@ namespace PrecisionReporters.Platform.Api.Controllers
         [HttpGet("depositions/{id}")]
         public async Task<ActionResult<DepositionPermissionsDto>> GetDepositionPermissionsForParticipant(Guid id)
         {
-            var participantEmail = HttpContext.User.FindFirstValue(ClaimTypes.Email);
-            var userResult = await _userService.GetUserByEmail(participantEmail);
+            var userEmail = HttpContext.User.FindFirstValue(ClaimTypes.Email);
+            var userResult = await _userService.GetUserByEmail(userEmail);
 
             if (!userResult.IsFailed && userResult.Value.IsAdmin)
             {
@@ -47,7 +47,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
                 return Ok(adminPermissionsDto);
             }
 
-            var participantResult = await _depositionService.GetDepositionParticipantByEmail(id, participantEmail);
+            var participantResult = await _depositionService.GetDepositionParticipantByEmail(id, userEmail);
 
             if (participantResult.IsFailed)
                 return WebApiResponses.GetErrorResponse(participantResult);
