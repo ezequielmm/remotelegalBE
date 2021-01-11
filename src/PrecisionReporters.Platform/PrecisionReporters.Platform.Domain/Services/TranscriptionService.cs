@@ -1,11 +1,12 @@
-﻿using Google.Cloud.Speech.V1;
+﻿using FluentResults;
+using Google.Cloud.Speech.V1;
 using Google.Protobuf;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using PrecisionReporters.Platform.Data.Entities;
+using PrecisionReporters.Platform.Data.Enums;
 using PrecisionReporters.Platform.Data.Repositories.Interfaces;
 using PrecisionReporters.Platform.Domain.Configurations;
-using PrecisionReporters.Platform.Domain.Dtos;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using System;
 using System.Collections.Concurrent;
@@ -69,32 +70,40 @@ namespace PrecisionReporters.Platform.Domain.Services
         /// </summary>
         private ValueTask<bool> _serverResponseAvailableTask;
 
-        public async Task<TranscriptionDto> RecognizeAsync(byte[] audioChunk, string userEmail, string depositionId)
+        public async Task<Transcription> RecognizeAsync(byte[] audioChunk, string userEmail, string depositionId)
         {
             _audioBuffer.Add(ByteString.CopyFrom(audioChunk, 0, audioChunk.Length));
             return await RunAsync(userEmail, depositionId);
         }
 
-        private async Task<TranscriptionDto> RunAsync(string userEmail, string depositionId)
+        public async Task<Result<List<Transcription>>> GetTranscriptionsByDepositionId(Guid depositionId)
+        {
+            var include = new[] { nameof(Transcription.User) };
+            var result = await _transcriptionRepository.GetByFilter(
+                x => x.TranscriptDateTime,
+                SortDirection.Ascend,
+                x => x.DepositionId == depositionId,
+                include);
+
+            return Result.Ok(result);
+        }
+
+        private async Task<Transcription> RunAsync(string userEmail, string depositionId)
         {
             await MaybeStartStreamAsync();
 
             var transcription = ProcessResponses();
 
-            if (!string.IsNullOrEmpty(transcription.Transcript))
+            if (!string.IsNullOrEmpty(transcription.Text))
             {
                 //TODO: Add user parameter for thi method
                 var user = await _userRepository.GetFirstOrDefaultByFilter(x => x.EmailAddress == userEmail);
 
-                var transcriptionEntity = new Transcription
-                {
-                    DepositionId = new Guid(depositionId),
-                    UserId = user.Id,
-                    Text = transcription.Transcript,
-                    GcpDateTime = transcription.TimeOffset
-                };
+                transcription.DepositionId = new Guid(depositionId);
+                transcription.UserId = user.Id;
+                transcription.Text = transcription.Text;
 
-                await _transcriptionRepository.Create(transcriptionEntity);
+                await _transcriptionRepository.Create(transcription);
             }
 
             await TransferAudioChunkAsync();
@@ -160,9 +169,9 @@ namespace PrecisionReporters.Platform.Domain.Services
         /// Processes responses received so far from the server,
         /// returning whether "exit" or "quit" have been heard.
         /// </summary>
-        private TranscriptionDto ProcessResponses()
+        private Transcription ProcessResponses()
         {
-            var transcription = new TranscriptionDto();
+            var transcription = new Transcription();
 
             while (_serverResponseAvailableTask.IsCompleted && _serverResponseAvailableTask.Result)
             {
@@ -176,8 +185,8 @@ namespace PrecisionReporters.Platform.Domain.Services
                 var finalResult = response.Results.FirstOrDefault(r => r.IsFinal);
                 if (finalResult != null)
                 {
-                    transcription.Transcript = finalResult.Alternatives[0].Transcript;
-                    Trace.WriteLine($"Transcript: {transcription.Transcript}");
+                    transcription.Text = finalResult.Alternatives[0].Transcript;
+                    Trace.WriteLine($"Transcript: {transcription.Text}");
 
                     TimeSpan resultEndTime = finalResult.ResultEndTime.ToTimeSpan();
 
@@ -201,7 +210,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                         removed++;
                     }
 
-                    transcription.TimeOffset = DateTime.UtcNow;
+                    transcription.TranscriptDateTime = DateTime.UtcNow;
                 }
             }
 
@@ -228,7 +237,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             _rpcStream.WriteAsync(new StreamingRecognizeRequest { AudioContent = chunk });
 
         private SpeechClient GetGCPCredentials()
-        {            
+        {
             var gcpCredentials = JsonConvert.SerializeObject(_gcpConfiguration);
             var speechClient = new SpeechClientBuilder
             {

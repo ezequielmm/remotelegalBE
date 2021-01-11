@@ -9,10 +9,12 @@ namespace PrecisionReporters.Platform.Data.Entities
         [Required]
         public string Text { get; set; }
         [Column(TypeName = "char(36)")]
+        [ForeignKey(nameof(User))]
         public Guid UserId { get; set; }
         [Column(TypeName = "char(36)")]
         public Guid DepositionId { get; set; }
-        public DateTime GcpDateTime { get; set; }
+        public DateTime TranscriptDateTime { get; set; }
+        public User User { get; set; }
 
         public override void CopyFrom(Transcription entity)
         {            
