@@ -151,6 +151,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                         LanguageCode = "en-US",
                         MaxAlternatives = 1,
                         EnableAutomaticPunctuation = true,
+                        Model = "phone_call",
                         UseEnhanced = true,
                         EnableWordTimeOffsets = true
                     },
