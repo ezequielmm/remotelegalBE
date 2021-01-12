@@ -17,6 +17,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 {
     public class DepositionServiceTests : IDisposable
     {
+        // TODO: we need to refactor this file to have the test setup on the constructor
         private readonly DepositionService _depositionService;
         private readonly Mock<IDepositionRepository> _depositionRepositoryMock;
         private readonly Mock<IUserService> _userServiceMock;
@@ -348,6 +349,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             Assert.True(result.IsSuccess);
             Assert.NotNull(deposition.TimeZone);
             Assert.Equal("EST", deposition.TimeZone);
+            Assert.Equal(deposition.IsOnTheRecord, result.Value.IsOnTheRecord);
         }
 
         [Fact]
@@ -378,6 +380,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             Assert.NotNull(result);
             Assert.True(result.IsSuccess);
             Assert.Null(result.Value.WitnessEmail);
+            Assert.Equal(deposition.IsOnTheRecord, result.Value.IsOnTheRecord);
         }
 
         [Fact]

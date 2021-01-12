@@ -143,7 +143,8 @@ namespace PrecisionReporters.Platform.Domain.Services
             {
                 WitnessEmail = deposition.Witness?.Email,
                 Token = token.Value,
-                TimeZone = deposition.TimeZone
+                TimeZone = deposition.TimeZone,
+                IsOnTheRecord = deposition.IsOnTheRecord
             };
 
             return Result.Ok(joinDepositionInfo);

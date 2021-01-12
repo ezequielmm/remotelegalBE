@@ -17,6 +17,7 @@ namespace PrecisionReporters.Platform.UnitTests.Utils
             };
             deposition.Events = new List<DepositionEvent>();
             deposition.Participants = new List<Participant>();
+            deposition.IsOnTheRecord = true;
             return deposition;
         }
 
