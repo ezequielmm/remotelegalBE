@@ -124,7 +124,31 @@
                 {
                     "name": "AppConfiguration__GcpConfiguration__client_id",
                     "value": "GCP_CLIENTID"
-                }
+                },
+                {
+                    "name": "AppConfiguration__GcpConfiguration__type",
+                    "value": "service_account"
+                },
+                {
+                    "name": "AppConfiguration__GcpConfiguration__project_id",
+                    "value": "our-service-296819"
+                },
+                {
+                    "name": "AppConfiguration__GcpConfiguration__auth_uri",
+                    "value": "https://accounts.google.com/o/oauth2/auth"
+                },
+                {
+                    "name": "AppConfiguration__GcpConfiguration__token_uri",
+                    "value": "https://oauth2.googleapis.com/token"
+                },
+                {
+                    "name": "AppConfiguration__GcpConfiguration__auth_provider_x509_cert_url",
+                    "value": "https://www.googleapis.com/oauth2/v1/certs"
+                },
+                {
+                    "name": "AppConfiguration__GcpConfiguration__client_x509_cert_url",
+                    "value": "https://www.googleapis.com/robot/v1/metadata/x509/remotelegal-text-to-speech%40our-service-296819.iam.gserviceaccount.com"
+                }                
             ],
             "mountPoints": [],
             "volumesFrom": [],

@@ -38,6 +38,10 @@ jobs:
             echo -e ::set-output name=twilioconfig-apisecretkey::'${{ secrets.TWILIOCONFIG_APIKEYSECRET_QA }}'
             echo -e ::set-output name=service-account-accesskey::'${{ secrets.SERVICE_ACCOUNT_ACCESS_KEY_QA }}'
             echo -e ::set-output name=service-account-secretaccesskey::'${{ secrets.SERVICE_ACCOUNT_SECRET_ACCESS_KEY_QA }}'
+            echo -e ::set-output name=gcp-private-key-id::'${{ secrets.GCP_PRIVATE_KEY_ID }}'
+            echo -e ::set-output name=gcp-private-key-contract::'${{ secrets.GCP_PRIVATE_KEY_CONTRACT }}'
+            echo -e ::set-output name=gcp-client-email::'${{ secrets.GCP_CLIENT_EMAIL }}'
+            echo -e ::set-output name=gcp-client-id::'${{ secrets.GCP_CLIENT_ID }}'
         else 
             echo -e ::set-output name=connection-string::'${{ secrets.CONNECTIONSTRING_PROD }}'
             echo -e ::set-output name=cognitoconfig-secretaccesskey::'${{ secrets.COGNITOCONFIG_SECRETACCESSKEY_PROD }}'
@@ -51,6 +55,10 @@ jobs:
             echo -e ::set-output name=twilioconfig-apisecretkey::'${{ secrets.TWILIOCONFIG_APIKEYSECRET_PROD }}'
             echo -e ::set-output name=service-account-accesskey::'${{ secrets.SERVICE_ACCOUNT_ACCESS_KEY_PROD }}'
             echo -e ::set-output name=service-account-secretaccesskey::'${{ secrets.SERVICE_ACCOUNT_SECRET_ACCESS_KEY_PROD }}'
+            echo -e ::set-output name=gcp-private-key-id::'${{ secrets.GCP_PRIVATE_KEY_ID }}'
+            echo -e ::set-output name=gcp-private-key-contract::'${{ secrets.GCP_PRIVATE_KEY_CONTRACT }}'
+            echo -e ::set-output name=gcp-client-email::'${{ secrets.GCP_CLIENT_EMAIL }}'
+            echo -e ::set-output name=gcp-client-id::'${{ secrets.GCP_CLIENT_ID }}'
         fi 
       env:
         BRANCH: ${{ steps.extract-branch.outputs.branch }}
@@ -150,6 +158,38 @@ jobs:
         find: "TWILIO_DESTINATION_SECRET"
         replace: "${{ steps.env-vars.outputs.service-account-secretaccesskey }}"
         exclude: "^$"
+    
+    - name: Replace GCP private_key_id in task definition
+      uses: jacobtomlinson/gha-find-replace@master
+      with:
+        include: 'task-definition-qa.json'
+        find: "GCP_PRIVATE_KEY_ID"
+        replace: "${{ secrets.GCP_PRIVATE_KEY_ID }}"
+        exclude: "^$"
+    
+    - name: Replace GCP private_key in task definition
+      uses: jacobtomlinson/gha-find-replace@master
+      with:
+        include: 'task-definition-${{ steps.extract-branch.outputs.branch }}.json'
+        find: "GCP_PRIVATE_KEY_CONTRACT"
+        replace: "${{ secrets.GCP_PRIVATE_KEY_CONTRACT }}"
+        exclude: "^$"
+    
+    - name: Replace GCP client_email in task definition
+      uses: jacobtomlinson/gha-find-replace@master
+      with:
+        include: 'task-definition-${{ steps.extract-branch.outputs.branch }}.json'
+        find: "GCP_CLIENT_EMAIL"
+        replace: "${{ secrets.GCP_CLIENT_EMAIL }}"
+        exclude: "^$"
+    
+    - name: Replace GCP client_id in task definition
+      uses: jacobtomlinson/gha-find-replace@master
+      with:
+        include: 'task-definition-${{ steps.extract-branch.outputs.branch }}.json'
+        find: "GCP_CLIENTID"
+        replace: "${{ secrets.GCP_CLIENT_ID }}"
+        exclude: "^$"        
 
     - name: Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@v1
