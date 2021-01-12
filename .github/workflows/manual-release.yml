@@ -162,7 +162,7 @@ jobs:
     - name: Replace GCP private_key_id in task definition
       uses: jacobtomlinson/gha-find-replace@master
       with:
-        include: 'task-definition-qa.json'
+        include: 'task-definition-${{ steps.extract-branch.outputs.branch }}.json'
         find: "GCP_PRIVATE_KEY_ID"
         replace: "${{ secrets.GCP_PRIVATE_KEY_ID }}"
         exclude: "^$"
