@@ -26,15 +26,16 @@ namespace PrecisionReporters.Platform.Api.WebSockets
         }
 
         public async Task HandleConnection(HttpContext context, WebSocket webSocket)
-        {          
+        {
             var buffer = new byte[1024 * 8];
-            var userEmail = context.User.FindFirstValue(ClaimTypes.Email);            
+            var userEmail = context.User.FindFirstValue(ClaimTypes.Email);
             var depositionId = context.Request.Query["depositionId"];
+            var sampleRate = Int32.Parse(context.Request.Query["sampleRate"]);
             var incomingMessage = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
-            
+
             while (!incomingMessage.CloseStatus.HasValue)
             {
-                var transcription = await _transcriptionService.RecognizeAsync(buffer, userEmail, depositionId);
+                var transcription = await _transcriptionService.RecognizeAsync(buffer, userEmail, depositionId, sampleRate);
                 if (!string.IsNullOrWhiteSpace(transcription.Text))
                 {
                     var transcriptionDto = _transcriptionMapper.ToDto(transcription);

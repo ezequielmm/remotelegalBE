@@ -24,10 +24,8 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly SpeechClient _client;
         private readonly GcpConfiguration _gcpConfiguration;
 
-        private const int SampleRate = 44100;
         private const int ChannelCount = 1;
         private const int BytesPerSample = 2;
-        private const int BytesPerSecond = SampleRate * ChannelCount * BytesPerSample;
         private static readonly TimeSpan s_streamTimeLimit = TimeSpan.FromSeconds(290);
 
         public TranscriptionService(IOptions<GcpConfiguration> gcpConfiguration, ITranscriptionRepository transcriptionRepository, IUserRepository userRepository)
@@ -70,10 +68,10 @@ namespace PrecisionReporters.Platform.Domain.Services
         /// </summary>
         private ValueTask<bool> _serverResponseAvailableTask;
 
-        public async Task<Transcription> RecognizeAsync(byte[] audioChunk, string userEmail, string depositionId)
+        public async Task<Transcription> RecognizeAsync(byte[] audioChunk, string userEmail, string depositionId, int sampleRate)
         {
             _audioBuffer.Add(ByteString.CopyFrom(audioChunk, 0, audioChunk.Length));
-            return await RunAsync(userEmail, depositionId);
+            return await RunAsync(userEmail, depositionId, sampleRate);
         }
 
         public async Task<Result<List<Transcription>>> GetTranscriptionsByDepositionId(Guid depositionId)
@@ -88,11 +86,11 @@ namespace PrecisionReporters.Platform.Domain.Services
             return Result.Ok(result);
         }
 
-        private async Task<Transcription> RunAsync(string userEmail, string depositionId)
+        private async Task<Transcription> RunAsync(string userEmail, string depositionId, int sampleRate)
         {
-            await MaybeStartStreamAsync();
+            await MaybeStartStreamAsync(sampleRate);
 
-            var transcription = ProcessResponses();
+            var transcription = ProcessResponses(sampleRate);
 
             if (!string.IsNullOrEmpty(transcription.Text))
             {
@@ -111,13 +109,14 @@ namespace PrecisionReporters.Platform.Domain.Services
             return transcription;
         }
 
+
         /// <summary>
         /// Starts a new RPC streaming call if necessary. This will be if either it's the first call
         /// (so we don't have a current request) or if the current request will time out soon.
         /// In the latter case, after starting the new request, we copy any chunks we'd already sent
         /// in the previous request which hadn't been included in a "final result".
         /// </summary>
-        private async Task MaybeStartStreamAsync()
+        private async Task MaybeStartStreamAsync(int sampleRate)
         {
             var now = DateTime.UtcNow;
             if (_rpcStream != null && now >= _rpcStreamDeadline)
@@ -146,7 +145,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                     Config = new RecognitionConfig
                     {
                         Encoding = RecognitionConfig.Types.AudioEncoding.Linear16,
-                        SampleRateHertz = SampleRate,
+                        SampleRateHertz = sampleRate,
                         AudioChannelCount = ChannelCount,
                         LanguageCode = "en-US",
                         MaxAlternatives = 1,
@@ -170,7 +169,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         /// Processes responses received so far from the server,
         /// returning whether "exit" or "quit" have been heard.
         /// </summary>
-        private Transcription ProcessResponses()
+        private Transcription ProcessResponses(int sampleRate)
         {
             var transcription = new Transcription();
 
@@ -196,7 +195,8 @@ namespace PrecisionReporters.Platform.Domain.Services
                     int removed = 0;
                     while (_processingBuffer.First != null)
                     {
-                        var sampleDuration = TimeSpan.FromSeconds(_processingBuffer.First.Value.Length / (double)BytesPerSecond);
+                        var BytesPerSecond = sampleRate * ChannelCount * BytesPerSample;
+                        var sampleDuration = TimeSpan.FromSeconds(_processingBuffer.First.Value.Length / (double)(BytesPerSecond));
                         var sampleEnd = _processingBufferStart + sampleDuration;
 
                         // If the first sample in the buffer ends after the result ended, stop.
