@@ -2,15 +2,17 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PrecisionReporters.Platform.Data;
 
 namespace PrecisionReporters.Platform.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20210111155208_AddAnnotationEvent")]
+    partial class AddAnnotationEvent
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -166,9 +168,6 @@ namespace PrecisionReporters.Platform.Data.Migrations
                     b.Property<string>("RoomId")
                         .HasColumnType("char(36)");
 
-                    b.Property<string>("SharingDocumentId")
-                        .HasColumnType("char(36)");
-
                     b.Property<DateTime>("StartDate")
                         .HasColumnType("datetime");
 
@@ -194,8 +193,6 @@ namespace PrecisionReporters.Platform.Data.Migrations
                     b.HasIndex("RequesterId");
 
                     b.HasIndex("RoomId");
-
-                    b.HasIndex("SharingDocumentId");
 
                     b.HasIndex("WitnessId");
 
@@ -490,20 +487,8 @@ namespace PrecisionReporters.Platform.Data.Migrations
                         },
                         new
                         {
-                            RoleId = "6c73879b-cce3-47ea-9b80-12e1c4d1285e",
-                            Action = "ViewSharedDocument",
-                            CreationDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
-                        },
-                        new
-                        {
                             RoleId = "997d199c-3b9a-4103-a320-130b02890a5b",
                             Action = "UploadDocument",
-                            CreationDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
-                        },
-                        new
-                        {
-                            RoleId = "997d199c-3b9a-4103-a320-130b02890a5b",
-                            Action = "ViewSharedDocument",
                             CreationDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
@@ -563,38 +548,6 @@ namespace PrecisionReporters.Platform.Data.Migrations
                         .IsUnique();
 
                     b.ToTable("Rooms");
-                });
-
-            modelBuilder.Entity("PrecisionReporters.Platform.Data.Entities.Transcription", b =>
-                {
-                    b.Property<string>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("char(36)");
-
-                    b.Property<DateTime>("CreationDate")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime");
-
-                    b.Property<string>("DepositionId")
-                        .IsRequired()
-                        .HasColumnType("char(36)");
-
-                    b.Property<string>("Text")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("TranscriptDateTime")
-                        .HasColumnType("datetime");
-
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("char(36)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("Transcriptions");
                 });
 
             modelBuilder.Entity("PrecisionReporters.Platform.Data.Entities.User", b =>
@@ -753,10 +706,6 @@ namespace PrecisionReporters.Platform.Data.Migrations
                         .WithMany()
                         .HasForeignKey("RoomId");
 
-                    b.HasOne("PrecisionReporters.Platform.Data.Entities.Document", "SharingDocument")
-                        .WithMany()
-                        .HasForeignKey("SharingDocumentId");
-
                     b.HasOne("PrecisionReporters.Platform.Data.Entities.Participant", "Witness")
                         .WithMany()
                         .HasForeignKey("WitnessId");
@@ -851,15 +800,6 @@ namespace PrecisionReporters.Platform.Data.Migrations
                     b.HasOne("PrecisionReporters.Platform.Data.Entities.Role", "Role")
                         .WithMany()
                         .HasForeignKey("RoleId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("PrecisionReporters.Platform.Data.Entities.Transcription", b =>
-                {
-                    b.HasOne("PrecisionReporters.Platform.Data.Entities.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

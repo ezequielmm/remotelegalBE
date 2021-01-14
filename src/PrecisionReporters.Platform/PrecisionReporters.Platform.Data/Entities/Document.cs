@@ -19,6 +19,8 @@ namespace PrecisionReporters.Platform.Data.Entities
         public Guid AddedById { get; set; }
         public User AddedBy { get; set; }
 
+        public List<AnnotationEvent> AnnotationEvents { get; set; }
+
         public override void CopyFrom(Document entity)
         {
             Name = entity.Name;
@@ -27,6 +29,7 @@ namespace PrecisionReporters.Platform.Data.Entities
             AddedBy = entity.AddedBy;
             Size = entity.Size;
             DisplayName = entity.DisplayName;
+            AnnotationEvents = entity.AnnotationEvents;
         }
     }
 }

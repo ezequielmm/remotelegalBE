@@ -3,9 +3,9 @@ using PrecisionReporters.Platform.Data.Repositories.Interfaces;
 
 namespace PrecisionReporters.Platform.Data.Repositories
 {
-    public class DocumentRepository : BaseRepository<Document>, IDocumentRepository
+    public class AnnotationEventRepository : BaseRepository<AnnotationEvent>, IAnnotationEventRepository
     {
-        public DocumentRepository(ApplicationDbContext dbcontext) : base(dbcontext)
+        public AnnotationEventRepository(ApplicationDbContext dbcontext) : base(dbcontext)
         {
         }
     }

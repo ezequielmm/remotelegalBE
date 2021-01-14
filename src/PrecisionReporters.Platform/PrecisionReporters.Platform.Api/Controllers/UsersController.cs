@@ -73,13 +73,10 @@ namespace PrecisionReporters.Platform.Api.Controllers
         [Route("currentUser")]
         public async Task<ActionResult<UserDto>> GetCurrentUser()
         {
-            var email = HttpContext.User.FindFirstValue(ClaimTypes.Email);
-
-            var userResult = await _userService.GetUserByEmail(email);
-            if (userResult.IsFailed)
-                return WebApiResponses.GetErrorResponse(userResult);
-
-            return Ok(_userMapper.ToDto(userResult.Value));
+            var user = await _userService.GetCurrentUserAsync();
+            if (user == null)
+                return NotFound();
+            return Ok(_userMapper.ToDto(user));
         }
     }
 }

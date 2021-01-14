@@ -12,6 +12,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Linq.Expressions;
+using System.Security.Claims;
 
 namespace PrecisionReporters.Platform.Domain.Services
 {
@@ -24,7 +25,9 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly IVerifyUserService _verifyUserService;
         private readonly ITransactionHandler _transactionHandler;
         private readonly UrlPathConfiguration _urlPathConfiguration;
-        public UserService(ILogger<UserService> log, IUserRepository userRepository, ICognitoService cognitoService, IAwsEmailService awsEmailService, IVerifyUserService verifyUserService, ITransactionHandler transactionHandler, IOptions<UrlPathConfiguration> urlPathConfiguration)
+        private readonly ClaimsPrincipal _principal;
+        public UserService(ILogger<UserService> log, IUserRepository userRepository, ICognitoService cognitoService, IAwsEmailService awsEmailService,
+            IVerifyUserService verifyUserService, ITransactionHandler transactionHandler, IOptions<UrlPathConfiguration> urlPathConfiguration, ClaimsPrincipal principal)
         {
             _log = log;
             _userRepository = userRepository;
@@ -33,6 +36,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             _verifyUserService = verifyUserService;
             _transactionHandler = transactionHandler;
             _urlPathConfiguration = urlPathConfiguration.Value;
+            _principal = principal;
         }
 
         public async Task<Result<User>> SignUpAsync(User user)
@@ -127,5 +131,16 @@ namespace PrecisionReporters.Platform.Domain.Services
                 }
             });
         }
+
+        //This method is only meant to get the logged in User
+        //TODO for future increments add User value into a cache service
+        public async Task<User> GetCurrentUserAsync()
+        {
+            var email = _principal.FindFirstValue(ClaimTypes.Email);
+            var user = await _userRepository.GetFirstOrDefaultByFilter(x => x.EmailAddress == email);
+            
+            return user;
+        }
+
     }
 }

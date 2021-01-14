@@ -29,8 +29,11 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly IDocumentRepository _documentRepository;
         private readonly ILogger<DocumentService> _logger;
         private readonly DocumentConfiguration _documentsConfiguration;
+        
 
-        public DocumentService(IAwsStorageService awsStorageService, IOptions<DocumentConfiguration> documentConfigurations, ILogger<DocumentService> logger, IUserService userService, IDepositionService depositionService, IDocumentUserDepositionRepository documentUserDepositionRepository, IPermissionService permissionService, ITransactionHandler transactionHandler, IDocumentRepository documentRepository)
+        public DocumentService(IAwsStorageService awsStorageService, IOptions<DocumentConfiguration> documentConfigurations, ILogger<DocumentService> logger,
+            IUserService userService, IDepositionService depositionService, IDocumentUserDepositionRepository documentUserDepositionRepository,
+            IPermissionService permissionService, ITransactionHandler transactionHandler, IDocumentRepository documentRepository)
         {
             _awsStorageService = awsStorageService;
             _documentsConfiguration = documentConfigurations.Value ?? throw new ArgumentException(nameof(documentConfigurations));
@@ -234,6 +237,34 @@ namespace PrecisionReporters.Platform.Domain.Services
             };
 
             return Result.Ok(document);
+        }
+
+        public async Task<Result<Document>> GetDocumentById(Guid documentId, string[] include = null)
+        {
+            var document = await _documentRepository.GetById(documentId, include);
+            if (document == null)
+                return Result.Fail(new ResourceNotFoundError($"Document with Id {documentId} "));
+
+            return Result.Ok(document);
+        }
+
+        public async Task<Result<Document>> AddAnnotation(Guid documentId, AnnotationEvent annotation)
+        {
+            var currentUser = await _userService.GetCurrentUserAsync();
+            
+            var documentResult = await GetDocumentById(documentId);
+            if (documentResult.IsFailed)
+                return documentResult;
+
+            var document = documentResult.Value;
+            if (document.AnnotationEvents == null)
+                document.AnnotationEvents = new List<AnnotationEvent>();
+
+            annotation.Author = currentUser;
+            document.AnnotationEvents.Add(annotation);
+            var updatedDocument = await _documentRepository.Update(document);
+
+            return Result.Ok(updatedDocument);
         }
     }
 }

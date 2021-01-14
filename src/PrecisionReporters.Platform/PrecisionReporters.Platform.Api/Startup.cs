@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -107,6 +108,7 @@ namespace PrecisionReporters.Platform.Api
                 x.FrontendBaseUrl = appConfiguration.UrlPathConfiguration.FrontendBaseUrl;
                 x.VerifyUserUrl = appConfiguration.UrlPathConfiguration.VerifyUserUrl;
             });
+            services.AddScoped(s => s.GetService<IHttpContextAccessor>().HttpContext.User);
 
             // Filters
             services.AddScoped<ValidateTwilioRequestFilterAttribute>();
@@ -127,6 +129,7 @@ namespace PrecisionReporters.Platform.Api
             services.AddSingleton<IMapper<Participant, ParticipantDto, CreateParticipantDto>, ParticipantMapper>();
             services.AddSingleton<IMapper<Member, MemberDto, CreateMemberDto>, MemberMapper>();
             services.AddSingleton<IMapper<DepositionEvent, DepositionEventDto, CreateDepositionEventDto>, DepositionEventMapper>();
+            services.AddSingleton<IMapper<AnnotationEvent, AnnotationEventDto, CreateAnnotationEventDto>, AnnotationEventMapper>();
             services.AddSingleton<IMapper<Transcription, TranscriptionDto, object>, TranscriptionMapper>();
 
             // Websockets
@@ -167,6 +170,7 @@ namespace PrecisionReporters.Platform.Api
                 x.PreSignedUrlValidHours = appConfiguration.DocumentConfiguration.PreSignedUrlValidHours;
             });
             services.AddScoped<IDepositionService, DepositionService>();
+            services.AddScoped<IAnnotationEventService, AnnotationEventService>();
             services.AddTransient<IAwsEmailService, AwsEmailService>().Configure<EmailConfiguration>(x =>
             {
                 x.Sender = appConfiguration.EmailConfiguration.Sender;
@@ -204,6 +208,7 @@ namespace PrecisionReporters.Platform.Api
             services.AddScoped<IUserResourceRoleRepository, UserResourceRoleRepository>();
             services.AddScoped<IRoleRepository, RoleRepository>();
             services.AddScoped<IDocumentUserDepositionRepository, DocumentUserDepositionRepository>();
+            services.AddScoped<IAnnotationEventRepository, AnnotationEventRepository>();
             services.AddTransient<ITranscriptionRepository, TranscriptionRepository>();
 
             services.AddDbContext<ApplicationDbContext>(options =>

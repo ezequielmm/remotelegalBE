@@ -805,6 +805,34 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         }
 
         [Fact]
+        public async Task AddAnnotation_ShouldReturn_ADocumentWithAnnotationsEvents()
+        {
+            // Arrange
+            var document = new Document
+            {
+                Id = Guid.NewGuid()
+            };
+
+            var annotation = new AnnotationEvent
+            {
+                Action = AnnotationAction.Create,
+            };
+            _userServiceMock.Setup(x => x.GetCurrentUserAsync()).ReturnsAsync(new User());
+
+            _documentRepositoryMock
+                .Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>()))
+                .ReturnsAsync(document);
+
+            // Act
+            var result = await _service.AddAnnotation(document.Id, annotation);
+
+            // Assert
+            _documentRepositoryMock.Verify(x => x.Update(It.Is<Document>(a => a.Id == document.Id)), Times.Once);
+            Assert.NotNull(result);
+            Assert.True(result.IsSuccess);
+        }
+
+        [Fact]
         public async Task Share_ShouldReturnFail_IfUserNotFound()
         {
             // Arrange

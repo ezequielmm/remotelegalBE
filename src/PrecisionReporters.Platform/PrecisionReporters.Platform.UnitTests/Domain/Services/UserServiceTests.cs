@@ -267,8 +267,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 awsEmailServiceMock.Object,
                 verifyUserServiceMock.Object,
                 transactionHandlerMock.Object,
-                urlPathConfigurationMock.Object
-                );
+                urlPathConfigurationMock.Object,
+                null);
         }
     }
 }

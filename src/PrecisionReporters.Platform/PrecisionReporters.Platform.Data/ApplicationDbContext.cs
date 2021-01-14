@@ -23,6 +23,7 @@ namespace PrecisionReporters.Platform.Data
         public DbSet<RolePermission> RolePermissions { get; set; }
         public DbSet<UserResourceRole> UserResourceRoles { get; set; }
         public DbSet<DepositionEvent> DepositionEvents { get; set; }
+        public DbSet<AnnotationEvent> AnnotationEvents { get; set; }
         public DbSet<Transcription> Transcriptions { get; set; }
 
         public ApplicationDbContext(DbContextOptions options) : base(options) { }
@@ -72,6 +73,10 @@ namespace PrecisionReporters.Platform.Data
             modelBuilder.Entity<UserResourceRole>().HasKey(x => new { x.RoleId, x.ResourceId, x.UserId });
 
             modelBuilder.Entity<Role>().Property(x => x.Name).HasConversion(new EnumToStringConverter<RoleName>());
+
+            modelBuilder.Entity<AnnotationEvent>()
+                .Property(x => x.Action)
+                .HasConversion(new EnumToStringConverter<AnnotationAction>());
 
             // Seeds
             modelBuilder.SeedRoles();
