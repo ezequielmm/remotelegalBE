@@ -15,6 +15,7 @@ namespace PrecisionReporters.Platform.Api.Mappers
                 Name = model.Name,
                 CaseNumber = model.CaseNumber,
                 AddedById = model.AddedById,
+                AddedBy = $"{model.AddedBy.FirstName} {model.AddedBy.LastName}",
             };
         }
 
