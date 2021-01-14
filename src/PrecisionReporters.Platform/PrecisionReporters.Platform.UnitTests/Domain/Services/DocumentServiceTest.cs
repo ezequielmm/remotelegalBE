@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
+using Org.BouncyCastle.Asn1.Cms;
 using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Data.Enums;
 using PrecisionReporters.Platform.Data.Handlers.Interfaces;
@@ -11,6 +12,7 @@ using PrecisionReporters.Platform.Domain.Configurations;
 using PrecisionReporters.Platform.Domain.Errors;
 using PrecisionReporters.Platform.Domain.Services;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
+using PrecisionReporters.Platform.UnitTests.Utils;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -33,6 +35,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         private readonly Mock<IDocumentUserDepositionRepository> _documentUserDepositionRepositoryMock;
         private readonly Mock<IPermissionService> _permissionServiceMock;
         private readonly Mock<ITransactionHandler> _transactionHandlerMock;
+        private readonly Mock<IDocumentRepository> _documentRepositoryMock;
         private readonly DocumentService _service;
 
         public DocumentServiceTest()
@@ -53,6 +56,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _documentUserDepositionRepositoryMock = new Mock<IDocumentUserDepositionRepository>();
             _permissionServiceMock = new Mock<IPermissionService>();
             _transactionHandlerMock = new Mock<ITransactionHandler>();
+            _documentRepositoryMock = new Mock<IDocumentRepository>();
 
             _service = new DocumentService(
                 _awsStorageServiceMock.Object,
@@ -62,7 +66,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 _depositionServiceMock.Object,
                 _documentUserDepositionRepositoryMock.Object,
                 _permissionServiceMock.Object,
-                _transactionHandlerMock.Object);
+                _transactionHandlerMock.Object,
+                _documentRepositoryMock.Object);
         }
 
         [Fact]
@@ -797,6 +802,204 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             Assert.IsType<Result<string>>(result);
             Assert.True(result.IsSuccess);
             Assert.Equal(signedUrl, result.Value);
+        }
+
+        [Fact]
+        public async Task Share_ShouldReturnFail_IfUserNotFound()
+        {
+            // Arrange
+            var userEmail = "notExisitingUser@mail.com";
+            var expectedError = $"User with email {userEmail} not found.";
+            _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Fail(new ResourceNotFoundError(expectedError)));
+
+            // Act
+            var result = await _service.Share(Guid.NewGuid(), userEmail);
+
+            // Assert
+            _userServiceMock.Verify(x => x.GetUserByEmail(It.Is<string>(a => a == userEmail)), Times.Once);
+            Assert.NotNull(result);
+            Assert.IsType<Result>(result);
+            Assert.True(result.IsFailed);
+            Assert.Contains(expectedError, result.Errors.Select(e => e.Message));
+        }
+
+        [Fact]
+        public async Task Share_ShouldReturnFail_IfDocumentUserDepositionNotFound()
+        {
+            // Arrange
+            var userEmail = "notExisitingUser@mail.com";
+            var user = new User { Id = Guid.NewGuid(), EmailAddress = userEmail };
+            var documentId = Guid.NewGuid();
+            var expectedError = $"Could not find any document with Id {documentId} for user {userEmail}";
+            _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(user));
+            _documentUserDepositionRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<DocumentUserDeposition, bool>>>(), It.IsAny<string[]>())).ReturnsAsync((DocumentUserDeposition)null);
+
+            // Act
+            var result = await _service.Share(documentId, userEmail);
+
+            // Assert
+            _userServiceMock.Verify(x => x.GetUserByEmail(It.Is<string>(a => a == userEmail)), Times.Once);
+            _documentUserDepositionRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<DocumentUserDeposition, bool>>>(), It.Is<string[]>(a => a.Contains(nameof(DocumentUserDeposition.Document)))), Times.Once);
+            Assert.NotNull(result);
+            Assert.IsType<Result>(result);
+            Assert.True(result.IsFailed);
+            Assert.Contains(expectedError, result.Errors.Select(e => e.Message));
+        }
+
+        [Fact]
+        public async Task Share_ShouldReturnFail_IfDepositionNotFound()
+        {
+            // Arrange
+            var userEmail = "notExisitingUser@mail.com";
+            var user = new User { Id = Guid.NewGuid(), EmailAddress = userEmail };
+            var documentId = Guid.NewGuid();
+            var depositionId = Guid.NewGuid();
+            var documentUserDeposition = new DocumentUserDeposition { User = user, DepositionId = depositionId };
+            var expectedError = "Testing Error";
+            _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(user));
+            _documentUserDepositionRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<DocumentUserDeposition, bool>>>(), It.IsAny<string[]>())).ReturnsAsync(documentUserDeposition);
+            _depositionServiceMock.Setup(x => x.GetDepositionById(It.IsAny<Guid>())).ReturnsAsync(Result.Fail(new Error(expectedError)));
+
+            // Act
+            var result = await _service.Share(documentId, userEmail);
+
+            // Assert
+            _userServiceMock.Verify(x => x.GetUserByEmail(It.Is<string>(a => a == userEmail)), Times.Once);
+            _documentUserDepositionRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<DocumentUserDeposition, bool>>>(), It.Is<string[]>(a => a.Contains(nameof(DocumentUserDeposition.Document)))), Times.Once);
+            _depositionServiceMock.Verify(x => x.GetDepositionById(It.Is<Guid>(a => a == depositionId)), Times.Once);
+            Assert.NotNull(result);
+            Assert.IsType<Result>(result);
+            Assert.True(result.IsFailed);
+            Assert.Contains(expectedError, result.Errors.Select(e => e.Message));
+        }
+
+        [Fact]
+        public async Task Share_ShouldReturnFail_IfDepositionIsSharingOtherDocument()
+        {
+            // Arrange
+            var userEmail = "notExisitingUser@mail.com";
+            var user = new User { Id = Guid.NewGuid(), EmailAddress = userEmail };
+            var documentId = Guid.NewGuid();
+            var depositionId = Guid.NewGuid();
+            var deposition = DepositionFactory.GetDepositionWithParticipantEmail("Participant@mail.com");
+            deposition.Id = depositionId;
+            deposition.SharingDocumentId = Guid.NewGuid();
+            var documentUserDeposition = new DocumentUserDeposition { User = user, DepositionId = depositionId };
+            var expectedError = "Can't share document while another document is being shared.";
+            _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(user));
+            _documentUserDepositionRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<DocumentUserDeposition, bool>>>(), It.IsAny<string[]>())).ReturnsAsync(documentUserDeposition);
+            _depositionServiceMock.Setup(x => x.GetDepositionById(It.IsAny<Guid>())).ReturnsAsync(Result.Ok(deposition));
+
+            // Act
+            var result = await _service.Share(documentId, userEmail);
+
+            // Assert
+            _userServiceMock.Verify(x => x.GetUserByEmail(It.Is<string>(a => a == userEmail)), Times.Once);
+            _documentUserDepositionRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<DocumentUserDeposition, bool>>>(), It.Is<string[]>(a => a.Contains(nameof(DocumentUserDeposition.Document)))), Times.Once);
+            _depositionServiceMock.Verify(x => x.GetDepositionById(It.Is<Guid>(a => a == depositionId)), Times.Once);
+            Assert.NotNull(result);
+            Assert.IsType<Result>(result);
+            Assert.True(result.IsFailed);
+            Assert.Contains(expectedError, result.Errors.Select(e => e.Message));
+        }
+
+        [Fact]
+        public async Task Share_ShouldReturnFail_IfDepositionUpdateFails()
+        {
+            // Arrange
+            var userEmail = "notExisitingUser@mail.com";
+            var user = new User { Id = Guid.NewGuid(), EmailAddress = userEmail };
+            var documentId = Guid.NewGuid();
+            var depositionId = Guid.NewGuid();
+            var deposition = DepositionFactory.GetDepositionWithParticipantEmail("Participant@mail.com");
+            deposition.Id = depositionId;
+            var documentUserDeposition = new DocumentUserDeposition { User = user, DepositionId = depositionId, Deposition = deposition };
+            var expectedError = "Testing Error";
+            _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(user));
+            _documentUserDepositionRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<DocumentUserDeposition, bool>>>(), It.IsAny<string[]>())).ReturnsAsync(documentUserDeposition);
+            _depositionServiceMock.Setup(x => x.GetDepositionById(It.IsAny<Guid>())).ReturnsAsync(Result.Ok(deposition));
+            _depositionServiceMock.Setup(x => x.Update(It.IsAny<Deposition>())).ReturnsAsync(Result.Fail(new Error(expectedError)));
+
+            // Act
+            var result = await _service.Share(documentId, userEmail);
+
+            // Assert
+            _userServiceMock.Verify(x => x.GetUserByEmail(It.Is<string>(a => a == userEmail)), Times.Once);
+            _documentUserDepositionRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<DocumentUserDeposition, bool>>>(), It.Is<string[]>(a => a.Contains(nameof(DocumentUserDeposition.Document)))), Times.Once);
+            _depositionServiceMock.Verify(x => x.GetDepositionById(It.Is<Guid>(a => a == depositionId)), Times.Once);
+            _depositionServiceMock.Verify(x => x.Update(It.Is<Deposition>(a => a == deposition)), Times.Once);
+            Assert.NotNull(result);
+            Assert.IsType<Result>(result);
+            Assert.True(result.IsFailed);
+            Assert.Contains(expectedError, result.Errors.Select(e => e.Message));
+        }
+
+        [Fact]
+        public async Task Share_ShouldReturnOk()
+        {
+            // Arrange
+            var userEmail = "notExisitingUser@mail.com";
+            var user = new User { Id = Guid.NewGuid(), EmailAddress = userEmail };
+            var documentId = Guid.NewGuid();
+            var depositionId = Guid.NewGuid();
+            var deposition = DepositionFactory.GetDepositionWithParticipantEmail("Participant@mail.com");
+            deposition.Id = depositionId;
+            deposition.Participants.FirstOrDefault().UserId = Guid.NewGuid();
+            var documentUserDeposition = new DocumentUserDeposition { User = user, Deposition = deposition, DepositionId = depositionId, DocumentId = documentId };
+            _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(user));
+            _documentUserDepositionRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<DocumentUserDeposition, bool>>>(), It.IsAny<string[]>())).ReturnsAsync(documentUserDeposition);
+            _depositionServiceMock.Setup(x => x.GetDepositionById(It.IsAny<Guid>())).ReturnsAsync(Result.Ok(deposition));
+            _depositionServiceMock.Setup(x => x.Update(It.IsAny<Deposition>())).ReturnsAsync(Result.Ok(deposition));
+
+            // Act
+            var result = await _service.Share(documentId, userEmail);
+
+            // Assert
+            _userServiceMock.Verify(x => x.GetUserByEmail(It.Is<string>(a => a == userEmail)), Times.Once);
+            _documentUserDepositionRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<DocumentUserDeposition, bool>>>(), It.Is<string[]>(a => a.Contains(nameof(DocumentUserDeposition.Document)))), Times.Once);
+            _depositionServiceMock.Verify(x => x.GetDepositionById(It.Is<Guid>(a => a == depositionId)), Times.Once);
+            _depositionServiceMock.Verify(x => x.Update(It.Is<Deposition>(a => a == deposition)), Times.Once);
+            Assert.NotNull(result);
+            Assert.IsType<Result>(result);
+            Assert.True(result.IsSuccess);
+        }
+
+        [Fact]
+        public async Task GetDocument_ShouldReturnFail_IfDocumentNotFound()
+        {
+            // Arrange
+            var documentId = Guid.NewGuid();
+            var expectedError = "Document not found";
+            _documentRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync((Document)null);
+
+            // Act
+            var result = await _service.GetDocument(documentId);
+
+            // Assert
+            _documentRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(a => a == documentId), It.IsAny<string[]>()), Times.Once);
+            Assert.NotNull(result);
+            Assert.IsType<Result<Document>>(result);
+            Assert.True(result.IsFailed);
+            Assert.Contains(expectedError, result.Errors.Select(e => e.Message));
+        }
+
+        [Fact]
+        public async Task GetDocument_ShouldReturnOk()
+        {
+            // Arrange
+            var documentId = Guid.NewGuid();
+            var document = new Document { Id = documentId };
+            _documentRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(document);
+
+            // Act
+            var result = await _service.GetDocument(documentId);
+
+            // Assert
+            _documentRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(a => a == documentId), It.IsAny<string[]>()), Times.Once);
+            Assert.NotNull(result);
+            Assert.IsType<Result<Document>>(result);
+            Assert.True(result.IsSuccess);
+            Assert.Equal(document, result.Value);
         }
     }
 }

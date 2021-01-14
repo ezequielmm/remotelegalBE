@@ -23,16 +23,16 @@ namespace PrecisionReporters.Platform.Api.Controllers
     public class DepositionsController : ControllerBase
     {
         private readonly IDepositionService _depositionService;
+        private readonly IDocumentService _documentService;
         private readonly IMapper<Deposition, DepositionDto, CreateDepositionDto> _depositionMapper;
-        private readonly IMapper<DepositionEvent, DepositionEventDto, CreateDepositionEventDto> _depositionEventMapper;
 
         public DepositionsController(IDepositionService depositionService,
             IMapper<Deposition, DepositionDto, CreateDepositionDto> depositionMapper,
-            IMapper<DepositionEvent, DepositionEventDto, CreateDepositionEventDto> depositionEventMapper)
+            IDocumentService documentService)
         {
             _depositionService = depositionService;
             _depositionMapper = depositionMapper;
-            _depositionEventMapper = depositionEventMapper;
+            _documentService = documentService;
         }
 
         [HttpGet]
@@ -41,7 +41,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
         {
             var userEmail = HttpContext.User.FindFirstValue(ClaimTypes.Email);
             var depositions = await _depositionService.GetDepositionsByStatus(status, sortedField, sortDirection, userEmail);
-            
+
             return Ok(depositions.Select(c => _depositionMapper.ToDto(c)));
         }
 
@@ -66,7 +66,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
         /// <returns>DepositionDto object.</returns>
         [HttpPost("{id}/end")]
         [UserAuthorize(ResourceType.Deposition, ResourceAction.EndDeposition)]
-        public async Task<ActionResult<DepositionDto>> EndDeposition([ResourceId(ResourceType.Deposition)]Guid id)
+        public async Task<ActionResult<DepositionDto>> EndDeposition([ResourceId(ResourceType.Deposition)] Guid id)
         {
             var endDepositionResult = await _depositionService.EndDeposition(id);
             if (endDepositionResult.IsFailed)
@@ -106,6 +106,42 @@ namespace PrecisionReporters.Platform.Api.Controllers
                 return WebApiResponses.GetErrorResponse(goOnTheRecordResult);
 
             return Ok(_depositionMapper.ToDto(goOnTheRecordResult.Value));
+        }
+
+        /// <summary>
+        /// Gets the public url of a file. This url exipres after deposition end or after 2 hours if deposition doesn't have an end date
+        /// </summary>
+        /// <param name="id">Document identifier</param>
+        /// <returns>Document information and a presigned url to the asociated file</returns>
+        [HttpGet("{id}/SharedDocument")]
+        [UserAuthorize(ResourceType.Deposition, ResourceAction.ViewSharedDocument)]
+        public async Task<ActionResult<DocumentWithSignedUrlDto>> GetSharedDocument([ResourceId(ResourceType.Deposition)] Guid id)
+        {
+            var documentIdResult = await _depositionService.GetSharedDocument(id);
+            if (documentIdResult.IsFailed)
+                return WebApiResponses.GetErrorResponse(documentIdResult);
+
+            var document = documentIdResult.Value;
+
+            var fileSignedUrlResult = _documentService.GetFileSignedUrl(document);
+            if (fileSignedUrlResult.IsFailed)
+                return WebApiResponses.GetErrorResponse(fileSignedUrlResult);
+
+            return Ok(new DocumentWithSignedUrlDto
+            {
+                Id = document.Id,
+                CreationDate = document.CreationDate,
+                DisplayName = document.DisplayName,
+                Size = document.Size,
+                Name = document.Name,
+                PreSignedUrl = fileSignedUrlResult.Value,
+                AddedBy = new UserOutputDto
+                {
+                    Id = document.AddedBy.Id,
+                    FirstName = document.AddedBy.FirstName,
+                    LastName = document.AddedBy.LastName
+                }
+            });
         }
     }
 }

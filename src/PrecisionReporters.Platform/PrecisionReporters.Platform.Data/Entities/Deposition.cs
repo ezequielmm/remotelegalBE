@@ -38,6 +38,9 @@ namespace PrecisionReporters.Platform.Data.Entities
         [ForeignKey(nameof(Case))]
         public Guid CaseId { get; set; }
         public Case Case { get; set; }
+        [ForeignKey(nameof(SharingDocument))]
+        public Guid? SharingDocumentId { get; set; }
+        public Document SharingDocument { get; set; }
 
         public List<DepositionEvent> Events { get; set; }
 

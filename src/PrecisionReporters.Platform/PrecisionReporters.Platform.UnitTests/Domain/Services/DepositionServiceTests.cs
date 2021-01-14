@@ -281,7 +281,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 .ReturnsAsync(_depositions.FindAll(x => x.Status == DepositionStatus.Pending));
 
             var userServiceMock = new Mock<IUserService>();
-            userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(new User { IsAdmin = true}));
+            userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(new User { IsAdmin = true }));
 
             var service = InitializeService(userService: userServiceMock, depositionRepository: depositionRepositoryMock);
 
@@ -445,7 +445,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var depositionId = Guid.NewGuid();
             var caseId = Guid.NewGuid();
             var deposition = DepositionFactory.GetDeposition(depositionId, caseId);
-            
+
             var IsOnRecord = true;
             deposition.IsOnTheRecord = !IsOnRecord;
             _depositions.Add(deposition);
@@ -560,6 +560,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 CreationDate = DateTime.UtcNow,
                 EventType = EventType.EndDeposition
             };
+
             // Act
             var result = await depositionService.AddDepositionEvent(depositionId, depositionEvent, "user@mail.com");
 
@@ -570,6 +571,102 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             Assert.NotNull(result);
             Assert.True(result.IsSuccess);
             Assert.NotEmpty(result.Value.Events);
+        }
+
+        [Fact]
+        public async Task Update_ShouldReturnFail_IfDepositionNotFound()
+        {
+            var deposition = new Deposition { Id = Guid.NewGuid() };
+            // Arrange
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync((Deposition)null);
+
+            // Act
+            var result = await _depositionService.Update(deposition);
+
+            // Assert
+            _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(a => a == deposition.Id), It.IsAny<string[]>()), Times.Once);
+            Assert.NotNull(result);
+            Assert.IsType<Result<Deposition>>(result);
+            Assert.True(result.IsFailed);
+        }
+
+        [Fact]
+        public async Task Update_ShouldReturnOk()
+        {
+            // Arrange
+            var deposition = new Deposition { Id = Guid.NewGuid(), SharingDocumentId = Guid.NewGuid() };
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(new Deposition());
+            _depositionRepositoryMock.Setup(x => x.Update(It.IsAny<Deposition>())).ReturnsAsync(deposition);
+
+            // Act
+            var result = await _depositionService.Update(deposition);
+
+            // Assert
+            _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(a => a == deposition.Id), It.IsAny<string[]>()), Times.Once);
+            _depositionRepositoryMock.Verify(x => x.Update(It.Is<Deposition>(a => a == deposition)), Times.Once);
+            Assert.NotNull(result);
+            Assert.IsType<Result<Deposition>>(result);
+            Assert.True(result.IsSuccess);
+        }
+
+        [Fact]
+        public async Task GetSharedDocument_ShouldReturnFail_IDepositionFound()
+        {
+            // Arrange
+            var depositionId = Guid.NewGuid();
+            var expectedError = "Desosition not found";
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync((Deposition)null);
+
+            // Act
+            var result = await _depositionService.GetSharedDocument(depositionId);
+
+            // Assert
+            _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(a => a == depositionId), It.Is<string[]>(a=>a.Contains(nameof(Deposition.SharingDocument)))), Times.Once);
+            Assert.NotNull(result);
+            Assert.IsType<Result<Document>>(result);
+            Assert.True(result.IsFailed);
+            Assert.Contains(expectedError, result.Errors.Select(e => e.Message));
+        }
+
+        [Fact]
+        public async Task GetSharedDocument_ShouldReturnFail_IfNoDocumentBeingShared()
+        {
+            // Arrange
+            var depositionId = Guid.NewGuid();
+            var deposition = new Deposition { Id = depositionId };
+            var expectedError = "No document is being shared in this deposition";
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
+
+            // Act
+            var result = await _depositionService.GetSharedDocument(depositionId);
+
+            // Assert
+            _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(a => a == depositionId), It.Is<string[]>(a=>a.Contains(nameof(Deposition.SharingDocument)))), Times.Once);
+            Assert.NotNull(result);
+            Assert.IsType<Result<Document>>(result);
+            Assert.True(result.IsFailed);
+            Assert.Contains(expectedError, result.Errors.Select(e => e.Message));
+        }
+
+        [Fact]
+        public async Task GetSharedDocument_ShouldReturnOk()
+        {
+            // Arrange
+            var depositionId = Guid.NewGuid();
+            var document = new Document { Id = Guid.NewGuid() };
+            var deposition = new Deposition { Id = depositionId, SharingDocumentId = document.Id, SharingDocument= document};
+
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
+
+            // Act
+            var result = await _depositionService.GetSharedDocument(depositionId);
+
+            // Assert
+            _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(a => a == depositionId), It.Is<string[]>(a=>a.Contains(nameof(Deposition.SharingDocument)))), Times.Once);
+            Assert.NotNull(result);
+            Assert.IsType<Result<Document>>(result);
+            Assert.True(result.IsSuccess);
+            Assert.Equal(deposition.SharingDocument, result.Value);
         }
 
         private DepositionService InitializeService(

@@ -83,9 +83,9 @@ namespace PrecisionReporters.Platform.Api.Controllers
         /// </summary>
         /// <param name="id">Document identifier</param>
         /// <returns></returns>
-        [HttpGet("[controller]/{id}")]
+        [HttpGet("[controller]/{id}/PreSignedUrl")]
         [UserAuthorize(ResourceType.Document, ResourceAction.View)]
-        public async Task<ActionResult<string>> GetFileSignedUrl ([ResourceId(ResourceType.Document)] Guid id) 
+        public async Task<ActionResult<string>> GetFileSignedUrl([ResourceId(ResourceType.Document)] Guid id)
         {
             var identity = HttpContext.User.FindFirstValue(ClaimTypes.Email);
             var fileSignedUrlResult = await _documentService.GetFileSignedUrl(identity, id);
@@ -93,6 +93,37 @@ namespace PrecisionReporters.Platform.Api.Controllers
                 return WebApiResponses.GetErrorResponse(fileSignedUrlResult);
 
             return Ok(fileSignedUrlResult.Value);
+        }
+
+        /// Shares a documents with all users in a deposition
+        /// </summary>
+        /// <param name="id">Document identifier</param>
+        /// <returns>Ok if the process has completed successfully</returns>
+        [HttpPut("[controller]/{id}/Share")]
+        [UserAuthorize(ResourceType.Document, ResourceAction.Update)]
+        public async Task<IActionResult> ShareDocument([ResourceId(ResourceType.Document)] Guid id)
+        {
+            var identity = HttpContext.User.FindFirstValue(ClaimTypes.Email);
+            var documentsResult = await _documentService.Share(id, identity);
+            if (documentsResult.IsFailed)
+                return WebApiResponses.GetErrorResponse(documentsResult);
+            return Ok();
+        }
+
+        /// <summary>
+        /// Gets details of a given document
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns>Detailed document information</returns>
+        [HttpGet("[controller]/{id}")]
+        [UserAuthorize(ResourceType.Document, ResourceAction.View)]
+        public async Task<ActionResult<DocumentDto>> GetDocument([ResourceId(ResourceType.Document)] Guid id)
+        {
+            var documentResult = await _documentService.GetDocument(id);
+            if (documentResult.IsFailed)
+                return WebApiResponses.GetErrorResponse(documentResult);
+
+            return Ok(_documentMapper.ToDto(documentResult.Value));
         }
     }
 }

@@ -16,5 +16,8 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
         Task<Result> UploadDocuments(Guid id, string identity, List<FileTransferInfo> files);
         Task<Result<List<Document>>> GetExhibitsForUser(Guid depositionId, string identity);
         Task<Result<string>> GetFileSignedUrl(string userEmail, Guid documentId);
+        Task<Result> Share(Guid id, string userEmail);
+        Task<Result<Document>> GetDocument(Guid id);
+        Result<string> GetFileSignedUrl(Document document);
     }
 }

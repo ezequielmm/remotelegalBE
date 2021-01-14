@@ -8,6 +8,7 @@
         Delete,
         EndDeposition,
         Recording,
-        UploadDocument
+        UploadDocument,
+        ViewSharedDocument
     }
 }

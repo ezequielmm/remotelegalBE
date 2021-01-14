@@ -85,7 +85,8 @@ namespace PrecisionReporters.Platform.Api.Mappers
                 CaseName = model.Case?.Name,
                 CaseNumber = model.Case?.CaseNumber,
                 CompleteDate = model.CompleteDate,
-                IsOnTheRecord = model.IsOnTheRecord
+                IsOnTheRecord = model.IsOnTheRecord,
+                SharingDocument = model.SharingDocument != null ? _documentMapper.ToDto(model.SharingDocument) : null,
             };
         }
     }

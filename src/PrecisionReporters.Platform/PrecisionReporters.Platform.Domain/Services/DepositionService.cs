@@ -87,7 +87,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         public async Task<List<Deposition>> GetDepositionsByStatus(DepositionStatus? status, DepositionSortField? sortedField,
             SortDirection? sortDirection, string userEmail)
         {
-            
+
             var userResult = await _userService.GetUserByEmail(userEmail);
 
             var includes = new[] { nameof(Deposition.Requester), nameof(Deposition.Participants),
@@ -104,7 +104,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                         || (x.Witness != null && x.Witness.Email == userEmail));
             }
 
-            Expression <Func<Deposition, object>> orderBy = sortedField switch
+            Expression<Func<Deposition, object>> orderBy = sortedField switch
             {
                 DepositionSortField.Details => x => x.Details,
                 DepositionSortField.Status => x => x.Status,
@@ -144,7 +144,8 @@ namespace PrecisionReporters.Platform.Domain.Services
                 WitnessEmail = deposition.Witness?.Email,
                 Token = token.Value,
                 TimeZone = deposition.TimeZone,
-                IsOnTheRecord = deposition.IsOnTheRecord
+                IsOnTheRecord = deposition.IsOnTheRecord,
+                IsSharing = deposition.SharingDocumentId.HasValue
             };
 
             return Result.Ok(joinDepositionInfo);
@@ -187,7 +188,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             return Result.Ok(participant);
         }
-        
+
         public async Task<Result<Deposition>> AddDepositionEvent(Guid id, DepositionEvent depositionEvent, string userEmail)
         {
             var depositionResult = await _depositionRepository.GetById(id, new[] { nameof(Deposition.Events) });
@@ -223,7 +224,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (userResult.IsFailed)
                 return userResult.ToResult<Deposition>();
 
-            
+
             var depositionEvent = new DepositionEvent
             {
                 EventType = onTheRecord ? EventType.OnTheRecord : EventType.OffTheRecord,
@@ -233,6 +234,25 @@ namespace PrecisionReporters.Platform.Domain.Services
             deposition.IsOnTheRecord = onTheRecord;
             var updatedDeposition = await _depositionRepository.Update(deposition);
             return Result.Ok(updatedDeposition);
+        }
+
+        public async Task<Result<Deposition>> Update(Deposition deposition)
+        {
+            var oldDeposition = await _depositionRepository.GetById(deposition.Id);
+            if (oldDeposition == null)
+                return Result.Fail(new ResourceNotFoundError("Deposition not found"));
+
+            return Result.Ok(await _depositionRepository.Update(deposition));
+        }
+
+        public async Task<Result<Document>> GetSharedDocument(Guid id)
+        {
+            var deposition = await _depositionRepository.GetById(id, new[] { nameof(Deposition.SharingDocument)});
+            if (deposition == null)
+                return Result.Fail(new ResourceNotFoundError("Desosition not found"));
+            if (!deposition.SharingDocumentId.HasValue)
+                return Result.Fail(new ResourceConflictError("No document is being shared in this deposition"));
+            return Result.Ok(deposition.SharingDocument);
         }
 
         private async Task<Result<Deposition>> GetByIdWithIncludes(Guid id, string[] include = null)

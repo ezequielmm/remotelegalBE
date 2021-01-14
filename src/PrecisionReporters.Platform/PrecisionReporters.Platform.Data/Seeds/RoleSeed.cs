@@ -21,11 +21,14 @@ namespace PrecisionReporters.Platform.Data.Seeds
             modelBuilder.Entity<Role>().HasData(new Role { Id = courtReporterRoleId, Name = RoleName.DepositionCourtReporter });
             modelBuilder.Entity<RolePermission>().HasData(new RolePermission { RoleId = courtReporterRoleId, Action = ResourceAction.EndDeposition });
             modelBuilder.Entity<RolePermission>().HasData(new RolePermission { RoleId = courtReporterRoleId, Action = ResourceAction.Recording });
+            modelBuilder.Entity<RolePermission>().HasData(new RolePermission { RoleId = courtReporterRoleId, Action = ResourceAction.ViewSharedDocument });
 
             // deposition attendee
             var depositionAttendeeRoleId = Guid.Parse("997d199c-3b9a-4103-a320-130b02890a5b");
             modelBuilder.Entity<Role>().HasData(new Role { Id = depositionAttendeeRoleId, Name = RoleName.DepositionAttendee });
             modelBuilder.Entity<RolePermission>().HasData(new RolePermission { RoleId = depositionAttendeeRoleId, Action = ResourceAction.UploadDocument });
+            modelBuilder.Entity<RolePermission>().HasData(new RolePermission { RoleId = depositionAttendeeRoleId, Action = ResourceAction.ViewSharedDocument });
+
             //Document Owner
             var documentOwnerRoleId = Guid.Parse("ef7db7d6-4aae-11eb-b378-0242ac130002");
             modelBuilder.Entity<Role>().HasData(new Role { Id = documentOwnerRoleId, Name = RoleName.DocumentOwner });

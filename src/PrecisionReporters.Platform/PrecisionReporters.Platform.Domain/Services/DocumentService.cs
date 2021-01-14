@@ -26,10 +26,11 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly IDocumentUserDepositionRepository _documentUserDepositionRepository;
         private readonly IPermissionService _permissionService;
         private readonly ITransactionHandler _transactionHandler;
+        private readonly IDocumentRepository _documentRepository;
         private readonly ILogger<DocumentService> _logger;
         private readonly DocumentConfiguration _documentsConfiguration;
 
-        public DocumentService(IAwsStorageService awsStorageService, IOptions<DocumentConfiguration> documentConfigurations, ILogger<DocumentService> logger, IUserService userService, IDepositionService depositionService, IDocumentUserDepositionRepository documentUserDepositionRepository, IPermissionService permissionService, ITransactionHandler transactionHandler)
+        public DocumentService(IAwsStorageService awsStorageService, IOptions<DocumentConfiguration> documentConfigurations, ILogger<DocumentService> logger, IUserService userService, IDepositionService depositionService, IDocumentUserDepositionRepository documentUserDepositionRepository, IPermissionService permissionService, ITransactionHandler transactionHandler, IDocumentRepository documentRepository)
         {
             _awsStorageService = awsStorageService;
             _documentsConfiguration = documentConfigurations.Value ?? throw new ArgumentException(nameof(documentConfigurations));
@@ -39,6 +40,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             _documentUserDepositionRepository = documentUserDepositionRepository;
             _permissionService = permissionService;
             _transactionHandler = transactionHandler;
+            _documentRepository = documentRepository;
         }
 
         public async Task<Result<Document>> UploadDocumentFile(KeyValuePair<string, FileTransferInfo> file, User user, string parentPath)
@@ -175,6 +177,43 @@ namespace PrecisionReporters.Platform.Domain.Services
             var signedUrl = _awsStorageService.GetFilePublicUri(documentUserDeposition.Document, _documentsConfiguration.BucketName, expirationDate);
 
             return Result.Ok(signedUrl);
+        }
+
+        public Result<string> GetFileSignedUrl(Document document)
+        {
+            var expirationDate = DateTime.UtcNow.AddHours(_documentsConfiguration.PreSignedUrlValidHours);
+            var signedUrl = _awsStorageService.GetFilePublicUri(document, _documentsConfiguration.BucketName, expirationDate);
+
+            return Result.Ok(signedUrl);
+        }
+
+        public async Task<Result> Share(Guid id, string userEmail)
+        {
+            var userResult = await _userService.GetUserByEmail(userEmail);
+            if (userResult.IsFailed)
+                return userResult;
+
+            var documentUserDepositionResult = await _documentUserDepositionRepository.GetFirstOrDefaultByFilter(x => x.DocumentId == id && x.UserId == userResult.Value.Id, new[] { nameof(DocumentUserDeposition.Document) });
+            if (documentUserDepositionResult == null)
+                return Result.Fail(new Error($"Could not find any document with Id {id} for user {userEmail}"));
+
+            var depositionResult = await _depositionService.GetDepositionById(documentUserDepositionResult.DepositionId);
+            if (depositionResult.IsFailed)
+                return depositionResult;
+
+            if (depositionResult.Value.SharingDocumentId.HasValue)
+                return Result.Fail(new ResourceConflictError("Can't share document while another document is being shared."));
+
+            depositionResult.Value.SharingDocumentId = id;
+            return await _depositionService.Update(depositionResult.Value);
+        }
+
+        public async Task<Result<Document>> GetDocument(Guid id)
+        {
+           var document = await _documentRepository.GetById(id, new[] { nameof(Document.AddedBy) });
+            if (document == null)
+                return Result.Fail(new ResourceNotFoundError("Document not found"));
+            return Result.Ok(document);
         }
 
         private async Task<Result<Document>> UploadFileToStorage(FileTransferInfo file, User user, string fileName, string parentPath)
