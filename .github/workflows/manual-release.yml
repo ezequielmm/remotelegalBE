@@ -32,10 +32,10 @@ jobs:
             echo -e ::set-output name=cognitoconfig-client-id::'${{ secrets.COGNITOCONFIG_CLIENTID_UAT }}'
             echo -e ::set-output name=cognitoconfig-userpool-id::'${{ secrets.COGNITOCONFIG_USERPOOLID_UAT }}'
             echo -e ::set-output name=cognitoconfig-authority::'${{ secrets.COGNITOCONFIG_AUTHORITY_UAT }}'
-            echo -e ::set-output name=twilioconfig-accounts-id::'${{ secrets.TWILIOCONFIG_ACCOUNTSID_QA }}'
-            echo -e ::set-output name=twilioconfig-authtoken::'${{ secrets.TWILIOCONFIG_AUTHTOKEN_QA }}'
-            echo -e ::set-output name=twilioconfig-apikeys-id::'${{ secrets.TWILIOCONFIG_APIKEYSID_QA }}'
-            echo -e ::set-output name=twilioconfig-apisecretkey::'${{ secrets.TWILIOCONFIG_APIKEYSECRET_QA }}'
+            echo -e ::set-output name=twilioconfig-accounts-id::'${{ secrets.TWILIOCONFIG_ACCOUNTSID_UAT }}'
+            echo -e ::set-output name=twilioconfig-authtoken::'${{ secrets.TWILIOCONFIG_AUTHTOKEN_UAT }}'
+            echo -e ::set-output name=twilioconfig-apikeys-id::'${{ secrets.TWILIOCONFIG_APIKEYSID_UAT }}'
+            echo -e ::set-output name=twilioconfig-apisecretkey::'${{ secrets.TWILIOCONFIG_APIKEYSECRET_UAT }}'
             echo -e ::set-output name=service-account-accesskey::'${{ secrets.SERVICE_ACCOUNT_ACCESS_KEY_QA }}'
             echo -e ::set-output name=service-account-secretaccesskey::'${{ secrets.SERVICE_ACCOUNT_SECRET_ACCESS_KEY_QA }}'
             echo -e ::set-output name=gcp-private-key-id::'${{ secrets.GCP_PRIVATE_KEY_ID }}'
@@ -164,7 +164,7 @@ jobs:
       with:
         include: 'task-definition-${{ steps.extract-branch.outputs.branch }}.json'
         find: "GCP_PRIVATE_KEY_ID"
-        replace: "${{ secrets.GCP_PRIVATE_KEY_ID }}"
+        replace: "${{ steps.env-vars.outputs.gcp-private-key-id }}"
         exclude: "^$"
     
     - name: Replace GCP private_key in task definition
@@ -172,7 +172,7 @@ jobs:
       with:
         include: 'task-definition-${{ steps.extract-branch.outputs.branch }}.json'
         find: "GCP_PRIVATE_KEY_CONTRACT"
-        replace: "${{ secrets.GCP_PRIVATE_KEY_CONTRACT }}"
+        replace: "${{ steps.env-vars.outputs.gcp-private-key-contract }}"
         exclude: "^$"
     
     - name: Replace GCP client_email in task definition
@@ -180,7 +180,7 @@ jobs:
       with:
         include: 'task-definition-${{ steps.extract-branch.outputs.branch }}.json'
         find: "GCP_CLIENT_EMAIL"
-        replace: "${{ secrets.GCP_CLIENT_EMAIL }}"
+        replace: "${{ steps.env-vars.outputs.gcp-client-email }}"
         exclude: "^$"
     
     - name: Replace GCP client_id in task definition
@@ -188,7 +188,7 @@ jobs:
       with:
         include: 'task-definition-${{ steps.extract-branch.outputs.branch }}.json'
         find: "GCP_CLIENTID"
-        replace: "${{ secrets.GCP_CLIENT_ID }}"
+        replace: "${{ steps.env-vars.outputs.gcp-client-id }}"
         exclude: "^$"        
 
     - name: Configure AWS Credentials
