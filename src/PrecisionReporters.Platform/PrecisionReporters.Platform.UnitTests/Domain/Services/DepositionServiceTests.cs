@@ -3,6 +3,7 @@ using Moq;
 using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Data.Enums;
 using PrecisionReporters.Platform.Data.Repositories.Interfaces;
+using PrecisionReporters.Platform.Domain.Errors;
 using PrecisionReporters.Platform.Domain.Services;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using PrecisionReporters.Platform.UnitTests.Utils;
@@ -621,7 +622,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var result = await _depositionService.GetSharedDocument(depositionId);
 
             // Assert
-            _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(a => a == depositionId), It.Is<string[]>(a=>a.Contains(nameof(Deposition.SharingDocument)))), Times.Once);
+            _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(a => a == depositionId), It.Is<string[]>(a => a.SequenceEqual(new[] { nameof(Deposition.SharingDocument), nameof(Deposition.SharingDocument.AddedBy) }))), Times.Once);
             Assert.NotNull(result);
             Assert.IsType<Result<Document>>(result);
             Assert.True(result.IsFailed);
@@ -641,7 +642,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var result = await _depositionService.GetSharedDocument(depositionId);
 
             // Assert
-            _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(a => a == depositionId), It.Is<string[]>(a=>a.Contains(nameof(Deposition.SharingDocument)))), Times.Once);
+            _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(a => a == depositionId), It.Is<string[]>(a => a.SequenceEqual(new[] { nameof(Deposition.SharingDocument), nameof(Deposition.SharingDocument.AddedBy) }))), Times.Once);
             Assert.NotNull(result);
             Assert.IsType<Result<Document>>(result);
             Assert.True(result.IsFailed);
@@ -653,8 +654,9 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         {
             // Arrange
             var depositionId = Guid.NewGuid();
-            var document = new Document { Id = Guid.NewGuid() };
-            var deposition = new Deposition { Id = depositionId, SharingDocumentId = document.Id, SharingDocument= document};
+            var user = new User { Id = Guid.NewGuid() };
+            var document = new Document { Id = Guid.NewGuid(), AddedById = user.Id, AddedBy = user };
+            var deposition = new Deposition { Id = depositionId, SharingDocumentId = document.Id, SharingDocument = document };
 
             _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
 
@@ -662,11 +664,12 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var result = await _depositionService.GetSharedDocument(depositionId);
 
             // Assert
-            _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(a => a == depositionId), It.Is<string[]>(a=>a.Contains(nameof(Deposition.SharingDocument)))), Times.Once);
+            _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(a => a == depositionId), It.Is<string[]>(a => a.SequenceEqual(new[] { nameof(Deposition.SharingDocument), nameof(Deposition.SharingDocument.AddedBy) }))), Times.Once);
             Assert.NotNull(result);
             Assert.IsType<Result<Document>>(result);
             Assert.True(result.IsSuccess);
             Assert.Equal(deposition.SharingDocument, result.Value);
+            Assert.Equal(user, result.Value.AddedBy);
         }
 
         private DepositionService InitializeService(
