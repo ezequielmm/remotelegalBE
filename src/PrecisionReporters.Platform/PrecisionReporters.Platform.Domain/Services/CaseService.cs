@@ -23,7 +23,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly IDocumentService _documentService;
         private readonly IDepositionService _depositionService;
         private readonly ILogger<CaseService> _logger;
-		private readonly ITransactionHandler _transactionHandler;
+        private readonly ITransactionHandler _transactionHandler;
         private readonly IPermissionService _permissionService;
 
         public CaseService(ICaseRepository caseRepository, IUserService userService, IDocumentService documentService, IDepositionService depositionService, ILogger<CaseService> logger, ITransactionHandler transactionHandler, IPermissionService permissionService)
@@ -33,7 +33,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             _logger = logger;
             _documentService = documentService;
             _depositionService = depositionService;
-			_transactionHandler = transactionHandler;
+            _transactionHandler = transactionHandler;
             _permissionService = permissionService;
         }
 
@@ -189,9 +189,12 @@ namespace PrecisionReporters.Platform.Domain.Services
                         var participantUsers = await _userService.GetUsersByFilter(x => deposition.Participants.Select(p => p.Email).Contains(x.EmailAddress));
                         foreach (var participant in deposition.Participants.Where(participant => !string.IsNullOrWhiteSpace(participant.Email)))
                         {
-                            participant.User = participantUsers.Find(x => x.EmailAddress == participant.Email);
-
-                            await _permissionService.AddUserRole(participant.User.Id, deposition.Id, ResourceType.Deposition, ParticipantType.CourtReporter == participant.Role ? RoleName.DepositionCourtReporter : RoleName.DepositionAttendee);
+                            var user = participantUsers.Find(x => x.EmailAddress == participant.Email);
+                            if (user != null)
+                            {
+                                participant.User = user;
+                                await _permissionService.AddUserRole(participant.User.Id, deposition.Id, ResourceType.Deposition, ParticipantType.CourtReporter == participant.Role ? RoleName.DepositionCourtReporter : RoleName.DepositionAttendee);
+                            }
                         }
                     }
 
