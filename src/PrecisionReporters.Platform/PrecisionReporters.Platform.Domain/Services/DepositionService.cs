@@ -138,8 +138,11 @@ namespace PrecisionReporters.Platform.Domain.Services
                 await _roomService.StartRoom(deposition.Room);
             }
 
+            // TODO: Witness shoudl be part of the participants instead of a separated property.
             var currentParticipant = deposition.Participants.FirstOrDefault(p => p.User == userResult.Value);
-           
+            if (currentParticipant == null)
+                currentParticipant = deposition.Witness.Email == identity ? deposition.Witness : null;
+
             var token = await _roomService.GenerateRoomToken(deposition.Room.Name, userResult.Value, currentParticipant.Role, identity);
             if (token.IsFailed)
                 return token.ToResult<JoinDepositionDto>();
@@ -255,7 +258,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 return Result.Fail(new ResourceNotFoundError("Desosition not found"));
             if (!deposition.SharingDocumentId.HasValue)
                 return Result.Fail(new ResourceConflictError("No document is being shared in this deposition"));
-           
+
             return Result.Ok(deposition.SharingDocument);
         }
 
