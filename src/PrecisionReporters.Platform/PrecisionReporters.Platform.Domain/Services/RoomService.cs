@@ -1,5 +1,8 @@
 ﻿using FluentResults;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 using PrecisionReporters.Platform.Data.Entities;
+using PrecisionReporters.Platform.Data.Enums;
 using PrecisionReporters.Platform.Data.Repositories.Interfaces;
 using PrecisionReporters.Platform.Domain.Commons;
 using PrecisionReporters.Platform.Domain.Errors;
@@ -47,20 +50,23 @@ namespace PrecisionReporters.Platform.Domain.Services
             return Result.Ok(matchingRooms.First());
         }
 
-        public async Task<Result<string>> GenerateRoomToken(string roomName, string identity)
+        public async Task<Result<string>> GenerateRoomToken(string roomName, User user, ParticipantType role, string email )
         {
-            var getRoomResult = await GetByName(roomName);
-            if (getRoomResult.IsFailed)
-            {
-                // TODO: Investigate how to obtain a result based on a previous operation. (JD)
-                return Result.Fail(getRoomResult.Errors.First());
-            }
+            var room = await _roomRepository.GetFirstOrDefaultByFilter(x => x.Name == roomName );
+            if (room == null)
+                return Result.Fail(new ResourceNotFoundError($"Room {roomName} not found"));
 
-            var room = getRoomResult.Value;
             if (room.Status != RoomStatus.InProgress)
                 return Result.Fail(new InvalidInputError($"There was an error ending the the Room '{room.Name}'. It's not in progress. Current state: {room.Status}"));
 
-            var twilioToken = _twilioService.GenerateToken(roomName, identity);
+            var identityObject = new
+            {
+                Name = $"{user.FirstName} {user.LastName}",
+                Role = Enum.GetName(typeof(ParticipantType),role),
+                Email = email
+            };
+            var idetityJsonString = SerializeObject(identityObject);
+            var twilioToken = _twilioService.GenerateToken(roomName, idetityJsonString);
 
             return Result.Ok(twilioToken);
         }
@@ -123,6 +129,15 @@ namespace PrecisionReporters.Platform.Domain.Services
         {
             var room = await _roomRepository.GetFirstOrDefaultByFilter(x => x.SId == roomSid);
             return Result.Ok(room);
+        }
+
+        private string SerializeObject(object item)
+        {
+            var serializeOptions = new JsonSerializerSettings
+            {
+                ContractResolver = new CamelCasePropertyNamesContractResolver()
+            };
+            return JsonConvert.SerializeObject(item, serializeOptions);
         }
     }
 }

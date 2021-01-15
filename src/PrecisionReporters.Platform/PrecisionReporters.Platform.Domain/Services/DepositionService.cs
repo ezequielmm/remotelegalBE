@@ -87,7 +87,6 @@ namespace PrecisionReporters.Platform.Domain.Services
         public async Task<List<Deposition>> GetDepositionsByStatus(DepositionStatus? status, DepositionSortField? sortedField,
             SortDirection? sortDirection, string userEmail)
         {
-
             var userResult = await _userService.GetUserByEmail(userEmail);
 
             var includes = new[] { nameof(Deposition.Requester), nameof(Deposition.Participants),
@@ -126,7 +125,11 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<JoinDepositionDto>> JoinDeposition(Guid id, string identity)
         {
-            var deposition = await _depositionRepository.GetById(id, new[] { nameof(Deposition.Witness), nameof(Deposition.Room) });
+            var userResult = await _userService.GetUserByEmail(identity);
+            if (userResult.IsFailed)
+                return userResult.ToResult<JoinDepositionDto>();
+
+            var deposition = await _depositionRepository.GetById(id, new[] { nameof(Deposition.Witness), nameof(Deposition.Room), nameof(Deposition.Participants) });
             if (deposition == null)
                 return Result.Fail(new ResourceNotFoundError($"Deposition with id {id} not found."));
 
@@ -135,13 +138,14 @@ namespace PrecisionReporters.Platform.Domain.Services
                 await _roomService.StartRoom(deposition.Room);
             }
 
-            var token = await _roomService.GenerateRoomToken(deposition.Room.Name, identity);
+            var currentParticipant = deposition.Participants.FirstOrDefault(p => p.User == userResult.Value);
+           
+            var token = await _roomService.GenerateRoomToken(deposition.Room.Name, userResult.Value, currentParticipant.Role, identity);
             if (token.IsFailed)
                 return token.ToResult<JoinDepositionDto>();
 
             var joinDepositionInfo = new JoinDepositionDto
             {
-                WitnessEmail = deposition.Witness?.Email,
                 Token = token.Value,
                 TimeZone = deposition.TimeZone,
                 IsOnTheRecord = deposition.IsOnTheRecord,
@@ -223,7 +227,6 @@ namespace PrecisionReporters.Platform.Domain.Services
             var userResult = await _userService.GetUserByEmail(userEmail);
             if (userResult.IsFailed)
                 return userResult.ToResult<Deposition>();
-
 
             var depositionEvent = new DepositionEvent
             {

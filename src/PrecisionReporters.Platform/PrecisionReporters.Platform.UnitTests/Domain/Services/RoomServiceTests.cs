@@ -1,5 +1,7 @@
-﻿using Moq;
+﻿using FluentResults;
+using Moq;
 using PrecisionReporters.Platform.Data.Entities;
+using PrecisionReporters.Platform.Data.Enums;
 using PrecisionReporters.Platform.Data.Repositories.Interfaces;
 using PrecisionReporters.Platform.Domain.Commons;
 using PrecisionReporters.Platform.Domain.Services;
@@ -9,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Twilio.Exceptions;
 using Xunit;
@@ -18,6 +21,19 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
     public class RoomServiceTests : IDisposable
     {        
         private readonly List<Room> _rooms = new List<Room>();
+
+
+        private readonly Mock<ITwilioService> _twilioServiceMock = new Mock<ITwilioService>();
+        private readonly Mock<IRoomRepository> _roomRepositoryMock = new Mock<IRoomRepository>();
+        private readonly RoomService _service;
+
+        public RoomServiceTests()
+        {
+            _twilioServiceMock = new Mock<ITwilioService>();
+            _roomRepositoryMock = new Mock<IRoomRepository>();
+
+            _service = new RoomService(_twilioServiceMock.Object, _roomRepositoryMock.Object);
+        }
 
         public void Dispose()
         {
@@ -224,6 +240,82 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             // Assert
             Assert.NotNull(result);
+        }
+
+        [Fact]
+        public async Task GenerateRoomToken_ShouldReturnFail_IfRoomNotFound()
+        {
+            // Arrange
+            var roomName = "TestingRoom";
+            var expectedError = $"Room {roomName} not found";
+            _roomRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Room, bool>>>(), It.IsAny<string[]>())).ReturnsAsync((Room)null);
+
+            // Act
+            var result = await _service.GenerateRoomToken(roomName, new User(), ParticipantType.Attorney, "any@mail.com");
+
+            // Assert
+            _roomRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Room, bool>>>(), It.IsAny<string[]>()), Times.Once);
+            Assert.NotNull(result);
+            Assert.IsType<Result<string>>(result);
+            Assert.True(result.IsFailed);
+            Assert.Contains(expectedError, result.Errors.Select(x => x.Message));
+        }
+        [Theory]
+        [InlineData(RoomStatus.Completed)]
+        [InlineData(RoomStatus.Created)]
+        [InlineData(RoomStatus.Failed)]
+        public async Task GenerateRoomToken_ShouldReturnFail_IfRoomNotInProgress(RoomStatus roomStatus)
+        {
+            // Arrange
+            var roomName = "TestingRoom";
+            var room = new Room { Name = roomName, Status = roomStatus };
+            var expectedError = $"There was an error ending the the Room '{roomName}'. It's not in progress. Current state: {roomStatus}";
+            _roomRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Room, bool>>>(), It.IsAny<string[]>())).ReturnsAsync(room);
+
+            // Act
+            var result = await _service.GenerateRoomToken(roomName, new User(), ParticipantType.Attorney, "any@mail.com");
+
+            // Assert
+            _roomRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Room, bool>>>(), It.IsAny<string[]>()), Times.Once);
+            Assert.NotNull(result);
+            Assert.IsType<Result<string>>(result);
+            Assert.True(result.IsFailed);
+            Assert.Contains(expectedError, result.Errors.Select(x => x.Message));
+        }
+
+        [Fact]
+        public async Task GenerateRoomToken_ShouldReturn_TwilioToken()
+        {
+            // Arrange
+            var roomName = "TestingRoom";
+            var room = new Room { Name = roomName, Status = RoomStatus.InProgress };
+            var participantRole = ParticipantType.Observer;
+            var user = new User { Id = Guid.NewGuid(), EmailAddress = "testUser@mail.com", FirstName = "userFirstName", LastName = "userLastName" };
+            var identityObject = new
+            {
+                Name = $"{user.FirstName} {user.LastName}",
+                Role = Enum.GetName(typeof(ParticipantType), participantRole ),
+                Email = user.EmailAddress
+            };
+            var serializeOptions = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            };
+            var expectedIdentitySerializedString = JsonSerializer.Serialize(identityObject, serializeOptions);
+            var token = "TestingToken";
+            _roomRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Room, bool>>>(), It.IsAny<string[]>())).ReturnsAsync(room);
+            _twilioServiceMock.Setup(x => x.GenerateToken(It.IsAny<string>(), It.IsAny<string>())).Returns(token);
+
+            // Act
+            var result = await _service.GenerateRoomToken(roomName, user, participantRole, user.EmailAddress);
+
+            // Assert
+            _roomRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Room, bool>>>(), It.IsAny<string[]>()), Times.Once);
+            _twilioServiceMock.Verify(x => x.GenerateToken(It.Is<string>(a => a == roomName), It.Is<string>(a => a == expectedIdentitySerializedString)), Times.Once);
+            Assert.NotNull(result);
+            Assert.IsType<Result<string>>(result);
+            Assert.True(result.IsSuccess);
+            Assert.Equal(token, result.Value);
         }
 
         private RoomService InitializeService(
