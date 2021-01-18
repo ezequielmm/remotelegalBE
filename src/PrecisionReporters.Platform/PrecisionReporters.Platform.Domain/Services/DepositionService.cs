@@ -139,11 +139,13 @@ namespace PrecisionReporters.Platform.Domain.Services
             }
 
             // TODO: Witness shoudl be part of the participants instead of a separated property.
-            var currentParticipant = deposition.Participants.FirstOrDefault(p => p.User == userResult.Value);
-            if (currentParticipant == null)
-                currentParticipant = deposition.Witness.Email == identity ? deposition.Witness : null;
+            var currentParticipant = deposition.Witness?.Email == identity ? deposition.Witness : deposition.Participants.FirstOrDefault(p => p.User == userResult.Value);
+            if (currentParticipant == null && !userResult.Value.IsAdmin)
+                return Result.Fail(new InvalidInputError($"User is neither a Participant for this Deposition nor an Admin"));
 
-            var token = await _roomService.GenerateRoomToken(deposition.Room.Name, userResult.Value, currentParticipant.Role, identity);
+            var role = currentParticipant?.Role ?? ParticipantType.Admin;
+
+            var token = await _roomService.GenerateRoomToken(deposition.Room.Name, userResult.Value, role, identity);
             if (token.IsFailed)
                 return token.ToResult<JoinDepositionDto>();
 

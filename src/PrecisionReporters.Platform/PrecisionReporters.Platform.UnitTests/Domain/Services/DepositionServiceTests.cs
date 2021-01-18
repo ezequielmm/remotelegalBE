@@ -12,7 +12,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Text.Json;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -380,6 +379,57 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 It.Is<string>(a => a == deposition.Room.Name),
                 It.Is<User>(a => a == user),
                 It.Is<ParticipantType>(a => a == currentParticipant.Role),
+                It.Is<string>(a => a == userEmail)), Times.Once);
+            Assert.NotNull(result);
+            Assert.IsType<Result<JoinDepositionDto>>(result);
+            Assert.True(result.IsSuccess);
+            Assert.NotNull(result.Value.TimeZone);
+            Assert.Equal(deposition.TimeZone, result.Value.TimeZone);
+            Assert.Equal(deposition.IsOnTheRecord, result.Value.IsOnTheRecord);
+            Assert.Equal(token, result.Value.Token);
+        }
+
+        [Fact]
+        public async Task JoinDeposition_ShouldJoinAsWitness_WhenParticipantIsWitness()
+        {
+            // Arrange
+            var userEmail = "witness@email.com";
+            var user = new User { Id = Guid.NewGuid(), EmailAddress = userEmail, FirstName = "userFirstName", LastName = "userLastName" };
+            var token = Guid.NewGuid().ToString();
+            var depositionId = Guid.NewGuid();
+            var caseId = Guid.NewGuid();
+            var currentParticipant = new Participant { Name = "ParticipantName", Role = ParticipantType.Observer, User = user };
+            var deposition = new Deposition
+            {
+                Room = new Room
+                {
+                    Id = Guid.NewGuid(),
+                    Status = RoomStatus.Created,
+                    Name = "TestingRoom"
+                },
+                Witness = new Participant { Email = "witness@email.com"},
+                Participants = new List<Participant>
+                {
+                   currentParticipant
+                },
+                TimeZone = "TetingTimeZone",
+                IsOnTheRecord = true
+            };
+            _depositions.Add(deposition);
+            _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(user));
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(() => _depositions.FirstOrDefault());
+            _roomServiceMock.Setup(x => x.GenerateRoomToken(It.IsAny<string>(), It.IsAny<User>(), It.IsAny<ParticipantType>(), It.IsAny<string>())).ReturnsAsync(Result.Ok(token));
+
+            // Act
+            var result = await _depositionService.JoinDeposition(depositionId, userEmail);
+
+            // Assert
+            _depositionRepositoryMock.Verify(mock => mock.GetById(It.Is<Guid>(a => a == depositionId), It.IsAny<string[]>()), Times.Once());
+            _roomServiceMock.Verify(x => x.StartRoom(It.Is<Room>(a => a == deposition.Room)), Times.Once);
+            _roomServiceMock.Verify(x => x.GenerateRoomToken(
+                It.Is<string>(a => a == deposition.Room.Name),
+                It.Is<User>(a => a == user),
+                It.Is<ParticipantType>(a => a == ParticipantType.Witness),
                 It.Is<string>(a => a == userEmail)), Times.Once);
             Assert.NotNull(result);
             Assert.IsType<Result<JoinDepositionDto>>(result);
