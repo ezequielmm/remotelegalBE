@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -108,6 +109,12 @@ namespace PrecisionReporters.Platform.Api
                 x.FrontendBaseUrl = appConfiguration.UrlPathConfiguration.FrontendBaseUrl;
                 x.VerifyUserUrl = appConfiguration.UrlPathConfiguration.VerifyUserUrl;
             });
+            services.Configure<KestrelServerOptions>(options =>
+            {
+                // TODO: Check how to return a valid error message with this validation and reduce the value to MaxFileSize only
+                options.Limits.MaxRequestBodySize = appConfiguration.DocumentConfiguration.MaxFileSize * 2;
+            });
+
             services.AddScoped(s => s.GetService<IHttpContextAccessor>().HttpContext.User);
 
             // Filters
