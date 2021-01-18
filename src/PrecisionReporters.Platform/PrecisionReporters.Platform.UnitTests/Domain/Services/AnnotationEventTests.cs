@@ -9,6 +9,7 @@ using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Data.Enums;
 using PrecisionReporters.Platform.Data.Repositories.Interfaces;
 using PrecisionReporters.Platform.Domain.Services;
+using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using Xunit;
 
 namespace PrecisionReporters.Platform.UnitTests.Domain.Services
@@ -16,12 +17,14 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
     public class AnnotationEventTests
     {
         private readonly Mock<IAnnotationEventRepository> _annotationEventRepositoryMock;
+        private readonly Mock<IDepositionService> _depositionServiceMock;
         private readonly AnnotationEventService _service;
 
         public AnnotationEventTests()
         {
             _annotationEventRepositoryMock = new Mock<IAnnotationEventRepository>();
-            _service = new AnnotationEventService(_annotationEventRepositoryMock.Object);
+            _depositionServiceMock = new Mock<IDepositionService>();
+            _service = new AnnotationEventService(_annotationEventRepositoryMock.Object, _depositionServiceMock.Object);
         }
 
         [Fact]
@@ -37,7 +40,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _annotationEventRepositoryMock
                 .Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>()))
                 .ReturnsAsync(new AnnotationEvent());
-
+            _depositionServiceMock.Setup(x => x.GetDepositionById(It.IsAny<Guid>()))
+                .ReturnsAsync(Result.Ok(new Deposition { SharingDocumentId = document.Id }));
             // Act
             var result = await _service.GetDocumentAnnotations(document.Id, annotationId);
 
@@ -56,7 +60,10 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             // Arrange
             var annotationId = Guid.NewGuid();
             var expectedError = $"annoitation with Id {annotationId} could not be found";
-            _annotationEventRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync((AnnotationEvent)null);
+            _annotationEventRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>()))
+                .ReturnsAsync((AnnotationEvent)null);
+            _depositionServiceMock.Setup(x => x.GetDepositionById(It.IsAny<Guid>()))
+                .ReturnsAsync(Result.Ok(new Deposition { SharingDocumentId = Guid.NewGuid()}));
             // Act
             var result = await _service.GetDocumentAnnotations(Guid.NewGuid(), annotationId);
             // Assert

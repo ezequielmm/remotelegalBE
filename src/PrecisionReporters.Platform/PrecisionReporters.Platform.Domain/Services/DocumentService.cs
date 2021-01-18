@@ -248,11 +248,19 @@ namespace PrecisionReporters.Platform.Domain.Services
             return Result.Ok(document);
         }
 
-        public async Task<Result<Document>> AddAnnotation(Guid documentId, AnnotationEvent annotation)
+        public async Task<Result<Document>> AddAnnotation(Guid depositionId, AnnotationEvent annotation)
         {
             var currentUser = await _userService.GetCurrentUserAsync();
-            
-            var documentResult = await GetDocumentById(documentId);
+
+            // TODO include sharingDocument
+            var depositionResult = await _depositionService.GetDepositionById(depositionId);
+            if (depositionResult.IsFailed)
+                return depositionResult.ToResult<Document>();
+
+            if (!depositionResult.Value.SharingDocumentId.HasValue)
+                return Result.Fail(new ResourceNotFoundError($"There is no shared document for deposition {depositionId}"));
+
+            var documentResult = await GetDocumentById(depositionResult.Value.SharingDocumentId.Value);
             if (documentResult.IsFailed)
                 return documentResult;
 

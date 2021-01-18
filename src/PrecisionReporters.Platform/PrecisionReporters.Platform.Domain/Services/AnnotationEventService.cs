@@ -14,14 +14,25 @@ namespace PrecisionReporters.Platform.Domain.Services
     public class AnnotationEventService : IAnnotationEventService
     {
         private readonly IAnnotationEventRepository _annotationEventRepository;
+        private readonly IDepositionService _depositionService;
 
-        public AnnotationEventService(IAnnotationEventRepository annotationEventRepository)
+        public AnnotationEventService(IAnnotationEventRepository annotationEventRepository, IDepositionService depositionService)
         {
             _annotationEventRepository = annotationEventRepository;
+            _depositionService = depositionService;
         }
 
-        public async Task<Result<List<AnnotationEvent>>> GetDocumentAnnotations(Guid documentId, Guid? annotationId)
+        public async Task<Result<List<AnnotationEvent>>> GetDocumentAnnotations(Guid depositionId, Guid? annotationId)
         {
+            // TODO include sharingDocument
+            var depositionResult = await _depositionService.GetDepositionById(depositionId);
+            if (depositionResult.IsFailed)
+                return depositionResult.ToResult<List<AnnotationEvent>>();
+
+            if (!depositionResult.Value.SharingDocumentId.HasValue)
+                return Result.Fail(new ResourceNotFoundError($"There is no shared document for deposition {depositionId}"));
+
+            var documentId = depositionResult.Value.SharingDocumentId.Value;
             var include = new[] { nameof(AnnotationEvent.Author) };
             Expression<Func<AnnotationEvent, bool>> filter = x => x.DocumentId == documentId;
 

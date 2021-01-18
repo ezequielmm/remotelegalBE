@@ -25,14 +25,19 @@ namespace PrecisionReporters.Platform.Api.Controllers
         private readonly IDepositionService _depositionService;
         private readonly IDocumentService _documentService;
         private readonly IMapper<Deposition, DepositionDto, CreateDepositionDto> _depositionMapper;
+        private readonly IMapper<AnnotationEvent, AnnotationEventDto, CreateAnnotationEventDto> _annotationMapper;
+        private readonly IAnnotationEventService _annotationEventService;
 
         public DepositionsController(IDepositionService depositionService,
             IMapper<Deposition, DepositionDto, CreateDepositionDto> depositionMapper,
-            IDocumentService documentService)
+            IDocumentService documentService, IMapper<AnnotationEvent, AnnotationEventDto, CreateAnnotationEventDto> annotationMapper,
+            IAnnotationEventService annotationEventService)
         {
             _depositionService = depositionService;
             _depositionMapper = depositionMapper;
             _documentService = documentService;
+            _annotationMapper = annotationMapper;
+            _annotationEventService = annotationEventService;
         }
 
         [HttpGet]
@@ -142,6 +147,38 @@ namespace PrecisionReporters.Platform.Api.Controllers
                     LastName = document.AddedBy.LastName
                 }
             });
+        }
+
+        /// <summary>
+        /// Add an annotation to a specific document
+        /// </summary>
+        /// <param name="id">Deposition identifier</param>
+        /// <returns>Newly created annotation</returns>
+        [HttpPost("{id}/SharedDocument/annotate")]
+        [UserAuthorize(ResourceType.Deposition, ResourceAction.ViewSharedDocument)]
+        public async Task<ActionResult> AddDocumentAnnotation([ResourceId(ResourceType.Deposition)] Guid id, CreateAnnotationEventDto annotation)
+        {
+            var addAnnotationResult = await _documentService.AddAnnotation(id, _annotationMapper.ToModel(annotation));
+            if (addAnnotationResult.IsFailed)
+                return WebApiResponses.GetErrorResponse(addAnnotationResult);
+            return Ok();
+        }
+
+        /// <summary>
+        /// Get annotations related to a specific document
+        /// </summary>
+        /// <param name="id">Deposition identifier</param>
+        /// <param name="startingAnnotationId">Last Annotation identifier</param>
+        /// <returns>Document's list of annotations events</returns>
+        [HttpGet("{id}/SharedDocument/annotations")]
+        [UserAuthorize(ResourceType.Deposition, ResourceAction.ViewSharedDocument)]
+        public async Task<ActionResult<List<AnnotationEventDto>>> GetDocumentAnnotations([ResourceId(ResourceType.Deposition)] Guid id, Guid? startingAnnotationId)
+        {
+            var annotationsResult = await _annotationEventService.GetDocumentAnnotations(id, startingAnnotationId);
+            if (annotationsResult.IsFailed)
+                return WebApiResponses.GetErrorResponse(annotationsResult);
+
+            return Ok(annotationsResult.Value.Select(d => _annotationMapper.ToDto(d)));
         }
     }
 }

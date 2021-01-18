@@ -8,6 +8,6 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
 {
     public interface IAnnotationEventService
     {
-        Task<Result<List<AnnotationEvent>>> GetDocumentAnnotations(Guid documentId, Guid? annotationId);
+        Task<Result<List<AnnotationEvent>>> GetDocumentAnnotations(Guid depositionId, Guid? annotationId);
     }
 }

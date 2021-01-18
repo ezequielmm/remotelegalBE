@@ -17,7 +17,7 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
         Task<Result<List<Document>>> GetExhibitsForUser(Guid depositionId, string identity);
         Task<Result<string>> GetFileSignedUrl(string userEmail, Guid documentId);
         Task<Result<Document>> GetDocumentById(Guid documentId, string[] include = null);
-        Task<Result<Document>> AddAnnotation(Guid documentId, AnnotationEvent annotation);
+        Task<Result<Document>> AddAnnotation(Guid depositionId, AnnotationEvent annotation);
         Task<Result> Share(Guid id, string userEmail);
         Task<Result<Document>> GetDocument(Guid id);
         Result<string> GetFileSignedUrl(Document document);

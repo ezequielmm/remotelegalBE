@@ -822,6 +822,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _documentRepositoryMock
                 .Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>()))
                 .ReturnsAsync(document);
+            _depositionServiceMock.Setup(x => x.GetDepositionById(It.IsAny<Guid>()))
+                .ReturnsAsync(Result.Ok(new Deposition { SharingDocumentId = document.Id }));
 
             // Act
             var result = await _service.AddAnnotation(document.Id, annotation);

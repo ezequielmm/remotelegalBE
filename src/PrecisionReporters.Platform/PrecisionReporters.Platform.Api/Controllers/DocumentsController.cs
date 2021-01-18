@@ -26,15 +26,13 @@ namespace PrecisionReporters.Platform.Api.Controllers
         private readonly IDocumentService _documentService;
         private readonly IAnnotationEventService _annotationEventService;
         private readonly IMapper<Document, DocumentDto, CreateDocumentDto> _documentMapper;
-        private readonly IMapper<AnnotationEvent, AnnotationEventDto, CreateAnnotationEventDto> _annotationMapper;
+        
 
         public DocumentsController(IDocumentService documentService, IMapper<Document, DocumentDto, CreateDocumentDto> documentMapper,
-            IMapper<AnnotationEvent, AnnotationEventDto, CreateAnnotationEventDto> annotationMapper,
             IAnnotationEventService annotationEventService)
         {
             _documentService = documentService;
             _documentMapper = documentMapper;
-            _annotationMapper = annotationMapper;
             _annotationEventService = annotationEventService;
         }
 
@@ -101,20 +99,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
             return Ok(fileSignedUrlResult.Value);
         }
 
-        /// <summary>
-        /// Add an annotation to a specific document
-        /// </summary>
-        /// <param name="id">Document identifier</param>
-        /// <returns>Newly created annotation</returns>
-        [HttpPost("[controller]/{id}/annotate")]
-        [UserAuthorize(ResourceType.Document, ResourceAction.Update)]
-        public async Task<ActionResult> AddDocumentAnnotation([ResourceId(ResourceType.Document)] Guid id, CreateAnnotationEventDto annotation)
-        {
-            var addAnnotationResult = await _documentService.AddAnnotation(id, _annotationMapper.ToModel(annotation));
-            if (addAnnotationResult.IsFailed)
-                return WebApiResponses.GetErrorResponse(addAnnotationResult);
-            return Ok();
-        }
+        
 
         /// Shares a documents with all users in a deposition
         /// </summary>
@@ -129,23 +114,6 @@ namespace PrecisionReporters.Platform.Api.Controllers
             if (documentsResult.IsFailed)
                 return WebApiResponses.GetErrorResponse(documentsResult);
             return Ok();
-        }
-
-        /// <summary>
-        /// Get annotations related to a specific document
-        /// </summary>
-        /// <param name="id">Document identifier</param>
-        /// <param name="startingAnnotationId">Last Annotation identifier</param>
-        /// <returns>Document's list of annotations events</returns>
-        [HttpGet("[controller]/{id}/annotations")]
-        [UserAuthorize(ResourceType.Document, ResourceAction.View)]
-        public async Task<ActionResult<List<AnnotationEventDto>>> GetDocumentAnnotations([ResourceId(ResourceType.Document)] Guid id, Guid? startingAnnotationId)
-        {
-            var annotationsResult = await _annotationEventService.GetDocumentAnnotations(id, startingAnnotationId);
-            if (annotationsResult.IsFailed)
-                return WebApiResponses.GetErrorResponse(annotationsResult);
-
-            return Ok(annotationsResult.Value.Select(d => _annotationMapper.ToDto(d)));
         }
         
         /// Gets details of a given document
