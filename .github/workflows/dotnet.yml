@@ -300,6 +300,14 @@ jobs:
         find: "GCP_CLIENTID"
         replace: "${{ secrets.GCP_CLIENT_ID }}"
         exclude: "^$"
+
+    - name: Replace NEW_RELIC_LICENSE_KEY in Dockerfile
+      uses: jacobtomlinson/gha-find-replace@master
+      with:
+        include: './src/PrecisionReporters.Platform/PrecisionReporters.Platform.Api/Docker/Dockerfile'
+        find: "NEW_RELIC_LICENSE_KEY_VALUE"
+        replace: "${{ secrets.NEW_RELIC_LICENSE_KEY }}"
+        exclude: "^$"
         
     - name: Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@v1
