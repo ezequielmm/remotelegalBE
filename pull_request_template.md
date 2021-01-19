@@ -15,6 +15,15 @@ REMOVE THIS LINE: Make sure you name your PR starting with the ticket number (ie
 ## Notes
   
 <Any additional notes that will help reviewers understand the PR.>
+
+## Checklist
+
+- [ ] I added Unit Tests
+- [ ] I verified that the new migrations work OK against a Dev/QA DB backup (Delete if no new migrations were added)
+- [ ] I marked commented code with `// TODO` or removed it
+- [ ] I Dev tested the new feature/bug
+- [ ] I Smoke tested the app
+- [ ] I added @eszturmaj-makingsense as reviewer if configuration variables were added/modified
  
 ## Demo
  
