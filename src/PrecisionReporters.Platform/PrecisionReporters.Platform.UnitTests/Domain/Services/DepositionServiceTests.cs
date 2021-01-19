@@ -489,7 +489,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             // Assert
             depositionRepositoryMock.Verify(mock => mock.GetById(It.Is<Guid>(a => a == depositionId), It.IsAny<string[]>()), Times.Once());
-            depositionRepositoryMock.Verify(mock => mock.Update(It.Is<Deposition>(d => d.Status == DepositionStatus.Complete && d.CompleteDate.HasValue)), Times.Once());
+            depositionRepositoryMock.Verify(mock => mock.Update(It.Is<Deposition>(d => d.Status == DepositionStatus.Completed && d.CompleteDate.HasValue)), Times.Once());
             roomServiceMock.Verify(mock => mock.EndRoom(It.IsAny<Room>()), Times.Once());
             Assert.NotNull(result);
             Assert.True(result.IsSuccess);

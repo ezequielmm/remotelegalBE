@@ -171,7 +171,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 return roomResult.ToResult<Deposition>();
 
             deposition.CompleteDate = DateTime.UtcNow;
-            deposition.Status = DepositionStatus.Complete;
+            deposition.Status = DepositionStatus.Completed;
 
             var updatedDeposition = await _depositionRepository.Update(deposition);
             return Result.Ok(updatedDeposition);
