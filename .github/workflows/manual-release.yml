@@ -172,7 +172,7 @@ jobs:
       with:
         include: 'task-definition-${{ steps.extract-branch.outputs.branch }}.json'
         find: "GCP_PRIVATE_KEY_CONTRACT"
-        replace: "${{ steps.env-vars.outputs.gcp-private-key-contract }}"
+        replace: "${{ secrets.GCP_PRIVATE_KEY_CONTRACT }}"
         exclude: "^$"
     
     - name: Replace GCP client_email in task definition
