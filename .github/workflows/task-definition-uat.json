@@ -4,7 +4,6 @@
             "name": "prp-be-container-uat",
             "image": "747865543072.dkr.ecr.us-east-1.amazonaws.com/prp-be:latest",
             "cpu": 0,
-            "privileged": true,
             "portMappings": [
                 {
                     "containerPort": 80,
