@@ -112,7 +112,7 @@ namespace PrecisionReporters.Platform.Api
             services.Configure<KestrelServerOptions>(options =>
             {
                 // TODO: Check how to return a valid error message with this validation and reduce the value to MaxFileSize only
-                options.Limits.MaxRequestBodySize = appConfiguration.DocumentConfiguration.MaxFileSize * 2;
+                options.Limits.MaxRequestBodySize = appConfiguration.DocumentConfiguration.MaxRequestBodySize;
             });
 
             services.AddScoped(s => s.GetService<IHttpContextAccessor>().HttpContext.User);
