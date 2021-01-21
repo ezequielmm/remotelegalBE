@@ -6,13 +6,6 @@ namespace PrecisionReporters.Platform.Api.Mappers
 {
     public class AnnotationEventMapper : IMapper<AnnotationEvent, AnnotationEventDto, CreateAnnotationEventDto>
     {
-        private readonly IMapper<User, UserDto, CreateUserDto> _userMapper;
-
-        public AnnotationEventMapper(IMapper<User, UserDto, CreateUserDto> userMapper)
-        {
-            _userMapper = userMapper;
-        }
-
         public AnnotationEventDto ToDto(AnnotationEvent model)
         {
             return new AnnotationEventDto
@@ -20,7 +13,7 @@ namespace PrecisionReporters.Platform.Api.Mappers
                 Id = model.Id,
                 CreationDate = new DateTimeOffset(model.CreationDate, TimeSpan.Zero),
                 Action = model.Action,
-                Author = _userMapper.ToDto(model.Author),
+                Author = new UserOutputDto(model.Author),
                 Details = model.Details
             };
         }

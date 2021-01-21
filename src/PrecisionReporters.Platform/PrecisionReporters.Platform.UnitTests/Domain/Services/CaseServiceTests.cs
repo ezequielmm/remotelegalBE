@@ -472,7 +472,6 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _depositionServiceMock.Verify(
                 x => x.GenerateScheduledDeposition(It.IsAny<Deposition>(), It.IsAny<List<Document>>(), It.IsAny<User>()),
                 Times.Exactly(depositions.Count));
-            _caseRepositoryMock.Verify(x => x.Update(It.Is<Case>(a => a.Id == caseId)), Times.Once);
             _loggerMock.Verify(x => x.Log(
                 It.Is<LogLevel>(l => l == LogLevel.Error),
                 It.IsAny<EventId>(),

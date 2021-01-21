@@ -51,6 +51,54 @@ namespace PrecisionReporters.Platform.Data.Migrations
                     b.ToTable("AnnotationEvents");
                 });
 
+            modelBuilder.Entity("PrecisionReporters.Platform.Data.Entities.BreakRoom", b =>
+                {
+                    b.Property<string>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime>("CreationDate")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime");
+
+                    b.Property<string>("DepositionId")
+                        .IsRequired()
+                        .HasColumnType("char(36)");
+
+                    b.Property<bool>("IsLocked")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("text");
+
+                    b.Property<string>("RoomId")
+                        .IsRequired()
+                        .HasColumnType("char(36)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DepositionId");
+
+                    b.HasIndex("RoomId");
+
+                    b.ToTable("BreakRooms");
+                });
+
+            modelBuilder.Entity("PrecisionReporters.Platform.Data.Entities.BreakRoomAttendee", b =>
+                {
+                    b.Property<string>("BreakRoomId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<string>("UserId")
+                        .HasColumnType("char(36)");
+
+                    b.HasKey("BreakRoomId", "UserId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("BreakRoomsAttendees");
+                });
+
             modelBuilder.Entity("PrecisionReporters.Platform.Data.Entities.Case", b =>
                 {
                     b.Property<string>("Id")
@@ -508,6 +556,12 @@ namespace PrecisionReporters.Platform.Data.Migrations
                         },
                         new
                         {
+                            RoleId = "997d199c-3b9a-4103-a320-130b02890a5b",
+                            Action = "View",
+                            CreationDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
+                        },
+                        new
+                        {
                             RoleId = "ef7db7d6-4aae-11eb-b378-0242ac130002",
                             Action = "Delete",
                             CreationDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
@@ -703,6 +757,36 @@ namespace PrecisionReporters.Platform.Data.Migrations
                     b.HasOne("PrecisionReporters.Platform.Data.Entities.Document", "Document")
                         .WithMany("AnnotationEvents")
                         .HasForeignKey("DocumentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("PrecisionReporters.Platform.Data.Entities.BreakRoom", b =>
+                {
+                    b.HasOne("PrecisionReporters.Platform.Data.Entities.Deposition", null)
+                        .WithMany("BreakRooms")
+                        .HasForeignKey("DepositionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("PrecisionReporters.Platform.Data.Entities.Room", "Room")
+                        .WithMany()
+                        .HasForeignKey("RoomId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("PrecisionReporters.Platform.Data.Entities.BreakRoomAttendee", b =>
+                {
+                    b.HasOne("PrecisionReporters.Platform.Data.Entities.BreakRoom", "BreakRoom")
+                        .WithMany("Attendees")
+                        .HasForeignKey("BreakRoomId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("PrecisionReporters.Platform.Data.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

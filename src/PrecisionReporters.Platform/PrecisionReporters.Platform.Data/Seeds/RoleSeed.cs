@@ -28,6 +28,7 @@ namespace PrecisionReporters.Platform.Data.Seeds
             modelBuilder.Entity<Role>().HasData(new Role { Id = depositionAttendeeRoleId, Name = RoleName.DepositionAttendee });
             modelBuilder.Entity<RolePermission>().HasData(new RolePermission { RoleId = depositionAttendeeRoleId, Action = ResourceAction.UploadDocument });
             modelBuilder.Entity<RolePermission>().HasData(new RolePermission { RoleId = depositionAttendeeRoleId, Action = ResourceAction.ViewSharedDocument });
+            modelBuilder.Entity<RolePermission>().HasData(new RolePermission { RoleId = depositionAttendeeRoleId, Action = ResourceAction.View });
 
             //Document Owner
             var documentOwnerRoleId = Guid.Parse("ef7db7d6-4aae-11eb-b378-0242ac130002");

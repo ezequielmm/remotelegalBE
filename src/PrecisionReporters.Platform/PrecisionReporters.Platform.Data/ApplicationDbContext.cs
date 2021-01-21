@@ -25,6 +25,8 @@ namespace PrecisionReporters.Platform.Data
         public DbSet<DepositionEvent> DepositionEvents { get; set; }
         public DbSet<AnnotationEvent> AnnotationEvents { get; set; }
         public DbSet<Transcription> Transcriptions { get; set; }
+        public DbSet<BreakRoom> BreakRooms { get; set; }
+        public DbSet<BreakRoomAttendee> BreakRoomsAttendees { get; set; }
 
         public ApplicationDbContext(DbContextOptions options) : base(options) { }
 
@@ -77,6 +79,8 @@ namespace PrecisionReporters.Platform.Data
             modelBuilder.Entity<AnnotationEvent>()
                 .Property(x => x.Action)
                 .HasConversion(new EnumToStringConverter<AnnotationAction>());
+
+            modelBuilder.Entity<BreakRoomAttendee>().HasKey(x => new { x.BreakRoomId, x.UserId });
 
             // Seeds
             modelBuilder.SeedRoles();

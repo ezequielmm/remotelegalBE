@@ -25,17 +25,19 @@ namespace PrecisionReporters.Platform.Api.Controllers
         private readonly IDepositionService _depositionService;
         private readonly IDocumentService _documentService;
         private readonly IMapper<Deposition, DepositionDto, CreateDepositionDto> _depositionMapper;
+        private readonly IMapper<BreakRoom, BreakRoomDto, object> _breakRoomMapper;
         private readonly IMapper<AnnotationEvent, AnnotationEventDto, CreateAnnotationEventDto> _annotationMapper;
         private readonly IAnnotationEventService _annotationEventService;
 
         public DepositionsController(IDepositionService depositionService,
             IMapper<Deposition, DepositionDto, CreateDepositionDto> depositionMapper,
             IDocumentService documentService, IMapper<AnnotationEvent, AnnotationEventDto, CreateAnnotationEventDto> annotationMapper,
-            IAnnotationEventService annotationEventService)
+            IAnnotationEventService annotationEventService, IMapper<BreakRoom, BreakRoomDto, object> breakRoomMapper)
         {
             _depositionService = depositionService;
             _depositionMapper = depositionMapper;
             _documentService = documentService;
+            _breakRoomMapper = breakRoomMapper;
             _annotationMapper = annotationMapper;
             _annotationEventService = annotationEventService;
         }
@@ -50,7 +52,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
             return Ok(depositions.Select(c => _depositionMapper.ToDto(c)));
         }
 
-        // <summary>
+        /// <summary>
         /// Join to an existing Deposition
         /// </summary>
         /// <param name="id">DepositionId to Join.</param>
@@ -64,7 +66,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
             return Ok(joinDepositionInfoResult.Value);
         }
 
-        // <summary>
+        /// <summary>
         /// End an existing Deposition
         /// </summary>
         /// <param name="depositionId">DepositionId to End.</param>
@@ -80,7 +82,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
             return Ok(_depositionMapper.ToDto(endDepositionResult.Value));
         }
 
-        // <summary>
+        /// <summary>
         /// Get an existing Deposition
         /// </summary>
         /// <param name="depositionId">DepositionId to End.</param>
@@ -95,7 +97,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
             return Ok(_depositionMapper.ToDto(endDepositionResult.Value));
         }
 
-        // <summary>
+        /// <summary>
         /// Change On Record status to a Deposition
         /// </summary>
         /// <param name="depositionId">DepositionId to add the OnRecord / OffRecord event.</param>
@@ -111,6 +113,71 @@ namespace PrecisionReporters.Platform.Api.Controllers
                 return WebApiResponses.GetErrorResponse(goOnTheRecordResult);
 
             return Ok(_depositionMapper.ToDto(goOnTheRecordResult.Value));
+        }
+
+        /// <summary>
+        /// Join to an existing Break Room
+        /// </summary>
+        /// <param name="id">DepositionId to Identified current Deposition.</param>
+        /// <param name="breakRoomId">Break Room Id.</param>
+        /// <returns>Room Token string.</returns>
+        [HttpPost("{id}/breakrooms/{breakRoomId}/join")]
+        [UserAuthorize(ResourceType.Deposition, ResourceAction.View)]
+        public async Task<ActionResult<string>> JoinBreakRoom([ResourceId(ResourceType.Deposition)] Guid id, Guid breakRoomId)
+        {
+            var joinBreakRoomResult = await _depositionService.JoinBreakRoom(id, breakRoomId);
+            if (joinBreakRoomResult.IsFailed)
+                return WebApiResponses.GetErrorResponse(joinBreakRoomResult);
+
+            return Ok(joinBreakRoomResult.Value);
+        }
+
+        /// <summary>
+        /// Leave a Break Room
+        /// </summary>
+        /// <param name="id">DepositionId to Identified current Deposition.</param>
+        /// <param name="breakRoomId">Break Room Id.</param>
+        [HttpPost("{id}/breakrooms/{breakRoomId}/leave")]
+        [UserAuthorize(ResourceType.Deposition, ResourceAction.View)]
+        public async Task<IActionResult> LeaveBreakRoom([ResourceId(ResourceType.Deposition)] Guid id, Guid breakRoomId)
+        {
+            var leaveBreakRoomResult = await _depositionService.LeaveBreakRoom(id, breakRoomId);
+            if (leaveBreakRoomResult.IsFailed)
+                return WebApiResponses.GetErrorResponse(leaveBreakRoomResult);
+
+            return Ok();
+        }
+
+        /// <summary>
+        /// Lock a Break Room
+        /// </summary>
+        /// <param name="id">DepositionId to Identified current Deposition.</param>
+        /// <param name="breakRoomId">Break Room Id.</param>
+        [HttpPost("{id}/breakrooms/{breakRoomId}/lock")]
+        [UserAuthorize(ResourceType.Deposition, ResourceAction.View)]
+        public async Task<ActionResult<BreakRoomDto>> LockBreakRoom([ResourceId(ResourceType.Deposition)] Guid id, Guid breakRoomId, bool lockRoom)
+        {
+            var lockBreakRoomResult = await _depositionService.LockBreakRoom(id, breakRoomId, lockRoom);
+            if (lockBreakRoomResult.IsFailed)
+                return WebApiResponses.GetErrorResponse(lockBreakRoomResult);
+
+            return Ok(_breakRoomMapper.ToDto(lockBreakRoomResult.Value));
+        }
+
+        /// <summary>
+        /// Get Break Rooms list
+        /// </summary>
+        /// <param name="id">DepositionId to Identified current Deposition.</param>
+        /// <returns>A list of Break Rooms in the deposition.</returns>
+        [HttpGet("{id}/breakrooms")]
+        [UserAuthorize(ResourceType.Deposition, ResourceAction.View)]
+        public async Task<ActionResult<List<BreakRoomDto>>> GetDepositionBreakRooms([ResourceId(ResourceType.Deposition)] Guid id)
+        {
+            var breakRoomsResult = await _depositionService.GetDepositionBreakRooms(id);
+            if (breakRoomsResult.IsFailed)
+                return WebApiResponses.GetErrorResponse(breakRoomsResult);
+
+            return Ok(breakRoomsResult.Value.Select(i => _breakRoomMapper.ToDto(i)));
         }
 
         /// <summary>

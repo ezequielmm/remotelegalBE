@@ -17,7 +17,8 @@ namespace PrecisionReporters.Platform.Domain.Services
 {
     public class CaseService : ICaseService
     {
-        private const SortDirection DEFAULT_SORT_DIRECTION = SortDirection.Ascend;
+        private const int DEFAULT_BREAK_ROOMS_AMOUNT = 4;
+        private const string BREAK_ROOM_PREFIX = "BREAK_ROOM";
         private readonly ICaseRepository _caseRepository;
         private readonly IUserService _userService;
         private readonly IDocumentService _documentService;
@@ -100,7 +101,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             };
             var foundCases = await _caseRepository.GetByFilter(
                 orderBy,
-                sortDirection ?? DEFAULT_SORT_DIRECTION,
+                sortDirection ?? SortDirection.Ascend,
                 x => x.Members.Any(m => m.UserId == userResult.Value.Id),
                 includes);
 
@@ -167,6 +168,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 caseToUpdate = await _caseRepository.Update(caseToUpdate);
                 //TODO refactor and move this method to a DepositionService
                 await AddParticipantsAsync(caseToUpdate);
+                await AddBreakRoomsAsync(caseToUpdate);
             }
             catch (Exception ex)
             {
@@ -204,6 +206,28 @@ namespace PrecisionReporters.Platform.Domain.Services
                     }
                 }
             }
+        }
+
+        private async Task AddBreakRoomsAsync(Case caseToUpdate)
+        {
+            if (caseToUpdate.Depositions != null)
+            {
+                foreach (var deposition in caseToUpdate.Depositions)
+                {
+                    if (!deposition.BreakRooms.Any())
+                    {
+                        for (int i = 1; i < (DEFAULT_BREAK_ROOMS_AMOUNT + 1); i++)
+                        {
+                            deposition.BreakRooms.Add(new BreakRoom
+                            {
+                                Name = $"Breakroom {i}",
+                                Room = new Room($"{deposition.Id}_{BREAK_ROOM_PREFIX}_{i}")
+                            });
+                        }
+                    }
+                }
+            }
+            await _caseRepository.Update(caseToUpdate);
         }
 
         private void AddMemberToCase(User userToAdd, Case caseToUpdate)

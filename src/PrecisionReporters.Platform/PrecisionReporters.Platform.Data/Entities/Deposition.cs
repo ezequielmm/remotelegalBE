@@ -52,6 +52,8 @@ namespace PrecisionReporters.Platform.Data.Entities
 
         public User AddedBy { get; set; }
 
+        public List<BreakRoom> BreakRooms { get; set; } = new List<BreakRoom>();
+
         public override void CopyFrom(Deposition entity)
         {
             StartDate = entity.StartDate;
@@ -67,6 +69,7 @@ namespace PrecisionReporters.Platform.Data.Entities
             Status = entity.Status;
             Events = entity.Events;
             IsOnTheRecord = entity.IsOnTheRecord;
+            BreakRooms = entity.BreakRooms;
         }
     }
 }

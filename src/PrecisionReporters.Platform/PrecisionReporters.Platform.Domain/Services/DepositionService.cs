@@ -18,12 +18,15 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly IDepositionRepository _depositionRepository;
         private readonly IUserService _userService;
         private readonly IRoomService _roomService;
+        private readonly IBreakRoomService _breakRoomService;
 
-        public DepositionService(IDepositionRepository depositionRepository, IUserService userService, IRoomService roomService)
+        public DepositionService(IDepositionRepository depositionRepository, IUserService userService, IRoomService roomService,
+             IBreakRoomService breakRoomService)
         {
             _depositionRepository = depositionRepository;
             _userService = userService;
             _roomService = roomService;
+            _breakRoomService = breakRoomService;
         }
 
         public async Task<List<Deposition>> GetDepositions(Expression<Func<Deposition, bool>> filter = null,
@@ -73,13 +76,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             // If caption has a FileKey, find the matching document. If it doesn't has a FileKey, remove caption
             deposition.Caption = !string.IsNullOrWhiteSpace(deposition.FileKey) ? uploadedDocuments.First(d => d.FileKey == deposition.FileKey) : null;
 
-            deposition.Room = new Room
-            {
-                Name = Guid.NewGuid().ToString(),
-                CreationDate = DateTime.UtcNow,
-                StartDate = DateTime.UtcNow,
-                IsRecordingEnabled = deposition.IsVideoRecordingNeeded
-            };
+            deposition.Room = new Room(Guid.NewGuid().ToString(), deposition.IsVideoRecordingNeeded);
 
             return Result.Ok(deposition);
         }
@@ -133,6 +130,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (deposition == null)
                 return Result.Fail(new ResourceNotFoundError($"Deposition with id {id} not found."));
 
+            // TODO: Add distributed lock when our infra allows it
             if (deposition.Room.Status == RoomStatus.Created)
             {
                 await _roomService.StartRoom(deposition.Room);
@@ -271,6 +269,45 @@ namespace PrecisionReporters.Platform.Domain.Services
                 return Result.Fail(new ResourceNotFoundError($"Deposition with id {id} not found."));
 
             return Result.Ok(deposition);
+        }
+
+        public async Task<Result<string>> JoinBreakRoom(Guid depositionId, Guid breakRoomId)
+        {
+            var depositionResult = await GetDepositionById(depositionId);
+            if (depositionResult.IsFailed)
+                return depositionResult.ToResult<string>();
+
+            return await _breakRoomService.JoinBreakRoom(breakRoomId);
+        }
+
+        public Task<Result> LeaveBreakRoom(Guid depositionId, Guid breakRoomId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public async Task<Result<BreakRoom>> LockBreakRoom(Guid depositionId, Guid breakRoomId, bool lockRoom)
+        {
+            var depositionResult = await GetDepositionById(depositionId);
+            if (depositionResult.IsFailed)
+                return depositionResult.ToResult<BreakRoom>();
+
+            return await _breakRoomService.LockBreakRoom(breakRoomId, lockRoom);
+        }
+
+        public async Task<Result<List<BreakRoom>>> GetDepositionBreakRooms(Guid id)
+        {
+            var include = new[] {
+                nameof(Deposition.BreakRooms),
+                $"{nameof(Deposition.BreakRooms)}.{nameof(BreakRoom.Attendees)}",
+                $"{nameof(Deposition.BreakRooms)}.{nameof(BreakRoom.Attendees)}.{nameof(BreakRoomAttendee.User)}"
+            };
+            var depositionResult = await GetByIdWithIncludes(id, include);
+            if (depositionResult.IsFailed)
+                return depositionResult.ToResult<List<BreakRoom>>();
+
+            var breakRooms = depositionResult.Value.BreakRooms;
+            breakRooms.Sort((p, q) => p.Name.CompareTo(q.Name));
+            return Result.Ok(breakRooms);
         }
     }
 }

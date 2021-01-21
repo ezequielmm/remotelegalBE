@@ -138,6 +138,7 @@ namespace PrecisionReporters.Platform.Api
             services.AddSingleton<IMapper<DepositionEvent, DepositionEventDto, CreateDepositionEventDto>, DepositionEventMapper>();
             services.AddSingleton<IMapper<AnnotationEvent, AnnotationEventDto, CreateAnnotationEventDto>, AnnotationEventMapper>();
             services.AddSingleton<IMapper<Transcription, TranscriptionDto, object>, TranscriptionMapper>();
+            services.AddSingleton<IMapper<BreakRoom, BreakRoomDto, object>, BreakRoomMapper>();
 
             // Websockets
             services.AddTransient<ITranscriptionsHandler, TranscriptionsHandler>();
@@ -189,6 +190,7 @@ namespace PrecisionReporters.Platform.Api
                 _ => new AmazonSimpleEmailServiceClient(appConfiguration.CognitoConfiguration.AWSAccessKey, appConfiguration.CognitoConfiguration.AWSSecretAccessKey, RegionEndpoint.USEast1));
 
             services.AddScoped<ICompositionService, CompositionService>();
+            services.AddScoped<IBreakRoomService, BreakRoomService>();
             services.AddTransient<ITranscriptionService, TranscriptionService>();
             services.Configure<GcpConfiguration>(x =>
             {
@@ -217,6 +219,7 @@ namespace PrecisionReporters.Platform.Api
             services.AddScoped<IDocumentUserDepositionRepository, DocumentUserDepositionRepository>();
             services.AddScoped<IAnnotationEventRepository, AnnotationEventRepository>();
             services.AddTransient<ITranscriptionRepository, TranscriptionRepository>();
+            services.AddScoped<IBreakRoomRepository, BreakRoomRepository>();
 
             services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseMySQL(appConfiguration.ConnectionStrings.MySqlConnection));

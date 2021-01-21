@@ -24,6 +24,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         private readonly Mock<IDepositionRepository> _depositionRepositoryMock;
         private readonly Mock<IUserService> _userServiceMock;
         private readonly Mock<IRoomService> _roomServiceMock;
+        private readonly Mock<IBreakRoomService> _breakRoomServiceMock;
 
         private readonly List<Deposition> _depositions = new List<Deposition>();
 
@@ -44,7 +45,9 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             _roomServiceMock = new Mock<IRoomService>();
 
-            _depositionService = new DepositionService(_depositionRepositoryMock.Object, _userServiceMock.Object, _roomServiceMock.Object);
+            _breakRoomServiceMock = new Mock<IBreakRoomService>();
+
+            _depositionService = new DepositionService(_depositionRepositoryMock.Object, _userServiceMock.Object, _roomServiceMock.Object, _breakRoomServiceMock.Object);
         }
 
         public void Dispose()
@@ -731,16 +734,20 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         private DepositionService InitializeService(
             Mock<IDepositionRepository> depositionRepository = null,
             Mock<IUserService> userService = null,
-            Mock<IRoomService> roomService = null)
+            Mock<IRoomService> roomService = null,
+            Mock<IBreakRoomService> breakRoomService = null)
         {
             var depositionRepositoryMock = depositionRepository ?? new Mock<IDepositionRepository>();
             var userServiceMock = userService ?? new Mock<IUserService>();
             var roomServiceMock = roomService ?? new Mock<IRoomService>();
+            var breakRoomServiceMock = breakRoomService ?? new Mock<IBreakRoomService>();
+             
 
             return new DepositionService(
                 depositionRepositoryMock.Object,
                 userServiceMock.Object,
-                roomServiceMock.Object
+                roomServiceMock.Object,
+                breakRoomServiceMock.Object
                 );
         }
     }

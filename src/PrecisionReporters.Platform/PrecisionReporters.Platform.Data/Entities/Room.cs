@@ -22,6 +22,15 @@ namespace PrecisionReporters.Platform.Data.Entities
 
         public Composition Composition { get; set; }
 
+        public Room() {}
+
+        public Room(string name, bool isRecordingEnabled = false)
+        {
+            Name = name;
+            StartDate = DateTime.UtcNow;
+            IsRecordingEnabled = isRecordingEnabled;
+        }
+
         public override void CopyFrom(Room entity)
         {
             Name = entity.Name;

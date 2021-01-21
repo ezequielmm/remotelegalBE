@@ -9,7 +9,7 @@ namespace PrecisionReporters.Platform.Api.Dtos
     {
         public Guid Id { get; set; }
         public DateTimeOffset CreationDate { get; set; }
-        public UserDto Author { get; set; }
+        public UserOutputDto Author { get; set; }
 
         [JsonConverter(typeof(StringEnumConverter))]
         public AnnotationAction Action { get; set; }

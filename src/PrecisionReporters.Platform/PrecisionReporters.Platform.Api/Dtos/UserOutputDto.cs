@@ -1,4 +1,5 @@
 ﻿using System;
+using PrecisionReporters.Platform.Data.Entities;
 
 namespace PrecisionReporters.Platform.Api.Dtos
 {
@@ -7,5 +8,16 @@ namespace PrecisionReporters.Platform.Api.Dtos
         public Guid Id { get; set; }
         public string FirstName { get; set; }
         public string LastName { get; set; }
+        public string EmailAddress { get; set; }
+
+        public UserOutputDto() { }
+
+        public UserOutputDto(User user)
+        {
+            Id = user.Id;
+            FirstName = user.FirstName;
+            LastName = user.LastName;
+            EmailAddress = user.EmailAddress;
+        }
     }
 }
