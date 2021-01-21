@@ -731,6 +731,116 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             Assert.Equal(user, result.Value.AddedBy);
         }
 
+        [Fact]
+        public async Task CheckParticipant_ShouldReturnFail_ForNoDeposition()
+        {
+            // Arrange
+            var participantEmail = "participant@mail.com";
+            var depositionId = Guid.NewGuid();
+            Deposition deposition = null;
+
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
+            
+            // Act
+            var result = await _depositionService.CheckParticipant(depositionId, participantEmail);
+
+            // Assert
+            Assert.True(result.IsFailed);
+        }
+
+        [Fact]
+        public async Task CheckParticipant_ShouldReturnIsUserAndParticipant_ForUserParticipant()
+        {
+            // Arrange
+            var participantEmail = "participant@mail.com";
+
+            var userEmail = "exisitingUser@mail.com";
+            var user = new User { Id = Guid.NewGuid(), EmailAddress = userEmail };
+
+            var depositionId = Guid.NewGuid();
+            var deposition = DepositionFactory.GetDepositionWithParticipantEmail(participantEmail);
+
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
+            _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(user));
+
+            // Act
+            var result = await _depositionService.CheckParticipant(depositionId, participantEmail);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.True(result.Value.Item2);
+            Assert.NotNull(result.Value.Item1);
+        }
+
+        [Fact]
+        public async Task CheckParticipant_ShouldReturnIsUserFalseAndParticipant_ForNoUserAndParticipant()
+        {
+            // Arrange
+            var participantEmail = "participant@mail.com";
+
+            var depositionId = Guid.NewGuid();
+            var deposition = DepositionFactory.GetDepositionWithParticipantEmail(participantEmail);
+
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
+            _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Fail(new Error()));
+
+            // Act
+            var result = await _depositionService.CheckParticipant(depositionId, participantEmail);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.True(!result.Value.Item2);
+            Assert.NotNull(result.Value.Item1);
+        }
+
+        [Fact]
+        public async Task CheckParticipant_ShouldReturnIsUserTrueAndParticipantNull_ForUserNoParticipant()
+        {
+            // Arrange
+            var participantEmail = "participant@mail.com";
+
+            var userEmail = "exisitingUser@mail.com";
+            var user = new User { Id = Guid.NewGuid(), EmailAddress = userEmail };
+
+            var depositionId = Guid.NewGuid();
+            var deposition = DepositionFactory.GetDepositionWithParticipantEmail("foo@mail.com");
+
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
+            _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(user));
+
+            // Act
+            var result = await _depositionService.CheckParticipant(depositionId, participantEmail);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.True(result.Value.Item2);
+            Assert.Null(result.Value.Item1);
+        }
+
+        [Fact]
+        public async Task CheckParticipant_ShouldReturnIsUserFalseAndParticipantNull_ForNoUserAndNoParticipant()
+        {
+            // Arrange
+            var participantEmail = "participant@mail.com";
+
+            var userEmail = "exisitingUser@mail.com";
+            var user = new User { Id = Guid.NewGuid(), EmailAddress = userEmail };
+
+            var depositionId = Guid.NewGuid();
+            var deposition = DepositionFactory.GetDepositionWithParticipantEmail("foo@mail.com");
+
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
+            _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Fail(new Error()));
+
+            // Act
+            var result = await _depositionService.CheckParticipant(depositionId, participantEmail);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.True(!result.Value.Item2);
+            Assert.Null(result.Value.Item1);
+        }
+
         private DepositionService InitializeService(
             Mock<IDepositionRepository> depositionRepository = null,
             Mock<IUserService> userService = null,

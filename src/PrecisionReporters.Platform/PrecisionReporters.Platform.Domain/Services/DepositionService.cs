@@ -181,10 +181,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (depositionResult.IsFailed)
                 return depositionResult.ToResult<Participant>();
 
-            if (depositionResult.Value.Witness != null && depositionResult.Value.Witness.Email == participantEmail)
-                return Result.Ok(depositionResult.Value.Witness);
-
-            var participant = depositionResult.Value.Participants.FirstOrDefault(p => p.Email == participantEmail);
+            var participant = GetParticipantByEmail(depositionResult.Value, participantEmail);
 
             if (participant == null)
                 return Result.Fail(new ResourceNotFoundError($"Participant with email {participantEmail} not found"));
@@ -308,6 +305,35 @@ namespace PrecisionReporters.Platform.Domain.Services
             var breakRooms = depositionResult.Value.BreakRooms;
             breakRooms.Sort((p, q) => p.Name.CompareTo(q.Name));
             return Result.Ok(breakRooms);
+        }
+        
+        public async Task<Result<(Participant, bool)>> CheckParticipant(Guid id, string emailAddress)
+        {
+            var include = new[] { nameof(Deposition.Participants), nameof(Deposition.Witness)};
+
+            var depositionResult = await GetByIdWithIncludes(id, include);
+
+            if (depositionResult.IsFailed)
+                return depositionResult.ToResult<(Participant, bool)>();
+
+            var userResult = await _userService.GetUserByEmail(emailAddress);
+            var isUser = userResult.IsSuccess;
+
+            var participant = GetParticipantByEmail(depositionResult.Value, emailAddress);
+
+            return Result.Ok((participant, isUser));
+        }
+
+        private Participant GetParticipantByEmail(Deposition deposition, string emailAddress)
+        {
+            Participant participant = null;
+            if (deposition.Witness != null && deposition.Witness.Email == emailAddress)
+                participant = deposition.Witness;
+
+            if (participant == null)
+                participant = deposition.Participants.FirstOrDefault(p => p.Email == emailAddress);
+
+            return participant;
         }
     }
 }

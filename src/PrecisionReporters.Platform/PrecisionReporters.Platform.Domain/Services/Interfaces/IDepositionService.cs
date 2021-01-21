@@ -27,5 +27,6 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
         Task<Result> LeaveBreakRoom(Guid depositionId, Guid breakRoomId);
         Task<Result<BreakRoom>> LockBreakRoom(Guid depositionId, Guid breakRoomId, bool lockRoom);
         Task<Result<List<BreakRoom>>> GetDepositionBreakRooms(Guid id);
+        Task<Result<(Participant, bool)>> CheckParticipant(Guid id, string emailAddress);
     }
 }

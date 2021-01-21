@@ -28,11 +28,13 @@ namespace PrecisionReporters.Platform.Api.Controllers
         private readonly IMapper<BreakRoom, BreakRoomDto, object> _breakRoomMapper;
         private readonly IMapper<AnnotationEvent, AnnotationEventDto, CreateAnnotationEventDto> _annotationMapper;
         private readonly IAnnotationEventService _annotationEventService;
+        private readonly IMapper<Participant, ParticipantDto, CreateParticipantDto> _participantMapper;
 
         public DepositionsController(IDepositionService depositionService,
             IMapper<Deposition, DepositionDto, CreateDepositionDto> depositionMapper,
             IDocumentService documentService, IMapper<AnnotationEvent, AnnotationEventDto, CreateAnnotationEventDto> annotationMapper,
-            IAnnotationEventService annotationEventService, IMapper<BreakRoom, BreakRoomDto, object> breakRoomMapper)
+            IMapper<BreakRoom, BreakRoomDto, object> breakRoomMapper, IAnnotationEventService annotationEventService,
+            IMapper<Participant, ParticipantDto, CreateParticipantDto> participantMapper)
         {
             _depositionService = depositionService;
             _depositionMapper = depositionMapper;
@@ -40,6 +42,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
             _breakRoomMapper = breakRoomMapper;
             _annotationMapper = annotationMapper;
             _annotationEventService = annotationEventService;
+            _participantMapper = participantMapper;
         }
 
         [HttpGet]
@@ -246,6 +249,29 @@ namespace PrecisionReporters.Platform.Api.Controllers
                 return WebApiResponses.GetErrorResponse(annotationsResult);
 
             return Ok(annotationsResult.Value.Select(d => _annotationMapper.ToDto(d)));
+        }
+
+        /// <summary>
+        /// Checks if the email address belongs to a registered user.
+        /// </summary>
+        /// <param name="id">Deposition identifier</param>
+        /// <param name="emailAddress">User email address</param>
+        /// <returns>A Participant if exists</returns>
+        [HttpGet("{id}/checkParticipant")]
+        [AllowAnonymous]
+        public async Task<ActionResult<ParticipantValidationDto>> checkParticipant(Guid id, string emailAddress)
+        {
+            var participantResult = await _depositionService.CheckParticipant(id, emailAddress);
+            if (participantResult.IsFailed)
+                return WebApiResponses.GetErrorResponse(participantResult);
+
+            var participantValidation = new ParticipantValidationDto
+            {
+                IsUser = participantResult.Value.Item2,
+                Participant = participantResult.Value.Item1 != null ? _participantMapper.ToDto(participantResult.Value.Item1) : null
+            };
+
+            return Ok(participantValidation);
         }
     }
 }
