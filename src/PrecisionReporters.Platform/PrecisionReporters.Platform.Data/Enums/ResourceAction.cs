@@ -9,6 +9,7 @@
         EndDeposition,
         Recording,
         UploadDocument,
-        ViewSharedDocument
+        ViewSharedDocument,
+        StampExhibit
     }
 }

@@ -22,6 +22,7 @@ namespace PrecisionReporters.Platform.Data.Seeds
             modelBuilder.Entity<RolePermission>().HasData(new RolePermission { RoleId = courtReporterRoleId, Action = ResourceAction.EndDeposition });
             modelBuilder.Entity<RolePermission>().HasData(new RolePermission { RoleId = courtReporterRoleId, Action = ResourceAction.Recording });
             modelBuilder.Entity<RolePermission>().HasData(new RolePermission { RoleId = courtReporterRoleId, Action = ResourceAction.ViewSharedDocument });
+            modelBuilder.Entity<RolePermission>().HasData(new RolePermission { RoleId = courtReporterRoleId, Action = ResourceAction.StampExhibit });
 
             // deposition attendee
             var depositionAttendeeRoleId = Guid.Parse("997d199c-3b9a-4103-a320-130b02890a5b");
