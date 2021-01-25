@@ -136,44 +136,6 @@
                     "awslogs-stream-prefix": "ecs"
                 }
             }
-        },
-        {
-            "environment": [
-                {
-                    "name": "NRIA_OVERRIDE_HOST_ROOT",
-                    "value": ""
-                },
-                {
-                    "name": "NRIA_IS_FORWARD_ONLY",
-                    "value": "true"
-                },
-                {
-                    "name": "FARGATE",
-                    "value": "true"
-                },
-                {
-                    "name": "ENABLE_NRI_ECS",
-                    "value": "true"
-                },
-                {
-                    "name": "NRIA_PASSTHROUGH_ENVIRONMENT",
-                    "value": "ECS_CONTAINER_METADATA_URI,ENABLE_NRI_ECS,FARGATE"
-                },
-                {
-                    "name": "NRIA_CUSTOM_ATTRIBUTES",
-                    "value": "{\"nrDeployMethod\":\"downloadPage\"}"
-                }
-            ],
-            "secrets": [
-                {
-                    "valueFrom": "arn:aws:ssm:us-east-1:747865543072:parameter/newrelic-infra/ecs/license-key",
-                    "name": "NRIA_LICENSE_KEY"
-                }
-            ],
-            "cpu": 128,
-            "memoryReservation": 512,
-            "image": "newrelic/infrastructure-bundle:2.1.2",
-            "name": "newrelic-infra"
         }
     ],
     "family": "prp-be-task-qa",
@@ -186,5 +148,5 @@
         "FARGATE"
     ],
     "cpu": "512",
-    "memory": "2048"
+    "memory": "1024"
 }
