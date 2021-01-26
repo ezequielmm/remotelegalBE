@@ -29,12 +29,13 @@ namespace PrecisionReporters.Platform.Api.Controllers
         private readonly IMapper<AnnotationEvent, AnnotationEventDto, CreateAnnotationEventDto> _annotationMapper;
         private readonly IAnnotationEventService _annotationEventService;
         private readonly IMapper<Participant, ParticipantDto, CreateParticipantDto> _participantMapper;
+        private readonly IMapper<Participant, object, CreateGuestDto> _guestMapper;
 
         public DepositionsController(IDepositionService depositionService,
             IMapper<Deposition, DepositionDto, CreateDepositionDto> depositionMapper,
             IDocumentService documentService, IMapper<AnnotationEvent, AnnotationEventDto, CreateAnnotationEventDto> annotationMapper,
             IMapper<BreakRoom, BreakRoomDto, object> breakRoomMapper, IAnnotationEventService annotationEventService,
-            IMapper<Participant, ParticipantDto, CreateParticipantDto> participantMapper)
+            IMapper<Participant, ParticipantDto, CreateParticipantDto> participantMapper, IMapper<Participant, object, CreateGuestDto> guestMapper)
         {
             _depositionService = depositionService;
             _depositionMapper = depositionMapper;
@@ -43,6 +44,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
             _annotationMapper = annotationMapper;
             _annotationEventService = annotationEventService;
             _participantMapper = participantMapper;
+            _guestMapper = guestMapper;
         }
 
         [HttpGet]
@@ -272,6 +274,22 @@ namespace PrecisionReporters.Platform.Api.Controllers
             };
 
             return Ok(participantValidation);
+        }
+
+        /// <summary>
+        /// Checks if the email address belongs to a registered user.
+        /// </summary>
+        /// <param name="id">Deposition identifier</param>
+        /// <returns>A Participant if exists</returns>
+        [HttpPost("{id}/addParticipant")]
+        [AllowAnonymous]
+        public async Task<ActionResult<GuestToken>> JoinGuestParticipant(Guid id, CreateGuestDto guest)
+        {
+            var tokenResult = await _depositionService.JoinGuestParticipant(id, _guestMapper.ToModel(guest));
+            if (tokenResult.IsFailed)
+                return WebApiResponses.GetErrorResponse(tokenResult);
+
+            return Ok(tokenResult.Value);
         }
     }
 }

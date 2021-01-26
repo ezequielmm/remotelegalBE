@@ -75,5 +75,14 @@ namespace PrecisionReporters.Platform.Domain.Services
             var permissions = await _userResourceRoleRepository.GetUserActionsForResource(participant.User.Id, ResourceType.Deposition, depositionId);
             return Result.Ok(permissions);
         }
+
+        public async Task AddParticipantPermissions(Participant participant)
+        {
+            if (participant.User != null)
+            {
+                await AddUserRole(participant.User.Id, participant.DepositionId.Value,
+                    ResourceType.Deposition, ParticipantType.CourtReporter == participant.Role ? RoleName.DepositionCourtReporter : RoleName.DepositionAttendee);
+            }
+        }
     }
 }

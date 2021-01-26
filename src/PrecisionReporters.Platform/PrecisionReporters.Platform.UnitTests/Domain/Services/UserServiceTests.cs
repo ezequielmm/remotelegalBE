@@ -242,6 +242,111 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             Assert.NotEmpty(result);
         }
 
+        [Fact]
+        public async Task AddGuestUser_ShouldCreateNewUser_IfUserDoesNotExist()
+        {
+            // Arrange
+            var email = "User1@TestMail.com";
+            var user = UserFactory.GetUserByGivenEmail(email);
+
+            var userRepositoryMock = new Mock<IUserRepository>();
+            userRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<User, bool>>>(), null)).ReturnsAsync((User)null);
+
+            var cognitoServiceMock = new Mock<ICognitoService>();
+            cognitoServiceMock.Setup(x => x.CheckUserExists(It.IsAny<string>())).ReturnsAsync(Result.Fail(new Error()));
+
+            var transactionHandlerMock = new Mock<ITransactionHandler>();
+            transactionHandlerMock
+                .Setup(x => x.RunAsync(It.IsAny<Func<Task>>()))
+                .Returns(async (Func<Task> action) =>
+                {
+                    await action();
+                    return Result.Ok();
+                });
+
+            var service = InitializeService(userRepository: userRepositoryMock, cognitoService: cognitoServiceMock
+                , transactionHandler: transactionHandlerMock);
+
+            // Act
+            var result = await service.AddGuestUser(user);
+
+            // Assert
+            userRepositoryMock.Verify(x => x.Create(It.IsAny<User>()), Times.Once);
+            cognitoServiceMock.Verify(x => x.CreateAsync(It.IsAny<User>()), Times.Once);
+
+            Assert.True(result.IsSuccess);
+        }
+
+        [Fact]
+        public async Task AddGuestUser_ShouldCreateOnlyCognitoUser_IfUserExistsInDB()
+        {
+            // Arrange
+            var email = "User1@TestMail.com";
+            var user = UserFactory.GetUserByGivenEmail(email);
+
+            var userRepositoryMock = new Mock<IUserRepository>();
+            userRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<User, bool>>>(), null)).ReturnsAsync(user);
+
+            var cognitoServiceMock = new Mock<ICognitoService>();
+            cognitoServiceMock.Setup(x => x.CheckUserExists(It.IsAny<string>())).ReturnsAsync(Result.Fail(new Error()));
+
+            var transactionHandlerMock = new Mock<ITransactionHandler>();
+            transactionHandlerMock
+                .Setup(x => x.RunAsync(It.IsAny<Func<Task>>()))
+                .Returns(async (Func<Task> action) =>
+                {
+                    await action();
+                    return Result.Ok();
+                });
+
+            var service = InitializeService(userRepository: userRepositoryMock, cognitoService: cognitoServiceMock
+                , transactionHandler: transactionHandlerMock);
+
+            // Act
+            var result = await service.AddGuestUser(user);
+
+            // Assert
+            userRepositoryMock.Verify(x => x.Create(It.IsAny<User>()), Times.Never);
+            cognitoServiceMock.Verify(x => x.CreateAsync(It.IsAny<User>()), Times.Once);
+
+            Assert.True(result.IsSuccess);
+        }
+
+        [Fact]
+        public async Task AddGuestUser_ShouldNotCreateAUser_IfUserExistsInDBAndCognito()
+        {
+            // Arrange
+            var email = "User1@TestMail.com";
+            var user = UserFactory.GetUserByGivenEmail(email);
+
+            var userRepositoryMock = new Mock<IUserRepository>();
+            userRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<User, bool>>>(), null)).ReturnsAsync(user);
+
+            var cognitoServiceMock = new Mock<ICognitoService>();
+            cognitoServiceMock.Setup(x => x.CheckUserExists(It.IsAny<string>())).ReturnsAsync(Result.Ok());
+
+            var transactionHandlerMock = new Mock<ITransactionHandler>();
+            transactionHandlerMock
+                .Setup(x => x.RunAsync(It.IsAny<Func<Task>>()))
+                .Returns(async (Func<Task> action) =>
+                {
+                    await action();
+                    return Result.Ok();
+                });
+
+            var service = InitializeService(userRepository: userRepositoryMock, cognitoService: cognitoServiceMock
+                , transactionHandler: transactionHandlerMock);
+
+            // Act
+            var result = await service.AddGuestUser(user);
+
+            // Assert
+            userRepositoryMock.Verify(x => x.Create(It.IsAny<User>()), Times.Never);
+            cognitoServiceMock.Verify(x => x.CreateAsync(It.IsAny<User>()), Times.Never);
+
+            Assert.True(result.IsSuccess);
+        }
+
         private UserService InitializeService(
             Mock<ILogger<UserService>> log = null,
             Mock<IUserRepository> userRepository = null,

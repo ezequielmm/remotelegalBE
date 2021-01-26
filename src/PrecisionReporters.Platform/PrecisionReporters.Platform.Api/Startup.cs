@@ -4,6 +4,7 @@ using Amazon.Runtime;
 using Amazon.S3;
 using Amazon.S3.Transfer;
 using Amazon.SimpleEmail;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
@@ -139,6 +140,7 @@ namespace PrecisionReporters.Platform.Api
             services.AddSingleton<IMapper<AnnotationEvent, AnnotationEventDto, CreateAnnotationEventDto>, AnnotationEventMapper>();
             services.AddSingleton<IMapper<Transcription, TranscriptionDto, object>, TranscriptionMapper>();
             services.AddSingleton<IMapper<BreakRoom, BreakRoomDto, object>, BreakRoomMapper>();
+            services.AddSingleton<IMapper<Participant, object, CreateGuestDto>, GuestParticipantMapper>();
 
             // Websockets
             services.AddTransient<ITranscriptionsHandler, TranscriptionsHandler>();
@@ -164,6 +166,9 @@ namespace PrecisionReporters.Platform.Api
                 x.AWSSecretAccessKey = appConfiguration.CognitoConfiguration.AWSSecretAccessKey;
                 x.ClientId = appConfiguration.CognitoConfiguration.ClientId;
                 x.UserPoolId = appConfiguration.CognitoConfiguration.UserPoolId;
+                x.GuestUsersGroup = appConfiguration.CognitoConfiguration.GuestUsersGroup;
+                x.GuestUsersPass = appConfiguration.CognitoConfiguration.GuestUsersPass;
+                x.GuestClientId = appConfiguration.CognitoConfiguration.GuestClientId;
             });
 
             services.AddScoped<IPermissionService, PermissionService>();
@@ -233,10 +238,11 @@ namespace PrecisionReporters.Platform.Api
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
                 options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
 
-            }).AddJwtBearer(options =>
+            }).AddJwtBearer("FullUserAuthenticationScheme", options =>
             {
                 options.Audience = appConfiguration.CognitoConfiguration.ClientId;
                 options.Authority = appConfiguration.CognitoConfiguration.Authority;
+                
                 options.Events = new JwtBearerEvents
                 {
                     OnMessageReceived = context =>
@@ -249,7 +255,29 @@ namespace PrecisionReporters.Platform.Api
                         return Task.CompletedTask;
                     }
                 };
-            });
+            })
+            .AddJwtBearer("GuestAuthenticationScheme", options =>
+                {
+                    options.Authority = appConfiguration.CognitoConfiguration.Authority;
+                    options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+                    {
+                        ValidateAudience = false,
+                        ValidateIssuer = false
+                    };
+                    options.Events = new JwtBearerEvents
+                    {
+                        OnMessageReceived = context =>
+                        {
+                            var accessToken = context.Request.Query["token"];
+                            if (!string.IsNullOrEmpty(accessToken))
+                            {
+                                context.Token = accessToken;
+                            }
+                            return Task.CompletedTask;
+                        }
+                    };
+                }
+            );
 
             services.AddMvc()
                 .AddJsonOptions(opts => opts.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
@@ -284,7 +312,18 @@ namespace PrecisionReporters.Platform.Api
 
             app.UseCors(AllowedOrigins);
 
-            app.UseAuthentication();
+            app.Use(async (context, next) =>
+            {
+                var result = await context.AuthenticateAsync("FullUserAuthenticationScheme");
+                if (!result.Succeeded)
+                {
+                    result = await context.AuthenticateAsync("GuestAuthenticationScheme");
+                }
+                context.User = result.Principal;
+
+                await next();
+            });
+
             app.UseAuthorization();
 
             app.UseHealthChecks("/healthcheck");

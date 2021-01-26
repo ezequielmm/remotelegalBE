@@ -26,6 +26,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly ITransactionHandler _transactionHandler;
         private readonly UrlPathConfiguration _urlPathConfiguration;
         private readonly ClaimsPrincipal _principal;
+
         public UserService(ILogger<UserService> log, IUserRepository userRepository, ICognitoService cognitoService, IAwsEmailService awsEmailService,
             IVerifyUserService verifyUserService, ITransactionHandler transactionHandler, IOptions<UrlPathConfiguration> urlPathConfiguration, ClaimsPrincipal principal)
         {
@@ -58,11 +59,19 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (transactionResult.IsFailed)
                 return transactionResult;
 
+            await SendEmailVerification(newUser, verifyUser);
+
+            return Result.Ok(newUser);
+        }
+
+        private async Task SendEmailVerification(User user, VerifyUser verifyUser)
+        {
+            if (user.IsGuest)
+                return;
+
             var verificationLink = $"{_urlPathConfiguration.FrontendBaseUrl}{_urlPathConfiguration.VerifyUserUrl}{verifyUser.Id}";
             var emailData = await SetVerifyEmailTemplate(user.EmailAddress, user.FirstName, verificationLink);
             await _awsEmailService.SetTemplateEmailRequest(emailData);
-
-            return Result.Ok(newUser);
         }
 
         public async Task<VerifyUser> VerifyUser(Guid verifyuserId)
@@ -109,6 +118,9 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         private async Task<VerifyUser> SaveVerifyUser(User user)
         {
+            if (user.IsGuest)
+                return null;
+
             var verifyUser = new VerifyUser
             {
                 User = user,
@@ -142,5 +154,34 @@ namespace PrecisionReporters.Platform.Domain.Services
             return user;
         }
 
+        public async Task<Result<GuestToken>> LoginGuestAsync(string emailAddress)
+        {
+            var userResult = await GetUserByEmail(emailAddress);
+            if (userResult.IsFailed)
+                return userResult.ToResult<GuestToken>();
+            if (!userResult.Value.IsGuest)
+                return Result.Fail(new InvalidInputError("Invalid user"));
+
+            return await _cognitoService.LoginGuestAsync(userResult.Value);
+        }
+
+        public async Task<Result<User>> AddGuestUser(User user)
+        {
+            var userData = await _userRepository.GetFirstOrDefaultByFilter(x => x.EmailAddress.Equals(user.EmailAddress));
+            var cognitoUser = await _cognitoService.CheckUserExists(user.EmailAddress);
+
+            var transactionResult = await _transactionHandler.RunAsync(async () =>
+            {
+                if (userData == null)
+                    user = await _userRepository.Create(user);
+                if (cognitoUser.IsFailed)
+                    await _cognitoService.CreateAsync(user);
+            });
+
+            if (transactionResult.IsFailed)
+                return transactionResult;
+           
+            return Result.Ok(user);
+        }
     }
 }

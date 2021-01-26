@@ -32,6 +32,8 @@ jobs:
             echo -e ::set-output name=cognitoconfig-client-id::'${{ secrets.COGNITOCONFIG_CLIENTID_UAT }}'
             echo -e ::set-output name=cognitoconfig-userpool-id::'${{ secrets.COGNITOCONFIG_USERPOOLID_UAT }}'
             echo -e ::set-output name=cognitoconfig-authority::'${{ secrets.COGNITOCONFIG_AUTHORITY_UAT }}'
+            echo -e ::set-output name=cognitoconfig-guest-client-id::'${{ secrets.COGNITOCONFIG_GUEST_CLIENT_ID_UAT }}'
+            echo -e ::set-output name=cognitoconfig-guest-user-pass::'${{ secrets.COGNITOCONFIG_GUEST_USER_PASS_UAT }}'
             echo -e ::set-output name=twilioconfig-accounts-id::'${{ secrets.TWILIOCONFIG_ACCOUNTSID_UAT }}'
             echo -e ::set-output name=twilioconfig-authtoken::'${{ secrets.TWILIOCONFIG_AUTHTOKEN_UAT }}'
             echo -e ::set-output name=twilioconfig-apikeys-id::'${{ secrets.TWILIOCONFIG_APIKEYSID_UAT }}'
@@ -49,6 +51,8 @@ jobs:
             echo -e ::set-output name=cognitoconfig-client-id::'${{ secrets.COGNITOCONFIG_CLIENTID_PROD }}'
             echo -e ::set-output name=cognitoconfig-userpool-id::'${{ secrets.COGNITOCONFIG_USERPOOLID_PROD }}'
             echo -e ::set-output name=cognitoconfig-authority::'${{ secrets.COGNITOCONFIG_AUTHORITY_PROD }}'
+            echo -e ::set-output name=cognitoconfig-guest-client-id::'${{ secrets.COGNITOCONFIG_GUEST_CLIENT_ID_PROD }}'
+            echo -e ::set-output name=cognitoconfig-guest-user-pass::'${{ secrets.COGNITOCONFIG_GUEST_USER_PASS_PROD }}'
             echo -e ::set-output name=twilioconfig-accounts-id::'${{ secrets.TWILIOCONFIG_ACCOUNTSID_PROD }}'
             echo -e ::set-output name=twilioconfig-authtoken::'${{ secrets.TWILIOCONFIG_AUTHTOKEN_PROD }}'
             echo -e ::set-output name=twilioconfig-apikeys-id::'${{ secrets.TWILIOCONFIG_APIKEYSID_PROD }}'
@@ -109,6 +113,22 @@ jobs:
         include: 'task-definition-${{ steps.extract-branch.outputs.branch }}.json'
         find: "AUTHORITY"
         replace: "${{ steps.env-vars.outputs.cognitoconfig-authority }}"
+        exclude: "^$"
+
+    - name: Replace Cognito GuestClientId in task definition
+      uses: jacobtomlinson/gha-find-replace@master
+      with:
+        include: 'task-definition-${{ steps.extract-branch.outputs.branch }}.json'
+        find: "GUEST_CLIENT_ID"
+        replace: "${{ steps.env-vars.outputs.cognitoconfig-guest-client-id }}"
+        exclude: "^$"
+
+    - name: Replace Cognito GuestUsersPass in task definition
+      uses: jacobtomlinson/gha-find-replace@master
+      with:
+        include: 'task-definition-${{ steps.extract-branch.outputs.branch }}.json'
+        find: "GUEST_USER_PASS"
+        replace: "${{ steps.env-vars.outputs.cognitoconfig-guest-user-pass }}"
         exclude: "^$"
     
     - name: Replace Twilio AccountSid in task definition

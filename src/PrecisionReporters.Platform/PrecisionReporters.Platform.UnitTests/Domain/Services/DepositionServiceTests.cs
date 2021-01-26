@@ -25,6 +25,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         private readonly Mock<IUserService> _userServiceMock;
         private readonly Mock<IRoomService> _roomServiceMock;
         private readonly Mock<IBreakRoomService> _breakRoomServiceMock;
+        private readonly Mock<IPermissionService> _permissionServiceMock;
 
         private readonly List<Deposition> _depositions = new List<Deposition>();
 
@@ -47,7 +48,10 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             _breakRoomServiceMock = new Mock<IBreakRoomService>();
 
-            _depositionService = new DepositionService(_depositionRepositoryMock.Object, _userServiceMock.Object, _roomServiceMock.Object, _breakRoomServiceMock.Object);
+            _permissionServiceMock = new Mock<IPermissionService>();
+
+            _depositionService = new DepositionService(_depositionRepositoryMock.Object, _userServiceMock.Object, _roomServiceMock.Object, _breakRoomServiceMock.Object,
+                _permissionServiceMock.Object);
         }
 
         public void Dispose()
@@ -841,23 +845,93 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             Assert.Null(result.Value.Item1);
         }
 
+        [Fact]
+        public async Task JoinGuestParticipant_ShouldSaveNewUserAndCallCognitoApi_ForNoUserAndNoParticipant()
+        {
+            // Arrange
+            var guestEmail = "participant@mail.com";
+            var user = new User { Id = Guid.NewGuid(), EmailAddress = guestEmail };
+            
+            var depositionId = Guid.NewGuid();
+            var deposition = DepositionFactory.GetDepositionWithParticipantEmail("foo@mail.com");
+            deposition.Id = depositionId;
+
+            var participant = new Participant
+            {
+                User = user,
+                UserId = user.Id,
+                Email = guestEmail,
+                DepositionId = depositionId
+            };
+
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
+            _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Fail(new Error()));
+            _userServiceMock.Setup(x => x.AddGuestUser(It.IsAny<User>())).ReturnsAsync(Result.Ok(user));
+            _userServiceMock.Setup(x => x.LoginGuestAsync(It.IsAny<string>())).ReturnsAsync(Result.Ok(new GuestToken()));
+
+            // Act
+            var result = await _depositionService.JoinGuestParticipant(depositionId, participant);
+
+            // Assert
+            _depositionRepositoryMock.Verify(x => x.Update(It.Is<Deposition>(x => x.Id == depositionId)), Times.Once);
+            _permissionServiceMock.Verify(x => x.AddParticipantPermissions(It.Is<Participant>(x => x.Email == guestEmail)), Times.Once);
+
+            Assert.True(result.IsSuccess);
+        }
+
+        [Fact]
+        public async Task JoinGuestParticipant_ShouldReturnAToken_ForARegisterUserAndParticipant()
+        {
+            // Arrange
+            var guestEmail = "participant@mail.com";
+            var user = new User { Id = Guid.NewGuid(), EmailAddress = guestEmail };
+
+            var depositionId = Guid.NewGuid();
+            var deposition = DepositionFactory.GetDepositionWithParticipantEmail(guestEmail);
+            deposition.Id = depositionId;
+
+            var participant = new Participant
+            {
+                User = user,
+                UserId = user.Id,
+                Email = guestEmail,
+                DepositionId = depositionId
+            };
+
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
+            _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(user));
+            _userServiceMock.Setup(x => x.AddGuestUser(It.IsAny<User>())).ReturnsAsync(Result.Ok(user));
+            _userServiceMock.Setup(x => x.LoginGuestAsync(It.IsAny<string>())).ReturnsAsync(Result.Ok(new GuestToken()));
+
+            // Act
+            var result = await _depositionService.JoinGuestParticipant(depositionId, participant);
+
+            // Assert
+            _depositionRepositoryMock.Verify(x => x.Update(It.Is<Deposition>(x => x.Id == depositionId)), Times.Never);
+            _permissionServiceMock.Verify(x => x.AddParticipantPermissions(It.Is<Participant>(x => x.Email == guestEmail)), Times.Never);
+
+            Assert.True(result.IsSuccess);
+        }
+
         private DepositionService InitializeService(
             Mock<IDepositionRepository> depositionRepository = null,
             Mock<IUserService> userService = null,
             Mock<IRoomService> roomService = null,
-            Mock<IBreakRoomService> breakRoomService = null)
+            Mock<IBreakRoomService> breakRoomService = null,
+            Mock<IPermissionService> permissionService = null)
         {
             var depositionRepositoryMock = depositionRepository ?? new Mock<IDepositionRepository>();
             var userServiceMock = userService ?? new Mock<IUserService>();
             var roomServiceMock = roomService ?? new Mock<IRoomService>();
             var breakRoomServiceMock = breakRoomService ?? new Mock<IBreakRoomService>();
-             
-
+            var permissionServiceMock = permissionService ?? new Mock<IPermissionService>();
+            
             return new DepositionService(
                 depositionRepositoryMock.Object,
                 userServiceMock.Object,
                 roomServiceMock.Object,
-                breakRoomServiceMock.Object
+                breakRoomServiceMock.Object,
+                permissionServiceMock.Object
                 );
         }
     }

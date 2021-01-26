@@ -26,6 +26,8 @@ namespace PrecisionReporters.Platform.Data.Entities
 
         public virtual ICollection<Member> MemberOn { get; set; }
 
+        public bool IsGuest { get; set; } = false;
+
         public override void CopyFrom(User entity)
         {
             FirstName = entity.FirstName;
@@ -37,6 +39,7 @@ namespace PrecisionReporters.Platform.Data.Entities
             CompanyName = entity.CompanyName;
             CompanyAddress = entity.CompanyAddress;
 			IsAdmin = entity.IsAdmin;
+            IsGuest = entity.IsGuest;
         }
     }
 }

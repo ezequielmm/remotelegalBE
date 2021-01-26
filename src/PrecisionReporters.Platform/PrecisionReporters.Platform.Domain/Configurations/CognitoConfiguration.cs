@@ -10,5 +10,8 @@
         public string ClientId { get; set; }
         public string UserPoolId { get; set; }
         public string Authority { get; set; }
+        public string GuestClientId { get; set; }
+        public string GuestUsersGroup { get; set; }
+        public string GuestUsersPass { get; set; }
     }
 }

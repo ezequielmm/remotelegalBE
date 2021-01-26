@@ -38,6 +38,18 @@
                     "value": "AUTHORITY"
                 },
                 {
+                    "name": "AppConfiguration__CognitoConfiguration__GuestClientId",
+                    "value": "GUEST_CLIENT_ID"
+                },
+                {
+                    "name": "AppConfiguration__CognitoConfiguration__GuestUsersGroup",
+                    "value": "Guests"
+                },
+                {
+                    "name": "AppConfiguration__CognitoConfiguration__GuestUsersPass",
+                    "value": "GUEST_USER_PASS"
+                },
+                {
                     "name": "AppConfiguration__TwilioAccountConfiguration__AccountSid",
                     "value": "TWILIO_ACCOUNTSID"
                 },

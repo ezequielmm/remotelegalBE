@@ -47,7 +47,8 @@ namespace PrecisionReporters.Platform.Api.Mappers
                     {
                         Id = model.User.Id,
                         FirstName = model.User.FirstName,
-                        LastName = model.User.LastName
+                        LastName = model.User.LastName,
+                        EmailAddress = model.User.EmailAddress
                     }
                     : null
             };

@@ -19,14 +19,16 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly IUserService _userService;
         private readonly IRoomService _roomService;
         private readonly IBreakRoomService _breakRoomService;
+        private readonly IPermissionService _permissionService;
 
         public DepositionService(IDepositionRepository depositionRepository, IUserService userService, IRoomService roomService,
-             IBreakRoomService breakRoomService)
+             IBreakRoomService breakRoomService, IPermissionService permissionService)
         {
             _depositionRepository = depositionRepository;
             _userService = userService;
             _roomService = roomService;
             _breakRoomService = breakRoomService;
+            _permissionService = permissionService;
         }
 
         public async Task<List<Deposition>> GetDepositions(Expression<Func<Deposition, bool>> filter = null,
@@ -316,10 +318,15 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (depositionResult.IsFailed)
                 return depositionResult.ToResult<(Participant, bool)>();
 
-            var userResult = await _userService.GetUserByEmail(emailAddress);
-            var isUser = userResult.IsSuccess;
+            var deposition = depositionResult.Value;
+            if (deposition.Status == DepositionStatus.Completed
+                || deposition.Status == DepositionStatus.Canceled)
+                return Result.Fail(new InvalidInputError("The deposition is not longer available"));
 
-            var participant = GetParticipantByEmail(depositionResult.Value, emailAddress);
+            var userResult = await _userService.GetUserByEmail(emailAddress);
+            var isUser = userResult.IsSuccess && !userResult.Value.IsGuest;
+
+            var participant = GetParticipantByEmail(deposition, emailAddress);
 
             return Result.Ok((participant, isUser));
         }
@@ -334,6 +341,42 @@ namespace PrecisionReporters.Platform.Domain.Services
                 participant = deposition.Participants.FirstOrDefault(p => p.Email == emailAddress);
 
             return participant;
+        }
+
+        private bool IsDepositionParticipant(Deposition deposition, string emailAddress)
+        {
+            return GetParticipantByEmail(deposition, emailAddress) != null;
+        }
+
+        public async Task<Result<GuestToken>> JoinGuestParticipant(Guid depositionId, Participant guest)
+        {
+            var include = new[] { nameof(Deposition.Participants), nameof(Deposition.Witness) };
+
+            var depositionResult = await GetByIdWithIncludes(depositionId, include);
+
+            if (depositionResult.IsFailed)
+                return depositionResult.ToResult<GuestToken>();
+
+            var deposition = depositionResult.Value;
+            if (deposition.Status == DepositionStatus.Completed
+                || deposition.Status == DepositionStatus.Canceled)
+                return Result.Fail(new InvalidInputError("The deposition is not longer available"));
+
+            var userResult = await _userService.AddGuestUser(guest.User);
+
+            if (userResult.IsFailed)
+                return userResult.ToResult<GuestToken>();
+            
+            if (IsDepositionParticipant(deposition, userResult.Value.EmailAddress))
+                return await _userService.LoginGuestAsync(guest.Email);
+                
+            guest.User = userResult.Value;
+            deposition.Participants.Add(guest);
+            await _depositionRepository.Update(deposition);
+
+            await _permissionService.AddParticipantPermissions(guest);
+
+            return await _userService.LoginGuestAsync(guest.Email);
         }
     }
 }
