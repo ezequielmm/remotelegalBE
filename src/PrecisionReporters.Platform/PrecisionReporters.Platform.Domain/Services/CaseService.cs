@@ -2,7 +2,7 @@
 using Microsoft.Extensions.Logging;
 using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Data.Enums;
-using PrecisionReporters.Platform.Data.Repositories;
+using PrecisionReporters.Platform.Data.Repositories.Interfaces;
 using PrecisionReporters.Platform.Domain.Errors;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using System;
@@ -17,8 +17,6 @@ namespace PrecisionReporters.Platform.Domain.Services
 {
     public class CaseService : ICaseService
     {
-        private const int DEFAULT_BREAK_ROOMS_AMOUNT = 4;
-        private const string BREAK_ROOM_PREFIX = "BREAK_ROOM";
         private readonly ICaseRepository _caseRepository;
         private readonly IUserService _userService;
         private readonly IDocumentService _documentService;
@@ -124,51 +122,56 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             var uploadedDocuments = new List<Document>();
 
-            // Upload only files related to a caption
-            var filesToUpload = files.Where(f => depositions.Select(d => d.FileKey).ToList().Contains(f.Key));
-
-            foreach (var file in filesToUpload)
-            {
-                var documentResult = await _documentService.UploadDocumentFile(file, userResult.Value, $"{caseId}/caption");
-                if (documentResult.IsFailed)
-                {
-                    _logger.LogError(new Exception(documentResult.Errors.First().Message), "Unable to load one or more documents to storage");
-                    _logger.LogInformation("Removing uploaded documents");
-                    await _documentService.DeleteUploadedFiles(uploadedDocuments);
-                    return Result.Fail(new Error("Unable to upload one or more documents to deposition"));
-                }
-                uploadedDocuments.Add(documentResult.Value);
-            }
-
-            foreach (var deposition in depositions)
-            {
-                var depositionResult = await _depositionService.GenerateScheduledDeposition(deposition, uploadedDocuments, userResult.Value);
-                if (depositionResult.IsFailed)
-                {
-                    await _documentService.DeleteUploadedFiles(uploadedDocuments);
-                    return depositionResult.ToResult<Case>();
-                }
-
-                caseToUpdate.Depositions.Add(depositionResult.Value);
-
-                if (depositionResult.Value.Witness?.User != null)
-                    AddMemberToCase(depositionResult.Value.Witness.User, caseToUpdate);
-
-                if (depositionResult.Value.Participants != null)
-                    foreach (var participant in depositionResult.Value.Participants.Where(participant => participant.User != null))
-                    {
-                        AddMemberToCase(participant.User, caseToUpdate);
-                    }
-
-                AddMemberToCase(depositionResult.Value.Requester, caseToUpdate);
-            }
-
             try
             {
-                caseToUpdate = await _caseRepository.Update(caseToUpdate);
-                //TODO refactor and move this method to a DepositionService
-                await AddParticipantsAsync(caseToUpdate);
-                await AddBreakRoomsAsync(caseToUpdate);
+                var transactionResult = await _transactionHandler.RunAsync<Case>(async ()=>
+                {
+                    // Upload only files related to a caption
+                    var filesToUpload = files.Where(f => depositions.Select(d => d.FileKey).ToList().Contains(f.Key));
+
+                    foreach (var file in filesToUpload)
+                    {
+                        var documentResult = await _documentService.UploadDocumentFile(file, userResult.Value, $"{caseId}/caption");
+                        if (documentResult.IsFailed)
+                        {
+                            _logger.LogError(new Exception(documentResult.Errors.First().Message), "Unable to load one or more documents to storage");
+                            _logger.LogInformation("Removing uploaded documents");
+                            await _documentService.DeleteUploadedFiles(uploadedDocuments);
+                            return Result.Fail(new Error("Unable to upload one or more documents to deposition"));
+                        }
+                        uploadedDocuments.Add(documentResult.Value);
+                    }
+
+                    foreach (var deposition in depositions)
+                    {
+                        var depositionResult = await _depositionService.GenerateScheduledDeposition(caseToUpdate.Id, deposition, uploadedDocuments, userResult.Value);
+                        if (depositionResult.IsFailed)
+                        {
+                            await _documentService.DeleteUploadedFiles(uploadedDocuments);
+                            return depositionResult.ToResult<Case>();
+                        }
+                        var newDeposition = depositionResult.Value;
+
+                        if (newDeposition.Witness?.User != null)
+                            AddMemberToCase(newDeposition.Witness.User, caseToUpdate);
+
+                        if (newDeposition.Participants != null)
+                        {
+                            foreach (var participant in newDeposition.Participants.Where(participant => participant.User != null))
+                            {
+                                AddMemberToCase(participant.User, caseToUpdate);
+                            }
+                        }
+
+                        AddMemberToCase(newDeposition.Requester, caseToUpdate);
+                    }
+
+                    await _caseRepository.Update(caseToUpdate);
+
+                    return Result.Ok(caseToUpdate);
+                });
+
+                return transactionResult;
             }
             catch (Exception ex)
             {
@@ -176,58 +179,6 @@ namespace PrecisionReporters.Platform.Domain.Services
                 await _documentService.DeleteUploadedFiles(uploadedDocuments);
                 return Result.Fail(new ExceptionalError("Unable to schedule depositions", ex));
             }
-
-            return Result.Ok(caseToUpdate);
-        }
-
-        private async Task AddParticipantsAsync(Case caseToUpdate)
-        {
-            if (caseToUpdate.Depositions != null)
-            {
-                foreach (var deposition in caseToUpdate.Depositions)
-                {
-                    if (deposition.Participants != null)
-                    {
-                        var participantUsers = await _userService.GetUsersByFilter(x => deposition.Participants.Select(p => p.Email).Contains(x.EmailAddress));
-                        foreach (var participant in deposition.Participants.Where(participant => !string.IsNullOrWhiteSpace(participant.Email)))
-                        {
-                            var user = participantUsers.Find(x => x.EmailAddress == participant.Email);
-                            if (user != null)
-                            {
-                                participant.User = user;
-                                await _permissionService.AddUserRole(participant.User.Id, deposition.Id, ResourceType.Deposition, ParticipantType.CourtReporter == participant.Role ? RoleName.DepositionCourtReporter : RoleName.DepositionAttendee);
-                            }
-                        }
-                    }
-
-                    if (deposition.Witness?.User != null)
-                    {
-                        await _permissionService.AddUserRole(deposition.Witness.User.Id, deposition.Id, ResourceType.Deposition, RoleName.DepositionAttendee);
-                    }
-                }
-            }
-        }
-
-        private async Task AddBreakRoomsAsync(Case caseToUpdate)
-        {
-            if (caseToUpdate.Depositions != null)
-            {
-                foreach (var deposition in caseToUpdate.Depositions)
-                {
-                    if (!deposition.BreakRooms.Any())
-                    {
-                        for (int i = 1; i < (DEFAULT_BREAK_ROOMS_AMOUNT + 1); i++)
-                        {
-                            deposition.BreakRooms.Add(new BreakRoom
-                            {
-                                Name = $"Breakroom {i}",
-                                Room = new Room($"{deposition.Id}_{BREAK_ROOM_PREFIX}_{i}")
-                            });
-                        }
-                    }
-                }
-            }
-            await _caseRepository.Update(caseToUpdate);
         }
 
         private void AddMemberToCase(User userToAdd, Case caseToUpdate)

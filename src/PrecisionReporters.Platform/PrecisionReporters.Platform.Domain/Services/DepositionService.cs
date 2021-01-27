@@ -15,6 +15,8 @@ namespace PrecisionReporters.Platform.Domain.Services
 {
     public class DepositionService : IDepositionService
     {
+        private const int DEFAULT_BREAK_ROOMS_AMOUNT = 4;
+        private const string BREAK_ROOM_PREFIX = "BREAK_ROOM";
         private readonly IDepositionRepository _depositionRepository;
         private readonly IDepositionEventRepository _depositionEventRepository;
         private readonly IUserService _userService;
@@ -22,7 +24,12 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly IBreakRoomService _breakRoomService;
         private readonly IPermissionService _permissionService;
 
-        public DepositionService(IDepositionRepository depositionRepository, IDepositionEventRepository depositionEventRepository, IUserService userService, IRoomService roomService, IBreakRoomService breakRoomService, IPermissionService permissionService)
+        public DepositionService(IDepositionRepository depositionRepository,
+			IDepositionEventRepository depositionEventRepository,
+            IUserService userService,
+            IRoomService roomService,
+            IBreakRoomService breakRoomService,
+            IPermissionService permissionService)
         {
             _depositionRepository = depositionRepository;
             _depositionEventRepository = depositionEventRepository;
@@ -51,8 +58,9 @@ namespace PrecisionReporters.Platform.Domain.Services
             return await GetByIdWithIncludes(id, include);
         }
 
-        public async Task<Result<Deposition>> GenerateScheduledDeposition(Deposition deposition, List<Document> uploadedDocuments, User addedBy)
+        public async Task<Result<Deposition>> GenerateScheduledDeposition(Guid caseId, Deposition deposition, List<Document> uploadedDocuments, User addedBy)
         {
+            deposition.Id = Guid.NewGuid();
             var requesterResult = await _userService.GetUserByEmail(deposition.Requester.EmailAddress);
             if (requesterResult.IsFailed)
             {
@@ -81,7 +89,49 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             deposition.Room = new Room(Guid.NewGuid().ToString(), deposition.IsVideoRecordingNeeded);
 
+            deposition.CaseId = caseId;
+            await AddParticipants(deposition);
+            AddBreakRooms(deposition);
+            await _depositionRepository.Create(deposition);
+
             return Result.Ok(deposition);
+        }
+
+        private async Task AddParticipants(Deposition deposition)
+        {
+            if (deposition.Participants != null)
+            {
+                var participantUsers = await _userService.GetUsersByFilter(x => deposition.Participants.Select(p => p.Email).Contains(x.EmailAddress));
+                foreach (var participant in deposition.Participants.Where(participant => !string.IsNullOrWhiteSpace(participant.Email)))
+                {
+                    var user = participantUsers.Find(x => x.EmailAddress == participant.Email);
+                    if (user != null)
+                    {
+                        participant.User = user;
+                        await _permissionService.AddUserRole(participant.User.Id, deposition.Id, ResourceType.Deposition, ParticipantType.CourtReporter == participant.Role ? RoleName.DepositionCourtReporter : RoleName.DepositionAttendee);
+                    }
+                }
+            }
+
+            if (deposition.Witness?.User != null)
+            {
+                await _permissionService.AddUserRole(deposition.Witness.User.Id, deposition.Id, ResourceType.Deposition, RoleName.DepositionAttendee);
+            }
+        }
+
+        private void AddBreakRooms(Deposition deposition)
+        {
+            if (!deposition.BreakRooms.Any())
+            {
+                for (int i = 1; i < (DEFAULT_BREAK_ROOMS_AMOUNT + 1); i++)
+                {
+                    deposition.BreakRooms.Add(new BreakRoom
+                    {
+                        Name = $"Breakroom {i}",
+                        Room = new Room($"{deposition.Id}_{BREAK_ROOM_PREFIX}_{i}")
+                    });
+                }
+            }
         }
 
         public async Task<List<Deposition>> GetDepositionsByStatus(DepositionStatus? status, DepositionSortField? sortedField,

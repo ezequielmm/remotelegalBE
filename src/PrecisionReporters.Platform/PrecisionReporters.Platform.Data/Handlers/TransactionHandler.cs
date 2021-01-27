@@ -30,6 +30,19 @@ namespace PrecisionReporters.Platform.Data.Handlers
         /// <param name="actionToPerform">action to perform</param>
         public async Task<Result> RunAsync(Func<Task> actionToPerform)
         {
+            return await RunAsync(async () =>
+            {
+                await actionToPerform();
+                return Result.Ok(new object());
+            });
+        }
+
+        /// <summary>
+        /// Performs an action within a transaction and commits it if result is OK.
+        /// </summary>
+        /// <param name="actionToPerform">action to perform</param>
+        public async Task<Result<T>> RunAsync<T>(Func<Task<Result<T>>> actionToPerform)
+        {
             if (_transactionProvider.CurrentTransaction != null)
             {
                 // We are already within a transaction, so just execute normally
@@ -44,20 +57,21 @@ namespace PrecisionReporters.Platform.Data.Handlers
                 if (actionResult.IsFailed)
                 {
                     await transaction.RollbackAsync();
-                    return actionResult;
+                }
+                else
+                {
+                    await transaction.CommitAsync();
                 }
 
-                await transaction.CommitAsync();
-                return Result.Ok();
+                return actionResult;
             });
         }
 
-        private async Task<Result> RunInternalAsync(Func<Task> actionToPerform)
+        private async Task<Result<T>> RunInternalAsync<T>(Func<Task<Result<T>>> actionToPerform)
         {
             try
-            {
-                await actionToPerform();
-                return Result.Ok();
+            {                
+                return await actionToPerform();
             }
             catch (Exception ex)
             {
