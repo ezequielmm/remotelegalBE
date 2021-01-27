@@ -16,15 +16,16 @@ namespace PrecisionReporters.Platform.Domain.Services
     public class DepositionService : IDepositionService
     {
         private readonly IDepositionRepository _depositionRepository;
+        private readonly IDepositionEventRepository _depositionEventRepository;
         private readonly IUserService _userService;
         private readonly IRoomService _roomService;
         private readonly IBreakRoomService _breakRoomService;
         private readonly IPermissionService _permissionService;
 
-        public DepositionService(IDepositionRepository depositionRepository, IUserService userService, IRoomService roomService,
-             IBreakRoomService breakRoomService, IPermissionService permissionService)
+        public DepositionService(IDepositionRepository depositionRepository, IDepositionEventRepository depositionEventRepository, IUserService userService, IRoomService roomService, IBreakRoomService breakRoomService, IPermissionService permissionService)
         {
             _depositionRepository = depositionRepository;
+            _depositionEventRepository = depositionEventRepository;
             _userService = userService;
             _roomService = roomService;
             _breakRoomService = breakRoomService;
@@ -194,6 +195,15 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             return Result.Ok(participant);
         }
+        public async Task<Result<List<DepositionEvent>>> GetDepositionEvents(Guid id)
+        {
+            var depositionEvents = await _depositionEventRepository.GetByFilter(
+                x => x.CreationDate,
+                SortDirection.Ascend,
+                x => x.DepositionId == id);
+
+            return Result.Ok(depositionEvents);
+        }
 
         public async Task<Result<Deposition>> AddDepositionEvent(Guid id, DepositionEvent depositionEvent, string userEmail)
         {
@@ -211,14 +221,14 @@ namespace PrecisionReporters.Platform.Domain.Services
             return Result.Ok(updatedDeposition);
         }
 
-        public async Task<Result<Deposition>> GoOnTheRecord(Guid id, bool onTheRecord, string userEmail)
+        public async Task<Result<DepositionEvent>> GoOnTheRecord(Guid id, bool onTheRecord, string userEmail)
         {
             var includes = new[] { nameof(Deposition.Requester), nameof(Deposition.Participants),
                 nameof(Deposition.Witness), nameof(Deposition.Case), nameof(Deposition.Events)};
 
             var depositionResult = await GetByIdWithIncludes(id, includes);
             if (depositionResult.IsFailed)
-                return depositionResult;
+                return depositionResult.ToResult<DepositionEvent>();
 
             var deposition = depositionResult.Value;
             if (deposition.IsOnTheRecord == onTheRecord)
@@ -228,7 +238,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             var userResult = await _userService.GetUserByEmail(userEmail);
             if (userResult.IsFailed)
-                return userResult.ToResult<Deposition>();
+                return userResult.ToResult<DepositionEvent>();
 
             var depositionEvent = new DepositionEvent
             {
@@ -238,7 +248,8 @@ namespace PrecisionReporters.Platform.Domain.Services
             deposition.Events.Add(depositionEvent);
             deposition.IsOnTheRecord = onTheRecord;
             var updatedDeposition = await _depositionRepository.Update(deposition);
-            return Result.Ok(updatedDeposition);
+
+            return Result.Ok(depositionEvent);
         }
 
         public async Task<Result<Deposition>> Update(Deposition deposition)
@@ -308,10 +319,10 @@ namespace PrecisionReporters.Platform.Domain.Services
             breakRooms.Sort((p, q) => p.Name.CompareTo(q.Name));
             return Result.Ok(breakRooms);
         }
-        
+
         public async Task<Result<(Participant, bool)>> CheckParticipant(Guid id, string emailAddress)
         {
-            var include = new[] { nameof(Deposition.Participants), nameof(Deposition.Witness)};
+            var include = new[] { nameof(Deposition.Participants), nameof(Deposition.Witness) };
 
             var depositionResult = await GetByIdWithIncludes(id, include);
 

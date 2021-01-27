@@ -27,6 +27,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
         private readonly IMapper<Deposition, DepositionDto, CreateDepositionDto> _depositionMapper;
         private readonly IMapper<BreakRoom, BreakRoomDto, object> _breakRoomMapper;
         private readonly IMapper<AnnotationEvent, AnnotationEventDto, CreateAnnotationEventDto> _annotationMapper;
+        private readonly IMapper<DepositionEvent, DepositionEventDto, CreateDepositionEventDto> _eventMapper;
         private readonly IAnnotationEventService _annotationEventService;
         private readonly IMapper<Participant, ParticipantDto, CreateParticipantDto> _participantMapper;
         private readonly IMapper<Participant, object, CreateGuestDto> _guestMapper;
@@ -34,6 +35,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
         public DepositionsController(IDepositionService depositionService,
             IMapper<Deposition, DepositionDto, CreateDepositionDto> depositionMapper,
             IDocumentService documentService, IMapper<AnnotationEvent, AnnotationEventDto, CreateAnnotationEventDto> annotationMapper,
+            IMapper<DepositionEvent, DepositionEventDto, CreateDepositionEventDto> eventMapper,
             IMapper<BreakRoom, BreakRoomDto, object> breakRoomMapper, IAnnotationEventService annotationEventService,
             IMapper<Participant, ParticipantDto, CreateParticipantDto> participantMapper, IMapper<Participant, object, CreateGuestDto> guestMapper)
         {
@@ -42,6 +44,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
             _documentService = documentService;
             _breakRoomMapper = breakRoomMapper;
             _annotationMapper = annotationMapper;
+            _eventMapper = eventMapper;
             _annotationEventService = annotationEventService;
             _participantMapper = participantMapper;
             _guestMapper = guestMapper;
@@ -110,14 +113,14 @@ namespace PrecisionReporters.Platform.Api.Controllers
         /// <returns>DepositionDto object.</returns>
         [HttpPost("{id}/record")]
         [UserAuthorize(ResourceType.Deposition, ResourceAction.Recording)]
-        public async Task<ActionResult<DepositionDto>> DepositionRecord([ResourceId(ResourceType.Deposition)] Guid id, [FromQuery, BindRequired] bool onTheRecord)
+        public async Task<ActionResult<DepositionEventDto>> DepositionRecord([ResourceId(ResourceType.Deposition)] Guid id, [FromQuery, BindRequired] bool onTheRecord)
         {
             var userEmail = HttpContext.User.FindFirstValue(ClaimTypes.Email);
             var goOnTheRecordResult = await _depositionService.GoOnTheRecord(id, onTheRecord, userEmail);
             if (goOnTheRecordResult.IsFailed)
                 return WebApiResponses.GetErrorResponse(goOnTheRecordResult);
 
-            return Ok(_depositionMapper.ToDto(goOnTheRecordResult.Value));
+            return Ok(_eventMapper.ToDto(goOnTheRecordResult.Value));
         }
 
         /// <summary>
@@ -219,6 +222,21 @@ namespace PrecisionReporters.Platform.Api.Controllers
                     LastName = document.AddedBy.LastName
                 }
             });
+        }
+
+        /// <summary>
+        /// Gets the events of a an existing Deposition.
+        /// </summary>
+        /// <param name="id">Deposition identifier</param>
+        /// <returns>List of DepositionEvent of an existing Deposition</returns>
+        [HttpGet("{id}/events")]
+        public async Task<ActionResult<DocumentWithSignedUrlDto>> GetDepositionEvents(Guid id)
+        {
+            var eventsResult = await _depositionService.GetDepositionEvents(id);
+            if (eventsResult.IsFailed)
+                return WebApiResponses.GetErrorResponse(eventsResult);
+
+            return Ok(eventsResult.Value.Select(d => _eventMapper.ToDto(d)));
         }
 
         /// <summary>

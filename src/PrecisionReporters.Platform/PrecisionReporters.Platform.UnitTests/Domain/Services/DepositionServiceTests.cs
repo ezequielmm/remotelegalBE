@@ -22,6 +22,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         // TODO: we need to refactor this file to have the test setup on the constructor
         private readonly DepositionService _depositionService;
         private readonly Mock<IDepositionRepository> _depositionRepositoryMock;
+        private readonly Mock<IDepositionEventRepository> _depositionEventRepositoryMock;
         private readonly Mock<IUserService> _userServiceMock;
         private readonly Mock<IRoomService> _roomServiceMock;
         private readonly Mock<IBreakRoomService> _breakRoomServiceMock;
@@ -32,6 +33,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         public DepositionServiceTests()
         {
             // Setup
+            _depositionEventRepositoryMock = new Mock<IDepositionEventRepository>();
+
             _depositionRepositoryMock = new Mock<IDepositionRepository>();
 
             _depositionRepositoryMock.Setup(x => x.GetByFilter(It.IsAny<Expression<Func<Deposition, bool>>>(), It.IsAny<string[]>())).ReturnsAsync(_depositions);
@@ -50,8 +53,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             _permissionServiceMock = new Mock<IPermissionService>();
 
-            _depositionService = new DepositionService(_depositionRepositoryMock.Object, _userServiceMock.Object, _roomServiceMock.Object, _breakRoomServiceMock.Object,
-                _permissionServiceMock.Object);
+            _depositionService = new DepositionService(_depositionRepositoryMock.Object, _depositionEventRepositoryMock.Object, _userServiceMock.Object, _roomServiceMock.Object, _breakRoomServiceMock.Object, _permissionServiceMock.Object);
         }
 
         public void Dispose()
@@ -414,7 +416,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                     Status = RoomStatus.Created,
                     Name = "TestingRoom"
                 },
-                Witness = new Participant { Email = "witness@email.com"},
+                Witness = new Participant { Email = "witness@email.com" },
                 Participants = new List<Participant>
                 {
                    currentParticipant
@@ -532,8 +534,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             Assert.NotNull(result);
             Assert.True(result.IsSuccess);
-            Assert.True(result.Value.IsOnTheRecord);
-            Assert.NotEmpty(result.Value.Events);
+            Assert.Equal(EventType.OnTheRecord, result.Value.EventType);
         }
 
         [Fact]
@@ -597,8 +598,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             Assert.NotNull(result);
             Assert.True(result.IsSuccess);
-            Assert.True(!result.Value.IsOnTheRecord);
-            Assert.NotEmpty(result.Value.Events);
+            Assert.Equal(EventType.OffTheRecord, result.Value.EventType);
         }
 
         [Fact]
@@ -744,7 +744,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             Deposition deposition = null;
 
             _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
-            
+
             // Act
             var result = await _depositionService.CheckParticipant(depositionId, participantEmail);
 
@@ -915,12 +915,14 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
         private DepositionService InitializeService(
             Mock<IDepositionRepository> depositionRepository = null,
+            Mock<IDepositionEventRepository> depositionEventRepository = null,
             Mock<IUserService> userService = null,
             Mock<IRoomService> roomService = null,
             Mock<IBreakRoomService> breakRoomService = null,
             Mock<IPermissionService> permissionService = null)
         {
             var depositionRepositoryMock = depositionRepository ?? new Mock<IDepositionRepository>();
+            var depositionEventRepositoryMock = depositionEventRepository ?? new Mock<IDepositionEventRepository>();
             var userServiceMock = userService ?? new Mock<IUserService>();
             var roomServiceMock = roomService ?? new Mock<IRoomService>();
             var breakRoomServiceMock = breakRoomService ?? new Mock<IBreakRoomService>();
@@ -928,6 +930,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             
             return new DepositionService(
                 depositionRepositoryMock.Object,
+                depositionEventRepositoryMock.Object,
                 userServiceMock.Object,
                 roomServiceMock.Object,
                 breakRoomServiceMock.Object,

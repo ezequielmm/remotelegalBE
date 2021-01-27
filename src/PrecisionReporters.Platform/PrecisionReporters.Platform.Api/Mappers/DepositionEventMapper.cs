@@ -18,9 +18,8 @@ namespace PrecisionReporters.Platform.Api.Mappers
             return new DepositionEventDto
             {
                 Id = model.Id,
-                CreationDate = model.CreationDate,
+                CreationDate = new DateTimeOffset(model.CreationDate, TimeSpan.Zero),
                 EventType = model.EventType,
-                User = _userMapper.ToDto(model.User),
                 Details = model.Details
             };
         }
@@ -35,7 +34,7 @@ namespace PrecisionReporters.Platform.Api.Mappers
             return new DepositionEvent
             {
                 EventType = dto.EventType,
-                Details = dto.Details
+                Details = dto.Details,
             };
         }
     }

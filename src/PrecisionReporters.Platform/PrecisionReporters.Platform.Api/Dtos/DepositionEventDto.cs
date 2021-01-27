@@ -11,7 +11,7 @@ namespace PrecisionReporters.Platform.Api.Dtos
         public DateTimeOffset CreationDate { get; set; }
         [JsonConverter(typeof(StringEnumConverter))]
         public EventType EventType { get; set; }
-        public UserDto User { get; set; }
+        public UserOutputDto User { get; set; }
         public string Details { get; set; }
     }
 }
