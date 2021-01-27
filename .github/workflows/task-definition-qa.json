@@ -74,18 +74,6 @@
                     "value": "twilio-bucket"
                 },
                 {
-                    "name": "AppConfiguration__TwilioAccountConfiguration__S3DestinationKey",
-                    "value": "TWILIO_DESTINATION_KEY"
-                },
-                {
-                    "name": "AppConfiguration__AwsStorageConfiguration__S3DestinationKey",
-                    "value": "TWILIO_DESTINATION_KEY"
-                },
-                {
-                    "name": "AppConfiguration__AwsStorageConfiguration__S3DestinationSecret",
-                    "value": "TWILIO_DESTINATION_SECRET"
-                },
-                {
                     "name": "AppConfiguration__AwsStorageConfiguration__S3BucketRegion",
                     "value": "us-east-1"
                 },

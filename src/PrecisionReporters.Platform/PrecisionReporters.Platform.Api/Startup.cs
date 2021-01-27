@@ -58,14 +58,11 @@ namespace PrecisionReporters.Platform.Api
         public void ConfigureServices(IServiceCollection services)
         {
             var appConfiguration = Configuration.GetApplicationConfig();
-
             var allowedDomains = appConfiguration.CorsConfiguration.GetOrigingsAsArray();
             var allowedMethods = appConfiguration.CorsConfiguration.Methods;
 
             services.AddScoped<ITransferUtility>(sp =>
             {
-                var awsBucketCredentials = new BasicAWSCredentials(appConfiguration.AwsStorageConfiguration.S3DestinationKey,
-                    appConfiguration.AwsStorageConfiguration.S3DestinationSecret);
                 var config = new AmazonS3Config
                 {
                     Timeout = TimeSpan.FromMinutes(15),
@@ -74,8 +71,7 @@ namespace PrecisionReporters.Platform.Api
                     RegionEndpoint = RegionEndpoint.GetBySystemName(appConfiguration.AwsStorageConfiguration.S3BucketRegion)
                 };
 
-
-                var s3Client = new AmazonS3Client(awsBucketCredentials, config);
+                var s3Client = new AmazonS3Client(config);
 
                 return new TransferUtility(s3Client);
             });
@@ -190,9 +186,9 @@ namespace PrecisionReporters.Platform.Api
             });
 
             services.AddSingleton(typeof(IAmazonCognitoIdentityProvider),
-                _ => new AmazonCognitoIdentityProviderClient(appConfiguration.CognitoConfiguration.AWSAccessKey, appConfiguration.CognitoConfiguration.AWSSecretAccessKey, RegionEndpoint.USEast1));
+                _ => new AmazonCognitoIdentityProviderClient(RegionEndpoint.GetBySystemName(appConfiguration.AwsStorageConfiguration.S3BucketRegion) ));
             services.AddSingleton(typeof(IAmazonSimpleEmailService),
-                _ => new AmazonSimpleEmailServiceClient(appConfiguration.CognitoConfiguration.AWSAccessKey, appConfiguration.CognitoConfiguration.AWSSecretAccessKey, RegionEndpoint.USEast1));
+                _ => new AmazonSimpleEmailServiceClient(RegionEndpoint.GetBySystemName(appConfiguration.AwsStorageConfiguration.S3BucketRegion)));
 
             services.AddScoped<ICompositionService, CompositionService>();
             services.AddScoped<IBreakRoomService, BreakRoomService>();
@@ -308,9 +304,7 @@ namespace PrecisionReporters.Platform.Api
             }
 
             app.UseHttpsRedirection();
-
             app.UseRouting();
-
             app.UseCors(AllowedOrigins);
 
             app.Use(async (context, next) =>
@@ -326,9 +320,7 @@ namespace PrecisionReporters.Platform.Api
             });
 
             app.UseAuthorization();
-
             app.UseHealthChecks("/healthcheck");
-
             app.UseWebSockets();
 
             app.UseEndpoints(endpoints =>
