@@ -313,9 +313,10 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<Document>> GetSharedDocument(Guid id)
         {
-            var deposition = await _depositionRepository.GetById(id, new[] { nameof(Deposition.SharingDocument), nameof(Deposition.SharingDocument.AddedBy) });
+            var deposition = await _depositionRepository.GetById(id, new[] { $"{nameof(Deposition.SharingDocument)}.{nameof(Document.AddedBy)}" });
+
             if (deposition == null)
-                return Result.Fail(new ResourceNotFoundError("Desosition not found"));
+                return Result.Fail(new ResourceNotFoundError("Deposition not found"));
             if (!deposition.SharingDocumentId.HasValue)
                 return Result.Fail(new ResourceConflictError("No document is being shared in this deposition"));
 

@@ -621,14 +621,14 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         {
             // Arrange
             var depositionId = Guid.NewGuid();
-            var expectedError = "Desosition not found";
+            var expectedError = "Deposition not found";
             _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync((Deposition)null);
 
             // Act
             var result = await _depositionService.GetSharedDocument(depositionId);
 
             // Assert
-            _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(a => a == depositionId), It.Is<string[]>(a => a.SequenceEqual(new[] { nameof(Deposition.SharingDocument), nameof(Deposition.SharingDocument.AddedBy) }))), Times.Once);
+            _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(a => a == depositionId), It.Is<string[]>(a => a.SequenceEqual(new[] { $"{nameof(Deposition.SharingDocument)}.{nameof(Document.AddedBy)}" }))), Times.Once);
             Assert.NotNull(result);
             Assert.IsType<Result<Document>>(result);
             Assert.True(result.IsFailed);
@@ -648,7 +648,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var result = await _depositionService.GetSharedDocument(depositionId);
 
             // Assert
-            _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(a => a == depositionId), It.Is<string[]>(a => a.SequenceEqual(new[] { nameof(Deposition.SharingDocument), nameof(Deposition.SharingDocument.AddedBy) }))), Times.Once);
+            _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(a => a == depositionId), It.Is<string[]>(a => a.SequenceEqual(new[] { $"{nameof(Deposition.SharingDocument)}.{nameof(Document.AddedBy)}" }))), Times.Once);
             Assert.NotNull(result);
             Assert.IsType<Result<Document>>(result);
             Assert.True(result.IsFailed);
@@ -670,7 +670,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var result = await _depositionService.GetSharedDocument(depositionId);
 
             // Assert
-            _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(a => a == depositionId), It.Is<string[]>(a => a.SequenceEqual(new[] { nameof(Deposition.SharingDocument), nameof(Deposition.SharingDocument.AddedBy) }))), Times.Once);
+            _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(a => a == depositionId), It.Is<string[]>(a => a.SequenceEqual(new[] { $"{nameof(Deposition.SharingDocument)}.{nameof(Document.AddedBy)}" }))), Times.Once);
             Assert.NotNull(result);
             Assert.IsType<Result<Document>>(result);
             Assert.True(result.IsSuccess);
