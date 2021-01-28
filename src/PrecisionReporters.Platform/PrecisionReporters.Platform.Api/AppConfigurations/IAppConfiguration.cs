@@ -12,5 +12,6 @@ namespace PrecisionReporters.Platform.Api.AppConfigurations
         CognitoConfiguration CognitoConfiguration { get; set; }
         EmailConfiguration EmailConfiguration { get; set; }
         UrlPathConfiguration UrlPathConfiguration { get; set; }
+        AzureCognitiveServiceConfiguration AzureCognitiveServiceConfiguration { get; set; }
     }
 }

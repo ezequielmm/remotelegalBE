@@ -8,7 +8,8 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
 {
     public interface ITranscriptionService
     {
-        Task<Transcription> RecognizeAsync(byte[] audioChunk, string userEmail, string depositionId, int sampleRate);
         Task<Result<List<Transcription>>> GetTranscriptionsByDepositionId(Guid depositionId);
+
+        Task<Result> StoreTranscription(Transcription transcription, string depositionId, string userEmail);
     }
 }

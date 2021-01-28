@@ -140,7 +140,15 @@
                 {
                     "name": "AppConfiguration__GcpConfiguration__client_x509_cert_url",
                     "value": "https://www.googleapis.com/robot/v1/metadata/x509/remotelegal-text-to-speech%40our-service-296819.iam.gserviceaccount.com"
-                }                
+                },
+                {
+                    "name": "AppConfiguration__CloudServicesConfiguration__TranscriptionProvider",
+                    "value": "Azure"
+                },
+                {
+                    "name": "AppConfiguration__AzureCognitiveServiceConfiguration__SubscriptionKey",
+                    "value": "AZURE_TRANSCRIPT_KEY"
+                }
             ],
             "mountPoints": [],
             "volumesFrom": [],

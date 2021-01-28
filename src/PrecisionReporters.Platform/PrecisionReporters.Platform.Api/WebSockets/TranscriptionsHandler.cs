@@ -16,10 +16,10 @@ namespace PrecisionReporters.Platform.Api.WebSockets
 {
     public class TranscriptionsHandler : ITranscriptionsHandler
     {
-        private readonly ITranscriptionService _transcriptionService;
+        private readonly ITranscriptionLiveService _transcriptionService;
         private readonly IMapper<Transcription, TranscriptionDto, object> _transcriptionMapper;
 
-        public TranscriptionsHandler(ITranscriptionService transcriptionService, IMapper<Transcription, TranscriptionDto, object> transcriptionMapper)
+        public TranscriptionsHandler(ITranscriptionLiveService transcriptionService, IMapper<Transcription, TranscriptionDto, object> transcriptionMapper)
         {
             _transcriptionService = transcriptionService;
             _transcriptionMapper = transcriptionMapper;

@@ -124,6 +124,14 @@
                 {
                     "name": "AppConfiguration__GcpConfiguration__client_id",
                     "value": "GCP_CLIENTID"
+                },
+                {
+                    "name": "AppConfiguration__CloudServicesConfiguration__TranscriptionProvider",
+                    "value": "Azure"
+                },
+                {
+                    "name": "AppConfiguration__AzureCognitiveServiceConfiguration__SubscriptionKey",
+                    "value": "AZURE_TRANSCRIPT_KEY"
                 }
             ],
             "mountPoints": [],

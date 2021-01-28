@@ -269,6 +269,30 @@ jobs:
         replace: "${{ secrets.GCP_CLIENT_ID }}"
         exclude: "^$"
         
+
+
+    - name: Replace Azure speech-to-text key in DEV task definition
+      uses: jacobtomlinson/gha-find-replace@master
+      with:
+        include: 'task-definition-develop.json'
+        find: "AZURE_TRANSCRIPT_KEY"
+        replace: "${{ secrets.AZURE_TRANSCRIPT_KEY }}"
+        exclude: "^$"
+    
+    - name: Replace Azure speech-to-text key in QA task definition
+      uses: jacobtomlinson/gha-find-replace@master
+      with:
+        include: 'task-definition-qa.json'
+        find: "AZURE_TRANSCRIPT_KEY"
+        replace: "${{ secrets.AZURE_TRANSCRIPT_KEY }}"
+        exclude: "^$"
+
+
+
+
+
+
+
     - name: Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@v1
       with:

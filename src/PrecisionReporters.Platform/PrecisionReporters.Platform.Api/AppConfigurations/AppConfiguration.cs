@@ -17,5 +17,7 @@ namespace PrecisionReporters.Platform.Api
         public DocumentConfiguration DocumentConfiguration { get; set; }
         public AwsStorageConfiguration AwsStorageConfiguration { get; set; }
         public GcpConfiguration GcpConfiguration { get; set; }
+        public AzureCognitiveServiceConfiguration AzureCognitiveServiceConfiguration { get; set; }
+        public CloudServicesConfiguration CloudServicesConfiguration { get; set; }
     }
 }

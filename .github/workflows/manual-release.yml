@@ -36,10 +36,6 @@ jobs:
             echo -e ::set-output name=twilioconfig-authtoken::'${{ secrets.TWILIOCONFIG_AUTHTOKEN_UAT }}'
             echo -e ::set-output name=twilioconfig-apikeys-id::'${{ secrets.TWILIOCONFIG_APIKEYSID_UAT }}'
             echo -e ::set-output name=twilioconfig-apisecretkey::'${{ secrets.TWILIOCONFIG_APIKEYSECRET_UAT }}'
-            echo -e ::set-output name=gcp-private-key-id::'${{ secrets.GCP_PRIVATE_KEY_ID }}'
-            echo -e ::set-output name=gcp-private-key-contract::'${{ secrets.GCP_PRIVATE_KEY_CONTRACT }}'
-            echo -e ::set-output name=gcp-client-email::'${{ secrets.GCP_CLIENT_EMAIL }}'
-            echo -e ::set-output name=gcp-client-id::'${{ secrets.GCP_CLIENT_ID }}'
         else 
             echo -e ::set-output name=connection-string::'${{ secrets.CONNECTIONSTRING_PROD }}'
             echo -e ::set-output name=cognitoconfig-client-id::'${{ secrets.COGNITOCONFIG_CLIENTID_PROD }}'
@@ -51,11 +47,13 @@ jobs:
             echo -e ::set-output name=twilioconfig-authtoken::'${{ secrets.TWILIOCONFIG_AUTHTOKEN_PROD }}'
             echo -e ::set-output name=twilioconfig-apikeys-id::'${{ secrets.TWILIOCONFIG_APIKEYSID_PROD }}'
             echo -e ::set-output name=twilioconfig-apisecretkey::'${{ secrets.TWILIOCONFIG_APIKEYSECRET_PROD }}'
-            echo -e ::set-output name=gcp-private-key-id::'${{ secrets.GCP_PRIVATE_KEY_ID }}'
-            echo -e ::set-output name=gcp-private-key-contract::'${{ secrets.GCP_PRIVATE_KEY_CONTRACT }}'
-            echo -e ::set-output name=gcp-client-email::'${{ secrets.GCP_CLIENT_EMAIL }}'
-            echo -e ::set-output name=gcp-client-id::'${{ secrets.GCP_CLIENT_ID }}'
-        fi 
+        fi
+        echo -e ::set-output name=azure-text-to-speech-key::'${{ secrets.AZURE_TRANSCRIPT_KEY }}' 
+        echo -e ::set-output name=gcp-private-key-id::'${{ secrets.GCP_PRIVATE_KEY_ID }}'
+        echo -e ::set-output name=gcp-private-key-contract::'${{ secrets.GCP_PRIVATE_KEY_CONTRACT }}'
+        echo -e ::set-output name=gcp-client-email::'${{ secrets.GCP_CLIENT_EMAIL }}'
+        echo -e ::set-output name=gcp-client-id::'${{ secrets.GCP_CLIENT_ID }}'
+
       env:
         BRANCH: ${{ steps.extract-branch.outputs.branch }}
     
@@ -172,6 +170,15 @@ jobs:
         find: "GCP_CLIENTID"
         replace: "${{ steps.env-vars.outputs.gcp-client-id }}"
         exclude: "^$"        
+
+
+    - name: Replace Azure speech-to-text key in task definition
+      uses: jacobtomlinson/gha-find-replace@master
+      with:
+        include: 'task-definition-${{ steps.extract-branch.outputs.branch }}.json'
+        find: "AZURE_TRANSCRIPT_KEY"
+        replace: "${{ steps.env-vars.outputs.azure-text-to-speech-key }}"
+        exclude: "^$"  
 
     - name: Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@v1

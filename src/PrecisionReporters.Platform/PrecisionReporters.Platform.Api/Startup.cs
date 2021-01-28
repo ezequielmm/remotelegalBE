@@ -167,6 +167,7 @@ namespace PrecisionReporters.Platform.Api
                 x.GuestClientId = appConfiguration.CognitoConfiguration.GuestClientId;
             });
 
+            services.AddScoped<ITranscriptionService, TranscriptionService>();
             services.AddScoped<IPermissionService, PermissionService>();
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<IVerifyUserService, VerifyUserService>();
@@ -192,7 +193,15 @@ namespace PrecisionReporters.Platform.Api
 
             services.AddScoped<ICompositionService, CompositionService>();
             services.AddScoped<IBreakRoomService, BreakRoomService>();
-            services.AddTransient<ITranscriptionService, TranscriptionService>();
+            if (appConfiguration.CloudServicesConfiguration.TranscriptionProvider.Equals("GCP"))
+            {
+                services.AddTransient<ITranscriptionLiveService, TranscriptionLiveGCPService>();
+            }
+            else
+            {
+                services.AddTransient<ITranscriptionLiveService, TranscriptionLiveAzureService>();
+            }
+
             services.Configure<GcpConfiguration>(x =>
             {
                 x.type = appConfiguration.GcpConfiguration.type;
@@ -205,6 +214,12 @@ namespace PrecisionReporters.Platform.Api
                 x.token_uri = appConfiguration.GcpConfiguration.token_uri;
                 x.auth_provider_x509_cert_url = appConfiguration.GcpConfiguration.auth_provider_x509_cert_url;
                 x.client_x509_cert_url = appConfiguration.GcpConfiguration.client_x509_cert_url;
+            });
+
+            services.Configure<AzureCognitiveServiceConfiguration>(x =>
+            {
+                x.SubscriptionKey = appConfiguration.AzureCognitiveServiceConfiguration.SubscriptionKey;
+                x.RegionCode = appConfiguration.AzureCognitiveServiceConfiguration.RegionCode;
             });
 
             // Repositories
