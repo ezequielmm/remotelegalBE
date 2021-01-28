@@ -19,5 +19,13 @@ namespace PrecisionReporters.Platform.UnitTests.Utils
                 Sender = "SenderTest",
             };
         }
+        
+        public static VerificationLinkConfiguration GetVerificationLinkConfiguration()
+        {
+            return new VerificationLinkConfiguration
+            {
+                ExpirationTime = 24
+            };
+        }
     }
 }

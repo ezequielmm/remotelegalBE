@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Linq.Expressions;
 using System.Security.Claims;
+using Microsoft.Extensions.Configuration;
 
 namespace PrecisionReporters.Platform.Domain.Services
 {
@@ -25,10 +26,11 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly IVerifyUserService _verifyUserService;
         private readonly ITransactionHandler _transactionHandler;
         private readonly UrlPathConfiguration _urlPathConfiguration;
+        private readonly VerificationLinkConfiguration _verificationLinkConfiguration;
         private readonly ClaimsPrincipal _principal;
 
         public UserService(ILogger<UserService> log, IUserRepository userRepository, ICognitoService cognitoService, IAwsEmailService awsEmailService,
-            IVerifyUserService verifyUserService, ITransactionHandler transactionHandler, IOptions<UrlPathConfiguration> urlPathConfiguration, ClaimsPrincipal principal)
+            IVerifyUserService verifyUserService, ITransactionHandler transactionHandler, IOptions<UrlPathConfiguration> urlPathConfiguration, IOptions<VerificationLinkConfiguration> verificationLinkConfiguration, ClaimsPrincipal principal)
         {
             _log = log;
             _userRepository = userRepository;
@@ -37,6 +39,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             _verifyUserService = verifyUserService;
             _transactionHandler = transactionHandler;
             _urlPathConfiguration = urlPathConfiguration.Value;
+            _verificationLinkConfiguration = verificationLinkConfiguration.Value;
             _principal = principal;
         }
 
@@ -77,8 +80,9 @@ namespace PrecisionReporters.Platform.Domain.Services
         public async Task<VerifyUser> VerifyUser(Guid verifyuserId)
         {
             var verifyUser = await _verifyUserService.GetVerifyUserById(verifyuserId);
+            var expirationTime = _verificationLinkConfiguration.ExpirationTime;
 
-            if (verifyUser.CreationDate < DateTime.UtcNow.AddDays(-1) || verifyUser.IsUsed)
+            if (verifyUser.CreationDate < DateTime.UtcNow.AddHours(-expirationTime) || verifyUser.IsUsed)
             {
                 _log.LogWarning(ApplicationConstants.VerificationCodeException);
 

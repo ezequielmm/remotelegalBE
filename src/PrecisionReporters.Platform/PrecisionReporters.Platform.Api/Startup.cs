@@ -111,7 +111,7 @@ namespace PrecisionReporters.Platform.Api
                 // TODO: Check how to return a valid error message with this validation and reduce the value to MaxFileSize only
                 options.Limits.MaxRequestBodySize = appConfiguration.DocumentConfiguration.MaxRequestBodySize;
             });
-
+            services.Configure<VerificationLinkConfiguration>(x => { x.ExpirationTime = appConfiguration.VerificationLinkConfiguration.ExpirationTime; });
             services.AddScoped(s => s.GetService<IHttpContextAccessor>().HttpContext.User);
 
             // Filters

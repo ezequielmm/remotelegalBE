@@ -19,5 +19,6 @@ namespace PrecisionReporters.Platform.Api
         public GcpConfiguration GcpConfiguration { get; set; }
         public AzureCognitiveServiceConfiguration AzureCognitiveServiceConfiguration { get; set; }
         public CloudServicesConfiguration CloudServicesConfiguration { get; set; }
+        public VerificationLinkConfiguration VerificationLinkConfiguration { get; set; }
     }
 }

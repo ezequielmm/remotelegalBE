@@ -24,10 +24,12 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
     public class UserServiceTests
     {
         private readonly UrlPathConfiguration _urlPathConfiguration;
+        private readonly VerificationLinkConfiguration _verificationLinkConfiguration;
 
         public UserServiceTests()
         {
             _urlPathConfiguration = ConfigurationFactory.GetUrlPathConfiguration();
+            _verificationLinkConfiguration = ConfigurationFactory.GetVerificationLinkConfiguration();
         }
 
         [Fact]
@@ -140,7 +142,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var id = Guid.NewGuid();
             var user = UserFactory.GetUserByGivenId(id);
 
-            var dateNow = DateTime.UtcNow.AddHours(-24);
+            var expirationTime = _verificationLinkConfiguration.ExpirationTime;
+            var dateNow = DateTime.UtcNow.AddHours(-expirationTime);
             var verifyUser = VerifyUserFactory.GetVerifyUserByGivenId(id, dateNow, user);
 
             var verifyUserServiceMock = new Mock<IVerifyUserService>();
@@ -363,7 +366,9 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var verifyUserServiceMock = verifyUserService ?? new Mock<IVerifyUserService>();
             var transactionHandlerMock = transactionHandler ?? new Mock<ITransactionHandler>();
             var urlPathConfigurationMock = new Mock<IOptions<UrlPathConfiguration>>();
+            var verificationLinkConfigurationMock = new Mock<IOptions<VerificationLinkConfiguration>>();
             urlPathConfigurationMock.Setup(x => x.Value).Returns(_urlPathConfiguration);
+            verificationLinkConfigurationMock.Setup(x => x.Value).Returns(_verificationLinkConfiguration);
 
             return new UserService(
                 logMock.Object,
@@ -373,6 +378,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 verifyUserServiceMock.Object,
                 transactionHandlerMock.Object,
                 urlPathConfigurationMock.Object,
+                verificationLinkConfigurationMock.Object,
                 null);
         }
     }
