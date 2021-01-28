@@ -1,24 +1,30 @@
-﻿using PrecisionReporters.Platform.Data.Entities;
-using PrecisionReporters.Platform.Domain.Services.Interfaces;
-using System;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.CognitiveServices.Speech;
+﻿using Microsoft.CognitiveServices.Speech;
 using Microsoft.CognitiveServices.Speech.Audio;
 using Microsoft.Extensions.Options;
+using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Domain.Configurations;
+using PrecisionReporters.Platform.Domain.Services.Interfaces;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace PrecisionReporters.Platform.Domain.Services
 {
     public class TranscriptionLiveAzureService : ITranscriptionLiveService
     {
+        private string _depositionId;
+        private string _userEmail;
         private const int ChannelCount = 1;
         private const int BitsPerSample = 16;
         private readonly AzureCognitiveServiceConfiguration _azureConfiguration;
         private readonly ITranscriptionService _transcriptionService;
         private PushAudioInputStream _audioInputStream;
         private SpeechRecognizer _recognizer;
-        private readonly ConcurrentBuffer _recognizedBuffer = new ConcurrentBuffer();
+
+        private bool _shouldClose = false;
+        private static readonly SemaphoreSlim _shouldCloseSemaphore = new SemaphoreSlim(1);
+        private bool _isClosed = true;
+        private static readonly SemaphoreSlim _isClosedSemaphore = new SemaphoreSlim(1);
 
         public TranscriptionLiveAzureService(IOptions<AzureCognitiveServiceConfiguration> azureConfiguration, ITranscriptionService transcriptionService)
         {
@@ -26,77 +32,96 @@ namespace PrecisionReporters.Platform.Domain.Services
             _transcriptionService = transcriptionService;
         }
 
-        public async Task<Transcription> RecognizeAsync(byte[] audioChunk, string userEmail, string depositionId, int sampleRate)
+        public event TranscriptionAvailableEventHandler OnTranscriptionAvailable;
+
+        public async Task RecognizeAsync(byte[] audioChunk)
         {
-            await InitializeRecognition(sampleRate);
+            await _isClosedSemaphore.WaitAsync();
+            if (_isClosed)
+            {
+                await _recognizer.StartContinuousRecognitionAsync()
+                 .ConfigureAwait(false);
+                _isClosed = false;
+            }
+            _isClosedSemaphore.Release();
 
             _audioInputStream.Write(audioChunk, audioChunk.Length);
-
-            var recognizedText = _recognizedBuffer.GetResults();
-
-            if (!string.IsNullOrWhiteSpace(recognizedText))
-            {
-                var transcription = new Transcription
-                {
-                    TranscriptDateTime = DateTime.UtcNow,
-                    Text = recognizedText
-                };
-                
-                await _transcriptionService.StoreTranscription(transcription, depositionId, userEmail);
-
-                return transcription;
-            }
-
-            return new Transcription();
         }
 
-        private async Task InitializeRecognition(int sampleRate)
+        public async Task InitializeRecognition(string userEmail, string depositionId, int sampleRate)
         {
-            if (_recognizer != null)
-            {
-                return;
-            }
+            _userEmail = userEmail;
+            _depositionId = depositionId;
 
             var speechConfig = SpeechConfig.FromSubscription(_azureConfiguration.SubscriptionKey, _azureConfiguration.RegionCode);
-            
+
             _audioInputStream = AudioInputStream.CreatePushStream(AudioStreamFormat.GetWaveFormatPCM(Convert.ToUInt16(sampleRate), BitsPerSample, ChannelCount));
             var audioConfig = AudioConfig.FromStreamInput(_audioInputStream);
-            
+
             _recognizer = new SpeechRecognizer(speechConfig, audioConfig);
 
-            _recognizer.Recognized += (s, e) =>
+            _recognizer.Recognized += async (s, e) =>
             {
                 if (e.Result.Reason == ResultReason.RecognizedSpeech)
                 {
-                    _recognizedBuffer.Append(e.Result.Text);
+                    await HandleRecognizedSpeech(e);
                 }
             };
 
             await _recognizer.StartContinuousRecognitionAsync()
                              .ConfigureAwait(false);
+            _isClosed = false;
         }
 
-        internal class ConcurrentBuffer
+        private async Task HandleRecognizedSpeech(SpeechRecognitionEventArgs e)
         {
-            private static readonly object _lock = new object();
-            private readonly StringBuilder _buffer = new StringBuilder();
-
-            public void Append(string data)
+            var transcription = new Transcription
             {
-                lock (_lock)
-                {
-                    _buffer.Append(data);
-                }
+                TranscriptDateTime = DateTime.UtcNow,
+                Text = e.Result.Text
+            };
+
+            var transcriptionResult = await _transcriptionService.StoreTranscription(transcription, _depositionId, _userEmail);
+
+            OnTranscriptionAvailable?.Invoke(this, new TranscriptionEventArgs { Transcription = transcriptionResult.Value });
+
+            await _shouldCloseSemaphore.WaitAsync();
+            await _isClosedSemaphore.WaitAsync();
+            if (_shouldClose)
+            {
+                await _recognizer.StopContinuousRecognitionAsync();
+                _shouldClose = false;
+                _isClosed = true;
             }
+            _isClosedSemaphore.Release();
+            _shouldCloseSemaphore.Release();
+        }
 
-            public string GetResults()
+        public void StopTranscriptStream()
+        {
+            _shouldClose = true;
+#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+            SendFinalSilences(); // do not await on purpose
+#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+        }
+
+        private async Task SendFinalSilences()
+        {
+            var silenceBuffer = new byte[1024 * 8 * 10];
+            while (true)
             {
-                lock (_lock)
+                await _isClosedSemaphore.WaitAsync();
+                if (_isClosed)
                 {
-                    var data = _buffer.ToString();
-                    _buffer.Clear();
-                    return data;
+                    _isClosedSemaphore.Release();
+                    break;
                 }
+
+                _isClosedSemaphore.Release();
+
+                _audioInputStream.Write(silenceBuffer, silenceBuffer.Length);
+
+                await Task.Delay(1000);
             }
         }
     }

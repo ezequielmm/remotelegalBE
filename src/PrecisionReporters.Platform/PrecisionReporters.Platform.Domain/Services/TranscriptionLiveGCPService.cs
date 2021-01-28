@@ -10,12 +10,17 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace PrecisionReporters.Platform.Domain.Services
 {
     public class TranscriptionLiveGCPService : ITranscriptionLiveService
     {
+        private string _depositionId;
+        private string _userEmail;
+        private int _sampleRate;
+
         private const int ChannelCount = 1;
         private const int BytesPerSample = 2;
         private static readonly TimeSpan _streamTimeLimit = TimeSpan.FromSeconds(290);
@@ -30,6 +35,13 @@ namespace PrecisionReporters.Platform.Domain.Services
         private DateTime _rpcStreamDeadline;
         private readonly SpeechClient _client;
 
+        private bool _shouldClose = false;
+        private static readonly SemaphoreSlim _shouldCloseSemaphore = new SemaphoreSlim(1);
+        private bool _isClosed = true;
+        private static readonly SemaphoreSlim _isClosedSemaphore = new SemaphoreSlim(1);
+
+        public event TranscriptionAvailableEventHandler OnTranscriptionAvailable;
+
         public TranscriptionLiveGCPService(IOptions<GcpConfiguration> gcpConfiguration, ITranscriptionService transcriptionService)
         {
             _transcriptionService = transcriptionService;
@@ -37,14 +49,48 @@ namespace PrecisionReporters.Platform.Domain.Services
             _client = GetGCPCredentials();
         }
 
-
-        public async Task<Transcription> RecognizeAsync(byte[] audioChunk, string userEmail, string depositionId, int sampleRate)
+        public async Task InitializeRecognition(string userEmail, string depositionId, int sampleRate)
         {
-            _audioBuffer.Add(ByteString.CopyFrom(audioChunk, 0, audioChunk.Length));
-            return await RunAsync(userEmail, depositionId, sampleRate);
+            _userEmail = userEmail;
+            _depositionId = depositionId;
+            _sampleRate = sampleRate;
         }
 
-        private async Task<Transcription> RunAsync(string userEmail, string depositionId, int sampleRate)
+        public async Task RecognizeAsync(byte[] audioChunk)
+        {
+            _audioBuffer.Add(ByteString.CopyFrom(audioChunk, 0, audioChunk.Length));
+            await RunAsync(_userEmail, _depositionId, _sampleRate);
+        }
+
+        public void StopTranscriptStream()
+        {
+            _shouldClose = true;
+#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+            SendFinalSilences(); // do not await on purpose
+#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+        }
+
+        private async Task SendFinalSilences()
+        {
+            var silenceBuffer = new byte[1024 * 8 * 10];
+            while (true)
+            {
+                await _isClosedSemaphore.WaitAsync();
+                if (_isClosed)
+                {
+                    _isClosedSemaphore.Release();
+                    break;
+                }
+
+                _isClosedSemaphore.Release();
+
+                await RecognizeAsync(silenceBuffer);
+
+                await Task.Delay(1000);
+            }
+        }
+
+        private async Task RunAsync(string userEmail, string depositionId, int sampleRate)
         {
             await MaybeStartStreamAsync(sampleRate);
 
@@ -52,12 +98,32 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             if (!string.IsNullOrEmpty(transcription.Text))
             {
-                await _transcriptionService.StoreTranscription(transcription, depositionId, userEmail);
+                await _shouldCloseSemaphore.WaitAsync();
+                if (_shouldClose)
+                {
+                    await DisposeStream();
+                    _shouldClose = false;
+                    _isClosed = true;
+                }
+                _shouldCloseSemaphore.Release();
+
+                var transcriptionResult = await _transcriptionService.StoreTranscription(transcription, depositionId, userEmail);
+                OnTranscriptionAvailable?.Invoke(this, new TranscriptionEventArgs { Transcription = transcriptionResult.Value });
             }
 
-            await TransferAudioChunkAsync();
+            await _isClosedSemaphore.WaitAsync();
+            if (!_isClosed)
+            {
+                await TransferAudioChunkAsync();
+            }
+            _isClosedSemaphore.Release();
+        }
 
-            return transcription;
+        private async Task DisposeStream()
+        {
+            await _rpcStream.WriteCompleteAsync();
+            _rpcStream.GrpcCall.Dispose();
+            _rpcStream = null;
         }
 
         private async Task MaybeStartStreamAsync(int sampleRate)
@@ -66,9 +132,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (_rpcStream != null && now >= _rpcStreamDeadline)
             {
                 Trace.WriteLine($"Closing stream before it times out");
-                await _rpcStream.WriteCompleteAsync();
-                _rpcStream.GrpcCall.Dispose();
-                _rpcStream = null;
+                await DisposeStream();
             }
 
             // If we have a valid stream at this point, we're fine.
@@ -101,6 +165,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                     InterimResults = false,
                 }
             });
+            _isClosed = false;
 
             Trace.WriteLine($"Writing {_processingBuffer.Count} chunks into the new stream.");
             foreach (var chunk in _processingBuffer)
@@ -179,6 +244,5 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             return speechClient.Build();
         }
-
     }
 }

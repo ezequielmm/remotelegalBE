@@ -10,6 +10,6 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
     {
         Task<Result<List<Transcription>>> GetTranscriptionsByDepositionId(Guid depositionId);
 
-        Task<Result> StoreTranscription(Transcription transcription, string depositionId, string userEmail);
+        Task<Result<Transcription>> StoreTranscription(Transcription transcription, string depositionId, string userEmail);
     }
 }

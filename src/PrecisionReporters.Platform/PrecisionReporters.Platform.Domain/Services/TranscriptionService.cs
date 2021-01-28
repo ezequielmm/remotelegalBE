@@ -21,7 +21,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             _userRepository = userRepository;
         }
 
-        public async Task<Result> StoreTranscription(Transcription transcription, string depositionId, string userEmail)
+        public async Task<Result<Transcription>> StoreTranscription(Transcription transcription, string depositionId, string userEmail)
         {
             var user = await _userRepository.GetFirstOrDefaultByFilter(x => x.EmailAddress == userEmail);
 
@@ -29,8 +29,8 @@ namespace PrecisionReporters.Platform.Domain.Services
             transcription.UserId = user.Id;
             transcription.Text = transcription.Text;
 
-            await _transcriptionRepository.Create(transcription);
-            return Result.Ok();
+            var newTranscription = await _transcriptionRepository.Create(transcription);
+            return Result.Ok(newTranscription);
         }
 
         public async Task<Result<List<Transcription>>> GetTranscriptionsByDepositionId(Guid depositionId)
