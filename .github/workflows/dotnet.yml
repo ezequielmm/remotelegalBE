@@ -59,7 +59,23 @@ jobs:
         find: "CONNECTION_STRING"
         replace: "${{ secrets.CONNECTIONSTRING_QA }}"
         exclude: "^$"
- 
+
+    - name: Replace Cognito GuestClientId in DEV task definition
+      uses: jacobtomlinson/gha-find-replace@master
+      with:
+        include: "task-definition-develop.json"
+        find: "GUEST_CLIENT_ID"
+        replace: "${{ secrets.COGNITOCONFIG_GUEST_CLIENT_ID_DEV }}"
+        exclude: "^$"
+
+    - name: Replace Cognito GuestClientId in QA task definition
+      uses: jacobtomlinson/gha-find-replace@master
+      with:
+        include: "task-definition-qa.json"
+        find: "GUEST_CLIENT_ID"
+        replace: "${{ secrets.COGNITOCONFIG_GUEST_CLIENT_ID_QA }}"
+        exclude: "^$"
+        
     - name: Replace Cognito Client ID in DEV task definition
       uses: jacobtomlinson/gha-find-replace@master
       with:
@@ -108,22 +124,6 @@ jobs:
         replace: "${{ secrets.COGNITOCONFIG_AUTHORITY_QA }}"
         exclude: "^$"
 
-
-    - name: Replace Cognito GuestClientId in DEV task definition
-      uses: jacobtomlinson/gha-find-replace@master
-      with:
-        include: "task-definition-develop.json"
-        find: "GUEST_CLIENT_ID"
-        replace: "${{ secrets.COGNITOCONFIG_GUEST_CLIENT_ID_DEV }}"
-        exclude: "^$"
-
-    - name: Replace Cognito GuestClientId in QA task definition
-      uses: jacobtomlinson/gha-find-replace@master
-      with:
-        include: "task-definition-qa.json"
-        find: "GUEST_CLIENT_ID"
-        replace: "${{ secrets.COGNITOCONFIG_GUEST_CLIENT_ID_QA }}"
-        exclude: "^$"
 
     - name: Replace Cognito GuestUsersPass in DEV task definition
       uses: jacobtomlinson/gha-find-replace@master
