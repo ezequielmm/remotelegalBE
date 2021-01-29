@@ -12,132 +12,150 @@
                 }
             ],
             "essential": true,
-          "environment": [
-            {
-              "name": "AppConfiguration__CognitoConfiguration__AWSRegion",
-              "value": "us-east-1"
-            },
-            {
-              "name": "AppConfiguration__CognitoConfiguration__AWSAccessKey",
-              "value": "ACCESS_KEY"
-            },
-            {
-              "name": "AppConfiguration__CognitoConfiguration__AWSSecretAccessKey",
-              "value": "SECRET_ACCESS_KEY"
-            },
-            {
-              "name": "AppConfiguration__CognitoConfiguration__ClientId",
-              "value": "CLIENT_ID"
-            },
-            {
-              "name": "AppConfiguration__CognitoConfiguration__UserPoolId",
-              "value": "USER_POOL_ID"
-            },
-            {
-              "name": "AppConfiguration__CognitoConfiguration__Authority",
-              "value": "AUTHORITY"
-            },
-            {
-              "name": "AppConfiguration__CognitoConfiguration__GuestClientId",
-              "value": "GUEST_CLIENT_ID"
-            },
-            {
-              "name": "AppConfiguration__CognitoConfiguration__GuestUsersGroup",
-              "value": "Guests"
-            },
-            {
-              "name": "AppConfiguration__CognitoConfiguration__GuestUsersPass",
-              "value": "GUEST_USER_PASS"
-            },
-            {
-              "name": "AppConfiguration__TwilioAccountConfiguration__AccountSid",
-              "value": "TWILIO_ACCOUNTSID"
-            },
-            {
-              "name": "AppConfiguration__TwilioAccountConfiguration__AuthToken",
-              "value": "TWILIO_AUTHTOKEN"
-            },
-            {
-              "name": "AppConfiguration__TwilioAccountConfiguration__ApiKeySid",
-              "value": "TWILIO_APIKEYSID"
-            },
-            {
-              "name": "AppConfiguration__TwilioAccountConfiguration__ApiKeySecret",
-              "value": "TWILIO_APIKEYSECRET"
-            },
-            {
-              "name": "AppConfiguration__TwilioAccountConfiguration__StatusCallbackUrl",
-              "value": "https://api-qa.prdevelopment.net/api/compositions"
-            },
-            {
-              "name": "AppConfiguration__TwilioAccountConfiguration__S3DestinationBucket",
-              "value": "twilio-bucket"
-            },
-            {
-              "name": "AppConfiguration__AwsStorageConfiguration__S3BucketRegion",
-              "value": "us-east-1"
-            },
-            {
-              "name": "AppConfiguration__DocumentConfiguration__BucketName",
-              "value": "deposition-documents-qa"
-            },
-            {
-              "name": "AppConfiguration__EmailConfiguration__VerifyEmailSubject",
-              "value": "[QA] Verify your Remote Legal account"
-            },
-            {
-              "name": "AppConfiguration__ConfigurationFlags__IsDeveloperExceptionPageEnabled",
-              "value": "true"
-            },
-            {
-              "name": "AppConfiguration__ConfigurationFlags__IsSwaggerUiEnabled",
-              "value": "true"
-            },
-            {
-              "name": "AppConfiguration__ConfigurationFlags__IsShowErrorMessageEnabled",
-              "value": "true"
-            },
-            {
-              "name": "AppConfiguration__UrlPathConfiguration__FrontendBaseUrl",
-              "value": "https://prp-qa.prdevelopment.net/"
-            },
-            {
-              "name": "AppConfiguration__CorsConfiguration__Origins",
-              "value": "https://*.prdevelopment.net"
-            },
-            {
-              "name": "AppConfiguration__ConnectionStrings__MySqlConnection",
-              "value": "CONNECTION_STRING"
-            },
-            {
-              "name": "AppConfiguration__GcpConfiguration__private_key_id",
-              "value": "GCP_PRIVATE_KEY_ID"
-            },
-            {
-              "name": "AppConfiguration__GcpConfiguration__private_key",
-              "value": "GCP_PRIVATE_KEY_CONTRACT"
-            },
-            {
-              "name": "AppConfiguration__GcpConfiguration__client_email",
-              "value": "GCP_CLIENT_EMAIL"
-            },
-            {
-              "name": "AppConfiguration__GcpConfiguration__client_id",
-              "value": "GCP_CLIENTID"
-            },
-            {
-              "name": "AppConfiguration__CloudServicesConfiguration__TranscriptionProvider",
-              "value": "Azure"
-            },
-            {
-              "name": "AppConfiguration__AzureCognitiveServiceConfiguration__SubscriptionKey",
-              "value": "AZURE_TRANSCRIPT_KEY"
-            },
-            {
-              "name": "AppConfiguration__VerificationLinkConfiguration__ExpirationTime",
-              "value": "96"
-            }
-          ],
+            "environment": [
+                {
+                    "name": "AppConfiguration__CognitoConfiguration__AWSRegion",
+                    "value": "us-east-1"
+                },
+                {
+                    "name": "AppConfiguration__CognitoConfiguration__ClientId",
+                    "value": "4lh6ji3bllp5mef6nn99oo5eii"
+                },
+                {
+                    "name": "AppConfiguration__CognitoConfiguration__UserPoolId",
+                    "value": "us-east-1_EIxRbuTmE"
+                },
+                {
+                    "name": "AppConfiguration__CognitoConfiguration__Authority",
+                    "value": "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_EIxRbuTmE"
+                },
+                {
+                    "name": "AppConfiguration__CognitoConfiguration__GuestClientId",
+                    "value": "2n4gmkmkv73kf645u69m5jv9nj"
+                },
+                {
+                    "name": "AppConfiguration__CognitoConfiguration__GuestUsersGroup",
+                    "value": "Guests"
+                },
+                {
+                    "name": "AppConfiguration__TwilioAccountConfiguration__StatusCallbackUrl",
+                    "value": "https://api-qa.prdevelopment.net/api/compositions"
+                },
+                {
+                    "name": "AppConfiguration__TwilioAccountConfiguration__S3DestinationBucket",
+                    "value": "twilio-bucket"
+                },
+                {
+                    "name": "AppConfiguration__AwsStorageConfiguration__S3BucketRegion",
+                    "value": "us-east-1"
+                },
+                {
+                    "name": "AppConfiguration__DocumentConfiguration__BucketName",
+                    "value": "deposition-documents-qa"
+                },
+                {
+                    "name": "AppConfiguration__EmailConfiguration__VerifyEmailSubject",
+                    "value": "[QA] Verify your Remote Legal account"
+                },
+                {
+                    "name": "AppConfiguration__ConfigurationFlags__IsDeveloperExceptionPageEnabled",
+                    "value": "true"
+                },
+                {
+                    "name": "AppConfiguration__ConfigurationFlags__IsSwaggerUiEnabled",
+                    "value": "true"
+                },
+                {
+                    "name": "AppConfiguration__ConfigurationFlags__IsShowErrorMessageEnabled",
+                    "value": "true"
+                },
+                {
+                    "name": "AppConfiguration__UrlPathConfiguration__FrontendBaseUrl",
+                    "value": "https://prp-qa.prdevelopment.net/"
+                },
+                {
+                    "name": "AppConfiguration__CorsConfiguration__Origins",
+                    "value": "https://*.prdevelopment.net"
+                },
+                {
+                    "name": "AppConfiguration__GcpConfiguration__client_email",
+                    "value": "remotelegal-text-to-speech@our-service-296819.iam.gserviceaccount.com"
+                },
+                {
+                    "name": "AppConfiguration__GcpConfiguration__type",
+                    "value": "service_account"
+                },
+                {
+                    "name": "AppConfiguration__GcpConfiguration__project_id",
+                    "value": "our-service-296819"
+                },
+                {
+                    "name": "AppConfiguration__GcpConfiguration__auth_uri",
+                    "value": "https://accounts.google.com/o/oauth2/auth"
+                },
+                {
+                    "name": "AppConfiguration__GcpConfiguration__token_uri",
+                    "value": "https://oauth2.googleapis.com/token"
+                },
+                {
+                    "name": "AppConfiguration__GcpConfiguration__auth_provider_x509_cert_url",
+                    "value": "https://www.googleapis.com/oauth2/v1/certs"
+                },
+                {
+                    "name": "AppConfiguration__GcpConfiguration__client_x509_cert_url",
+                    "value": "https://www.googleapis.com/robot/v1/metadata/x509/remotelegal-text-to-speech%40our-service-296819.iam.gserviceaccount.com"
+                },
+                {
+                    "name": "AppConfiguration__CloudServicesConfiguration__TranscriptionProvider",
+                    "value": "Azure"
+                },
+                {
+                    "name": "AppConfiguration__VerificationLinkConfiguration__ExpirationTime",
+                    "value": "96"
+                }
+            ],
+            "secrets": [
+                {
+                    "name": "AppConfiguration__ConnectionStrings__MySqlConnection",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:QA/AppConfiguration__ConnectionStrings__MySqlConnection-5rPWpp"
+                },
+                {
+                    "name": "AppConfiguration__GcpConfiguration__client_id",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:AppConfiguration__GcpConfiguration__client_id-86EMDk"
+                },
+                {
+                    "name": "AppConfiguration__GcpConfiguration__private_key",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:AppConfiguration__GcpConfiguration__private_key-IrkP9i"
+                },
+                {
+                    "name": "AppConfiguration__GcpConfiguration__private_key_id",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:AppConfiguration__GcpConfiguration__private_key_id-EIACdq"
+                },
+                {
+                    "name": "AppConfiguration__CognitoConfiguration__GuestUsersPass",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:QA/AppConfiguration__CognitoConfiguration__GuestUsersPass-EDGLK9"
+                },
+                {
+                    "name": "AppConfiguration__TwilioAccountConfiguration__AccountSid",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:QA/AppConfiguration__TwilioAccountConfiguration__AccountSid-h6Dde0"
+                },
+                {
+                    "name": "AppConfiguration__TwilioAccountConfiguration__AuthToken",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:QA/AppConfiguration__TwilioAccountConfiguration__AuthToken-ueY6wG"
+                },
+                {
+                    "name": "AppConfiguration__TwilioAccountConfiguration__ApiKeySid",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:QA/AppConfiguration__TwilioAccountConfiguration__ApiKeySid-ShcvrE"
+                },
+                {
+                    "name": "AppConfiguration__TwilioAccountConfiguration__ApiKeySecret",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:QA/AppConfiguration__TwilioAccountConfiguration__ApiKeySecret-u6YwCP"
+                },
+                {
+                    "name": "AppConfiguration__AzureCognitiveServiceConfiguration__SubscriptionKey",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:AppConfiguration__AzureCognitiveServiceConfiguration__SubscriptionKey-6JVtew"
+                }
+            ],
             "mountPoints": [],
             "volumesFrom": [],
             "logConfiguration": {
