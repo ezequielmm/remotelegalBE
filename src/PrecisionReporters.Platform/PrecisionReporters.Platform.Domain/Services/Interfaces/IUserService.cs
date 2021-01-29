@@ -17,5 +17,6 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
         Task<User> GetCurrentUserAsync();
         Task<Result<GuestToken>> LoginGuestAsync(string emailAddress);
         Task<Result<User>> AddGuestUser(User user);
+        Task RemoveGuestParticipants(List<Participant> participants);
     }
 }

@@ -11,5 +11,6 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
         Task<AdminConfirmSignUpResponse> ConfirmUserAsync(string emailAddress);
         Task<Result<GuestToken>> LoginGuestAsync(User user);
         Task<Result> CheckUserExists(string emailAddress);
+        Task<Result> DeleteUserAsync(User user);
     }
 }

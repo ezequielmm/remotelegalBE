@@ -147,5 +147,22 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             return Result.Ok();
         }
+
+        public async Task<Result> DeleteUserAsync(User user)
+        {
+            var userExistsResult = await CheckUserExists(user.EmailAddress);
+
+            if (userExistsResult.IsFailed)
+                return userExistsResult;
+
+            var request = new AdminDeleteUserRequest
+            {
+                Username = user.EmailAddress,
+                UserPoolId = _cognitoConfiguration.UserPoolId
+            };
+            await _cognitoClient.AdminDeleteUserAsync(request);
+
+            return Result.Ok();
+        }
     }
 }

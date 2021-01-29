@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 using System.Linq.Expressions;
 using System.Security.Claims;
 using Microsoft.Extensions.Configuration;
+using System.Linq;
 
 namespace PrecisionReporters.Platform.Domain.Services
 {
@@ -186,6 +187,16 @@ namespace PrecisionReporters.Platform.Domain.Services
                 return transactionResult;
            
             return Result.Ok(user);
+        }
+
+        public async Task RemoveGuestParticipants(List<Participant> participants)
+        {
+            foreach (var participant in participants.Where(x => x.User.IsGuest))
+            {
+                var userExists = await _cognitoService.CheckUserExists(participant.User.EmailAddress);
+                if (userExists.IsSuccess)
+                    await _cognitoService.DeleteUserAsync(participant.User);
+            }
         }
     }
 }

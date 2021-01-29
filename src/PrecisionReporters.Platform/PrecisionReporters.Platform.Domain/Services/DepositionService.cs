@@ -213,7 +213,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<Deposition>> EndDeposition(Guid id)
         {
-            var deposition = await _depositionRepository.GetById(id, new[] { nameof(Deposition.Room) });
+            var deposition = await _depositionRepository.GetById(id, new[] { nameof(Deposition.Room), $"{nameof(Deposition.Participants)}.{nameof(Participant.User)}" });
             if (deposition == null)
                 return Result.Fail(new ResourceNotFoundError($"Deposition with id {id} not found."));
 
@@ -225,6 +225,9 @@ namespace PrecisionReporters.Platform.Domain.Services
             deposition.Status = DepositionStatus.Completed;
 
             var updatedDeposition = await _depositionRepository.Update(deposition);
+
+            await _userService.RemoveGuestParticipants(deposition.Participants);
+
             return Result.Ok(updatedDeposition);
         }
 

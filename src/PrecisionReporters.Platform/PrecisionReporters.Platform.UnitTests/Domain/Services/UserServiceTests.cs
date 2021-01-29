@@ -350,6 +350,65 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             Assert.True(result.IsSuccess);
         }
 
+        [Fact]
+        public async Task RemoveGuestParticipants_ShouldRemoveOnlyGuestUsers()
+        {
+            var participantGuest = new Participant
+            {
+                Email = "participantGuest@guest.com",
+                User = new User { IsGuest = true, EmailAddress = "participantGuest@guest.com" }
+            };
+            var participantUser = new Participant
+            {
+                Email = "participantUser@user.com",
+                User = new User { IsGuest = false, EmailAddress = "participantUser@user.com" }
+            };
+            // Arrange
+            var participants = new List<Participant>
+            {
+                participantGuest, participantUser
+            };
+
+            var cognitoServiceMock = new Mock<ICognitoService>();
+            cognitoServiceMock.Setup(x => x.CheckUserExists(It.IsAny<string>())).ReturnsAsync(Result.Ok());
+            cognitoServiceMock.Setup(x => x.DeleteUserAsync(It.IsAny<User>())).ReturnsAsync(Result.Ok());
+
+            var service = InitializeService(cognitoService: cognitoServiceMock);
+
+            // Act
+            var result = service.RemoveGuestParticipants(participants);
+
+            // Assert
+            cognitoServiceMock.Verify(x => x.DeleteUserAsync(It.IsAny<User>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task RemoveGuestParticipants_ShouldNotCallDeleteUser_IfCognitoUserDoesNotExist()
+        {
+            var participantGuest = new Participant
+            {
+                Email = "participantGuest@guest.com",
+                User = new User { IsGuest = true, EmailAddress = "participantGuest@guest.com" }
+            };
+            // Arrange
+            var participants = new List<Participant>
+            {
+                participantGuest
+            };
+
+            var cognitoServiceMock = new Mock<ICognitoService>();
+            cognitoServiceMock.Setup(x => x.CheckUserExists(It.IsAny<string>())).ReturnsAsync(Result.Fail(new Error()));
+            cognitoServiceMock.Setup(x => x.DeleteUserAsync(It.IsAny<User>())).ReturnsAsync(Result.Ok());
+
+            var service = InitializeService(cognitoService: cognitoServiceMock);
+
+            // Act
+            var result = service.RemoveGuestParticipants(participants);
+
+            // Assert
+            cognitoServiceMock.Verify(x => x.DeleteUserAsync(It.IsAny<User>()), Times.Never);
+        }
+
         private UserService InitializeService(
             Mock<ILogger<UserService>> log = null,
             Mock<IUserRepository> userRepository = null,
