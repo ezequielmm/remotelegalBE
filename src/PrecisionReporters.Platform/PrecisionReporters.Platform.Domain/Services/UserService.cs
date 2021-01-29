@@ -178,15 +178,16 @@ namespace PrecisionReporters.Platform.Domain.Services
             var transactionResult = await _transactionHandler.RunAsync(async () =>
             {
                 if (userData == null)
-                    user = await _userRepository.Create(user);
+                    userData = await _userRepository.Create(user);
+                
                 if (cognitoUser.IsFailed)
-                    await _cognitoService.CreateAsync(user);
+                    await _cognitoService.CreateAsync(userData);
             });
 
             if (transactionResult.IsFailed)
                 return transactionResult;
            
-            return Result.Ok(user);
+            return Result.Ok(userData);
         }
 
         public async Task RemoveGuestParticipants(List<Participant> participants)
