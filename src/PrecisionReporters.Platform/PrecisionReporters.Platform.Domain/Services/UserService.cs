@@ -80,7 +80,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         public async Task<VerifyUser> VerifyUser(Guid verifyuserId)
         {
             var verifyUser = await _verifyUserService.GetVerifyUserById(verifyuserId);
-            var expirationTime = _verificationLinkConfiguration.ExpirationTime;
+            var expirationTime = int.Parse(_verificationLinkConfiguration.ExpirationTime);
 
             if (verifyUser.CreationDate < DateTime.UtcNow.AddHours(-expirationTime) || verifyUser.IsUsed)
             {

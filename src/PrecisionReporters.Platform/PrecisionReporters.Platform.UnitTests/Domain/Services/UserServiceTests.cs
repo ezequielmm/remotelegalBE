@@ -142,7 +142,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var id = Guid.NewGuid();
             var user = UserFactory.GetUserByGivenId(id);
 
-            var expirationTime = _verificationLinkConfiguration.ExpirationTime;
+            var expirationTime = int.Parse(_verificationLinkConfiguration.ExpirationTime);
             var dateNow = DateTime.UtcNow.AddHours(-expirationTime);
             var verifyUser = VerifyUserFactory.GetVerifyUserByGivenId(id, dateNow, user);
 

@@ -151,7 +151,7 @@
             },
             {
               "name": "AppConfiguration__VerificationLinkConfiguration__ExpirationTime",
-              "value": 96
+              "value": "96"
             }
           ],
             "mountPoints": [],
