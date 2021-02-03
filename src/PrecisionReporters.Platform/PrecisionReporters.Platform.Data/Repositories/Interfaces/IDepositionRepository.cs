@@ -10,6 +10,6 @@ namespace PrecisionReporters.Platform.Data.Repositories.Interfaces
     public interface IDepositionRepository: IRepository<Deposition>
     {
         Task<List<Deposition>> GetByStatus(Expression<Func<Deposition, object>> orderBy, SortDirection sortDirection,
-            Expression<Func<Deposition, bool>> filter = null, string[] include = null);
+            Expression<Func<Deposition, bool>> filter = null, string[] include = null, Expression<Func<Deposition, object>> orderByExtra = null);
     }
 } 

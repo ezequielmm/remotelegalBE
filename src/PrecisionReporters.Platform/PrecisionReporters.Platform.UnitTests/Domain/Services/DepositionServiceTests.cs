@@ -41,7 +41,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             _depositionRepositoryMock.Setup(x => x.GetByFilter(It.IsAny<Expression<Func<Deposition, object>>>(), It.IsAny<SortDirection>(), It.IsAny<Expression<Func<Deposition, bool>>>(), It.IsAny<string[]>())).ReturnsAsync(_depositions);
 
-            _depositionRepositoryMock.Setup(x => x.GetByStatus(It.IsAny<Expression<Func<Deposition, object>>>(), It.IsAny<SortDirection>(), It.IsAny<Expression<Func<Deposition, bool>>>(), It.IsAny<string[]>())).ReturnsAsync(_depositions);
+            _depositionRepositoryMock.Setup(x => x.GetByStatus(It.IsAny<Expression<Func<Deposition, object>>>(), It.IsAny<SortDirection>(), It.IsAny<Expression<Func<Deposition, bool>>>(), It.IsAny<string[]>(), It.IsAny<Expression<Func<Deposition, object>>>())).ReturnsAsync(_depositions);
 
             _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(() => _depositions.FirstOrDefault());
 
@@ -233,7 +233,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 It.IsAny<Expression<Func<Deposition, object>>>(),
                 It.IsAny<SortDirection>(),
                 It.IsAny<Expression<Func<Deposition, bool>>>(),
-                It.IsAny<string[]>()))
+                It.IsAny<string[]>(),
+                It.IsAny<Expression<Func<Deposition, object>>>()))
                 .ReturnsAsync(_depositions.FindAll(x => x.Status == DepositionStatus.Pending));
 
             _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(new User { IsAdmin = true }));
@@ -245,7 +246,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _depositionRepositoryMock.Verify(r => r.GetByStatus(It.IsAny<Expression<Func<Deposition, object>>>(),
                 It.IsAny<SortDirection>(),
                 It.Is<Expression<Func<Deposition, bool>>>((x => x != null)),
-                It.IsAny<string[]>()), Times.Once);
+                It.IsAny<string[]>(),
+                It.IsAny<Expression<Func<Deposition, object>>>()), Times.Once);
         }
 
         [Fact]
@@ -256,7 +258,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 It.IsAny<Expression<Func<Deposition, object>>>(),
                 It.IsAny<SortDirection>(),
                 It.IsAny<Expression<Func<Deposition, bool>>>(),
-                It.IsAny<string[]>()))
+                It.IsAny<string[]>(),
+                It.IsAny<Expression<Func<Deposition, object>>>()))
                 .ReturnsAsync(_depositions.FindAll(x => x.Status == DepositionStatus.Pending));
 
             _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(new User { IsAdmin = true }));
@@ -267,7 +270,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _depositionRepositoryMock.Verify(r => r.GetByStatus(It.IsAny<Expression<Func<Deposition, object>>>(),
                 It.IsAny<SortDirection>(),
                 It.Is<Expression<Func<Deposition, bool>>>(x => x != null),
-                It.IsAny<string[]>()), Times.Once);
+                It.IsAny<string[]>(),
+                It.IsAny<Expression<Func<Deposition, object>>>()), Times.Once);
         }
 
         [Fact]

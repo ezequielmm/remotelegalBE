@@ -17,9 +17,10 @@ namespace PrecisionReporters.Platform.Data.Repositories
         }
 
         public async Task<List<Deposition>> GetByStatus(Expression<Func<Deposition, object>> orderBy, SortDirection sortDirection,
-            Expression<Func<Deposition, bool>> filter = null, string[] include = null)
+            Expression<Func<Deposition, bool>> filter = null, string[] include = null, Expression<Func<Deposition, object>> orderByThen = null)
         {
             IQueryable<Deposition> query = _dbContext.Set<Deposition>();
+            IQueryable<Deposition> result;
 
             if (include != null)
             {
@@ -35,11 +36,20 @@ namespace PrecisionReporters.Platform.Data.Repositories
             }
 
             Expression<Func<Deposition, object>> orderByDefault = x => x.StartDate;
-
-            var result = sortDirection == SortDirection.Ascend
+             
+            if(orderByThen != null)
+            {
+                result = sortDirection == SortDirection.Ascend
+                ? query.OrderBy(orderBy).ThenBy(orderByThen).ThenBy(orderByDefault)
+                : query.OrderByDescending(orderBy).ThenByDescending(orderByThen).ThenBy(orderByDefault);
+            }
+            else
+            {
+                result = sortDirection == SortDirection.Ascend
                 ? query.OrderBy(orderBy).ThenBy(orderByDefault)
                 : query.OrderByDescending(orderBy).ThenBy(orderByDefault);
-
+            }
+            
             return await result.ToListAsync();
         }
     }

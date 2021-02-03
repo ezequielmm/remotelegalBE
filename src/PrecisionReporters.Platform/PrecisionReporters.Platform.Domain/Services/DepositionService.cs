@@ -160,15 +160,19 @@ namespace PrecisionReporters.Platform.Domain.Services
                 DepositionSortField.CaseNumber => x => x.Case.CaseNumber,
                 DepositionSortField.CaseName => x => x.Case.Name,
                 DepositionSortField.Company => x => x.Requester.CompanyName,
-                DepositionSortField.Requester => x => x.Requester.LastName,
+                DepositionSortField.Requester => x => x.Requester.FirstName + x.Requester.LastName,
                 _ => x => x.StartDate,
             };
+
+            Expression<Func<Deposition, object>> orderByThen = x => x.Requester.LastName;
 
             var depositions = await _depositionRepository.GetByStatus(
                 orderBy,
                 sortDirection ?? SortDirection.Ascend,
                 filter,
-                includes);
+                includes,
+                sortedField == DepositionSortField.Requester ? orderByThen : null
+                );
 
             return depositions;
         }
