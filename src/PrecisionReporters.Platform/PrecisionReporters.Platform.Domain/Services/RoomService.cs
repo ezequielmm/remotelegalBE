@@ -1,6 +1,4 @@
 ﻿using FluentResults;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
 using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Data.Enums;
 using PrecisionReporters.Platform.Data.Repositories.Interfaces;
@@ -59,19 +57,19 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (room.Status != RoomStatus.InProgress)
                 return Result.Fail(new InvalidInputError($"There was an error ending the the Room '{room.Name}'. It's not in progress. Current state: {room.Status}"));
 
-            var identityObject = new
+            var twilioIdentity = new TwilioIdentity
             {
                 Name = $"{user.FirstName} {user.LastName}",
                 Role = Enum.GetName(typeof(ParticipantType),role),
                 Email = email
             };
-            var idetityJsonString = SerializeObject(identityObject);
-            var twilioToken = _twilioService.GenerateToken(roomName, idetityJsonString);
+            
+            var twilioToken = _twilioService.GenerateToken(roomName, twilioIdentity);
 
             return Result.Ok(twilioToken);
         }
 
-        public async Task<Result<Room>> EndRoom(Room room)
+        public async Task<Result<Room>> EndRoom(Room room, string witnessEmail)
         {
             if (room.Status == RoomStatus.InProgress)
             {
@@ -82,7 +80,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
                 if (room.IsRecordingEnabled)
                 {
-                    var composition = await _twilioService.CreateComposition(roomResource);
+                    var composition = await _twilioService.CreateComposition(roomResource.Sid, witnessEmail);
                     room.Composition = new Composition
                     {
                         SId = composition.Sid,
@@ -129,15 +127,6 @@ namespace PrecisionReporters.Platform.Domain.Services
         {
             var room = await _roomRepository.GetFirstOrDefaultByFilter(x => x.SId == roomSid);
             return Result.Ok(room);
-        }
-
-        private string SerializeObject(object item)
-        {
-            var serializeOptions = new JsonSerializerSettings
-            {
-                ContractResolver = new CamelCasePropertyNamesContractResolver()
-            };
-            return JsonConvert.SerializeObject(item, serializeOptions);
         }
     }
 }

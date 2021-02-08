@@ -153,7 +153,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var roomService = InitializeService(twilioService: twilioServiceMock, roomRepository: roomRepositoryMock);
 
             // Act
-            var result = await roomService.EndRoom(room);
+            var result = await roomService.EndRoom(room, "witness@mail.com");
 
             // Assert            
             Assert.True(result.Value.Status == RoomStatus.Completed);
@@ -174,7 +174,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var roomService = InitializeService(twilioService: twilioServiceMock, roomRepository: roomRepositoryMock);
 
             // Act
-            var result = await roomService.EndRoom(room);
+            var result = await roomService.EndRoom(room, "witness@mail.com");
 
             // Assert            
             Assert.True(result.IsFailed);
@@ -291,27 +291,23 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var room = new Room { Name = roomName, Status = RoomStatus.InProgress };
             var participantRole = ParticipantType.Observer;
             var user = new User { Id = Guid.NewGuid(), EmailAddress = "testUser@mail.com", FirstName = "userFirstName", LastName = "userLastName" };
-            var identityObject = new
+            var identityObject = new TwilioIdentity
             {
                 Name = $"{user.FirstName} {user.LastName}",
                 Role = Enum.GetName(typeof(ParticipantType), participantRole ),
                 Email = user.EmailAddress
             };
-            var serializeOptions = new JsonSerializerOptions
-            {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            };
-            var expectedIdentitySerializedString = JsonSerializer.Serialize(identityObject, serializeOptions);
+
             var token = "TestingToken";
             _roomRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Room, bool>>>(), It.IsAny<string[]>())).ReturnsAsync(room);
-            _twilioServiceMock.Setup(x => x.GenerateToken(It.IsAny<string>(), It.IsAny<string>())).Returns(token);
+            _twilioServiceMock.Setup(x => x.GenerateToken(It.IsAny<string>(), It.IsAny<TwilioIdentity>())).Returns(token);
 
             // Act
             var result = await _service.GenerateRoomToken(roomName, user, participantRole, user.EmailAddress);
 
             // Assert
             _roomRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Room, bool>>>(), It.IsAny<string[]>()), Times.Once);
-            _twilioServiceMock.Verify(x => x.GenerateToken(It.Is<string>(a => a == roomName), It.Is<string>(a => a == expectedIdentitySerializedString)), Times.Once);
+            _twilioServiceMock.Verify(x => x.GenerateToken(It.Is<string>(a => a == roomName), It.Is<TwilioIdentity>(a => a.Email == identityObject.Email)), Times.Once);
             Assert.NotNull(result);
             Assert.IsType<Result<string>>(result);
             Assert.True(result.IsSuccess);

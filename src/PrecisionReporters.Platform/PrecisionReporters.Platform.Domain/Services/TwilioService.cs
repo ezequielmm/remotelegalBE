@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Domain.Commons;
 using PrecisionReporters.Platform.Domain.Configurations;
@@ -24,6 +25,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly TwilioAccountConfiguration _twilioAccountConfiguration;
         private readonly ILogger<TwilioService> _log;
         private readonly IAwsStorageService _awsStorageService;
+        private JsonSerializerSettings _serializeOptions;
 
         public TwilioService(Microsoft.Extensions.Options.IOptions<TwilioAccountConfiguration> twilioAccountConfiguration,
             ILogger<TwilioService> log, IAwsStorageService awsStorageService)
@@ -32,6 +34,10 @@ namespace PrecisionReporters.Platform.Domain.Services
             TwilioClient.Init(_twilioAccountConfiguration.AccountSid, _twilioAccountConfiguration.AuthToken);
             _log = log;
             _awsStorageService = awsStorageService;
+            _serializeOptions = new JsonSerializerSettings
+            {
+                ContractResolver = new CamelCasePropertyNamesContractResolver()
+            };
         }
 
         public async Task<Room> CreateRoom(Room room)
@@ -52,13 +58,15 @@ namespace PrecisionReporters.Platform.Domain.Services
             return roomResource;
         }
 
-        public string GenerateToken(string roomName, string username)
+        public string GenerateToken(string roomName, TwilioIdentity identity)
         {
             var grant = new VideoGrant();
             grant.Room = roomName;
             var grants = new HashSet<IGrant> { grant };
+
+            var stringIdentity = SerializeObject(identity);
             var token = new Token(_twilioAccountConfiguration.AccountSid, _twilioAccountConfiguration.ApiKeySid,
-                _twilioAccountConfiguration.ApiKeySecret, identity: username.ToString(), grants: grants); //TODO: identity should be object with Email, Name, Role
+                _twilioAccountConfiguration.ApiKeySecret, identity: stringIdentity, grants: grants);
 
             return token.ToJwt();
         }
@@ -73,19 +81,19 @@ namespace PrecisionReporters.Platform.Domain.Services
             return room;
         }
 
-        public async Task<CompositionResource> CreateComposition(RoomResource room)
+        public async Task<CompositionResource> CreateComposition(string roomSid, string witnessEmail)
         {
-            var participants = await GetParticipantsByRoom(room);
+            var witnessSid = await GetWitnessSid(roomSid, witnessEmail);
 
             var layout = new
             {
                 grid = new
                 {
-                    video_sources = new string[] { participants.First().Sid }
+                    video_sources = new string[] { witnessSid }
                 }
             };
             var composition = await CompositionResource.CreateAsync(
-              roomSid: room.Sid,
+              roomSid: roomSid,
               audioSources: new List<string> { "*" },
               videoLayout: layout,
               statusCallback: new Uri(_twilioAccountConfiguration.StatusCallbackUrl),
@@ -95,9 +103,19 @@ namespace PrecisionReporters.Platform.Domain.Services
             return composition;
         }
 
-        private async Task<List<ParticipantResource>> GetParticipantsByRoom(RoomResource room)
+        private async Task<string> GetWitnessSid(string roomSid, string witnessEmail)
         {
-            var participants = await ParticipantResource.ReadAsync(room.Sid);
+            var participants = await GetParticipantsByRoom(roomSid);
+            var witnessParticipant = participants.First(x => DeserializeObject(x.Identity).Email == witnessEmail);
+            if (witnessParticipant == null)
+                return participants.First().Sid;
+
+            return witnessParticipant.Sid;
+        }
+
+        private async Task<List<ParticipantResource>> GetParticipantsByRoom(string roomSid)
+        {
+            var participants = await ParticipantResource.ReadAsync(roomSid);
             return participants.ToList();
         }
 
@@ -171,6 +189,16 @@ namespace PrecisionReporters.Platform.Domain.Services
             }
             _log.LogError($"File Not found - path: {filePath}");
             return false;
+        }
+
+        private string SerializeObject(object item)
+        {
+            return JsonConvert.SerializeObject(item, _serializeOptions);
+        }
+
+        private TwilioIdentity DeserializeObject(string item)
+        {
+            return (TwilioIdentity)JsonConvert.DeserializeObject(item, typeof(TwilioIdentity), _serializeOptions);
         }
     }
 }

@@ -454,7 +454,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(() => _depositions.FirstOrDefault());
 
-            _roomServiceMock.Setup(x => x.EndRoom(It.IsAny<Room>())).ReturnsAsync(() => Result.Ok(new Room()));
+            _roomServiceMock.Setup(x => x.EndRoom(It.IsAny<Room>(), It.IsAny<string>())).ReturnsAsync(() => Result.Ok(new Room()));
 
             // Act
             var result = await _depositionService.EndDeposition(depositionId);
@@ -462,7 +462,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             // Assert
             _depositionRepositoryMock.Verify(mock => mock.GetById(It.Is<Guid>(a => a == depositionId), It.IsAny<string[]>()), Times.Once());
             _depositionRepositoryMock.Verify(mock => mock.Update(It.Is<Deposition>(d => d.Status == DepositionStatus.Completed && d.CompleteDate.HasValue)), Times.Once());
-            _roomServiceMock.Verify(mock => mock.EndRoom(It.IsAny<Room>()), Times.Once());
+            _roomServiceMock.Verify(mock => mock.EndRoom(It.IsAny<Room>(), It.IsAny<string>()), Times.Once());
             Assert.NotNull(result);
             Assert.True(result.IsSuccess);
         }
