@@ -30,5 +30,6 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
         Task<Result<List<BreakRoom>>> GetDepositionBreakRooms(Guid id);
         Task<Result<(Participant, bool)>> CheckParticipant(Guid id, string emailAddress);
         Task<Result<GuestToken>> JoinGuestParticipant(Guid depositionId, Participant guest);
+        Task<Result<Deposition>> ClearDepositionDocumentSharingId(Guid depositionId);
     }
 }

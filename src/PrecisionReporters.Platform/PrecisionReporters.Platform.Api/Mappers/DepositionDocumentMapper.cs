@@ -12,7 +12,8 @@ namespace PrecisionReporters.Platform.Api.Mappers
                 Id = model.Id,
                 CreationDate = model.CreationDate,
                 DocumentId = model.Document.Id,
-                DepositionId = model.Deposition.Id
+                DepositionId = model.Deposition.Id,
+                StampLabel = model.StampLabel
             };
         }
 
@@ -23,7 +24,8 @@ namespace PrecisionReporters.Platform.Api.Mappers
                 Id = dto.Id,
                 CreationDate = dto.CreationDate.UtcDateTime,
                 DocumentId = dto.DocumentId,
-                DepositionId = dto.DepositionId
+                DepositionId = dto.DepositionId,
+                StampLabel = dto.StampLabel
             };
         }
 

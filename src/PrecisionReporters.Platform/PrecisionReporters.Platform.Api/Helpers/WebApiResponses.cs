@@ -18,6 +18,9 @@ namespace PrecisionReporters.Platform.Api.Helpers
             if (result.HasError<ResourceConflictError>())
                 return new ConflictObjectResult(result.Errors);
 
+            if (result.HasError<ForbiddenError>())
+                return new ForbidResult();
+
             return new StatusCodeResult((int) HttpStatusCode.InternalServerError);
         }
     }

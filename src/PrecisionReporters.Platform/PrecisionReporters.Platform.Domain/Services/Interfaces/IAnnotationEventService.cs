@@ -9,5 +9,6 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
     public interface IAnnotationEventService
     {
         Task<Result<List<AnnotationEvent>>> GetDocumentAnnotations(Guid depositionId, Guid? annotationId);
+        Task<Result> RemoveUserDocumentAnnotations(Guid documentId);
     }
 }

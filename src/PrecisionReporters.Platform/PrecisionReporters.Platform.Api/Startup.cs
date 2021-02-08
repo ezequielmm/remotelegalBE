@@ -137,6 +137,7 @@ namespace PrecisionReporters.Platform.Api
             services.AddSingleton<IMapper<Transcription, TranscriptionDto, object>, TranscriptionMapper>();
             services.AddSingleton<IMapper<BreakRoom, BreakRoomDto, object>, BreakRoomMapper>();
             services.AddSingleton<IMapper<Participant, object, CreateGuestDto>, GuestParticipantMapper>();
+            services.AddSingleton<IMapper<Document, DocumentWithSignedUrlDto, object>, DocumentWithSignedUrlMapper>();
 
             // Websockets
             services.AddTransient<ITranscriptionsHandler, TranscriptionsHandler>();
@@ -193,6 +194,7 @@ namespace PrecisionReporters.Platform.Api
 
             services.AddScoped<ICompositionService, CompositionService>();
             services.AddScoped<IBreakRoomService, BreakRoomService>();
+            services.AddScoped<IDepositionDocumentService, DepositionDocumentService>();
             if (appConfiguration.CloudServicesConfiguration.TranscriptionProvider.Equals("GCP"))
             {
                 services.AddTransient<ITranscriptionLiveService, TranscriptionLiveGCPService>();
@@ -237,6 +239,7 @@ namespace PrecisionReporters.Platform.Api
             services.AddScoped<IAnnotationEventRepository, AnnotationEventRepository>();
             services.AddTransient<ITranscriptionRepository, TranscriptionRepository>();
             services.AddScoped<IBreakRoomRepository, BreakRoomRepository>();
+            services.AddScoped<IDepositionDocumentRepository, DepositionDocumentRepository>();
 
             services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseMySQL(appConfiguration.ConnectionStrings.MySqlConnection));

@@ -49,5 +49,12 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             return Result.Ok(annotations);
         }
+
+        public async Task<Result> RemoveUserDocumentAnnotations(Guid documentId)
+        {
+            var annotationEventList = await _annotationEventRepository.GetByFilter(x => x.DocumentId == documentId);
+            await _annotationEventRepository.RemoveRange(annotationEventList);
+            return Result.Ok();
+        }
     }
 }

@@ -10,5 +10,6 @@ namespace PrecisionReporters.Platform.Api.Dtos
         public Guid Id { get; set; }
         public DateTimeOffset CreationDate { get; set; }
         public UserOutputDto AddedBy { get; set; }
+        public DateTimeOffset? SharedAt { get; set; }
     }
 }

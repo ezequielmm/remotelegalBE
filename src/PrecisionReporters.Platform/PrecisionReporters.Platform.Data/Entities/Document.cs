@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace PrecisionReporters.Platform.Data.Entities
 {
-    public class Document: BaseEntity<Document>
+    public class Document : BaseEntity<Document>
     {
         public string Name { get; set; }
         public string DisplayName { get; set; }
@@ -18,6 +18,7 @@ namespace PrecisionReporters.Platform.Data.Entities
         [ForeignKey(nameof(AddedBy))]
         public Guid AddedById { get; set; }
         public User AddedBy { get; set; }
+        public DateTime? SharedAt { get; set; }
 
         public List<AnnotationEvent> AnnotationEvents { get; set; }
 

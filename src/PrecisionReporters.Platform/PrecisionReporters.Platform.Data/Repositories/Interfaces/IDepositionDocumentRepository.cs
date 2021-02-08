@@ -2,7 +2,7 @@
 
 namespace PrecisionReporters.Platform.Data.Repositories.Interfaces
 {
-    public interface IDocumentUserDepositionRepository : IRepository<DocumentUserDeposition>
-    {
+    public interface IDepositionDocumentRepository : IRepository<DepositionDocument>
+    {        
     }
 }

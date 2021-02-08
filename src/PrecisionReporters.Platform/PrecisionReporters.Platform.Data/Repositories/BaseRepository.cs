@@ -40,6 +40,18 @@ namespace PrecisionReporters.Platform.Data.Repositories
             return editedEntity;
         }
 
+        public async Task Remove(T entity)
+        {
+            _dbContext.Set<T>().Remove(entity);
+            await _dbContext.SaveChangesAsync();
+        }
+
+        public async Task RemoveRange(List<T> entities)
+        {
+            _dbContext.Set<T>().RemoveRange(entities);
+            await _dbContext.SaveChangesAsync();
+        }
+
         public async Task<List<T>> GetByFilter(Expression<Func<T, bool>> filter = null, string[] include = null)
         {
             return await GetByFilter(x => x.CreationDate, SortDirection.Ascend, filter, include);
@@ -89,6 +101,41 @@ namespace PrecisionReporters.Platform.Data.Repositories
             return await query.FirstOrDefaultAsync();
         }
 
+        public async Task<List<T>> GetByFilterOrderByThen(Expression<Func<T, object>> orderBy, SortDirection sortDirection,
+            Expression<Func<T, bool>> filter = null, string[] include = null, Expression<Func<T, object>> orderByThen = null)
+        {
+            IQueryable<T> query = _dbContext.Set<T>();
+            IQueryable<T> result;
+
+            if (include != null)
+            {
+                foreach (var property in include)
+                {
+                    query = query.Include(property);
+                }
+            }
+
+            if (filter != null)
+            {
+                query = query.Where(filter);
+            }
+
+            if (orderByThen != null)
+            {
+                result = sortDirection == SortDirection.Ascend
+                ? query.OrderBy(orderBy).ThenBy(orderByThen)
+                : query.OrderByDescending(orderBy).ThenByDescending(orderByThen);
+            }
+            else
+            {
+                result = sortDirection == SortDirection.Ascend
+                ? query.OrderBy(orderBy)
+                : query.OrderByDescending(orderBy);
+            }
+
+            return await result.ToListAsync();
+        }
+
         public async Task<T> GetById(Guid id, string[] include = null)
         {
             IQueryable<T> query = _dbContext.Set<T>();
@@ -102,6 +149,6 @@ namespace PrecisionReporters.Platform.Data.Repositories
             }
 
             return await query.FirstOrDefaultAsync(x => x.Id == id);
-        }
+        }        
     }
 }

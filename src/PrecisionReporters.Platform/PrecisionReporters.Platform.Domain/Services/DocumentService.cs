@@ -29,7 +29,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly IDocumentRepository _documentRepository;
         private readonly ILogger<DocumentService> _logger;
         private readonly DocumentConfiguration _documentsConfiguration;
-        
+
 
         public DocumentService(IAwsStorageService awsStorageService, IOptions<DocumentConfiguration> documentConfigurations, ILogger<DocumentService> logger,
             IUserService userService, IDepositionService depositionService, IDocumentUserDepositionRepository documentUserDepositionRepository,
@@ -87,6 +87,17 @@ namespace PrecisionReporters.Platform.Domain.Services
             return Result.Ok();
         }
 
+        public Result ValidateFile(FileTransferInfo file)
+        {
+            if (file.Length > _documentsConfiguration.MaxFileSize)
+                return Result.Fail(new InvalidInputError("Exhibit size exceeds the allowed limit"));
+
+            if (!_documentsConfiguration.AcceptedFileExtensions.Contains(Path.GetExtension(file.Name)))
+                return Result.Fail(new InvalidInputError("Failed to upload the file. Please try again"));
+
+            return Result.Ok();
+        }
+
         public async Task<Result> UploadDocuments(Guid id, string identity, List<FileTransferInfo> files)
         {
             var userResult = await _userService.GetUserByEmail(identity);
@@ -105,6 +116,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             var deposition = depositionResult.Value;
             foreach (var file in files)
             {
+                // TODO: Use depositionId for bucket folder
                 var documentResult = await UploadDocumentFile(file, userResult.Value, $"{deposition.CaseId}/exhibits");
                 if (documentResult.IsFailed)
                 {
@@ -208,15 +220,70 @@ namespace PrecisionReporters.Platform.Domain.Services
                 return Result.Fail(new ResourceConflictError("Can't share document while another document is being shared."));
 
             depositionResult.Value.SharingDocumentId = id;
+
+            // Save ShareAt information as soon as the document is been shared
+            var document = await _documentRepository.GetById(id);
+            document.SharedAt = DateTime.UtcNow;
+            await _documentRepository.Update(document);
+
             return await _depositionService.Update(depositionResult.Value);
         }
 
         public async Task<Result<Document>> GetDocument(Guid id)
         {
-           var document = await _documentRepository.GetById(id, new[] { nameof(Document.AddedBy) });
+            var document = await _documentRepository.GetById(id, new[] { nameof(Document.AddedBy) });
             if (document == null)
                 return Result.Fail(new ResourceNotFoundError("Document not found"));
             return Result.Ok(document);
+        }
+
+        public async Task<Result> UpdateDocument(DepositionDocument depositionDocument, string identity, FileTransferInfo file)
+        {
+            var userResult = await _userService.GetUserByEmail(identity);
+            if (userResult.IsFailed)
+                return userResult.ToResult();
+
+            var depositionResult = await _depositionService.GetDepositionByIdWithDocumentUsers(depositionDocument.DepositionId);
+            if (depositionResult.IsFailed)
+                return depositionResult.ToResult();
+
+            var fileValidationResult = ValidateFile(file);
+            if (fileValidationResult.IsFailed)
+                return fileValidationResult;
+
+            var deposition = depositionResult.Value;
+
+            // TODO: when original file was not a pdf we need to make sure we remove it from S3 since in that case it won't get overriden
+            var fileName = $"{Path.GetFileNameWithoutExtension(depositionDocument.Document.Name)}.pdf";
+            var documentResult = await UploadFileToStorage(file, userResult.Value, fileName, $"{deposition.CaseId}/{deposition.Id}/exhibits");
+            if (documentResult.IsFailed)
+            { 
+                _logger.LogError(new Exception(documentResult.Errors.First().Message), "Unable to update the document to storage");
+                return documentResult;
+            }
+
+            var documentCreationResult = Result.Ok();
+
+            var transactionResult = await _transactionHandler.RunAsync(async () =>
+            {
+                try
+                {
+                    var documentUser = await _documentUserDepositionRepository.GetFirstOrDefaultByFilter(x => x.DocumentId == documentResult.Value.Id && x.DepositionId == deposition.Id);
+                    await _documentUserDepositionRepository.Remove(documentUser);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Unable to delete user documents");
+                    Result.Fail(new ExceptionalError("Unable to delete user documents", ex));
+                }
+            });
+
+            if (transactionResult.IsFailed)
+            {
+                return transactionResult;
+            }
+
+            return Result.Ok();
         }
 
         private async Task<Result<Document>> UploadFileToStorage(FileTransferInfo file, User user, string fileName, string parentPath)
@@ -274,5 +341,15 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             return Result.Ok(updatedDocument);
         }
-    }
+
+        public async Task<Result> RemoveDepositionUserDocuments(Guid documentId)
+        {
+            var documentUser = await _documentUserDepositionRepository.GetFirstOrDefaultByFilter(x => x.DocumentId == documentId);
+            if (documentUser == null)
+                return Result.Fail(new ResourceNotFoundError());
+
+            await _documentUserDepositionRepository.Remove(documentUser);
+            return Result.Ok();
+        }
+    }    
 }

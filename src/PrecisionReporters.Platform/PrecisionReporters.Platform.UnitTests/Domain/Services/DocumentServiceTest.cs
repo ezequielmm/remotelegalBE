@@ -940,6 +940,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var userEmail = "notExisitingUser@mail.com";
             var user = new User { Id = Guid.NewGuid(), EmailAddress = userEmail };
             var documentId = Guid.NewGuid();
+            var document = new Document { Id = documentId };
             var depositionId = Guid.NewGuid();
             var deposition = DepositionFactory.GetDepositionWithParticipantEmail("Participant@mail.com");
             deposition.Id = depositionId;
@@ -947,6 +948,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var expectedError = "Testing Error";
             _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(user));
             _documentUserDepositionRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<DocumentUserDeposition, bool>>>(), It.IsAny<string[]>())).ReturnsAsync(documentUserDeposition);
+            _documentRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(document);
             _depositionServiceMock.Setup(x => x.GetDepositionById(It.IsAny<Guid>())).ReturnsAsync(Result.Ok(deposition));
             _depositionServiceMock.Setup(x => x.Update(It.IsAny<Deposition>())).ReturnsAsync(Result.Fail(new Error(expectedError)));
 
@@ -957,6 +959,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _userServiceMock.Verify(x => x.GetUserByEmail(It.Is<string>(a => a == userEmail)), Times.Once);
             _documentUserDepositionRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<DocumentUserDeposition, bool>>>(), It.Is<string[]>(a => a.Contains(nameof(DocumentUserDeposition.Document)))), Times.Once);
             _depositionServiceMock.Verify(x => x.GetDepositionById(It.Is<Guid>(a => a == depositionId)), Times.Once);
+            _depositionServiceMock.Verify(x => x.Update(It.Is<Deposition>(a => a == deposition)), Times.Once);
             _depositionServiceMock.Verify(x => x.Update(It.Is<Deposition>(a => a == deposition)), Times.Once);
             Assert.NotNull(result);
             Assert.IsType<Result>(result);
@@ -971,6 +974,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var userEmail = "notExisitingUser@mail.com";
             var user = new User { Id = Guid.NewGuid(), EmailAddress = userEmail };
             var documentId = Guid.NewGuid();
+            var document = new Document { Id = documentId };
             var depositionId = Guid.NewGuid();
             var deposition = DepositionFactory.GetDepositionWithParticipantEmail("Participant@mail.com");
             deposition.Id = depositionId;
@@ -978,6 +982,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var documentUserDeposition = new DocumentUserDeposition { User = user, Deposition = deposition, DepositionId = depositionId, DocumentId = documentId };
             _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(user));
             _documentUserDepositionRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<DocumentUserDeposition, bool>>>(), It.IsAny<string[]>())).ReturnsAsync(documentUserDeposition);
+            _documentRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(document);
             _depositionServiceMock.Setup(x => x.GetDepositionById(It.IsAny<Guid>())).ReturnsAsync(Result.Ok(deposition));
             _depositionServiceMock.Setup(x => x.Update(It.IsAny<Deposition>())).ReturnsAsync(Result.Ok(deposition));
 
@@ -988,6 +993,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _userServiceMock.Verify(x => x.GetUserByEmail(It.Is<string>(a => a == userEmail)), Times.Once);
             _documentUserDepositionRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<DocumentUserDeposition, bool>>>(), It.Is<string[]>(a => a.Contains(nameof(DocumentUserDeposition.Document)))), Times.Once);
             _depositionServiceMock.Verify(x => x.GetDepositionById(It.Is<Guid>(a => a == depositionId)), Times.Once);
+            _depositionServiceMock.Verify(x => x.Update(It.Is<Deposition>(a => a == deposition)), Times.Once);
             _depositionServiceMock.Verify(x => x.Update(It.Is<Deposition>(a => a == deposition)), Times.Once);
             Assert.NotNull(result);
             Assert.IsType<Result>(result);

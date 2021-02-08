@@ -186,43 +186,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
                 return WebApiResponses.GetErrorResponse(breakRoomsResult);
 
             return Ok(breakRoomsResult.Value.Select(i => _breakRoomMapper.ToDto(i)));
-        }
-
-        /// <summary>
-        /// Gets the public url of a file. This url exipres after deposition end or after 2 hours if deposition doesn't have an end date
-        /// </summary>
-        /// <param name="id">Document identifier</param>
-        /// <returns>Document information and a presigned url to the asociated file</returns>
-        [HttpGet("{id}/SharedDocument")]
-        [UserAuthorize(ResourceType.Deposition, ResourceAction.ViewSharedDocument)]
-        public async Task<ActionResult<DocumentWithSignedUrlDto>> GetSharedDocument([ResourceId(ResourceType.Deposition)] Guid id)
-        {
-            var documentIdResult = await _depositionService.GetSharedDocument(id);
-            if (documentIdResult.IsFailed)
-                return WebApiResponses.GetErrorResponse(documentIdResult);
-
-            var document = documentIdResult.Value;
-
-            var fileSignedUrlResult = _documentService.GetFileSignedUrl(document);
-            if (fileSignedUrlResult.IsFailed)
-                return WebApiResponses.GetErrorResponse(fileSignedUrlResult);
-
-            return Ok(new DocumentWithSignedUrlDto
-            {
-                Id = document.Id,
-                CreationDate = document.CreationDate,
-                DisplayName = document.DisplayName,
-                Size = document.Size,
-                Name = document.Name,
-                PreSignedUrl = fileSignedUrlResult.Value,
-                AddedBy = new UserOutputDto
-                {
-                    Id = document.AddedBy.Id,
-                    FirstName = document.AddedBy.FirstName,
-                    LastName = document.AddedBy.LastName
-                }
-            });
-        }
+        }        
 
         /// <summary>
         /// Gets the events of a an existing Deposition.

@@ -14,6 +14,8 @@ namespace PrecisionReporters.Platform.Data.Entities
         [Column(TypeName = "char(36)")]
         public Guid DocumentId { get; set; }
         public Document Document { get; set; }
+        [Column(TypeName = "varchar(8000)")]
+        public string StampLabel { get; set; }
 
         public override void CopyFrom(DepositionDocument entity)
         {

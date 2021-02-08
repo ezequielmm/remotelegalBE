@@ -1,5 +1,6 @@
 ﻿using PrecisionReporters.Platform.Api.Dtos;
 using PrecisionReporters.Platform.Data.Entities;
+using System;
 
 namespace PrecisionReporters.Platform.Api.Mappers
 {
@@ -14,7 +15,8 @@ namespace PrecisionReporters.Platform.Api.Mappers
                 DisplayName = dto.DisplayName,
                 Size = dto.Size,
                 Name = dto.Name,
-                AddedById = dto.AddedBy.Id
+                AddedById = dto.AddedBy.Id,
+                SharedAt = dto.SharedAt?.UtcDateTime
             };
         }
 
@@ -41,6 +43,7 @@ namespace PrecisionReporters.Platform.Api.Mappers
                     FirstName = model.AddedBy.FirstName,
                     LastName = model.AddedBy.LastName
                 },
+                SharedAt = model.SharedAt.HasValue ? new DateTimeOffset(model.SharedAt.Value, TimeSpan.Zero) : (DateTimeOffset?)null
             };
         }
     }

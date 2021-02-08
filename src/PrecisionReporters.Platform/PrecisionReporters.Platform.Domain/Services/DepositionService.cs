@@ -400,6 +400,13 @@ namespace PrecisionReporters.Platform.Domain.Services
             return Result.Ok((participant, isUser));
         }
 
+        public async Task<Result<Deposition>> ClearDepositionDocumentSharingId(Guid depositionId)
+        {
+            var depositionResult = await _depositionRepository.GetById(depositionId);
+            depositionResult.SharingDocumentId = null;
+            return Result.Ok(await _depositionRepository.Update(depositionResult));            
+        }
+
         private Participant GetParticipantByEmail(Deposition deposition, string emailAddress)
         {
             Participant participant = null;

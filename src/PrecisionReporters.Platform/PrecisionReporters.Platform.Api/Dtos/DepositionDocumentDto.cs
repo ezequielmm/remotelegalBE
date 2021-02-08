@@ -8,5 +8,6 @@ namespace PrecisionReporters.Platform.Api.Dtos
         public DateTimeOffset CreationDate { get; set; }
         public Guid DocumentId { get; set; }
         public Guid DepositionId { get; set; }
+        public string StampLabel { get; set; }
     }
 }
