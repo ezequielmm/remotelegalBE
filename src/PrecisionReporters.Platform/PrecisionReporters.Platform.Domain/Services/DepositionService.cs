@@ -18,6 +18,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         private const int DEFAULT_BREAK_ROOMS_AMOUNT = 4;
         private const string BREAK_ROOM_PREFIX = "BREAK_ROOM";
         private readonly IDepositionRepository _depositionRepository;
+        private readonly IParticipantRepository _participantRepository;
         private readonly IDepositionEventRepository _depositionEventRepository;
         private readonly IUserService _userService;
         private readonly IRoomService _roomService;
@@ -25,13 +26,15 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly IPermissionService _permissionService;
 
         public DepositionService(IDepositionRepository depositionRepository,
-			IDepositionEventRepository depositionEventRepository,
+            IParticipantRepository participantRepository,
+            IDepositionEventRepository depositionEventRepository,
             IUserService userService,
             IRoomService roomService,
             IBreakRoomService breakRoomService,
             IPermissionService permissionService)
         {
             _depositionRepository = depositionRepository;
+            _participantRepository = participantRepository;
             _depositionEventRepository = depositionEventRepository;
             _userService = userService;
             _roomService = roomService;
@@ -421,11 +424,6 @@ namespace PrecisionReporters.Platform.Domain.Services
             return participant;
         }
 
-        private bool IsDepositionParticipant(Deposition deposition, string emailAddress)
-        {
-            return GetParticipantByEmail(deposition, emailAddress) != null;
-        }
-
         public async Task<Result<GuestToken>> JoinGuestParticipant(Guid depositionId, Participant guest)
         {
             var include = new[] { nameof(Deposition.Participants), nameof(Deposition.Witness) };
@@ -441,13 +439,19 @@ namespace PrecisionReporters.Platform.Domain.Services
                 return Result.Fail(new InvalidInputError("The deposition is not longer available"));
 
             var userResult = await _userService.AddGuestUser(guest.User);
-
             if (userResult.IsFailed)
                 return userResult.ToResult<GuestToken>();
-            
-            if (IsDepositionParticipant(deposition, userResult.Value.EmailAddress))
+
+            var participant = GetParticipantByEmail(deposition, userResult.Value.EmailAddress);
+            if (participant != null)
+            {
+                userResult.Value.FirstName = guest.Name;
+                participant.User = userResult.Value;
+                participant.Name = guest.Name;
+                await _participantRepository.Update(participant);
                 return await _userService.LoginGuestAsync(guest.Email);
-                
+            }
+
             guest.User = userResult.Value;
             deposition.Participants.Add(guest);
             await _depositionRepository.Update(deposition);

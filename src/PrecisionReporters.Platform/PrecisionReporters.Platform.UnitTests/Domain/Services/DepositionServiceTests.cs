@@ -22,6 +22,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         // TODO: we need to refactor this file to have the test setup on the constructor
         private readonly DepositionService _depositionService;
         private readonly Mock<IDepositionRepository> _depositionRepositoryMock;
+        private readonly Mock<IParticipantRepository> _participantRepositoryMock;
         private readonly Mock<IDepositionEventRepository> _depositionEventRepositoryMock;
         private readonly Mock<IUserService> _userServiceMock;
         private readonly Mock<IRoomService> _roomServiceMock;
@@ -36,6 +37,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _depositionEventRepositoryMock = new Mock<IDepositionEventRepository>();
 
             _depositionRepositoryMock = new Mock<IDepositionRepository>();
+
+            _participantRepositoryMock = new Mock<IParticipantRepository>();
 
             _depositionRepositoryMock.Setup(x => x.GetByFilter(It.IsAny<Expression<Func<Deposition, bool>>>(), It.IsAny<string[]>())).ReturnsAsync(_depositions);
 
@@ -53,7 +56,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             _permissionServiceMock = new Mock<IPermissionService>();
 
-            _depositionService = new DepositionService(_depositionRepositoryMock.Object, _depositionEventRepositoryMock.Object, _userServiceMock.Object, _roomServiceMock.Object, _breakRoomServiceMock.Object, _permissionServiceMock.Object);
+            _depositionService = new DepositionService(_depositionRepositoryMock.Object, _participantRepositoryMock.Object, _depositionEventRepositoryMock.Object, _userServiceMock.Object, _roomServiceMock.Object, _breakRoomServiceMock.Object, _permissionServiceMock.Object);
         }
 
         public void Dispose()
@@ -856,6 +859,39 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _depositionRepositoryMock.Verify(x => x.Update(It.Is<Deposition>(x => x.Id == depositionId)), Times.Never);
             _permissionServiceMock.Verify(x => x.AddParticipantPermissions(It.Is<Participant>(x => x.Email == guestEmail)), Times.Never);
 
+            Assert.True(result.IsSuccess);
+        }
+
+        [Fact]
+        public async Task JoinGuestParticipant_ShouldSaveNewUserAndCallCognitoApi_ForNoUserAndParticipant()
+        {
+            // Arrange
+            var guestEmail = "participant@mail.com";
+            var user = new User { Id = Guid.NewGuid(), EmailAddress = guestEmail };
+            var name = "Test";
+
+            var depositionId = Guid.NewGuid();
+            var deposition = DepositionFactory.GetDepositionWithParticipantEmail("participant@mail.com");
+            deposition.Id = depositionId;
+
+            var participant = new Participant
+            {
+                Name = name,
+                Email = guestEmail,
+                Role = ParticipantType.Observer,
+                DepositionId = depositionId
+            };
+
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
+            _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Fail(new Error()));
+            _userServiceMock.Setup(x => x.AddGuestUser(It.IsAny<User>())).ReturnsAsync(Result.Ok(user));
+            _userServiceMock.Setup(x => x.LoginGuestAsync(It.IsAny<string>())).ReturnsAsync(Result.Ok(new GuestToken()));
+
+            // Act
+            var result = await _depositionService.JoinGuestParticipant(depositionId, participant);
+
+            // Assert
+            _participantRepositoryMock.Verify(x => x.Update(It.Is<Participant>(x => x.Email == guestEmail)), Times.Once);
             Assert.True(result.IsSuccess);
         }
     }

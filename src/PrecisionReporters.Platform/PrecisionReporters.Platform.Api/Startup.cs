@@ -231,6 +231,7 @@ namespace PrecisionReporters.Platform.Api
             services.AddScoped<IVerifyUserRepository, VerifyUserRepository>();
             services.AddScoped<ICompositionRepository, CompositionRepository>();
             services.AddScoped<IDepositionRepository, DepositionRepository>();
+            services.AddScoped<IParticipantRepository, ParticipantRepository>();
             services.AddScoped<IDocumentRepository, DocumentRepository>();
             services.AddScoped<IDepositionEventRepository, DepositionEventRepository>();
             services.AddScoped<IUserResourceRoleRepository, UserResourceRoleRepository>();
