@@ -13,5 +13,6 @@ namespace PrecisionReporters.Platform.Api.Dtos
         public string CompanyName { get; set; }
         public string CompanyAddress { get; set; }
         public bool IsAdmin { get; set; }
+        public bool IsGuest { get; set; }
     }
 }

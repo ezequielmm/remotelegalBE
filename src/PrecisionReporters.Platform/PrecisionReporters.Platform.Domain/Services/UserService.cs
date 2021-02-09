@@ -10,11 +10,10 @@ using PrecisionReporters.Platform.Domain.Errors;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Security.Claims;
-using Microsoft.Extensions.Configuration;
-using System.Linq;
+using System.Threading.Tasks;
 
 namespace PrecisionReporters.Platform.Domain.Services
 {
@@ -47,25 +46,17 @@ namespace PrecisionReporters.Platform.Domain.Services
         public async Task<Result<User>> SignUpAsync(User user)
         {
             var userData = await _userRepository.GetFirstOrDefaultByFilter(x => x.EmailAddress.Equals(user.EmailAddress));
-            if (userData != null)
+
+            if (userData == null)
+                return await CreateUser(user);
+
+            if (!userData.IsGuest)
                 return Result.Fail(new ResourceConflictError($"User with email {user.EmailAddress} already exists."));
 
-
-            User newUser = null;
-            VerifyUser verifyUser = null;
-            var transactionResult = await _transactionHandler.RunAsync(async () =>
-            {
-                newUser = await _userRepository.Create(user);
-                await _cognitoService.CreateAsync(user);
-                verifyUser = await SaveVerifyUser(newUser);
-            });
-
-            if (transactionResult.IsFailed)
-                return transactionResult;
-
-            await SendEmailVerification(newUser, verifyUser);
-
-            return Result.Ok(newUser);
+            user.Id = userData.Id;
+            user.IsGuest = false;
+            user.CreationDate = userData.CreationDate;
+            return await UpdateGuestToUser(user);
         }
 
         private async Task SendEmailVerification(User user, VerifyUser verifyUser)
@@ -121,6 +112,24 @@ namespace PrecisionReporters.Platform.Domain.Services
             return await _userRepository.GetByFilter(filter, include);
         }
 
+        private async Task<Result<User>> CreateUser(User user)
+        {
+            User newUser = null;
+            VerifyUser verifyUser = null;
+            var transactionResult = await _transactionHandler.RunAsync(async () =>
+            {
+                newUser = await _userRepository.Create(user);
+                await _cognitoService.CreateAsync(user);
+                verifyUser = await SaveVerifyUser(newUser);
+            });
+
+            if (transactionResult.IsFailed)
+                return transactionResult;
+
+            await SendEmailVerification(newUser, verifyUser);
+
+            return Result.Ok(newUser);
+        }
         private async Task<VerifyUser> SaveVerifyUser(User user)
         {
             if (user.IsGuest)
@@ -155,7 +164,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         {
             var email = _principal.FindFirstValue(ClaimTypes.Email);
             var user = await _userRepository.GetFirstOrDefaultByFilter(x => x.EmailAddress == email);
-            
+
             return user;
         }
 
@@ -179,14 +188,14 @@ namespace PrecisionReporters.Platform.Domain.Services
             {
                 if (userData == null)
                     userData = await _userRepository.Create(user);
-                
+
                 if (cognitoUser.IsFailed)
                     await _cognitoService.CreateAsync(userData);
             });
 
             if (transactionResult.IsFailed)
                 return transactionResult;
-           
+
             return Result.Ok(userData);
         }
 
@@ -198,6 +207,31 @@ namespace PrecisionReporters.Platform.Domain.Services
                 if (userExists.IsSuccess)
                     await _cognitoService.DeleteUserAsync(participant.User);
             }
+        }
+
+        private async Task<Result<User>> UpdateGuestToUser(User userToUpdate)
+        {
+            var cognitoUser = await _cognitoService.CheckUserExists(userToUpdate.EmailAddress);
+            User updatedUser = null;
+            VerifyUser verifyUser = null;
+
+            var transactionResult = await _transactionHandler.RunAsync(async () =>
+            {
+                updatedUser = await _userRepository.Update(userToUpdate);
+
+                if (cognitoUser.IsSuccess)
+                    await _cognitoService.DeleteUserAsync(updatedUser);
+
+                await _cognitoService.CreateAsync(updatedUser);
+                verifyUser = await SaveVerifyUser(updatedUser);
+            });
+
+            if (transactionResult.IsFailed)
+                return transactionResult;
+
+            await SendEmailVerification(updatedUser, verifyUser);
+
+            return Result.Ok(updatedUser);
         }
     }
 }

@@ -17,7 +17,8 @@ namespace PrecisionReporters.Platform.Api.Mappers
                 CreationDate = model.CreationDate,
                 CompanyName = model.CompanyName,
                 CompanyAddress = model.CompanyAddress,
-                IsAdmin = model.IsAdmin
+                IsAdmin = model.IsAdmin,
+                IsGuest = model.IsGuest
             };
         }
 

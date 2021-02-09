@@ -4,7 +4,6 @@ using PrecisionReporters.Platform.Api.Helpers;
 using PrecisionReporters.Platform.Api.Mappers;
 using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
-using System.Security.Claims;
 using System.Threading.Tasks;
 
 namespace PrecisionReporters.Platform.Api.Controllers

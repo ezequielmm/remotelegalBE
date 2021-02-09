@@ -47,5 +47,19 @@ namespace PrecisionReporters.Platform.UnitTests.Utils
             };
         }
 
+        public static User GetGuestUserByGivenIdAndEmail(Guid id, string email)
+        {
+            return new User
+            {
+                Id = id,
+                CreationDate = DateTime.Now,
+                FirstName = "FirstNameUser1",
+                LastName = "LastNameUser1",
+                EmailAddress = email,
+                Password = "123456",
+                PhoneNumber = "1234567890",
+                IsGuest = true
+            };
+        }
     }
 }
