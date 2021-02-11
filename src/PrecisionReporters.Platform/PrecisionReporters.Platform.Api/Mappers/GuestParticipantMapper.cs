@@ -4,16 +4,20 @@ using PrecisionReporters.Platform.Data.Entities;
 
 namespace PrecisionReporters.Platform.Api.Mappers
 {
-    public class GuestParticipantMapper : IMapper<Participant, object, CreateGuestDto>
+    public class GuestParticipantMapper : IMapper<Participant, AddParticipantDto, CreateGuestDto>
     {
-        public object ToDto(Participant model)
+        public AddParticipantDto ToDto(Participant model)
         {
             throw new NotImplementedException();
         }
 
-        public Participant ToModel(object dto)
+        public Participant ToModel(AddParticipantDto dto)
         {
-            throw new NotImplementedException();
+            return new Participant
+            {
+                Email = dto.EmailAddress,
+                Role = dto.ParticipantType
+            };
         }
 
         public Participant ToModel(CreateGuestDto dto)

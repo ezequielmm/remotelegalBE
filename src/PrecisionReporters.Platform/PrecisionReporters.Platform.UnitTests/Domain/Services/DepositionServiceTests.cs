@@ -1,5 +1,6 @@
 ﻿using FluentResults;
 using Moq;
+using PrecisionReporters.Platform.Api.Dtos;
 using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Data.Enums;
 using PrecisionReporters.Platform.Data.Repositories.Interfaces;
@@ -893,6 +894,116 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             // Assert
             _participantRepositoryMock.Verify(x => x.Update(It.Is<Participant>(x => x.Email == guestEmail)), Times.Once);
             Assert.True(result.IsSuccess);
+        }
+
+        [Fact]
+        public async Task AddParticipant_ShouldAddParticipantInDeposition_ForARegisteredUser()
+        {
+            // Arrange
+            var participantEmail = "participant@mail.com";
+            var user = new User { Id = Guid.NewGuid(), EmailAddress = participantEmail };
+            var depositionId = Guid.NewGuid();
+            var caseId = Guid.NewGuid();
+            var deposition = DepositionFactory.GetDeposition(depositionId,caseId);
+            var participant = new Participant
+            {
+                Email = participantEmail,
+                Role = ParticipantType.Observer
+            };
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
+            _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(user));
+
+            // Act
+            var result = await _depositionService.AddParticipant(depositionId, participant);
+
+            // Assert
+            _depositionRepositoryMock.Verify(x => x.Update(It.Is<Deposition>(x => x.Id == depositionId)), Times.Once);
+            _permissionServiceMock.Verify(x => x.AddParticipantPermissions(It.Is<Participant>(x => x.Email == participantEmail)), Times.Once);
+
+            Assert.True(result.IsSuccess);
+        }
+
+        [Fact]
+        public async Task AddParticipant_ShouldReturnFail_IfDepositionIsCompleted()
+        {
+            // Arrange
+            var participantEmail = "participant@mail.com";
+            var depositionId = Guid.NewGuid();
+            var caseId = Guid.NewGuid();
+            var deposition = DepositionFactory.GetDeposition(depositionId, caseId);
+            deposition.Status = DepositionStatus.Completed;
+            var expectedError = "The deposition is not longer available";
+            var participant = new Participant
+            {
+                Email = participantEmail,
+                Role = ParticipantType.Observer
+            };
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
+
+            // Act
+            var result = await _depositionService.AddParticipant(depositionId, participant);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.IsType<Result<Guid>>(result);
+            Assert.True(result.IsFailed);
+            Assert.Contains(expectedError, result.Errors.Select(e => e.Message));
+        }
+
+        [Fact]
+        public async Task AddParticipant_ShouldReturnFail_IfDepositionIsCanceled()
+        {
+            // Arrange
+            var participantEmail = "participant@mail.com";
+            var depositionId = Guid.NewGuid();
+            var caseId = Guid.NewGuid();
+            var deposition = DepositionFactory.GetDeposition(depositionId, caseId);
+            deposition.Status = DepositionStatus.Canceled;
+            var expectedError = "The deposition is not longer available";
+            var participant = new Participant
+            {
+                Email = participantEmail,
+                Role = ParticipantType.Observer
+            };
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
+
+            // Act
+            var result = await _depositionService.AddParticipant(depositionId, participant);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.IsType<Result<Guid>>(result);
+            Assert.True(result.IsFailed);
+            Assert.Contains(expectedError, result.Errors.Select(e => e.Message));
+        }
+
+        [Fact]
+        public async Task AddParticipant_ShouldReturnFail_IfParticipantIsWitnessAndDepositionHasWitness()
+        {
+            // Arrange
+            var participantEmail = "participant@mail.com";
+            var user = new User { Id = Guid.NewGuid(), EmailAddress = participantEmail };
+            var depositionId = Guid.NewGuid();
+            var caseId = Guid.NewGuid();
+            var deposition = DepositionFactory.GetDeposition(depositionId, caseId);
+            deposition.Witness.UserId = Guid.NewGuid();
+            var expectedError = "The deposition already has a participant as witness";
+            var participant = new Participant
+            {
+                Email = participantEmail,
+                Role = ParticipantType.Witness
+            };
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
+            _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(user));
+
+            // Act
+            var result = await _depositionService.AddParticipant(depositionId, participant);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.IsType<Result<Guid>>(result);
+            Assert.True(result.IsFailed);
+            Assert.Contains(expectedError, result.Errors.Select(e => e.Message));
         }
     }
 }

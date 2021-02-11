@@ -30,14 +30,14 @@ namespace PrecisionReporters.Platform.Api.Controllers
         private readonly IMapper<DepositionEvent, DepositionEventDto, CreateDepositionEventDto> _eventMapper;
         private readonly IAnnotationEventService _annotationEventService;
         private readonly IMapper<Participant, ParticipantDto, CreateParticipantDto> _participantMapper;
-        private readonly IMapper<Participant, object, CreateGuestDto> _guestMapper;
+        private readonly IMapper<Participant, AddParticipantDto, CreateGuestDto> _guestMapper;
 
         public DepositionsController(IDepositionService depositionService,
             IMapper<Deposition, DepositionDto, CreateDepositionDto> depositionMapper,
             IDocumentService documentService, IMapper<AnnotationEvent, AnnotationEventDto, CreateAnnotationEventDto> annotationMapper,
             IMapper<DepositionEvent, DepositionEventDto, CreateDepositionEventDto> eventMapper,
             IMapper<BreakRoom, BreakRoomDto, object> breakRoomMapper, IAnnotationEventService annotationEventService,
-            IMapper<Participant, ParticipantDto, CreateParticipantDto> participantMapper, IMapper<Participant, object, CreateGuestDto> guestMapper)
+            IMapper<Participant, ParticipantDto, CreateParticipantDto> participantMapper, IMapper<Participant, AddParticipantDto, CreateGuestDto> guestMapper)
         {
             _depositionService = depositionService;
             _depositionMapper = depositionMapper;
@@ -264,7 +264,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
         /// </summary>
         /// <param name="id">Deposition identifier</param>
         /// <returns>A Participant if exists</returns>
-        [HttpPost("{id}/addParticipant")]
+        [HttpPost("{id}/addGuestParticipant")]
         [AllowAnonymous]
         public async Task<ActionResult<GuestToken>> JoinGuestParticipant(Guid id, CreateGuestDto guest)
         {
@@ -273,6 +273,23 @@ namespace PrecisionReporters.Platform.Api.Controllers
                 return WebApiResponses.GetErrorResponse(tokenResult);
 
             return Ok(tokenResult.Value);
+        }
+
+        /// <summary>
+        /// Add a registered participant to the deposition
+        /// </summary>
+        /// <param name="id">Deposition identifier</param>
+        /// <returns>Ok if succeeded</returns>
+        [HttpPost("{id}/addParticipant")]
+        [AllowAnonymous]
+        public async Task<ActionResult<Guid>> AddParticipant(Guid id, AddParticipantDto participant)
+        {
+            var addParticipantResult = await _depositionService.AddParticipant(id,_guestMapper.ToModel(participant));
+            
+            if (addParticipantResult.IsFailed)
+                return WebApiResponses.GetErrorResponse(addParticipantResult);
+
+            return Ok(new ParticipantOutputDto() { Id = addParticipantResult.Value});
         }
     }
 }

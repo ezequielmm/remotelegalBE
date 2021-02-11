@@ -136,7 +136,7 @@ namespace PrecisionReporters.Platform.Api
             services.AddSingleton<IMapper<AnnotationEvent, AnnotationEventDto, CreateAnnotationEventDto>, AnnotationEventMapper>();
             services.AddSingleton<IMapper<Transcription, TranscriptionDto, object>, TranscriptionMapper>();
             services.AddSingleton<IMapper<BreakRoom, BreakRoomDto, object>, BreakRoomMapper>();
-            services.AddSingleton<IMapper<Participant, object, CreateGuestDto>, GuestParticipantMapper>();
+            services.AddSingleton<IMapper<Participant, AddParticipantDto, CreateGuestDto>, GuestParticipantMapper>();
             services.AddSingleton<IMapper<Document, DocumentWithSignedUrlDto, object>, DocumentWithSignedUrlMapper>();
 
             // Websockets

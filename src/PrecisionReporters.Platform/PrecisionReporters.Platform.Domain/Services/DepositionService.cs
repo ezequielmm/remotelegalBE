@@ -424,6 +424,11 @@ namespace PrecisionReporters.Platform.Domain.Services
             return participant;
         }
 
+        private bool IsDepositionParticipant(Deposition deposition, string emailAddress)
+        {
+            return GetParticipantByEmail(deposition, emailAddress) != null;
+        }
+
         public async Task<Result<GuestToken>> JoinGuestParticipant(Guid depositionId, Participant guest)
         {
             var include = new[] { nameof(Deposition.Participants), nameof(Deposition.Witness) };
@@ -459,6 +464,45 @@ namespace PrecisionReporters.Platform.Domain.Services
             await _permissionService.AddParticipantPermissions(guest);
 
             return await _userService.LoginGuestAsync(guest.Email);
+        }
+
+        public async Task<Result<Guid>> AddParticipant(Guid depositionId, Participant participant)
+        {
+            var include = new[] { nameof(Deposition.Participants), nameof(Deposition.Witness) };
+
+            var depositionResult = await GetByIdWithIncludes(depositionId, include);
+
+            var deposition = depositionResult.Value;
+            if (deposition.Status == DepositionStatus.Completed
+                || deposition.Status == DepositionStatus.Canceled)
+                return Result.Fail(new InvalidInputError("The deposition is not longer available"));
+
+            var userResult = await _userService.GetUserByEmail(participant.Email);
+
+            if (userResult.IsFailed)
+                return userResult.ToResult();
+
+            var participantResult =  GetParticipantByEmail(deposition, userResult.Value.EmailAddress);
+            if (participantResult != null)
+                return participantResult.Id.ToResult();
+
+            participant.Name = userResult.Value.FirstName;
+            participant.Phone = userResult.Value.PhoneNumber;
+            participant.User = userResult.Value;
+
+            if (participant.Role == ParticipantType.Witness && deposition.Witness?.UserId != null)
+                return Result.Fail(new InvalidInputError("The deposition already has a participant as witness"));
+
+            if (participant.Role == ParticipantType.Witness)
+                deposition.Witness = participant;
+
+            deposition.Participants.Add(participant);
+
+            await _depositionRepository.Update(deposition);
+
+            await _permissionService.AddParticipantPermissions(participant);
+
+            return Result.Ok(participant.Id);
         }
     }
 }
