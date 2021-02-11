@@ -96,7 +96,8 @@ namespace PrecisionReporters.Platform.Api.Controllers
         /// <param name="depositionId">DepositionId to End.</param>
         /// <returns>DepositionDto object.</returns>
         [HttpGet("{id}")]
-        public async Task<ActionResult<DepositionDto>> GetDeposition(Guid id)
+        [UserAuthorize(ResourceType.Deposition, ResourceAction.View)]
+        public async Task<ActionResult<DepositionDto>> GetDeposition([ResourceId(ResourceType.Deposition)] Guid id)
         {
             var endDepositionResult = await _depositionService.GetDepositionById(id);
             if (endDepositionResult.IsFailed)
