@@ -27,7 +27,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public DepositionService(IDepositionRepository depositionRepository,
             IParticipantRepository participantRepository,
-            IDepositionEventRepository depositionEventRepository,
+			IDepositionEventRepository depositionEventRepository,
             IUserService userService,
             IRoomService roomService,
             IBreakRoomService breakRoomService,
@@ -443,19 +443,28 @@ namespace PrecisionReporters.Platform.Domain.Services
                 || deposition.Status == DepositionStatus.Canceled)
                 return Result.Fail(new InvalidInputError("The deposition is not longer available"));
 
+            var participant = GetParticipantByEmail(deposition, guest.Email);
+            if (guest.Role == ParticipantType.Witness 
+                && participant == null 
+                && deposition.Witness?.UserId != null)
+                return Result.Fail(new InvalidInputError("The deposition already has a participant as witness"));
+
             var userResult = await _userService.AddGuestUser(guest.User);
             if (userResult.IsFailed)
                 return userResult.ToResult<GuestToken>();
 
-            var participant = GetParticipantByEmail(deposition, userResult.Value.EmailAddress);
             if (participant != null)
             {
                 userResult.Value.FirstName = guest.Name;
                 participant.User = userResult.Value;
                 participant.Name = guest.Name;
+
                 await _participantRepository.Update(participant);
                 return await _userService.LoginGuestAsync(guest.Email);
             }
+            
+            if (guest.Role == ParticipantType.Witness)
+                deposition.Witness = guest;
 
             guest.User = userResult.Value;
             deposition.Participants.Add(guest);
