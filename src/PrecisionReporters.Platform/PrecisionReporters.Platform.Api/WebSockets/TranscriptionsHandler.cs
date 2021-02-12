@@ -46,10 +46,10 @@ namespace PrecisionReporters.Platform.Api.WebSockets
 
             while (!incomingMessage.CloseStatus.HasValue)
             {
-                //if (!HandleJsonMessage(buffer))
-                //{
-                //    await _transcriptionLiveService.RecognizeAsync(buffer);
-                //}
+                if (!HandleJsonMessage(buffer))
+                {
+                    await _transcriptionLiveService.RecognizeAsync(buffer);
+                }
                 incomingMessage = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
             }
 

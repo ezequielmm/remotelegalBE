@@ -27,7 +27,6 @@ namespace PrecisionReporters.Platform.Domain.Services
         private static readonly SemaphoreSlim _shouldCloseSemaphore = new SemaphoreSlim(1);
         private bool _isClosed = true;
         private static readonly SemaphoreSlim _isClosedSemaphore = new SemaphoreSlim(1);
-        private CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
 
         public TranscriptionLiveAzureService(IOptions<AzureCognitiveServiceConfiguration> azureConfiguration, ITranscriptionService transcriptionService, ILogger<TranscriptionLiveAzureService> logger)
         {
@@ -43,12 +42,20 @@ namespace PrecisionReporters.Platform.Domain.Services
             await _isClosedSemaphore.WaitAsync();
             if (_isClosed)
             {
-                _cancellationTokenSource.Cancel();
+                // If recognition was stopped it needs to start again
                 await _recognizer.StartContinuousRecognitionAsync()
                  .ConfigureAwait(false);
                 _isClosed = false;
             }
             _isClosedSemaphore.Release();
+
+            await _shouldCloseSemaphore.WaitAsync();
+            if (_shouldClose)
+            {
+                // If recognition was getting closed, cancel the process once new audio arrives, which means the recognition should be resumed
+                _shouldClose = false;
+            }
+            _shouldCloseSemaphore.Release();
 
             _audioInputStream.Write(audioChunk, audioChunk.Length);
         }
@@ -117,34 +124,10 @@ namespace PrecisionReporters.Platform.Domain.Services
         }
         public void StopTranscriptStream()
         {
-            _cancellationTokenSource = new CancellationTokenSource();
             _shouldClose = true;
-#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
-            SendFinalSilences(); // do not await on purpose
-#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
-        }
 
-        private async Task SendFinalSilences()
-        {
-            // TODO: this could be further improved for the case the user hits mute several times before speaking. With the current approach it will have a lot of delay 
-            // in trasncribing because it spends some time sending and recognizing the silences
-            var silenceBuffer = new byte[1024 * 8 * 10];
-            while (true)
-            while (!_cancellationTokenSource.Token.IsCancellationRequested)
-            {
-                await _isClosedSemaphore.WaitAsync();
-                if (_isClosed)
-                {
-                    _isClosedSemaphore.Release();
-                    break;
-                }
-
-                _isClosedSemaphore.Release();
-
-                _audioInputStream.Write(silenceBuffer, silenceBuffer.Length);
-
-                await Task.Delay(300);
-            }
+            var silenceBuffer = new byte[1024 * 512]; // 500kb
+            _audioInputStream.Write(silenceBuffer, silenceBuffer.Length);
         }
     }
 }
