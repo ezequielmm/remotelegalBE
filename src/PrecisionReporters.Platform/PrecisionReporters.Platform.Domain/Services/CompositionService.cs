@@ -8,6 +8,8 @@ using PrecisionReporters.Platform.Data.Enums;
 using PrecisionReporters.Platform.Data.Repositories.Interfaces;
 using PrecisionReporters.Platform.Domain.Errors;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
+using System.Net;
+using Microsoft.Extensions.Logging;
 
 namespace PrecisionReporters.Platform.Domain.Services
 {
@@ -17,14 +19,17 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly ITwilioService _twilioService;
         private readonly IRoomService _roomService;
         private readonly IDepositionService _depositionService;
+        private readonly ILogger<CompositionService> _logger;
 
         public CompositionService(ICompositionRepository compositionRepository,
-            ITwilioService twilioService, IRoomService roomService, IDepositionService depositionService)
+            ITwilioService twilioService, IRoomService roomService, IDepositionService depositionService, 
+            ILogger<CompositionService> logger)
         {
             _compositionRepository = compositionRepository;
             _twilioService = twilioService;
             _roomService = roomService;
             _depositionService = depositionService;
+            _logger = logger;
         }
 
         public async Task<Result> StoreCompositionMediaAsync(Composition composition)
@@ -145,6 +150,41 @@ namespace PrecisionReporters.Platform.Domain.Services
         private int CalculateSeconds(long startTime, long splitTime)
         {
             return (int)(splitTime - startTime);
+        }
+        
+        public async Task<Result> PostDepoCompositionCallback(PostDepositionEditionDto message)
+        {
+            var composition = await _compositionRepository.GetFirstOrDefaultByFilter(x => x.SId == message.GetCompositionId());
+            if (composition == null)
+                return Result.Fail(new ResourceNotFoundError());
+
+            composition.Status = message.IsComplete()
+                ? CompositionStatus.Completed
+                : CompositionStatus.EditionFailed;
+
+            composition.LastUpdated = DateTime.UtcNow;
+
+            await _compositionRepository.Update(composition);
+
+            return Result.Ok();
+        }
+
+        // This method is meant to validate and confirm the endpoind added
+        // as a valid destination to receive messages from aws notification service
+        public async Task<Result> SubscribeEndpoint(string subscribeURL)
+        {
+            var request = (HttpWebRequest)WebRequest.Create(subscribeURL);
+            try
+            {
+                await request.GetResponseAsync();
+            }
+            catch (Exception e)
+            {
+                _logger.LogError($"There was an error subscribing URL, {e.Message}");
+                return Result.Fail(new Error("There was an error subscribing URL"));
+            }
+            
+            return Result.Ok();
         }
     }
 }

@@ -11,5 +11,7 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
         Task<Result<Composition>> GetCompositionByRoom(Guid roomSid);
         Task<Result> StoreCompositionMediaAsync(Composition composition);
         Task<Result<Composition>> UpdateCompositionCallback(Composition composition);
+        Task<Result> PostDepoCompositionCallback(PostDepositionEditionDto payload);
+        Task<Result> SubscribeEndpoint(string subscribeURL);
     }
 }

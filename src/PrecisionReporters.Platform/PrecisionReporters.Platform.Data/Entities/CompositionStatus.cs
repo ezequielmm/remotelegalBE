@@ -2,6 +2,6 @@
 {
     public enum CompositionStatus
     {
-        Queued, Started, Progress, Available, Failed, Uploading, Stored, Deleted, UploadFailed
+        Queued, Started, Progress, Available, Failed, Uploading, Stored, Deleted, UploadFailed, Completed, EditionFailed
     }
 }
