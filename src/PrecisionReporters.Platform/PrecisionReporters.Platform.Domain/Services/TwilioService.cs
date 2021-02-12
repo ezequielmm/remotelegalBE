@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using FluentResults;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using PrecisionReporters.Platform.Data.Entities;
@@ -159,7 +160,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         {
             var filePath = $"{composition.SId}.mp4";
             var file = new FileInfo(filePath);
-            var keyName = $"recordings/{composition.Room.Name}/{composition.SId}.mp4";
+            var keyName = $"videos/{composition.SId}.mp4";
 
             _log.LogDebug($"Uploading composition - SId: {composition.SId} - keyName: {keyName}");
 
@@ -178,6 +179,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                     _log.LogDebug($"Upload failed. Deleting local file {filePath}");
                     file.Delete();
                     _log.LogDebug($"File {filePath} deleted");
+
                     return false;
                 }
 
@@ -199,6 +201,30 @@ namespace PrecisionReporters.Platform.Domain.Services
         private TwilioIdentity DeserializeObject(string item)
         {
             return (TwilioIdentity)JsonConvert.DeserializeObject(item, typeof(TwilioIdentity), _serializeOptions);
+        }
+        
+        public async Task<Result> UploadCompositionMetadata(CompositionRecordingMetadata metadata)
+        {
+            try
+            {
+                var fileKeyName = $"videos/{metadata.Name}.json";
+                string json = JsonConvert.SerializeObject(metadata);
+                var file = new FileTransferInfo
+                {
+                    FileStream = new MemoryStream(Encoding.ASCII.GetBytes(json)),
+                    Name = metadata.Name,
+                    Length = json.Length
+                };
+
+                await _awsStorageService.UploadMultipartAsync(fileKeyName, file, _twilioAccountConfiguration.S3DestinationBucket);
+            }
+            catch (Exception e)
+            {
+                _log.LogError($"Error uploading composition metadata file : {e.Message}");
+                return Result.Fail(new Error("Error uploading CompositionRecordingMetadata"));
+            }
+
+            return Result.Ok();
         }
     }
 }

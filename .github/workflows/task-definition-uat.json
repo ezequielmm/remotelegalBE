@@ -43,7 +43,7 @@
                 },
                 {
                     "name": "AppConfiguration__TwilioAccountConfiguration__S3DestinationBucket",
-                    "value": "twilio-bucket-uat"
+                    "value": "input-post-depo-uat"
                 },
                 {
                     "name": "AppConfiguration__AwsStorageConfiguration__S3BucketRegion",

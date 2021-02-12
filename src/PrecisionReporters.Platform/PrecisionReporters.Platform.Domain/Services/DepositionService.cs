@@ -233,6 +233,9 @@ namespace PrecisionReporters.Platform.Domain.Services
             deposition.CompleteDate = DateTime.UtcNow;
             deposition.Status = DepositionStatus.Completed;
 
+            var user = await _userService.GetCurrentUserAsync();
+            await GoOnTheRecord(id, false, user.EmailAddress);
+
             var updatedDeposition = await _depositionRepository.Update(deposition);
 
             await _userService.RemoveGuestParticipants(deposition.Participants);
@@ -257,6 +260,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             return Result.Ok(participant);
         }
+
         public async Task<Result<List<DepositionEvent>>> GetDepositionEvents(Guid id)
         {
             var depositionEvents = await _depositionEventRepository.GetByFilter(
@@ -307,6 +311,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 EventType = onTheRecord ? EventType.OnTheRecord : EventType.OffTheRecord,
                 User = userResult.Value
             };
+
             deposition.Events.Add(depositionEvent);
             deposition.IsOnTheRecord = onTheRecord;
             var updatedDeposition = await _depositionRepository.Update(deposition);
@@ -512,6 +517,16 @@ namespace PrecisionReporters.Platform.Domain.Services
             await _permissionService.AddParticipantPermissions(participant);
 
             return Result.Ok(participant.Id);
+        }
+
+        public async Task<Result<Deposition>> GetDepositionByRoomId(Guid roomId)
+        {
+            var include = new[] { nameof(Deposition.Events), nameof(Deposition.Room) };
+            var deposition = await _depositionRepository.GetFirstOrDefaultByFilter(x => x.RoomId == roomId, include);
+            if (deposition == null)
+                return Result.Fail(new ResourceNotFoundError($"Deposition with RoomId = {roomId} not found"));
+
+            return Result.Ok(deposition);
         }
     }
 }

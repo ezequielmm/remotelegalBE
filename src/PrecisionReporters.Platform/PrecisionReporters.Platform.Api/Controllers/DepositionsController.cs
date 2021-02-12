@@ -244,7 +244,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
         /// <returns>A Participant if exists</returns>
         [HttpGet("{id}/checkParticipant")]
         [AllowAnonymous]
-        public async Task<ActionResult<ParticipantValidationDto>> checkParticipant(Guid id, string emailAddress)
+        public async Task<ActionResult<ParticipantValidationDto>> CheckParticipant(Guid id, string emailAddress)
         {
             var participantResult = await _depositionService.CheckParticipant(id, emailAddress);
             if (participantResult.IsFailed)

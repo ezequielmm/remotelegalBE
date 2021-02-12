@@ -1,7 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using FluentResults;
 using PrecisionReporters.Platform.Data.Entities;
+using PrecisionReporters.Platform.Data.Enums;
 using PrecisionReporters.Platform.Data.Repositories.Interfaces;
 using PrecisionReporters.Platform.Domain.Errors;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
@@ -12,12 +15,16 @@ namespace PrecisionReporters.Platform.Domain.Services
     {
         private readonly ICompositionRepository _compositionRepository;
         private readonly ITwilioService _twilioService;
+        private readonly IRoomService _roomService;
+        private readonly IDepositionService _depositionService;
 
         public CompositionService(ICompositionRepository compositionRepository,
-            ITwilioService twilioService)
+            ITwilioService twilioService, IRoomService roomService, IDepositionService depositionService)
         {
             _compositionRepository = compositionRepository;
             _twilioService = twilioService;
+            _roomService = roomService;
+            _depositionService = depositionService;
         }
 
         public async Task<Result> StoreCompositionMediaAsync(Composition composition)
@@ -51,16 +58,29 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<Composition>> UpdateCompositionCallback(Composition composition)
         {
+            var roomResult = await _roomService.GetRoomBySId(composition.Room.SId);
+            if (roomResult.IsFailed)
+                return roomResult.ToResult<Composition>();
+
             var compositionToUpdate = await _compositionRepository.GetFirstOrDefaultByFilter(x => x.SId == composition.SId);
             if (compositionToUpdate == null)
                 return Result.Fail(new ResourceNotFoundError());
+
+            var depositionResult = await _depositionService.GetDepositionByRoomId(roomResult.Value.Id);
+            if (depositionResult.IsFailed)
+                return depositionResult.ToResult<Composition>();
 
             compositionToUpdate.Status = composition.Status;
 
             if (compositionToUpdate.Status == CompositionStatus.Available)
             {
                 compositionToUpdate.MediaUri = composition.MediaUri;
-                var storeCompositionResult = await StoreCompositionMediaAsync(composition);
+                
+                var uploadMetadataResult = await UploadCompositionMetadata(depositionResult.Value);
+                if (uploadMetadataResult.IsFailed)
+                    return uploadMetadataResult.ToResult<Composition>();
+
+                var storeCompositionResult = await StoreCompositionMediaAsync(compositionToUpdate);
                 compositionToUpdate.Status = storeCompositionResult.IsSuccess
                     ? CompositionStatus.Stored
                     : CompositionStatus.UploadFailed;
@@ -68,6 +88,63 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             var updatedComposition = await UpdateComposition(compositionToUpdate);
             return Result.Ok(updatedComposition);
+        }
+
+        private CompositionRecordingMetadata CreateCompositioMetadata(Deposition deposition)
+        {
+            var startDateTime = GetDateTimestamp(deposition.Room.StartDate.Value);
+            return new CompositionRecordingMetadata
+            {
+                //TODO unified file name generation in one place
+                Video = $"{deposition.Room.Composition.SId}.mp4",
+                Name = deposition.Room.Composition.SId,
+                TimeZone = deposition.TimeZone,
+                StartDate = startDateTime,
+                EndDate = GetDateTimestamp(deposition.Room.EndDate.Value),
+                Intervals = GetDepositionRecordingIntervals(deposition.Events, startDateTime)
+            };
+        }
+
+        private async Task<Result> UploadCompositionMetadata(Deposition deposition)
+        {
+            var metadata = CreateCompositioMetadata(deposition);
+            return await _twilioService.UploadCompositionMetadata(metadata);
+            
+        }
+
+        public List<CompositionInterval> GetDepositionRecordingIntervals(List<DepositionEvent> events, long startTime)
+        {
+            var result = events
+                .OrderBy(x => x.CreationDate)
+                .Where(x => x.EventType == EventType.OnTheRecord || x.EventType == EventType.OffTheRecord)
+                .Aggregate(new List<CompositionInterval>(),
+                (list, x) => {
+                    if (x.EventType == EventType.OnTheRecord)
+                    {
+                        var compositionInterval = new CompositionInterval
+                        {
+                            Start = CalculateSeconds(startTime, GetDateTimestamp(x.CreationDate))
+                        };
+                        list.Add(compositionInterval);
+                    }
+                    if (x.EventType == EventType.OffTheRecord)
+                        list.Last().Stop = CalculateSeconds(startTime, GetDateTimestamp(x.CreationDate));
+                    
+                    return list;
+                });
+
+
+            return result;
+        }
+
+        private long GetDateTimestamp(DateTime date)
+        {
+            return new DateTimeOffset(date).ToUnixTimeSeconds();
+        }
+
+        private int CalculateSeconds(long startTime, long splitTime)
+        {
+            return (int)(splitTime - startTime);
         }
     }
 }

@@ -455,7 +455,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var caseId = Guid.NewGuid();
             var deposition = DepositionFactory.GetDeposition(depositionId, caseId);
             _depositions.Add(deposition);
-
+            _userServiceMock.Setup(x => x.GetCurrentUserAsync()).ReturnsAsync(new User());
+            _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(new User()));
             _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(() => _depositions.FirstOrDefault());
 
             _roomServiceMock.Setup(x => x.EndRoom(It.IsAny<Room>(), It.IsAny<string>())).ReturnsAsync(() => Result.Ok(new Room()));
@@ -464,9 +465,9 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var result = await _depositionService.EndDeposition(depositionId);
 
             // Assert
-            _depositionRepositoryMock.Verify(mock => mock.GetById(It.Is<Guid>(a => a == depositionId), It.IsAny<string[]>()), Times.Once());
-            _depositionRepositoryMock.Verify(mock => mock.Update(It.Is<Deposition>(d => d.Status == DepositionStatus.Completed && d.CompleteDate.HasValue)), Times.Once());
-            _roomServiceMock.Verify(mock => mock.EndRoom(It.IsAny<Room>(), It.IsAny<string>()), Times.Once());
+            _depositionRepositoryMock.Verify(mock => mock.GetById(It.Is<Guid>(a => a == depositionId), It.IsAny<string[]>()), Times.Exactly(2));
+            _depositionRepositoryMock.Verify(mock => mock.Update(It.Is<Deposition>(d => d.Status == DepositionStatus.Completed && d.CompleteDate.HasValue)), Times.Exactly(2));
+             _roomServiceMock.Verify(mock => mock.EndRoom(It.IsAny<Room>(), It.IsAny<string>()), Times.Once());
             Assert.NotNull(result);
             Assert.True(result.IsSuccess);
         }

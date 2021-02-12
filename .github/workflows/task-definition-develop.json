@@ -47,7 +47,7 @@
                 },
                 {
                     "name": "AppConfiguration__TwilioAccountConfiguration__S3DestinationBucket",
-                    "value": "twilio-bucket"
+                    "value": "input-elastictranscoder-dev"
                 },
                 {
                     "name": "AppConfiguration__AwsStorageConfiguration__S3BucketRegion",

@@ -30,10 +30,6 @@ namespace PrecisionReporters.Platform.Api.Controllers
         [Consumes("application/x-www-form-urlencoded")]
         public async Task<IActionResult> CompositionStatusCallback([FromForm] CallbackCompositionDto compositionDto)
         {
-            var getRoomResult = await _roomService.GetRoomBySId(compositionDto.RoomSid);
-            if (getRoomResult.IsFailed)
-                return WebApiResponses.GetErrorResponse(getRoomResult);
-
             var compositionModel = _compositionMapper.ToModel(compositionDto);
             var updateCompositionResult = await _compositionService.UpdateCompositionCallback(compositionModel);
             if (updateCompositionResult.IsFailed)
