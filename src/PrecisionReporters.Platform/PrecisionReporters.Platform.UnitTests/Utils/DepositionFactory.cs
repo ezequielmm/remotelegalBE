@@ -125,7 +125,7 @@ namespace PrecisionReporters.Platform.UnitTests.Utils
             };
         }
 
-        public static Deposition GetDepositionWithParticipantEmail(string participantEmail)
+        public static Deposition GetDepositionWithParticipantEmail(string participantEmail, bool isUser = true)
         {
             return new Deposition
             {
@@ -134,7 +134,7 @@ namespace PrecisionReporters.Platform.UnitTests.Utils
                     new Participant
                     {
                         Email = participantEmail,
-                        UserId = Guid.NewGuid()
+                        UserId = isUser ? Guid.NewGuid() : (Guid?)null
                     }
                 },
                 Requester = new User

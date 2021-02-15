@@ -852,6 +852,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
             _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(user));
             _userServiceMock.Setup(x => x.AddGuestUser(It.IsAny<User>())).ReturnsAsync(Result.Ok(user));
+            _participantRepositoryMock.Setup(x => x.Update(It.IsAny<Participant>())).ReturnsAsync(participant);
             _userServiceMock.Setup(x => x.LoginGuestAsync(It.IsAny<string>())).ReturnsAsync(Result.Ok(new GuestToken()));
 
             // Act
@@ -873,7 +874,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var name = "Test";
 
             var depositionId = Guid.NewGuid();
-            var deposition = DepositionFactory.GetDepositionWithParticipantEmail("participant@mail.com");
+            var deposition = DepositionFactory.GetDepositionWithParticipantEmail("participant@mail.com",false);
             deposition.Id = depositionId;
 
             var participant = new Participant
@@ -887,6 +888,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
             _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Fail(new Error()));
             _userServiceMock.Setup(x => x.AddGuestUser(It.IsAny<User>())).ReturnsAsync(Result.Ok(user));
+            _participantRepositoryMock.Setup(x => x.Update(It.IsAny<Participant>())).ReturnsAsync(participant);
             _userServiceMock.Setup(x => x.LoginGuestAsync(It.IsAny<string>())).ReturnsAsync(Result.Ok(new GuestToken()));
 
             // Act
@@ -895,6 +897,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             // Assert
             _participantRepositoryMock.Verify(x => x.Update(It.Is<Participant>(x => x.Email == guestEmail)), Times.Once);
             Assert.True(result.IsSuccess);
+            _permissionServiceMock.Verify(x => x.AddParticipantPermissions(It.Is<Participant>(x => x.Email == guestEmail)), Times.Once);
         }
 
         [Fact]

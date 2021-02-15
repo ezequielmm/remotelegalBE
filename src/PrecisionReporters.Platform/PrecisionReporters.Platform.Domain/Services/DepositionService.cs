@@ -429,11 +429,6 @@ namespace PrecisionReporters.Platform.Domain.Services
             return participant;
         }
 
-        private bool IsDepositionParticipant(Deposition deposition, string emailAddress)
-        {
-            return GetParticipantByEmail(deposition, emailAddress) != null;
-        }
-
         public async Task<Result<GuestToken>> JoinGuestParticipant(Guid depositionId, Participant guest)
         {
             var include = new[] { nameof(Deposition.Participants), nameof(Deposition.Witness) };
@@ -458,24 +453,31 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (userResult.IsFailed)
                 return userResult.ToResult<GuestToken>();
 
+            bool shouldAddPermissions;
             if (participant != null)
             {
+                shouldAddPermissions = participant.UserId == null;
                 userResult.Value.FirstName = guest.Name;
                 participant.User = userResult.Value;
                 participant.Name = guest.Name;
 
-                await _participantRepository.Update(participant);
-                return await _userService.LoginGuestAsync(guest.Email);
+                guest = await _participantRepository.Update(participant);
             }
-            
-            if (guest.Role == ParticipantType.Witness)
-                deposition.Witness = guest;
+            else
+            {
+                shouldAddPermissions = true;
+                if (guest.Role == ParticipantType.Witness)
+                    deposition.Witness = guest;
 
-            guest.User = userResult.Value;
-            deposition.Participants.Add(guest);
-            await _depositionRepository.Update(deposition);
+                guest.User = userResult.Value;
+                deposition.Participants.Add(guest);
+                await _depositionRepository.Update(deposition);
+            }
 
-            await _permissionService.AddParticipantPermissions(guest);
+            if (shouldAddPermissions)
+            {
+                await _permissionService.AddParticipantPermissions(guest);
+            }
 
             return await _userService.LoginGuestAsync(guest.Email);
         }
