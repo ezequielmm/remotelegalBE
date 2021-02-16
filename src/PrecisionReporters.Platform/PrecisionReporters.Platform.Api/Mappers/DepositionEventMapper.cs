@@ -6,11 +6,8 @@ namespace PrecisionReporters.Platform.Api.Mappers
 {
     public class DepositionEventMapper : IMapper<DepositionEvent, DepositionEventDto, CreateDepositionEventDto>
     {
-        private readonly IMapper<User, UserDto, CreateUserDto> _userMapper;
-
-        public DepositionEventMapper(IMapper<User, UserDto, CreateUserDto> userMapper)
+        public DepositionEventMapper()
         {
-            _userMapper = userMapper;
         }
 
         public DepositionEventDto ToDto(DepositionEvent model)

@@ -19,7 +19,6 @@ namespace PrecisionReporters.Platform.Api.Controllers
     public class CompositionsController : ControllerBase
     {
         private readonly ICompositionService _compositionService;
-        private readonly IRoomService _roomService;
         private readonly ILogger<CompositionsController> _logger;
         private readonly IMapper<Composition, CompositionDto, CallbackCompositionDto> _compositionMapper;
 
@@ -65,8 +64,8 @@ namespace PrecisionReporters.Platform.Api.Controllers
         public async Task<IActionResult> CompositionEditionCallback()
         {
             string content;
-            using (var reader = new StreamReader(Request.Body)){ content = await reader.ReadToEndAsync(); }
-            
+            using (var reader = new StreamReader(Request.Body)) { content = await reader.ReadToEndAsync(); }
+
             var message = Message.ParseMessage(content);
 
             if (!message.IsMessageSignatureValid())

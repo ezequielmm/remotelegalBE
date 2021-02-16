@@ -26,7 +26,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         private static readonly TimeSpan _streamTimeLimit = TimeSpan.FromSeconds(290);
 
         private readonly GcpConfiguration _gcpConfiguration;
-        private ITranscriptionService _transcriptionService;
+        private readonly ITranscriptionService _transcriptionService;
         private SpeechClient.StreamingRecognizeStream _rpcStream;
         private readonly BlockingCollection<ByteString> _audioBuffer = new BlockingCollection<ByteString>();
         private readonly LinkedList<ByteString> _processingBuffer = new LinkedList<ByteString>();
@@ -70,7 +70,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 #pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
         }
 
-        private async Task SendFinalSilences()
+        private async void SendFinalSilences()
         {
             var silenceBuffer = new byte[1024 * 8 * 10];
             while (true)

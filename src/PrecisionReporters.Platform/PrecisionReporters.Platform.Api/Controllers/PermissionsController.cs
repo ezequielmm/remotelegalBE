@@ -1,15 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Security.Claims;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PrecisionReporters.Platform.Api.Dtos;
 using PrecisionReporters.Platform.Api.Helpers;
-using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Data.Enums;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
+using System;
+using System.Linq;
+using System.Security.Claims;
+using System.Threading.Tasks;
 
 namespace PrecisionReporters.Platform.Api.Controllers
 {
@@ -58,9 +56,10 @@ namespace PrecisionReporters.Platform.Api.Controllers
             if (permissionsResult.IsFailed)
                 return WebApiResponses.GetErrorResponse(permissionsResult);
 
-            var depositionPermissionsDto = new DepositionPermissionsDto {
+            var depositionPermissionsDto = new DepositionPermissionsDto
+            {
                 Role = participant.Role,
-                IsAdmin = participant.User != null ? participant.User.IsAdmin : false,
+                IsAdmin = participant.User != null && participant.User.IsAdmin,
                 Permissions = permissionsResult.Value.ToList()
             };
             return Ok(depositionPermissionsDto);

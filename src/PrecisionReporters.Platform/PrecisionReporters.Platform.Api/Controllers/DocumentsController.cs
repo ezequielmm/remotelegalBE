@@ -24,16 +24,12 @@ namespace PrecisionReporters.Platform.Api.Controllers
     public class DocumentsController : ControllerBase
     {
         private readonly IDocumentService _documentService;
-        private readonly IAnnotationEventService _annotationEventService;
         private readonly IMapper<Document, DocumentDto, CreateDocumentDto> _documentMapper;
-        
 
-        public DocumentsController(IDocumentService documentService, IMapper<Document, DocumentDto, CreateDocumentDto> documentMapper,
-            IAnnotationEventService annotationEventService)
+        public DocumentsController(IDocumentService documentService, IMapper<Document, DocumentDto, CreateDocumentDto> documentMapper)
         {
             _documentService = documentService;
             _documentMapper = documentMapper;
-            _annotationEventService = annotationEventService;
         }
 
         /// <summary>
@@ -99,8 +95,6 @@ namespace PrecisionReporters.Platform.Api.Controllers
             return Ok(fileSignedUrlResult.Value);
         }
 
-        
-
         /// Shares a documents with all users in a deposition
         /// </summary>
         /// <param name="id">Document identifier</param>
@@ -115,7 +109,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
                 return WebApiResponses.GetErrorResponse(documentsResult);
             return Ok();
         }
-        
+
         /// Gets details of a given document
         /// </summary>
         /// <param name="id"></param>

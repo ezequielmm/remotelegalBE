@@ -27,7 +27,6 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             transcription.DepositionId = new Guid(depositionId);
             transcription.UserId = user.Id;
-            transcription.Text = transcription.Text;
 
             var newTranscription = await _transcriptionRepository.Create(transcription);
             return Result.Ok(newTranscription);

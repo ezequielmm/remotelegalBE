@@ -1,5 +1,4 @@
-﻿using Amazon;
-using Amazon.CognitoIdentityProvider;
+﻿using Amazon.CognitoIdentityProvider;
 using Amazon.CognitoIdentityProvider.Model;
 using FluentResults;
 using Microsoft.Extensions.Options;
@@ -49,7 +48,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                     };
 
                     signUpRequest.UserAttributes.Add(emailAttribute);
-                    var userCreatedResponse = await _cognitoClient.SignUpAsync(signUpRequest);
+                    await _cognitoClient.SignUpAsync(signUpRequest);
                 }
             }
             catch (Exception ex)

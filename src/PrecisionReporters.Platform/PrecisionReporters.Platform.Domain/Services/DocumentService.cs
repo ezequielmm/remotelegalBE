@@ -30,7 +30,6 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly ILogger<DocumentService> _logger;
         private readonly DocumentConfiguration _documentsConfiguration;
 
-
         public DocumentService(IAwsStorageService awsStorageService, IOptions<DocumentConfiguration> documentConfigurations, ILogger<DocumentService> logger,
             IUserService userService, IDepositionService depositionService, IDocumentUserDepositionRepository documentUserDepositionRepository,
             IPermissionService permissionService, ITransactionHandler transactionHandler, IDocumentRepository documentRepository)
@@ -261,8 +260,6 @@ namespace PrecisionReporters.Platform.Domain.Services
                 _logger.LogError(new Exception(documentResult.Errors.First().Message), "Unable to update the document to storage");
                 return documentResult;
             }
-
-            var documentCreationResult = Result.Ok();
 
             var transactionResult = await _transactionHandler.RunAsync(async () =>
             {

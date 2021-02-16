@@ -21,7 +21,7 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
         Task<Result<Participant>> GetDepositionParticipantByEmail(Guid id, string participantEmail);
         Task<Result<List<DepositionEvent>>> GetDepositionEvents(Guid id);
         Task<Result<Deposition>> AddDepositionEvent(Guid id, DepositionEvent depositionEvent, string userEmail);
-        Task<Result<DepositionEvent>> GoOnTheRecord(Guid id, bool onRecord, string userEmail);
+        Task<Result<DepositionEvent>> GoOnTheRecord(Guid id, bool onTheRecord, string userEmail);
         Task<Result<Deposition>> Update(Deposition deposition);
         Task<Result<Document>> GetSharedDocument(Guid id);
         Task<Result<string>> JoinBreakRoom(Guid depositionId, Guid breakRoomId);

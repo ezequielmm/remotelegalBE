@@ -11,7 +11,6 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using PrecisionReporters.Platform.Data.Enums;
 using PrecisionReporters.Platform.Api.Helpers;
-using PrecisionReporters.Platform.Domain.Commons;
 using PrecisionReporters.Platform.Api.Authorization.Attributes;
 
 namespace PrecisionReporters.Platform.Api.Controllers

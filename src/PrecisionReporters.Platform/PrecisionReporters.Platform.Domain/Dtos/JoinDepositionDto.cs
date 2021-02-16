@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace PrecisionReporters.Platform.Domain.Dtos
+﻿namespace PrecisionReporters.Platform.Domain.Dtos
 {
     public class JoinDepositionDto
     {
