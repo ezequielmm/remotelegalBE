@@ -117,7 +117,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         private async Task<string> GetWitnessSid(string roomSid, string witnessEmail)
         {
             var participants = await GetParticipantsByRoom(roomSid);
-            var witnessParticipant = participants.First(x => DeserializeObject(x.Identity).Email == witnessEmail);
+            var witnessParticipant = participants.FirstOrDefault(x => DeserializeObject(x.Identity).Email == witnessEmail);
             if (witnessParticipant == null)
                 return participants.First().Sid;
 
