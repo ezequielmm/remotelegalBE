@@ -106,7 +106,8 @@ namespace PrecisionReporters.Platform.Domain.Services
               audioSources: new List<string> { "*" },
               videoLayout: layout,
               statusCallback: new Uri(_twilioAccountConfiguration.StatusCallbackUrl),
-              format: FormatEnum.Mp4
+              format: FormatEnum.Mp4,
+              trim: false
             );
 
             return composition;
