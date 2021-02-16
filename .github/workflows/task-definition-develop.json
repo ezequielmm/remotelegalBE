@@ -181,11 +181,6 @@
             "image": "datadog/agent:latest",
             "portMappings": [
                 {
-                    "containerPort": 80,
-                    "hostPort": 80,
-                    "protocol": "tcp"
-                },
-                {
                     "containerPort": 8126,
                     "hostPort": 8126,
                     "protocol": "tcp"
