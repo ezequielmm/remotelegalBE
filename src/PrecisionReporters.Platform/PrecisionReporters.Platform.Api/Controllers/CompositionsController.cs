@@ -25,11 +25,12 @@ namespace PrecisionReporters.Platform.Api.Controllers
 
         public CompositionsController(ICompositionService compositionService,
             IMapper<Composition, CompositionDto, CallbackCompositionDto> compositionMapper,
-            ILogger<CompositionsController> logger)
+            ILogger<CompositionsController> logger, IRoomService roomService)
         {
             _compositionService = compositionService;
             _compositionMapper = compositionMapper;
             _logger = logger;
+            _roomService = roomService;
         }
 
         [ServiceFilter(typeof(ValidateTwilioRequestFilterAttribute))]
@@ -41,6 +42,19 @@ namespace PrecisionReporters.Platform.Api.Controllers
             var updateCompositionResult = await _compositionService.UpdateCompositionCallback(compositionModel);
             if (updateCompositionResult.IsFailed)
                 return WebApiResponses.GetErrorResponse(updateCompositionResult);
+
+            return Ok();
+        }
+
+        [ServiceFilter(typeof(ValidateTwilioRequestFilterAttribute))]
+        [HttpPost]
+        [Route("recordings/addEvent")]
+        [Consumes("application/x-www-form-urlencoded")]
+        public async Task<IActionResult> RoomStatusCallback([FromForm] RoomCallbackDto roomEvent)
+        {
+            var updateRoomStatusResult = await _roomService.UpdateStatusCallback(roomEvent.RoomSid, roomEvent.Timestamp, roomEvent.StatusCallbackEvent);
+            if (updateRoomStatusResult.IsFailed)
+                return WebApiResponses.GetErrorResponse(updateRoomStatusResult);
 
             return Ok();
         }

@@ -131,5 +131,28 @@ namespace PrecisionReporters.Platform.Domain.Services
             var room = await _roomRepository.GetFirstOrDefaultByFilter(x => x.SId == roomSid);
             return Result.Ok(room);
         }
+
+        public async Task<Result<Room>> UpdateStatusCallback(string roomSid, DateTimeOffset timestamp, string statusCallbackEvent)
+        {
+            //TODO create an Enum or cons for recording status
+            if ("recording-started" == statusCallbackEvent)
+            {
+                var roomResult = await GetRoomBySId(roomSid);
+                if (roomResult.IsFailed)
+                    return roomResult;
+
+                var room = roomResult.Value;
+                if (room.RecordingStartDate == null)
+                {
+                    room.RecordingStartDate = timestamp.UtcDateTime;
+                    await _roomRepository.Update(room);
+                    
+                }
+                return Result.Ok(room);
+            }
+            else
+                return Result.Fail(new InvalidInputError("Invalid recording status."));
+            
+        }
     }
 }

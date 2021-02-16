@@ -15,5 +15,6 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
         Task<Result<Room>> EndRoom(Room room, string witnessEmail);
         Task<Result<Room>> StartRoom(Room room);
         Task<Result<Room>> GetRoomBySId(string roomSid);
+        Task<Result<Room>> UpdateStatusCallback(string roomSid, DateTimeOffset timestamp, string statusCallbackEvent);
     }
 }

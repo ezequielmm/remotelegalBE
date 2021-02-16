@@ -18,6 +18,8 @@ namespace PrecisionReporters.Platform.Data.Entities
 
         public DateTime? EndDate { get; set; }
 
+        public DateTime? RecordingStartDate { get; set; }
+
         public bool IsRecordingEnabled { get; set; } = false;
 
         public Composition Composition { get; set; }

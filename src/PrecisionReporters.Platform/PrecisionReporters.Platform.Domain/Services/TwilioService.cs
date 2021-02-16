@@ -48,13 +48,14 @@ namespace PrecisionReporters.Platform.Domain.Services
             var roomResource = await RoomResource.CreateAsync(
                 uniqueName: room.Name,
                 recordParticipantsOnConnect: room.IsRecordingEnabled,
-                type: RoomResource.RoomTypeEnum.Group
+                type: RoomResource.RoomTypeEnum.Group,
+                statusCallback: new Uri($"{_twilioAccountConfiguration.StatusCallbackUrl}/recordings/addEvent")
                 );
 
             room.SId = roomResource?.Sid;
             return room;
         }
-
+        
         public async Task<RoomResource> GetRoom(string roomName)
         {
             var roomResource = await RoomResource.FetchAsync(pathSid: roomName);
