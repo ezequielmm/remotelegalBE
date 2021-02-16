@@ -19,6 +19,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
     public class CompositionsController : ControllerBase
     {
         private readonly ICompositionService _compositionService;
+        private readonly IRoomService _roomService;
         private readonly ILogger<CompositionsController> _logger;
         private readonly IMapper<Composition, CompositionDto, CallbackCompositionDto> _compositionMapper;
 
