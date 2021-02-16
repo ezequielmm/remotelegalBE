@@ -73,14 +73,17 @@ namespace PrecisionReporters.Platform.Domain.Services
         {
             if (room.Status == RoomStatus.InProgress)
             {
-                var roomResource = await _twilioService.EndRoom(room.SId);
+                var roomResourceResult = await _twilioService.EndRoom(room);
+                if (roomResourceResult.IsFailed)
+                    return roomResourceResult.ToResult<Room>();
 
                 room.EndDate = DateTime.UtcNow;
                 room.Status = RoomStatus.Completed;
 
                 if (room.IsRecordingEnabled)
                 {
-                    var composition = await _twilioService.CreateComposition(roomResource.Sid, witnessEmail);
+                    //TODO Create a compostion for each RoomResource associated with the Room Name (twilio UniqueName)
+                    var composition = await _twilioService.CreateComposition(room.SId, witnessEmail);
                     room.Composition = new Composition
                     {
                         SId = composition.Sid,

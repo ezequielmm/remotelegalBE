@@ -14,10 +14,12 @@ using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using Twilio;
+using Twilio.Base;
 using Twilio.Jwt.AccessToken;
 using Twilio.Rest.Video.V1;
 using Twilio.Rest.Video.V1.Room;
 using static Twilio.Rest.Video.V1.CompositionResource;
+using static Twilio.Rest.Video.V1.RoomResource;
 
 namespace PrecisionReporters.Platform.Domain.Services
 {
@@ -72,14 +74,19 @@ namespace PrecisionReporters.Platform.Domain.Services
             return token.ToJwt();
         }
 
-        public async Task<RoomResource> EndRoom(string roomSid)
+        public async Task<Result> EndRoom(Room room)
         {
-            var room = await RoomResource.UpdateAsync(
-                status: RoomResource.RoomStatusEnum.Completed,
-                pathSid: roomSid
-            );
-
-            return room;
+            var openRooms = await GetRoomsByUniqueNameAndStatus(room.Name, RoomStatusEnum.InProgress);
+            try
+            {
+                await Task.WhenAll(openRooms.Select(r => RoomResource.UpdateAsync(status: RoomStatusEnum.Completed, pathSid: r.Sid)));
+                return Result.Ok();
+            }
+            catch (Exception e)
+            {
+                _log.LogError("Twilio room could not be closed.", e);
+                return Result.Fail(new Error(e.Message));
+            }
         }
 
         public async Task<CompositionResource> CreateComposition(string roomSid, string witnessEmail)
@@ -104,6 +111,8 @@ namespace PrecisionReporters.Platform.Domain.Services
             return composition;
         }
 
+        // Returns the Twilio Participant Id (SId), if not returns the first in the list
+        //TODO Validate this approach
         private async Task<string> GetWitnessSid(string roomSid, string witnessEmail)
         {
             var participants = await GetParticipantsByRoom(roomSid);
@@ -118,6 +127,12 @@ namespace PrecisionReporters.Platform.Domain.Services
         {
             var participants = await ParticipantResource.ReadAsync(roomSid);
             return participants.ToList();
+        }
+
+        private async Task<List<RoomResource>> GetRoomsByUniqueNameAndStatus(string uniqueName, RoomStatusEnum status = null)
+        {
+            var rooms = await RoomResource.ReadAsync(status: status, uniqueName: uniqueName);
+            return rooms.ToList();
         }
 
         // TODO: PoC code, we can return and store some Download information into Composition Entity?

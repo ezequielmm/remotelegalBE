@@ -148,8 +148,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _rooms.Add(room);
 
             var twilioServiceMock = new Mock<ITwilioService>();
-            var roomRepositoryMock = new Mock<IRoomRepository>();            
-
+            var roomRepositoryMock = new Mock<IRoomRepository>();
+            twilioServiceMock.Setup(x => x.EndRoom(It.IsAny<Room>())).ReturnsAsync(Result.Ok());
             var roomService = InitializeService(twilioService: twilioServiceMock, roomRepository: roomRepositoryMock);
 
             // Act
