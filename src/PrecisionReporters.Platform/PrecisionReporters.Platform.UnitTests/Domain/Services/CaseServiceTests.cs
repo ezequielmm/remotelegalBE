@@ -183,8 +183,9 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             };
 
             _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(user));
-            _caseRepositoryMock.Setup(x => x.GetByFilter(It.IsAny<Expression<Func<Case, object>>>(),
-                    It.IsAny<SortDirection>(), It.IsAny<Expression<Func<Case, bool>>>(), It.IsAny<string[]>()))
+            _caseRepositoryMock.Setup(x => x.GetByFilterOrderByThen(It.IsAny<Expression<Func<Case, object>>>(),
+                    It.IsAny<SortDirection>(), It.IsAny<Expression<Func<Case, bool>>>(), It.IsAny<string[]>(),
+                    It.IsAny<Expression<Func<Case, object>>>()))
                 .ReturnsAsync(userCases);
 
             await _service.GetCasesForUser(userEmail, orderBy, sortDirection);
@@ -193,10 +194,55 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             // TODO: Find a way to evaluate that the param orderBy was called with the given field or the default one
             _caseRepositoryMock.Verify(
-                x => x.GetByFilter(It.IsAny<Expression<Func<Case, object>>>(),
+                x => x.GetByFilterOrderByThen(It.IsAny<Expression<Func<Case, object>>>(),
                     It.Is<SortDirection>(
                         a => a == sortDirection || (a == SortDirection.Ascend && sortDirection == null)),
-                    It.IsAny<Expression<Func<Case, bool>>>(), It.IsAny<string[]>()), Times.Once);
+                    It.IsAny<Expression<Func<Case, bool>>>(), It.IsAny<string[]>(), It.IsAny<Expression<Func<Case, object>>>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task GetCasesForUser_ShouldOrderByThen_WhenSortedFieldIsAddedBy()
+        {
+            // Arrange
+            var userEmail = "testUser@mail.com";
+            var user = UserFactory.GetUserByGivenEmail(userEmail);
+            var userCases = CaseFactory.GetCases();
+
+            _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(user));
+            _caseRepositoryMock.Setup(x => x.GetByFilterOrderByThen(It.IsAny<Expression<Func<Case, object>>>(),
+                    It.IsAny<SortDirection>(), It.IsAny<Expression<Func<Case, bool>>>(), It.IsAny<string[]>(),
+                    It.IsAny<Expression<Func<Case, object>>>()))
+                .ReturnsAsync(userCases);
+
+            // Act
+            var result = await _service.GetCasesForUser(userEmail, CaseSortField.AddedBy, SortDirection.Ascend);
+
+            // Assert
+            _caseRepositoryMock.Verify(r => r.GetByFilterOrderByThen(It.IsAny<Expression<Func<Case, object>>>(),
+                    It.IsAny<SortDirection>(), It.IsAny<Expression<Func<Case, bool>>>(), It.IsAny<string[]>(),
+                    It.Is<Expression<Func<Case, object>>>(x => x != null)));
+        }
+
+        [Fact]
+        public async Task GetCasesForUser_ShouldReturnOrderedCasesListByAdded_WhenSortDirectionIsAscendAndSortedFieldIsAddedBy()
+        {
+            // Arrange
+            var userEmail = "testUser@mail.com";
+            var user = UserFactory.GetUserByGivenEmail(userEmail);
+            var userCases = CaseFactory.GetCases();
+            var sortedUserCasesList = userCases.OrderBy(x => x.AddedBy.FirstName).ThenBy(x => x.AddedBy.LastName).ToList();
+            _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(user));
+            
+            _caseRepositoryMock.Setup(x => x.GetByFilterOrderByThen(It.IsAny<Expression<Func<Case, object>>>(),
+                    It.IsAny<SortDirection>(), It.IsAny<Expression<Func<Case, bool>>>(), It.IsAny<string[]>(),
+                    It.IsAny<Expression<Func<Case, object>>>()))
+                .ReturnsAsync(sortedUserCasesList);
+
+            // Act
+            var result = await _service.GetCasesForUser(userEmail, CaseSortField.AddedBy, SortDirection.Ascend);
+
+            // Assert
+            Assert.True(sortedUserCasesList.SequenceEqual(result.Value));
         }
 
         [Fact]

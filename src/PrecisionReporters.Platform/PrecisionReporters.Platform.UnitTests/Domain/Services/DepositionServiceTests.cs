@@ -279,7 +279,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         }
 
         [Fact]
-        public async Task GetDepositionsByStatus_ShouldReturnOrderedByRequesterDepositions_WhenSortDirectionIsAscendAndSortedFieldIsRequester()
+        public async Task GetDepositionsByStatus_ShouldReturnOrderedDepositionsListByRequester_WhenSortDirectionIsAscendAndSortedFieldIsRequester()
         {
             // Arrange
             var sortedList = DepositionFactory.GetDepositionsWithRequesters().OrderBy(x => x.Requester.FirstName).ThenBy(x => x.Requester.LastName);

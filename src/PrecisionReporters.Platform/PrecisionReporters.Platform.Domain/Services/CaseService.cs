@@ -92,16 +92,20 @@ namespace PrecisionReporters.Platform.Domain.Services
             // TODO: Move this to BaseRepository and find a generic way to apply OrderBy
             Expression<Func<Case, object>> orderBy = sortedField switch
             {
-                CaseSortField.AddedBy => x => x.AddedBy,
+                CaseSortField.AddedBy => x => x.AddedBy.FirstName,
                 CaseSortField.CaseNumber => x => x.CaseNumber,
                 CaseSortField.CreatedDate => x => x.CreationDate,
                 _ => x => x.Name,
             };
-            var foundCases = await _caseRepository.GetByFilter(
+
+            Expression<Func<Case, object>> orderByThen = x => x.AddedBy.LastName;
+            
+            var foundCases = await _caseRepository.GetByFilterOrderByThen(
                 orderBy,
                 sortDirection ?? SortDirection.Ascend,
                 x => x.Members.Any(m => m.UserId == userResult.Value.Id),
-                includes);
+                includes,
+                sortedField == CaseSortField.AddedBy ? orderByThen : null);
 
             // note: empty list is ok, null is an error
             if (foundCases == null)
