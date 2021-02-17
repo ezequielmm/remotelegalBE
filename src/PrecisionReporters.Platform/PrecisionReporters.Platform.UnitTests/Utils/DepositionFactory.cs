@@ -76,6 +76,57 @@ namespace PrecisionReporters.Platform.UnitTests.Utils
             };
         }
 
+        public static List<Deposition> GetDepositionsWithRequesters()
+        {
+            return new List<Deposition> {
+                new Deposition
+                {
+                    Id = Guid.NewGuid(),
+                    StartDate = DateTime.Now,
+                    EndDate = DateTime.Now.AddHours(5),
+                    WitnessId = Guid.NewGuid(),
+                    CreationDate = DateTime.UtcNow,
+                    Requester = new User{ Id = Guid.NewGuid(), EmailAddress = "jbrown@email.com", FirstName = "John", LastName = "Brown"}
+                },
+                new Deposition
+                {
+                    Id = Guid.NewGuid(),
+                    StartDate = DateTime.Now,
+                    EndDate = DateTime.Now.AddHours(5),
+                    WitnessId = Guid.NewGuid(),
+                    CreationDate = DateTime.UtcNow,
+                    Requester = new User{ Id = Guid.NewGuid(), EmailAddress = "annewilson@email.com", FirstName = "Anne", LastName = "Wilson"}
+                },
+                new Deposition
+                {
+                    Id = Guid.NewGuid(),
+                    StartDate = DateTime.Now,
+                    EndDate = DateTime.Now.AddHours(5),
+                    WitnessId = Guid.NewGuid(),
+                    CreationDate = DateTime.UtcNow,
+                    Requester = new User{ Id = Guid.NewGuid(), EmailAddress = "juliarobinson@email.com", FirstName = "Julia", LastName = "Robinson"}
+                },
+                new Deposition
+                {
+                    Id = Guid.NewGuid(),
+                    StartDate = DateTime.Now,
+                    EndDate = DateTime.Now.AddHours(5),
+                    WitnessId = Guid.NewGuid(),
+                    CreationDate = DateTime.UtcNow,
+                    Requester = new User{ Id = Guid.NewGuid(), EmailAddress = "robertmatt@email.com", FirstName = "Robert", LastName = "Matt"}
+                },
+                new Deposition
+                {
+                    Id = Guid.NewGuid(),
+                    StartDate = DateTime.Now,
+                    EndDate = DateTime.Now.AddHours(5),
+                    WitnessId = Guid.NewGuid(),
+                    CreationDate = DateTime.UtcNow,
+                    Requester = new User{ Id = Guid.NewGuid(), EmailAddress = "helenlauphan@email.com", FirstName = "Helen", LastName = "Lauphan"}
+                }
+            };
+        }
+
         public static List<Document> GetDocumentList()
         {
             return new List<Document>

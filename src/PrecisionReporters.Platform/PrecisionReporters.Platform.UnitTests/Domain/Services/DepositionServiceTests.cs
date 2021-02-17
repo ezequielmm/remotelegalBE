@@ -279,6 +279,56 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         }
 
         [Fact]
+        public async Task GetDepositionsByStatus_ShouldReturnOrderedByRequesterDepositions_WhenSortDirectionIsAscendAndSortedFieldIsRequester()
+        {
+            // Arrange
+            var sortedList = DepositionFactory.GetDepositionsWithRequesters().OrderBy(x => x.Requester.FirstName).ThenBy(x => x.Requester.LastName);
+            _depositions.AddRange(sortedList);
+            _depositionRepositoryMock.Setup(x => x.GetByStatus(
+                x => x.Requester.FirstName,
+                It.IsAny<SortDirection>(),
+                It.IsAny<Expression<Func<Deposition, bool>>>(),
+                It.IsAny<string[]>(),
+                It.IsAny<Expression<Func<Deposition, object>>>()))
+                .ReturnsAsync(_depositions.OrderBy(x => x.Requester.FirstName).ThenBy(x => x.Requester.LastName).ToList());
+
+            _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(new User { IsAdmin = true }));
+
+            // Act
+            var result = await _depositionService.GetDepositionsByStatus(null, DepositionSortField.Requester, SortDirection.Ascend, "fake_user@mail.com");
+
+            //Assert
+            Assert.Equal(sortedList, result);
+        }
+
+        [Fact]
+        public async Task GetDepositionsByStatus_ShouldOrderByThen_WhenSortedFieldIsRequester()
+        {
+            // Arrange
+            var sortedList = DepositionFactory.GetDepositionsWithRequesters().OrderBy(x => x.Requester.FirstName).ThenBy(x => x.Requester.LastName);
+            _depositions.AddRange(sortedList);
+            _depositionRepositoryMock.Setup(x => x.GetByStatus(
+                x => x.Requester.FirstName,
+                It.IsAny<SortDirection>(),
+                It.IsAny<Expression<Func<Deposition, bool>>>(),
+                It.IsAny<string[]>(),
+                It.IsAny<Expression<Func<Deposition, object>>>()))
+                .ReturnsAsync(_depositions.OrderBy(x => x.Requester.FirstName).ThenBy(x => x.Requester.LastName).ToList());
+
+            _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(new User { IsAdmin = true }));
+
+            // Act
+            var result = await _depositionService.GetDepositionsByStatus(null, DepositionSortField.Requester, SortDirection.Ascend, "fake_user@mail.com");
+
+            //Assert
+            _depositionRepositoryMock.Verify(r => r.GetByStatus(It.IsAny<Expression<Func<Deposition, object>>>(),
+                It.IsAny<SortDirection>(),
+                It.IsAny<Expression<Func<Deposition, bool>>>(),
+                It.IsAny<string[]>(),
+                It.Is<Expression<Func<Deposition, object>>>(x => x != null)), Times.Once);
+        }
+
+        [Fact]
         public async Task JoinDeposition_ShouldReturnError_WhenUserNotFound()
         {
             // Arrange

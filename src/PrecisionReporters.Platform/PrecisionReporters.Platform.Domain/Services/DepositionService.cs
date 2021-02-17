@@ -163,7 +163,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 DepositionSortField.CaseNumber => x => x.Case.CaseNumber,
                 DepositionSortField.CaseName => x => x.Case.Name,
                 DepositionSortField.Company => x => x.Requester.CompanyName,
-                DepositionSortField.Requester => x => x.Requester.FirstName + x.Requester.LastName,
+                DepositionSortField.Requester => x => x.Requester.FirstName,
                 _ => x => x.StartDate,
             };
 
