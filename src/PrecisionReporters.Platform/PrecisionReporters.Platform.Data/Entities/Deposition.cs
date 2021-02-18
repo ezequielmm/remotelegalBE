@@ -19,7 +19,7 @@ namespace PrecisionReporters.Platform.Data.Entities
         public string FileKey { get; set; }
         public List<Participant> Participants { get; set; }
         public List<DepositionDocument> Documents { get; set; }
-        public List<DocumentUserDeposition> DocumentUserDepositions {get;set;}
+        public List<DocumentUserDeposition> DocumentUserDepositions { get; set; }
         [Required]
         public DepositionStatus Status { get; set; } = DepositionStatus.Pending;
 
@@ -53,7 +53,9 @@ namespace PrecisionReporters.Platform.Data.Entities
         public User AddedBy { get; set; }
 
         public List<BreakRoom> BreakRooms { get; set; } = new List<BreakRoom>();
-
+        [Column(TypeName = "varchar(50)")]
+        public string Job { get; set; }
+        public string RequesterNotes { get; set; }
         public override void CopyFrom(Deposition entity)
         {
             StartDate = entity.StartDate;
@@ -70,6 +72,8 @@ namespace PrecisionReporters.Platform.Data.Entities
             Events = entity.Events;
             IsOnTheRecord = entity.IsOnTheRecord;
             BreakRooms = entity.BreakRooms;
+            Job = entity.Job;
+            RequesterNotes = entity.RequesterNotes;
         }
     }
 }

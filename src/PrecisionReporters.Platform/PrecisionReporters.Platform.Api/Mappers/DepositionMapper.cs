@@ -41,7 +41,9 @@ namespace PrecisionReporters.Platform.Api.Mappers
                 Details = dto.Details,
                 Room = _rooMapper.ToModel(dto.Room),
                 Caption = dto.Caption != null ? _documentMapper.ToModel(dto.Caption) : null,
-                Documents = dto.Documents?.Select(d => _depositionDocumentMapper.ToModel(d)).ToList()
+                Documents = dto.Documents?.Select(d => _depositionDocumentMapper.ToModel(d)).ToList(),
+                Job = dto.Job,
+                RequesterNotes = dto.RequesterNotes
             };
         }
 
@@ -87,6 +89,9 @@ namespace PrecisionReporters.Platform.Api.Mappers
                 CompleteDate = model.CompleteDate,
                 IsOnTheRecord = model.IsOnTheRecord,
                 SharingDocument = model.SharingDocument != null ? _documentMapper.ToDto(model.SharingDocument) : null,
+                Job = model.Job,
+                RequesterNotes = model.RequesterNotes,
+                AddedBy = model.AddedBy != null ? _userMapper.ToDto(model.AddedBy) : null
             };
         }
     }

@@ -29,5 +29,8 @@ namespace PrecisionReporters.Platform.Api.Dtos
         public string CaseNumber { get; internal set; }
         public bool IsOnTheRecord { get; set; }
         public DocumentDto SharingDocument { get; set; }
+        public string Job { get; set; }
+        public string RequesterNotes { get; set; }
+        public UserDto AddedBy { get; set; }
     }
 }

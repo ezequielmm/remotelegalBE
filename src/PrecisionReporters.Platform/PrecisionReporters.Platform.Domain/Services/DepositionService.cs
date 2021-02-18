@@ -27,7 +27,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public DepositionService(IDepositionRepository depositionRepository,
             IParticipantRepository participantRepository,
-			IDepositionEventRepository depositionEventRepository,
+            IDepositionEventRepository depositionEventRepository,
             IUserService userService,
             IRoomService roomService,
             IBreakRoomService breakRoomService,
@@ -51,7 +51,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         public async Task<Result<Deposition>> GetDepositionById(Guid id)
         {
             var includes = new[] { nameof(Deposition.Requester), nameof(Deposition.Participants),
-                nameof(Deposition.Witness), nameof(Deposition.Case)};
+                nameof(Deposition.Witness), nameof(Deposition.Case), nameof(Deposition.AddedBy)};
             return await GetByIdWithIncludes(id, includes);
         }
 
@@ -414,7 +414,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         {
             var depositionResult = await _depositionRepository.GetById(depositionId);
             depositionResult.SharingDocumentId = null;
-            return Result.Ok(await _depositionRepository.Update(depositionResult));            
+            return Result.Ok(await _depositionRepository.Update(depositionResult));
         }
 
         private Participant GetParticipantByEmail(Deposition deposition, string emailAddress)
@@ -444,8 +444,8 @@ namespace PrecisionReporters.Platform.Domain.Services
                 return Result.Fail(new InvalidInputError("The deposition is not longer available"));
 
             var participant = GetParticipantByEmail(deposition, guest.Email);
-            if (guest.Role == ParticipantType.Witness 
-                && participant == null 
+            if (guest.Role == ParticipantType.Witness
+                && participant == null
                 && deposition.Witness?.UserId != null)
                 return Result.Fail(new InvalidInputError("The deposition already has a participant as witness"));
 
@@ -498,7 +498,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (userResult.IsFailed)
                 return userResult.ToResult();
 
-            var participantResult =  GetParticipantByEmail(deposition, userResult.Value.EmailAddress);
+            var participantResult = GetParticipantByEmail(deposition, userResult.Value.EmailAddress);
             if (participantResult != null)
                 return participantResult.Id.ToResult();
 
