@@ -6,6 +6,9 @@ RUN dotnet publish -c Release -o /app
 
 FROM mcr.microsoft.com/dotnet/core/aspnet:3.1-buster-slim AS runtime
 RUN apt-get update && apt-get -y install build-essential libssl1.1 libasound2 wget
+RUN curl -LO https://github.com/DataDog/dd-trace-dotnet/releases/download/v1.23.0/datadog-dotnet-apm_1.23.0_amd64.deb &&\
+    dpkg -i ./datadog-dotnet-apm_1.23.0_amd64.deb
+RUN /opt/datadog/createLogPath.sh
 WORKDIR /api
 COPY --from=build /app .
 EXPOSE 80

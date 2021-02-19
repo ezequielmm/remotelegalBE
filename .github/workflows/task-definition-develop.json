@@ -116,6 +116,38 @@
                 {
                     "name": "AppConfiguration__VerificationLinkConfiguration__ExpirationTime",
                     "value": "24"
+                },
+                {
+                    "name": "CORECLR_ENABLE_PROFILING",
+                    "value": "1"
+                },
+                {
+                    "name": "CORECLR_PROFILER",
+                    "value": "{846F5F1C-F9AE-4B07-969E-05C26BC060D8}"
+                },
+                {
+                    "name": "CORECLR_PROFILER_PATH",
+                    "value": "/opt/datadog/Datadog.Trace.ClrProfiler.Native.so"
+                },
+                {
+                    "name": "DD_INTEGRATIONS",
+                    "value": "/opt/datadog/integrations.json"
+                },
+                {
+                    "name": "DD_DOTNET_TRACER_HOME",
+                    "value": "/opt/datadog"
+                },
+                {
+                    "name": "DD_TRACE_AGENT_URL",
+                    "value": "http://localhost:8126"
+                },
+                {
+                    "name": "DD_ENV",
+                    "value": "develop"
+                },
+                {
+                    "name": "DD_SERVICE",
+                    "value": "prp-be-develop"
                 }
             ],
             "secrets": [
@@ -194,6 +226,18 @@
                 },
                 {
                     "name": "DD_LOGS_ENABLED",
+                    "value": "true"
+                },
+                {
+                    "name": "DD_PROCESS_AGENT_ENABLED",
+                    "value": "true"
+                },
+                {
+                    "name": "DD_APM_ENABLED",
+                    "value": "true"
+                },
+                {
+                    "name": "DD_APM_NON_LOCAL_TRAFFIC",
                     "value": "true"
                 }
             ],

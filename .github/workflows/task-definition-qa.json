@@ -112,6 +112,38 @@
                 {
                     "name": "AppConfiguration__VerificationLinkConfiguration__ExpirationTime",
                     "value": "96"
+                },
+                {
+                    "name": "CORECLR_ENABLE_PROFILING",
+                    "value": "0"
+                },
+                {
+                    "name": "CORECLR_PROFILER",
+                    "value": "{846F5F1C-F9AE-4B07-969E-05C26BC060D8}"
+                },
+                {
+                    "name": "CORECLR_PROFILER_PATH",
+                    "value": "/opt/datadog/Datadog.Trace.ClrProfiler.Native.so"
+                },
+                {
+                    "name": "DD_INTEGRATIONS",
+                    "value": "/opt/datadog/integrations.json"
+                },
+                {
+                    "name": "DD_DOTNET_TRACER_HOME",
+                    "value": "/opt/datadog"
+                },
+                {
+                    "name": "DD_TRACE_AGENT_URL",
+                    "value": "http://localhost:8126"
+                },
+                {
+                    "name": "DD_ENV",
+                    "value": "qa"
+                },
+                {
+                    "name": "DD_SERVICE",
+                    "value": "prp-be-qa"
                 }
             ],
             "secrets": [
@@ -156,6 +188,11 @@
                     "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:AppConfiguration__AzureCognitiveServiceConfiguration__SubscriptionKey-6JVtew"
                 }
             ],
+            "dockerLabels": {
+                "com.datadoghq.ad.instances": "[{\"host\": \"%%host%%\", \"port\": 80}]",
+                "com.datadoghq.ad.check_names": "[\"prp-be-container-qa\"]",
+                "com.datadoghq.ad.init_configs": "[{}]"
+            },
             "mountPoints": [],
             "volumesFrom": [],
             "logConfiguration": {
@@ -166,6 +203,58 @@
                     "awslogs-stream-prefix": "ecs"
                 }
             }
+        },
+        {
+            "name": "datadog-agent",
+            "image": "datadog/agent:latest",
+            "portMappings": [
+                {
+                    "containerPort": 8126,
+                    "hostPort": 8126,
+                    "protocol": "tcp"
+                }
+            ],
+            "essential": true,
+            "environment": [
+                {
+                    "name": "ECS_FARGATE",
+                    "value": "true"
+                },
+                {
+                    "name": "DD_LOGS_ENABLED",
+                    "value": "true"
+                },
+                {
+                    "name": "DD_PROCESS_AGENT_ENABLED",
+                    "value": "true"
+                },
+                {
+                    "name": "DD_APM_ENABLED",
+                    "value": "false"
+                },
+                {
+                    "name": "DD_APM_NON_LOCAL_TRAFFIC",
+                    "value": "false"
+                }
+            ],
+            "secrets": [
+                {
+                    "name": "DD_API_KEY",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:DATADOG_API_KEY-9EoxaV"
+                }
+            ],
+            "mountPoints": [],
+            "volumesFrom": [],
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-group": "/ecs/datadog-agent-qa",
+                    "awslogs-region": "us-east-1",
+                    "awslogs-stream-prefix": "ecs"
+                }
+            },
+            "memoryReservation": 256,
+            "cpu": 10
         }
     ],
     "family": "prp-be-task-qa",
