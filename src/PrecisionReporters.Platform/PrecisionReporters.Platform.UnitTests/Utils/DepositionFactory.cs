@@ -1,4 +1,5 @@
 ﻿using PrecisionReporters.Platform.Data.Entities;
+using PrecisionReporters.Platform.Data.Enums;
 using System;
 using System.Collections.Generic;
 
@@ -9,14 +10,16 @@ namespace PrecisionReporters.Platform.UnitTests.Utils
         public static Deposition GetDeposition(Guid depositionId, Guid caseId)
         {
             var deposition = GetDepositionWithoutWitness(depositionId, caseId);
-            deposition.Witness = new Participant
-            {
-                Id = Guid.NewGuid(),
-                Name = "witness1",
-                Email = "witness@email.com"
-            };
             deposition.Events = new List<DepositionEvent>();
-            deposition.Participants = new List<Participant>();
+            deposition.Participants = new List<Participant>{ 
+                new Participant
+                {
+                    Id = Guid.NewGuid(),
+                    Name = "witness1",
+                    Email = "witness@email.com",
+                    Role = ParticipantType.Witness
+                } 
+            };
             deposition.IsOnTheRecord = true;
             return deposition;
         }
@@ -29,7 +32,6 @@ namespace PrecisionReporters.Platform.UnitTests.Utils
                 Id = depositionId,
                 StartDate = DateTime.Now,
                 EndDate = DateTime.Now.AddHours(5),
-                WitnessId = Guid.NewGuid(),
                 CreationDate = DateTime.UtcNow,
                 Requester = new User
                 {
@@ -50,7 +52,8 @@ namespace PrecisionReporters.Platform.UnitTests.Utils
                     Name = "DepositionDocument_1",
                     FileKey = "fileKey"
                 },
-                TimeZone = "EST"
+                TimeZone = "EST",
+                Participants = new List<Participant>{ new Participant { Role = ParticipantType.Witness } }
             };
         }
 
@@ -62,7 +65,7 @@ namespace PrecisionReporters.Platform.UnitTests.Utils
                     Id = Guid.NewGuid(),
                     StartDate = DateTime.Now,
                     EndDate = DateTime.Now.AddHours(5),
-                    WitnessId = Guid.NewGuid(),
+                    Participants = new List<Participant>{ new Participant { Role = ParticipantType.Witness } },
                     CreationDate = DateTime.UtcNow
                 },
                 new Deposition
@@ -70,7 +73,7 @@ namespace PrecisionReporters.Platform.UnitTests.Utils
                     Id = Guid.NewGuid(),
                     StartDate = DateTime.Now,
                     EndDate = DateTime.Now.AddHours(5),
-                    WitnessId = Guid.NewGuid(),
+                    Participants = new List<Participant>{ new Participant { Role = ParticipantType.Witness } },
                     CreationDate = DateTime.UtcNow
                 }
             };
@@ -84,7 +87,7 @@ namespace PrecisionReporters.Platform.UnitTests.Utils
                     Id = Guid.NewGuid(),
                     StartDate = DateTime.Now,
                     EndDate = DateTime.Now.AddHours(5),
-                    WitnessId = Guid.NewGuid(),
+                    Participants = new List<Participant>{ new Participant { Role = ParticipantType.Witness } },
                     CreationDate = DateTime.UtcNow,
                     Requester = new User{ Id = Guid.NewGuid(), EmailAddress = "jbrown@email.com", FirstName = "John", LastName = "Brown"}
                 },
@@ -93,7 +96,7 @@ namespace PrecisionReporters.Platform.UnitTests.Utils
                     Id = Guid.NewGuid(),
                     StartDate = DateTime.Now,
                     EndDate = DateTime.Now.AddHours(5),
-                    WitnessId = Guid.NewGuid(),
+                    Participants = new List<Participant>{ new Participant { Role = ParticipantType.Witness } },
                     CreationDate = DateTime.UtcNow,
                     Requester = new User{ Id = Guid.NewGuid(), EmailAddress = "annewilson@email.com", FirstName = "Anne", LastName = "Wilson"}
                 },
@@ -102,7 +105,7 @@ namespace PrecisionReporters.Platform.UnitTests.Utils
                     Id = Guid.NewGuid(),
                     StartDate = DateTime.Now,
                     EndDate = DateTime.Now.AddHours(5),
-                    WitnessId = Guid.NewGuid(),
+                    Participants = new List<Participant>{ new Participant { Role = ParticipantType.Witness } },
                     CreationDate = DateTime.UtcNow,
                     Requester = new User{ Id = Guid.NewGuid(), EmailAddress = "juliarobinson@email.com", FirstName = "Julia", LastName = "Robinson"}
                 },
@@ -111,7 +114,7 @@ namespace PrecisionReporters.Platform.UnitTests.Utils
                     Id = Guid.NewGuid(),
                     StartDate = DateTime.Now,
                     EndDate = DateTime.Now.AddHours(5),
-                    WitnessId = Guid.NewGuid(),
+                    Participants = new List<Participant>{ new Participant { Role = ParticipantType.Witness } },
                     CreationDate = DateTime.UtcNow,
                     Requester = new User{ Id = Guid.NewGuid(), EmailAddress = "robertmatt@email.com", FirstName = "Robert", LastName = "Matt"}
                 },
@@ -120,7 +123,7 @@ namespace PrecisionReporters.Platform.UnitTests.Utils
                     Id = Guid.NewGuid(),
                     StartDate = DateTime.Now,
                     EndDate = DateTime.Now.AddHours(5),
-                    WitnessId = Guid.NewGuid(),
+                    Participants = new List<Participant>{ new Participant { Role = ParticipantType.Witness } },
                     CreationDate = DateTime.UtcNow,
                     Requester = new User{ Id = Guid.NewGuid(), EmailAddress = "helenlauphan@email.com", FirstName = "Helen", LastName = "Lauphan"}
                 }
@@ -153,7 +156,7 @@ namespace PrecisionReporters.Platform.UnitTests.Utils
                 Id = depositionId,
                 StartDate = DateTime.Now,
                 EndDate = DateTime.Now.AddHours(5),
-                WitnessId = Guid.NewGuid(),
+                Participants = new List<Participant> { new Participant { Role = ParticipantType.Witness, Id = Guid.NewGuid(), Name = "witness1", Email = "witness@email.com" } },
                 CreationDate = DateTime.UtcNow,
                 Room = new Room
                 {
@@ -166,12 +169,6 @@ namespace PrecisionReporters.Platform.UnitTests.Utils
                     Id = Guid.NewGuid(),
                     Name = "DepositionDocument_1",
                     FileKey = "fileKey"
-                },
-                Witness = new Participant
-                {
-                    Id = Guid.NewGuid(),
-                    Name = "witness1",
-                    Email = "witness@email.com"
                 }
             };
         }

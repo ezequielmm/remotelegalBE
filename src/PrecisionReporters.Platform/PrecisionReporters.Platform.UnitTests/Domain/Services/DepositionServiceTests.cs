@@ -192,16 +192,15 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var witnessEmail = "testWitness@mail.com";
             var deposition = new Deposition
             {
-                Witness = new Participant
-                {
-                    Email = witnessEmail
+                Participants = new List<Participant> {
+                    new Participant { Email = witnessEmail, Role = ParticipantType.Witness }
                 },
                 Requester = new User
                 {
                     EmailAddress = "requester@email.com"
                 }
             };
-
+            _userServiceMock.Setup(x => x.GetUsersByFilter(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<string[]>())).ReturnsAsync(new List<User>());
             _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(new User()));
 
             // Act
@@ -221,6 +220,9 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var fileKey = "TestFileKey";
             var deposition = new Deposition
             {
+                Participants = new List<Participant> {
+                    new Participant { Email = "testWitness@mail.com", Role = ParticipantType.Witness }
+                },
                 Requester = new User
                 {
                     EmailAddress = "requester@email.com"
@@ -235,6 +237,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var documents = DepositionFactory.GetDocumentList();
             documents.Add(captionDocument);
 
+            _userServiceMock.Setup(x => x.GetUsersByFilter(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<string[]>())).ReturnsAsync(new List<User>());
             _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(new User()));
 
             // Act
@@ -382,7 +385,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             // Assert
             _userServiceMock.Verify(mock => mock.GetUserByEmail(It.Is<string>(a => a == userEmail)), Times.Once());
-            _depositionRepositoryMock.Verify(mock => mock.GetById(It.Is<Guid>(a => a == depositionId), It.Is<string[]>(a => a.SequenceEqual(new[] { nameof(Deposition.Witness), nameof(Deposition.Room), nameof(Deposition.Participants) }))), Times.Once());
+            _depositionRepositoryMock.Verify(mock => mock.GetById(It.Is<Guid>(a => a == depositionId), It.Is<string[]>(a => a.SequenceEqual(new[] { nameof(Deposition.Room), nameof(Deposition.Participants) }))), Times.Once());
             Assert.Equal(errorMessage, result.Errors[0].Message);
             Assert.True(result.IsFailed);
             Assert.NotNull(deposition.TimeZone);
@@ -448,7 +451,6 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var token = Guid.NewGuid().ToString();
             var depositionId = Guid.NewGuid();
             var caseId = Guid.NewGuid();
-            var currentParticipant = new Participant { Name = "ParticipantName", Role = ParticipantType.Observer, User = user };
             var deposition = new Deposition
             {
                 Room = new Room
@@ -457,10 +459,10 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                     Status = RoomStatus.Created,
                     Name = "TestingRoom"
                 },
-                Witness = new Participant { Email = "witness@email.com" },
                 Participants = new List<Participant>
                 {
-                   currentParticipant
+                   new Participant { Name = "ParticipantName", Role = ParticipantType.Observer },
+                   new Participant { Email = userEmail, Role = ParticipantType.Witness, User = user }
                 },
                 TimeZone = "TetingTimeZone",
                 IsOnTheRecord = true
@@ -535,7 +537,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             // Assert
             _depositionRepositoryMock.Verify(mock => mock.GetById(It.Is<Guid>(a => a == depositionId), It.IsAny<string[]>()), Times.Exactly(2));
             _depositionRepositoryMock.Verify(mock => mock.Update(It.Is<Deposition>(d => d.Status == DepositionStatus.Completed && d.CompleteDate.HasValue)), Times.Exactly(2));
-             _roomServiceMock.Verify(mock => mock.EndRoom(It.IsAny<Room>(), It.IsAny<string>()), Times.Once());
+            _roomServiceMock.Verify(mock => mock.EndRoom(It.IsAny<Room>(), It.IsAny<string>()), Times.Once());
             Assert.NotNull(result);
             Assert.True(result.IsSuccess);
         }
@@ -864,13 +866,14 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             Assert.True(!result.Value.Item2);
             Assert.Null(result.Value.Item1);
         }
+
         [Fact]
         public async Task JoinGuestParticipant_ShouldSaveNewUserAndCallCognitoApi_ForNoUserAndNoParticipant()
         {
             // Arrange
             var guestEmail = "participant@mail.com";
             var user = new User { Id = Guid.NewGuid(), EmailAddress = guestEmail };
-            
+
             var depositionId = Guid.NewGuid();
             var deposition = DepositionFactory.GetDepositionWithParticipantEmail("foo@mail.com");
             deposition.Id = depositionId;
@@ -880,7 +883,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 User = user,
                 UserId = user.Id,
                 Email = guestEmail,
-                DepositionId = depositionId
+                DepositionId = depositionId,
+                Role = ParticipantType.Observer
             };
 
             _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
@@ -942,7 +946,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var name = "Test";
 
             var depositionId = Guid.NewGuid();
-            var deposition = DepositionFactory.GetDepositionWithParticipantEmail("participant@mail.com",false);
+            var deposition = DepositionFactory.GetDepositionWithParticipantEmail("participant@mail.com", false);
             deposition.Id = depositionId;
 
             var participant = new Participant
@@ -976,7 +980,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var user = new User { Id = Guid.NewGuid(), EmailAddress = participantEmail };
             var depositionId = Guid.NewGuid();
             var caseId = Guid.NewGuid();
-            var deposition = DepositionFactory.GetDeposition(depositionId,caseId);
+            var deposition = DepositionFactory.GetDeposition(depositionId, caseId);
             var participant = new Participant
             {
                 Email = participantEmail,
@@ -1058,7 +1062,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var depositionId = Guid.NewGuid();
             var caseId = Guid.NewGuid();
             var deposition = DepositionFactory.GetDeposition(depositionId, caseId);
-            deposition.Witness.UserId = Guid.NewGuid();
+            deposition.Participants.Single(x => x.Role == ParticipantType.Witness).UserId = Guid.NewGuid();
             var expectedError = "The deposition already has a participant as witness";
             var participant = new Participant
             {

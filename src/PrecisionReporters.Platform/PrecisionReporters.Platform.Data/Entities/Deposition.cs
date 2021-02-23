@@ -26,9 +26,6 @@ namespace PrecisionReporters.Platform.Data.Entities
         [ForeignKey(nameof(Caption))]
         public Guid? CaptionId { get; set; }
         public Document Caption { get; set; }
-        [ForeignKey(nameof(Witness))]
-        public Guid? WitnessId { get; set; }
-        public Participant Witness { get; set; }
         [ForeignKey(nameof(Requester))]
         public Guid RequesterId { get; set; }
         public User Requester { get; set; }
@@ -64,7 +61,6 @@ namespace PrecisionReporters.Platform.Data.Entities
             TimeZone = entity.TimeZone;
             Caption = entity.Caption;
             Details = entity.Details;
-            Witness = entity.Witness;
             Requester = entity.Requester;
             Participants = entity.Participants;
             Documents = entity.Documents;

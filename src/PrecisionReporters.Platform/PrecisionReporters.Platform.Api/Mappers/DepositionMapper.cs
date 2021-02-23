@@ -1,5 +1,6 @@
 ﻿using PrecisionReporters.Platform.Api.Dtos;
 using PrecisionReporters.Platform.Data.Entities;
+using PrecisionReporters.Platform.Data.Enums;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -27,6 +28,7 @@ namespace PrecisionReporters.Platform.Api.Mappers
 
         public Deposition ToModel(DepositionDto dto)
         {
+            var witness = dto.Witness != null ? _participantMapper.ToModel(dto.Witness) : new Participant { Role = ParticipantType.Witness };
             return new Deposition
             {
                 Id = dto.Id,
@@ -35,8 +37,7 @@ namespace PrecisionReporters.Platform.Api.Mappers
                 TimeZone = dto.TimeZone,
                 EndDate = dto.EndDate?.UtcDateTime,
                 CompleteDate = dto.CompleteDate?.UtcDateTime,
-                Witness = dto.Witness != null ? _participantMapper.ToModel(dto.Witness) : null,
-                Participants = dto.Participants?.Select(p => _participantMapper.ToModel(p)).ToList(),
+                Participants = dto.Participants?.Select(p => _participantMapper.ToModel(p)).Append(witness).ToList(),
                 RequesterId = dto.Requester.Id,
                 Details = dto.Details,
                 Room = _rooMapper.ToModel(dto.Room),
@@ -49,25 +50,26 @@ namespace PrecisionReporters.Platform.Api.Mappers
 
         public Deposition ToModel(CreateDepositionDto dto)
         {
+            var witness = dto.Witness != null ? _participantMapper.ToModel(dto.Witness) : new Participant { Role = ParticipantType.Witness };
             return new Deposition
             {
                 StartDate = dto.StartDate.UtcDateTime,
                 TimeZone = dto.TimeZone,
                 EndDate = dto.EndDate?.UtcDateTime,
-                Witness = dto.Witness != null ? _participantMapper.ToModel(dto.Witness) : null,
                 // TODO: Remove the creation of a new user and instead fulfill RequesterId property
                 Requester = new User { EmailAddress = dto.RequesterEmail },
                 Details = dto.Details,
                 IsVideoRecordingNeeded = dto.IsVideoRecordingNeeded,
                 FileKey = dto.Caption,
                 Participants = dto.Participants != null
-                    ? dto.Participants.Select(p => _participantMapper.ToModel(p)).ToList()
+                    ? dto.Participants.Select(p => _participantMapper.ToModel(p)).Append(witness).ToList()
                     : new List<Participant>()
             };
         }
 
         public DepositionDto ToDto(Deposition model)
         {
+            var witness = model.Participants?.Single(x => x.Role == ParticipantType.Witness);
             return new DepositionDto
             {
                 Id = model.Id,
@@ -75,8 +77,8 @@ namespace PrecisionReporters.Platform.Api.Mappers
                 StartDate = new DateTimeOffset(model.StartDate, TimeSpan.Zero),
                 TimeZone = model.TimeZone,
                 EndDate = model.EndDate.HasValue ? new DateTimeOffset(model.EndDate.Value, TimeSpan.Zero) : (DateTimeOffset?)null,
-                Witness = model.Witness != null ? _participantMapper.ToDto(model.Witness) : null,
-                Participants = model.Participants?.Select(p => _participantMapper.ToDto(p)).ToList(),
+                Witness = witness != null ? _participantMapper.ToDto(witness) : null,
+                Participants = model.Participants?.Where(x => x.Role != ParticipantType.Witness).Select(p => _participantMapper.ToDto(p)).ToList(),
                 Requester = model.Requester != null ? _userMapper.ToDto(model.Requester) : null,
                 Details = model.Details,
                 Room = model.Room != null ? _rooMapper.ToDto(model.Room) : null,

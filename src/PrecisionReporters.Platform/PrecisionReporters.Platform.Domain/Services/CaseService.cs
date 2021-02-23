@@ -156,9 +156,6 @@ namespace PrecisionReporters.Platform.Domain.Services
                         }
                         var newDeposition = depositionResult.Value;
 
-                        if (newDeposition.Witness?.User != null)
-                            AddMemberToCase(newDeposition.Witness.User, caseToUpdate);
-
                         if (newDeposition.Participants != null)
                         {
                             foreach (var participant in newDeposition.Participants.Where(participant => participant.User != null))

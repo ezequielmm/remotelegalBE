@@ -58,8 +58,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<Deposition>> GetDepositionById(Guid id)
         {
-            var includes = new[] { nameof(Deposition.Requester), nameof(Deposition.Participants),
-                nameof(Deposition.Witness), nameof(Deposition.Case), nameof(Deposition.AddedBy)};
+            var includes = new[] { nameof(Deposition.Requester), nameof(Deposition.Participants), nameof(Deposition.Case), nameof(Deposition.AddedBy)};
             return await GetByIdWithIncludes(id, includes);
         }
 
@@ -86,12 +85,13 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             deposition.AddedBy = addedBy;
 
-            if (deposition.Witness != null && !string.IsNullOrWhiteSpace(deposition.Witness.Email))
+            var witness = deposition.Participants.Single(x => x.Role == ParticipantType.Witness);
+            if (!string.IsNullOrWhiteSpace(witness.Email))
             {
-                var witnessUser = await _userService.GetUserByEmail(deposition.Witness.Email);
+                var witnessUser = await _userService.GetUserByEmail(witness.Email);
                 if (witnessUser.IsSuccess)
                 {
-                    deposition.Witness.User = witnessUser.Value;
+                    witness.User = witnessUser.Value;
                 }
             }
 
@@ -123,11 +123,6 @@ namespace PrecisionReporters.Platform.Domain.Services
                     }
                 }
             }
-
-            if (deposition.Witness?.User != null)
-            {
-                await _permissionService.AddUserRole(deposition.Witness.User.Id, deposition.Id, ResourceType.Deposition, RoleName.DepositionAttendee);
-            }
         }
 
         private void AddBreakRooms(Deposition deposition)
@@ -150,8 +145,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         {
             var userResult = await _userService.GetUserByEmail(userEmail);
 
-            var includes = new[] { nameof(Deposition.Requester), nameof(Deposition.Participants),
-                nameof(Deposition.Witness), nameof(Deposition.Case)};
+            var includes = new[] { nameof(Deposition.Requester), nameof(Deposition.Participants), nameof(Deposition.Case) };
 
             Expression<Func<Deposition, bool>> filter = x => status == null || x.Status == status;
 
@@ -160,8 +154,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 filter = x => (status == null || x.Status == status) &&
                     (x.Participants.Any(p => p.Email == userEmail)
                         || x.Requester.EmailAddress == userEmail
-                        || x.AddedBy.EmailAddress == userEmail
-                        || (x.Witness != null && x.Witness.Email == userEmail));
+                        || x.AddedBy.EmailAddress == userEmail);
             }
 
             Expression<Func<Deposition, object>> orderBy = sortedField switch
@@ -194,7 +187,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (userResult.IsFailed)
                 return userResult.ToResult<JoinDepositionDto>();
 
-            var deposition = await _depositionRepository.GetById(id, new[] { nameof(Deposition.Witness), nameof(Deposition.Room), nameof(Deposition.Participants) });
+            var deposition = await _depositionRepository.GetById(id, new[] { nameof(Deposition.Room), nameof(Deposition.Participants) });
             if (deposition == null)
                 return Result.Fail(new ResourceNotFoundError($"Deposition with id {id} not found."));
 
@@ -204,8 +197,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 await _roomService.StartRoom(deposition.Room);
             }
 
-            // TODO: Witness shoudl be part of the participants instead of a separated property.
-            var currentParticipant = deposition.Witness?.Email == identity ? deposition.Witness : deposition.Participants.FirstOrDefault(p => p.User == userResult.Value);
+            var currentParticipant = deposition.Participants.FirstOrDefault(p => p.User == userResult.Value);
             if (currentParticipant == null && !userResult.Value.IsAdmin)
                 return Result.Fail(new InvalidInputError($"User is neither a Participant for this Deposition nor an Admin"));
 
@@ -229,12 +221,12 @@ namespace PrecisionReporters.Platform.Domain.Services
         public async Task<Result<Deposition>> EndDeposition(Guid id)
         {
             var deposition = await _depositionRepository.GetById(id, new[] { nameof(Deposition.Room),
-                $"{nameof(Deposition.Participants)}.{nameof(Participant.User)}",
-                nameof(Deposition.Witness) });
+                $"{nameof(Deposition.Participants)}.{nameof(Participant.User)}" });
             if (deposition == null)
                 return Result.Fail(new ResourceNotFoundError($"Deposition with id {id} not found."));
 
-            var roomResult = await _roomService.EndRoom(deposition.Room, deposition.Witness?.Email);
+            var witness = deposition.Participants.Single(x => x.Role == ParticipantType.Witness);
+            var roomResult = await _roomService.EndRoom(deposition.Room, witness.Email);
             if (roomResult.IsFailed)
                 return roomResult.ToResult<Deposition>();
 
@@ -257,7 +249,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (depositionResult.IsFailed)
                 return depositionResult.ToResult<Participant>();
 
-            var participant = GetParticipantByEmail(depositionResult.Value, participantEmail);
+            var participant = depositionResult.Value.Participants.FirstOrDefault(p => p.Email == participantEmail);
 
             if (participant == null)
                 return Result.Fail(new ResourceNotFoundError($"Participant with email {participantEmail} not found"));
@@ -297,8 +289,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<DepositionEvent>> GoOnTheRecord(Guid id, bool onTheRecord, string userEmail)
         {
-            var includes = new[] { nameof(Deposition.Requester), nameof(Deposition.Participants),
-                nameof(Deposition.Witness), nameof(Deposition.Case), nameof(Deposition.Events)};
+            var includes = new[] { nameof(Deposition.Requester), nameof(Deposition.Participants), nameof(Deposition.Case), nameof(Deposition.Events)};
 
             var depositionResult = await GetByIdWithIncludes(id, includes);
             if (depositionResult.IsFailed)
@@ -398,7 +389,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<(Participant, bool)>> CheckParticipant(Guid id, string emailAddress)
         {
-            var include = new[] { nameof(Deposition.Participants), nameof(Deposition.Witness) };
+            var include = new[] { nameof(Deposition.Participants) };
 
             var depositionResult = await GetByIdWithIncludes(id, include);
 
@@ -413,7 +404,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             var userResult = await _userService.GetUserByEmail(emailAddress);
             var isUser = userResult.IsSuccess && !userResult.Value.IsGuest;
 
-            var participant = GetParticipantByEmail(deposition, emailAddress);
+            var participant = deposition.Participants.FirstOrDefault(p => p.Email == emailAddress);
 
             return Result.Ok((participant, isUser));
         }
@@ -428,8 +419,6 @@ namespace PrecisionReporters.Platform.Domain.Services
         private Participant GetParticipantByEmail(Deposition deposition, string emailAddress)
         {
             Participant participant = null;
-            if (deposition.Witness != null && deposition.Witness.Email == emailAddress)
-                participant = deposition.Witness;
 
             if (participant == null)
                 participant = deposition.Participants.FirstOrDefault(p => p.Email == emailAddress);
@@ -439,7 +428,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<GuestToken>> JoinGuestParticipant(Guid depositionId, Participant guest)
         {
-            var include = new[] { nameof(Deposition.Participants), nameof(Deposition.Witness) };
+            var include = new[] { nameof(Deposition.Participants) };
 
             var depositionResult = await GetByIdWithIncludes(depositionId, include);
 
@@ -451,10 +440,10 @@ namespace PrecisionReporters.Platform.Domain.Services
                 || deposition.Status == DepositionStatus.Canceled)
                 return Result.Fail(new InvalidInputError("The deposition is not longer available"));
 
-            var participant = GetParticipantByEmail(deposition, guest.Email);
+            var participant = deposition.Participants.FirstOrDefault(p => p.Email == guest.Email);
             if (guest.Role == ParticipantType.Witness
                 && participant == null
-                && deposition.Witness?.UserId != null)
+                && deposition.Participants.Single(x => x.Role == ParticipantType.Witness).UserId != null)
                 return Result.Fail(new InvalidInputError("The deposition already has a participant as witness"));
 
             var userResult = await _userService.AddGuestUser(guest.User);
@@ -474,9 +463,6 @@ namespace PrecisionReporters.Platform.Domain.Services
             else
             {
                 shouldAddPermissions = true;
-                if (guest.Role == ParticipantType.Witness)
-                    deposition.Witness = guest;
-
                 guest.User = userResult.Value;
                 deposition.Participants.Add(guest);
                 await _depositionRepository.Update(deposition);
@@ -492,7 +478,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<Guid>> AddParticipant(Guid depositionId, Participant participant)
         {
-            var include = new[] { nameof(Deposition.Participants), nameof(Deposition.Witness) };
+            var include = new[] { nameof(Deposition.Participants) };
 
             var depositionResult = await GetByIdWithIncludes(depositionId, include);
 
@@ -506,7 +492,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (userResult.IsFailed)
                 return userResult.ToResult();
 
-            var participantResult = GetParticipantByEmail(deposition, userResult.Value.EmailAddress);
+            var participantResult = deposition.Participants.FirstOrDefault(p => p.Email == userResult.Value.EmailAddress);
             if (participantResult != null)
                 return participantResult.Id.ToResult();
 
@@ -514,11 +500,8 @@ namespace PrecisionReporters.Platform.Domain.Services
             participant.Phone = userResult.Value.PhoneNumber;
             participant.User = userResult.Value;
 
-            if (participant.Role == ParticipantType.Witness && deposition.Witness?.UserId != null)
+            if (participant.Role == ParticipantType.Witness && deposition.Participants.Single(x => x.Role == ParticipantType.Witness).UserId != null)
                 return Result.Fail(new InvalidInputError("The deposition already has a participant as witness"));
-
-            if (participant.Role == ParticipantType.Witness)
-                deposition.Witness = participant;
 
             deposition.Participants.Add(participant);
 
