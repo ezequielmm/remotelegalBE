@@ -11,5 +11,6 @@ namespace PrecisionReporters.Platform.Domain.Configurations
         public IReadOnlyList<string> AcceptedFileExtensions { get; set; }
         public int PreSignedUrlValidHours { get; set; }
         public long MaxRequestBodySize { get; set; }
+        public string PostDepoVideoBucket { get; set; }
     }
 }

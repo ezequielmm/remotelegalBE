@@ -9,7 +9,7 @@ namespace PrecisionReporters.Platform.Api.Helpers
     {
         public static ActionResult GetErrorResponse(Result result)
         {
-            if (result.HasError<InvalidInputError>())
+            if (result.HasError<InvalidInputError>() || result.HasError<InvalidStatusError>())
                 return new BadRequestObjectResult (result.Errors);
 
             if (result.HasError<ResourceNotFoundError>())

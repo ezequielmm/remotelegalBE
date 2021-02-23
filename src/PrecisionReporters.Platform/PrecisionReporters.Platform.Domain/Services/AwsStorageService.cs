@@ -112,9 +112,16 @@ namespace PrecisionReporters.Platform.Domain.Services
             return Result.Ok();
         }
 
-        public string GetFilePublicUri(Document document, string bucketName, DateTime expirationDate)
+        public string GetFilePublicUri(string key, string bucketName, DateTime expirationDate)
         {
-            return _fileTransferUtility.S3Client.GetPreSignedURL(new GetPreSignedUrlRequest { BucketName = bucketName, Key = document.FilePath, Expires = expirationDate });
+            return _fileTransferUtility.S3Client.GetPreSignedURL(new GetPreSignedUrlRequest
+                {
+                    BucketName = bucketName,
+                    Key = key,
+                    Expires = expirationDate,
+                    ResponseHeaderOverrides = { ContentDisposition =  "attachment" }
+                }
+            );
         }
 
         private void UploadPartProgressEventCallback(object sender, StreamTransferProgressArgs e)

@@ -1,7 +1,9 @@
 ﻿using FluentResults;
+using Microsoft.Extensions.Options;
 using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Data.Enums;
 using PrecisionReporters.Platform.Data.Repositories.Interfaces;
+using PrecisionReporters.Platform.Domain.Configurations;
 using PrecisionReporters.Platform.Domain.Dtos;
 using PrecisionReporters.Platform.Domain.Errors;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
@@ -24,6 +26,8 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly IRoomService _roomService;
         private readonly IBreakRoomService _breakRoomService;
         private readonly IPermissionService _permissionService;
+        private readonly DocumentConfiguration _documentsConfiguration;
+        private readonly IAwsStorageService _awsStorageService;
 
         public DepositionService(IDepositionRepository depositionRepository,
             IParticipantRepository participantRepository,
@@ -31,8 +35,12 @@ namespace PrecisionReporters.Platform.Domain.Services
             IUserService userService,
             IRoomService roomService,
             IBreakRoomService breakRoomService,
-            IPermissionService permissionService)
+            IPermissionService permissionService,
+            IAwsStorageService awsStorageService,
+            IOptions<DocumentConfiguration> documentConfigurations)
         {
+            _awsStorageService = awsStorageService;
+            _documentsConfiguration = documentConfigurations.Value ?? throw new ArgumentException(nameof(documentConfigurations));
             _depositionRepository = depositionRepository;
             _participantRepository = participantRepository;
             _depositionEventRepository = depositionEventRepository;
@@ -529,6 +537,60 @@ namespace PrecisionReporters.Platform.Domain.Services
                 return Result.Fail(new ResourceNotFoundError($"Deposition with RoomId = {roomId} not found"));
 
             return Result.Ok(deposition);
+        }
+
+        public async Task<Result<DepositionVideoDto>> GetDepositionVideoInformation(Guid depositionId)
+        {
+            var include = new[] {$"{nameof(Deposition.Room)}.{nameof(Room.Composition)}", nameof(Deposition.Events)};
+            var depositionResult = await GetByIdWithIncludes(depositionId, include);
+
+            if (depositionResult.IsFailed)
+                return depositionResult.ToResult<DepositionVideoDto>();
+
+            var deposition = depositionResult.Value;
+            if (deposition.Room?.Composition == null)
+                return Result.Fail(new ResourceNotFoundError($"There is no composition for Deposition id: {depositionId}"));
+
+            if (deposition.Room.Composition.Status != CompositionStatus.Completed)
+                return Result.Fail(new InvalidStatusError($"The composition video is not available, current status {deposition.Room.Composition.Status}"));
+
+            var expirationDate = DateTime.UtcNow.AddHours(_documentsConfiguration.PreSignedUrlValidHours);
+            var url = _awsStorageService.GetFilePublicUri($"{deposition.Room.Composition.SId}.mp4", _documentsConfiguration.PostDepoVideoBucket, expirationDate);
+            if (url == null)
+                return Result.Fail(new Error($"Could not create signed url for composition: {deposition.Room.Composition.SId}"));
+
+            var depoTotalTime = (int)(deposition.Room.EndDate.Value - deposition.Room.RecordingStartDate.Value).TotalSeconds;
+            var onTheRecordTime = getOnTheRecordTime(deposition.Events);
+            var depositionVideo = new DepositionVideoDto
+            {
+                PublicUrl = url,
+                TotalTime = depoTotalTime,
+                OnTheRecordTime = onTheRecordTime,
+                OffTheRecordTime = depoTotalTime - onTheRecordTime
+            };
+
+            return Result.Ok(depositionVideo);
+        }
+
+        private int getOnTheRecordTime(List<DepositionEvent> events)
+        {
+            int total = 0;
+            events
+                .OrderBy(x => x.CreationDate)
+                .Where(x => x.EventType == EventType.OnTheRecord || x.EventType == EventType.OffTheRecord)
+                .Aggregate(new List<DateTime>(),
+                (list, x) => {
+                    if (x.EventType == EventType.OnTheRecord)
+                        list.Add(x.CreationDate);
+                    if (x.EventType == EventType.OffTheRecord)
+                    {
+                        total += (int)(x.CreationDate - list.Last()).TotalSeconds;
+                        list.Add(x.CreationDate);
+                    }
+                        
+                    return list;
+                });
+            return total;
         }
     }
 }

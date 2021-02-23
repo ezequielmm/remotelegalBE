@@ -291,5 +291,21 @@ namespace PrecisionReporters.Platform.Api.Controllers
 
             return Ok(new ParticipantOutputDto() { Id = addParticipantResult.Value});
         }
+
+        /// <summary>
+        /// Gets the public url of a deposition video.
+        /// </summary>
+        /// <param name="id">Deposition identifier</param>
+        /// <returns></returns>
+        [HttpGet("{id}/video")]
+        [UserAuthorize(ResourceType.Deposition, ResourceAction.View)]
+        public async Task<ActionResult<DepositionVideoDto>> GetDepositionVideo([ResourceId(ResourceType.Deposition)] Guid id)
+        {
+            var videoInformationResult = await _depositionService.GetDepositionVideoInformation(id);
+            if (videoInformationResult.IsFailed)
+                return WebApiResponses.GetErrorResponse(videoInformationResult);
+
+            return Ok(videoInformationResult.Value);
+        }
     }
 }

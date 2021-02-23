@@ -188,7 +188,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 return Result.Fail(new ResourceNotFoundError($"Could not find any document with Id {documentId} for user {userEmail}"));
 
             var expirationDate = DateTime.UtcNow.AddHours(_documentsConfiguration.PreSignedUrlValidHours);
-            var signedUrl = _awsStorageService.GetFilePublicUri(documentUserDeposition.Document, _documentsConfiguration.BucketName, expirationDate);
+            var signedUrl = _awsStorageService.GetFilePublicUri(documentUserDeposition.Document.FilePath, _documentsConfiguration.BucketName, expirationDate);
 
             return Result.Ok(signedUrl);
         }
@@ -196,7 +196,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         public Result<string> GetFileSignedUrl(Document document)
         {
             var expirationDate = DateTime.UtcNow.AddHours(_documentsConfiguration.PreSignedUrlValidHours);
-            var signedUrl = _awsStorageService.GetFilePublicUri(document, _documentsConfiguration.BucketName, expirationDate);
+            var signedUrl = _awsStorageService.GetFilePublicUri(document.FilePath, _documentsConfiguration.BucketName, expirationDate);
 
             return Result.Ok(signedUrl);
         }

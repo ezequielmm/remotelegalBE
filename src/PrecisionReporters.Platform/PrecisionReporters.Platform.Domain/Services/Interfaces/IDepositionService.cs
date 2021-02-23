@@ -33,5 +33,6 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
         Task<Result<Guid>> AddParticipant(Guid depositionId, Participant participant);
         Task<Result<Deposition>> ClearDepositionDocumentSharingId(Guid depositionId);
         Task<Result<Deposition>> GetDepositionByRoomId(Guid roomId);
+        Task<Result<DepositionVideoDto>> GetDepositionVideoInformation(Guid depositionId);
     }
 }

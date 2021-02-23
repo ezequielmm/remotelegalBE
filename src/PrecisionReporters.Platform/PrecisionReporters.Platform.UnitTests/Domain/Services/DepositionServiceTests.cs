@@ -1,9 +1,11 @@
 ﻿using FluentResults;
+using Microsoft.Extensions.Options;
 using Moq;
 using PrecisionReporters.Platform.Api.Dtos;
 using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Data.Enums;
 using PrecisionReporters.Platform.Data.Repositories.Interfaces;
+using PrecisionReporters.Platform.Domain.Configurations;
 using PrecisionReporters.Platform.Domain.Dtos;
 using PrecisionReporters.Platform.Domain.Errors;
 using PrecisionReporters.Platform.Domain.Services;
@@ -29,6 +31,9 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         private readonly Mock<IRoomService> _roomServiceMock;
         private readonly Mock<IBreakRoomService> _breakRoomServiceMock;
         private readonly Mock<IPermissionService> _permissionServiceMock;
+        private readonly DocumentConfiguration _documentConfiguration;
+        private readonly Mock<IAwsStorageService> _awsStorageServiceMock;
+        private readonly Mock<IOptions<DocumentConfiguration>> _depositionDocumentConfigurationMock;
 
         private readonly List<Deposition> _depositions = new List<Deposition>();
 
@@ -48,16 +53,29 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _depositionRepositoryMock.Setup(x => x.GetByStatus(It.IsAny<Expression<Func<Deposition, object>>>(), It.IsAny<SortDirection>(), It.IsAny<Expression<Func<Deposition, bool>>>(), It.IsAny<string[]>(), It.IsAny<Expression<Func<Deposition, object>>>())).ReturnsAsync(_depositions);
 
             _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(() => _depositions.FirstOrDefault());
-
             _userServiceMock = new Mock<IUserService>();
-
             _roomServiceMock = new Mock<IRoomService>();
-
             _breakRoomServiceMock = new Mock<IBreakRoomService>();
-
             _permissionServiceMock = new Mock<IPermissionService>();
+            _awsStorageServiceMock = new Mock<IAwsStorageService>();
+            _documentConfiguration = new DocumentConfiguration
+            {
+                PostDepoVideoBucket = "foo"
+            };
 
-            _depositionService = new DepositionService(_depositionRepositoryMock.Object, _participantRepositoryMock.Object, _depositionEventRepositoryMock.Object, _userServiceMock.Object, _roomServiceMock.Object, _breakRoomServiceMock.Object, _permissionServiceMock.Object);
+            _depositionDocumentConfigurationMock = new Mock<IOptions<DocumentConfiguration>>();
+            _depositionDocumentConfigurationMock.Setup(x => x.Value).Returns(_documentConfiguration);
+
+            _depositionService = new DepositionService(
+                _depositionRepositoryMock.Object,
+                _participantRepositoryMock.Object,
+                _depositionEventRepositoryMock.Object,
+                _userServiceMock.Object,
+                _roomServiceMock.Object,
+                _breakRoomServiceMock.Object,
+                _permissionServiceMock.Object,
+                _awsStorageServiceMock.Object,
+                _depositionDocumentConfigurationMock.Object);
         }
 
         public void Dispose()
@@ -1058,6 +1076,95 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             Assert.IsType<Result<Guid>>(result);
             Assert.True(result.IsFailed);
             Assert.Contains(expectedError, result.Errors.Select(e => e.Message));
+        }
+
+        [Fact]
+        public async Task GetDepositionVideoInformation_ShouldReturnFail_IfDepositionDoesNotExist()
+        {
+            var depositionId = Guid.NewGuid();
+            var caseId = Guid.NewGuid();
+            var deposition = DepositionFactory.GetDeposition(depositionId, caseId);
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync((Deposition)null);
+
+            //Act
+            var result = await _depositionService.GetDepositionVideoInformation(depositionId);
+
+            //Assert
+            Assert.True(result.IsFailed);
+        }
+
+        [Fact]
+        public async Task GetDepositionVideoInformation_ShouldReturnFail_IfDepositionDoesNotHaveComposition()
+        {
+
+            var depositionId = Guid.NewGuid();
+            var caseId = Guid.NewGuid();
+            var deposition = DepositionFactory.GetDeposition(depositionId, caseId);
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
+
+            //Act
+            var result = await _depositionService.GetDepositionVideoInformation(depositionId);
+
+            //Assert
+            Assert.True(result.IsFailed);
+        }
+
+        [Fact]
+        public async Task GetDepositionVideoInformation_ShouldReturnFail_IfDepositionCompositionIsNotCompleted()
+        {
+
+            var depositionId = Guid.NewGuid();
+            var caseId = Guid.NewGuid();
+            var deposition = DepositionFactory.GetDeposition(depositionId, caseId);
+            var composition = new Composition
+            {
+                Status = CompositionStatus.Progress
+            };
+            deposition.Room.Composition = composition;
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
+
+            //Act
+            var result = await _depositionService.GetDepositionVideoInformation(depositionId);
+
+            //Assert
+            Assert.True(result.IsFailed);
+        }
+
+        [Fact]
+        public async Task GetDepositionVideoInformation_ShouldReturnOk_IfDepositionCompositionIsCompleted()
+        {
+
+            var depositionId = Guid.NewGuid();
+            var caseId = Guid.NewGuid();
+            var deposition = DepositionFactory.GetDeposition(depositionId, caseId);
+            var composition = new Composition
+            {
+                Status = CompositionStatus.Completed
+            };
+            var events = new List<DepositionEvent>();
+            events.Add(new DepositionEvent { CreationDate = DateTime.UtcNow, EventType = EventType.StartDeposition });
+            events.Add(new DepositionEvent { CreationDate = DateTime.UtcNow.AddSeconds(10), EventType = EventType.OnTheRecord });
+            events.Add(new DepositionEvent { CreationDate = DateTime.UtcNow.AddSeconds(25), EventType = EventType.OffTheRecord });
+            events.Add(new DepositionEvent { CreationDate = DateTime.UtcNow.AddSeconds(50), EventType = EventType.OnTheRecord });
+            events.Add(new DepositionEvent { CreationDate = DateTime.UtcNow.AddSeconds(58), EventType = EventType.StartDeposition });
+            events.Add(new DepositionEvent { CreationDate = DateTime.UtcNow.AddSeconds(125), EventType = EventType.OffTheRecord });
+
+            deposition.Events = events;
+            deposition.Room.Composition = composition;
+            deposition.Room.RecordingStartDate = DateTime.UtcNow;
+            deposition.Room.EndDate = DateTime.UtcNow.AddSeconds(300);
+
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
+            _awsStorageServiceMock.Setup(x => x.GetFilePublicUri(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>())).Returns("urlMocked");
+
+            //Act
+            var result = await _depositionService.GetDepositionVideoInformation(depositionId);
+
+            //Assert
+            Assert.True(result.IsSuccess);
+            Assert.True(result.Value.OffTheRecordTime == 210);
+            Assert.True(result.Value.TotalTime == 300);
+            Assert.True(result.Value.OnTheRecordTime == 90);
         }
     }
 }

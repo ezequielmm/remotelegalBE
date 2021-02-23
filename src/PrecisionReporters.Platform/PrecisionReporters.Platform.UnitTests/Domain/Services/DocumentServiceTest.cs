@@ -789,7 +789,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _documentUserDepositionRepositoryMock
                 .Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<DocumentUserDeposition, bool>>>(), It.IsAny<string[]>()))
                 .ReturnsAsync(new DocumentUserDeposition { Document = new Document { Id = documentId }, Deposition = deposition });
-            _awsStorageServiceMock.Setup(x => x.GetFilePublicUri(It.IsAny<Document>(), It.IsAny<string>(), It.IsAny<DateTime>())).Returns(signedUrl);
+            _awsStorageServiceMock.Setup(x => x.GetFilePublicUri(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>())).Returns(signedUrl);
 
             // Act
             var result = await _service.GetFileSignedUrl(userEmail, documentId);
@@ -797,7 +797,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             // Assert
             _userServiceMock.Verify(x => x.GetUserByEmail(It.Is<string>(a => a == userEmail)), Times.Once);
             _documentUserDepositionRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<DocumentUserDeposition, bool>>>(), It.Is<string[]>(a => a.Contains(nameof(DocumentUserDeposition.Document)))), Times.Once);
-            _awsStorageServiceMock.Verify(x => x.GetFilePublicUri(It.Is<Document>(a => a.Id == documentId), It.IsAny<string>(), It.IsAny<DateTime>()), Times.Once);
+            _awsStorageServiceMock.Verify(x => x.GetFilePublicUri(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>()), Times.Once);
             Assert.NotNull(result);
             Assert.IsType<Result<string>>(result);
             Assert.True(result.IsSuccess);

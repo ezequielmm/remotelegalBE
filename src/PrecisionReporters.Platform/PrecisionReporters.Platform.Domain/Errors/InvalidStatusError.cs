@@ -2,7 +2,7 @@
 
 namespace PrecisionReporters.Platform.Domain.Errors
 {
-    class InvalidStatusError : Error
+    public class InvalidStatusError : Error
     {
         public InvalidStatusError()
         { }

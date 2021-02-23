@@ -54,6 +54,10 @@
                     "value": "deposition-documents-uat"
                 },
                 {
+                    "name": "AppConfiguration__DocumentConfiguration__PostDepoVideoBucket",
+                    "value": "output-post-depo-uat"
+                },
+                {
                     "name": "AppConfiguration__EmailConfiguration__VerifyEmailSubject",
                     "value": "[UAT] Verify your Remote Legal account"
                 },

@@ -179,6 +179,7 @@ namespace PrecisionReporters.Platform.Api
                 x.AcceptedFileExtensions = appConfiguration.DocumentConfiguration.AcceptedFileExtensions;
                 x.MaxFileSize = appConfiguration.DocumentConfiguration.MaxFileSize;
                 x.PreSignedUrlValidHours = appConfiguration.DocumentConfiguration.PreSignedUrlValidHours;
+                x.PostDepoVideoBucket = appConfiguration.DocumentConfiguration.PostDepoVideoBucket;
             });
             services.AddScoped<IDepositionService, DepositionService>();
             services.AddScoped<IAnnotationEventService, AnnotationEventService>();
