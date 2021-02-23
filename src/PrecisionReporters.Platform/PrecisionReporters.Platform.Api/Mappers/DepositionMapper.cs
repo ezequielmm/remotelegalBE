@@ -63,13 +63,13 @@ namespace PrecisionReporters.Platform.Api.Mappers
                 FileKey = dto.Caption,
                 Participants = dto.Participants != null
                     ? dto.Participants.Select(p => _participantMapper.ToModel(p)).Append(witness).ToList()
-                    : new List<Participant>()
+                    : new List<Participant> { witness }
             };
         }
 
         public DepositionDto ToDto(Deposition model)
         {
-            var witness = model.Participants?.Single(x => x.Role == ParticipantType.Witness);
+            var witness = model.Participants?.FirstOrDefault(x => x.Role == ParticipantType.Witness);
             return new DepositionDto
             {
                 Id = model.Id,
