@@ -84,7 +84,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             return Result.Ok();
         }
 
-        public async Task<Result<List<Document>>> GetEnteredExhibits(Guid depostionId, ExhibitSortField? sortedField = null, SortDirection? sortDirection = null)
+        public async Task<Result<List<DepositionDocument>>> GetEnteredExhibits(Guid depostionId, ExhibitSortField? sortedField = null, SortDirection? sortDirection = null)
         {
             var includes = new[] {$"{ nameof(DepositionDocument.Document) }.{ nameof(Document.AddedBy) }"};
             Expression<Func<DepositionDocument, object>> orderBy = sortedField switch
@@ -104,7 +104,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 includes,
                 sortedField == ExhibitSortField.Owner ? orderByThen : null);
 
-            return Result.Ok(depositionDocuments.Select(x => x.Document).ToList());
+            return Result.Ok(depositionDocuments.ToList());
         }
 
         // Check if Participant is owner of the document or if is Admin or CourReporter otherwise return false.

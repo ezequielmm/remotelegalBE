@@ -141,8 +141,15 @@ namespace PrecisionReporters.Platform.Api.Controllers
             if (enteredExhibitsResult.IsFailed)
                 return WebApiResponses.GetErrorResponse(enteredExhibitsResult);
 
-            var result = enteredExhibitsResult.Value.Select(d => _documentMapper.ToDto(d));
+            var result = enteredExhibitsResult.Value.Select(d => GetDocumentWithStamp(d));
             return Ok(result);
-        }        
+        }
+
+        private DocumentDto GetDocumentWithStamp(DepositionDocument depositionDocument)
+        {
+            var documentDto = _documentMapper.ToDto(depositionDocument.Document);
+            documentDto.StampLabel = depositionDocument.StampLabel;
+            return documentDto;
+        }
     }
 }

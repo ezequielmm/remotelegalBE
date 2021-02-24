@@ -11,5 +11,6 @@ namespace PrecisionReporters.Platform.Api.Dtos
         public DateTimeOffset CreationDate { get; set; }
         public UserOutputDto AddedBy { get; set; }
         public DateTimeOffset? SharedAt { get; set; }
+        public string StampLabel { get; set; }
     }
 }

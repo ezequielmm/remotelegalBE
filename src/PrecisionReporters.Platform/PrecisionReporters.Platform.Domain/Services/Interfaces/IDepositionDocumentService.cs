@@ -12,7 +12,7 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
     {
         Task<Result> CloseStampedDepositionDocument(Document document, DepositionDocument depositionDocument, string identity, FileTransferInfo file);
         Task<Result> CloseDepositionDocument(Document document, Guid depostionId);
-        Task<Result<List<Document>>> GetEnteredExhibits(Guid depostionId, ExhibitSortField? sortedField = null, SortDirection? sortDirection = null);
+        Task<Result<List<DepositionDocument>>> GetEnteredExhibits(Guid depostionId, ExhibitSortField? sortedField = null, SortDirection? sortDirection = null);
         Task<bool> ParticipantCanCloseDocument(Document document, Guid depositionId);
     }
 }
