@@ -535,13 +535,13 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (deposition.Room?.Composition == null)
                 return Result.Fail(new ResourceNotFoundError($"There is no composition for Deposition id: {depositionId}"));
 
-            if (deposition.Room.Composition.Status != CompositionStatus.Completed)
-                return Result.Fail(new InvalidStatusError($"The composition video is not available, current status {deposition.Room.Composition.Status}"));
+            string url = "";
 
-            var expirationDate = DateTime.UtcNow.AddHours(_documentsConfiguration.PreSignedUrlValidHours);
-            var url = _awsStorageService.GetFilePublicUri($"{deposition.Room.Composition.SId}.mp4", _documentsConfiguration.PostDepoVideoBucket, expirationDate);
-            if (url == null)
-                return Result.Fail(new Error($"Could not create signed url for composition: {deposition.Room.Composition.SId}"));
+            if (deposition.Room.Composition.Status == CompositionStatus.Completed)
+            {
+                var expirationDate = DateTime.UtcNow.AddHours(_documentsConfiguration.PreSignedUrlValidHours);
+                url = _awsStorageService.GetFilePublicUri($"{deposition.Room.Composition.SId}.mp4", _documentsConfiguration.PostDepoVideoBucket, expirationDate);
+            }
 
             var depoTotalTime = (int)(deposition.Room.EndDate.Value - deposition.Room.RecordingStartDate.Value).TotalSeconds;
             var onTheRecordTime = getOnTheRecordTime(deposition.Events);
@@ -550,7 +550,8 @@ namespace PrecisionReporters.Platform.Domain.Services
                 PublicUrl = url,
                 TotalTime = depoTotalTime,
                 OnTheRecordTime = onTheRecordTime,
-                OffTheRecordTime = depoTotalTime - onTheRecordTime
+                OffTheRecordTime = depoTotalTime - onTheRecordTime,
+                Status = deposition.Room.Composition.Status.ToString()
             };
 
             return Result.Ok(depositionVideo);

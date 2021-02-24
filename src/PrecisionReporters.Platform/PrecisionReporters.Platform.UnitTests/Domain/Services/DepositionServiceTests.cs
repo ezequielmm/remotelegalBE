@@ -1114,7 +1114,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         }
 
         [Fact]
-        public async Task GetDepositionVideoInformation_ShouldReturnFail_IfDepositionCompositionIsNotCompleted()
+        public async Task GetDepositionVideoInformation_ShouldReturnAnEmptyUrl_IfDepositionCompositionIsNotCompleted()
         {
 
             var depositionId = Guid.NewGuid();
@@ -1124,14 +1124,27 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             {
                 Status = CompositionStatus.Progress
             };
+            var events = new List<DepositionEvent>();
+            events.Add(new DepositionEvent { CreationDate = DateTime.UtcNow, EventType = EventType.StartDeposition });
+            events.Add(new DepositionEvent { CreationDate = DateTime.UtcNow.AddSeconds(10), EventType = EventType.OnTheRecord });
+            events.Add(new DepositionEvent { CreationDate = DateTime.UtcNow.AddSeconds(25), EventType = EventType.OffTheRecord });
+            events.Add(new DepositionEvent { CreationDate = DateTime.UtcNow.AddSeconds(50), EventType = EventType.OnTheRecord });
+            events.Add(new DepositionEvent { CreationDate = DateTime.UtcNow.AddSeconds(58), EventType = EventType.StartDeposition });
+            events.Add(new DepositionEvent { CreationDate = DateTime.UtcNow.AddSeconds(125), EventType = EventType.OffTheRecord });
+
+            deposition.Events = events;
             deposition.Room.Composition = composition;
+            deposition.Room.RecordingStartDate = DateTime.UtcNow;
+            deposition.Room.EndDate = DateTime.UtcNow.AddSeconds(300);
+
             _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
 
             //Act
             var result = await _depositionService.GetDepositionVideoInformation(depositionId);
 
             //Assert
-            Assert.True(result.IsFailed);
+            Assert.True(result.IsSuccess);
+            Assert.Empty(result.Value.PublicUrl);
         }
 
         [Fact]
