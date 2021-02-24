@@ -328,7 +328,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             _userServiceMock.Setup(x => x.GetCurrentUserAsync()).ReturnsAsync(user);
             _depositionDocumentRepositoryMock.Setup(x => x.Create(It.IsAny<DepositionDocument>())).ReturnsAsync(depositionDocument);
-            _documentServiceMock.Setup(x => x.UpdateDocument(It.IsAny<DepositionDocument>(), It.IsAny<string>(), It.IsAny<FileTransferInfo>())).ReturnsAsync(Result.Ok());
+            _documentServiceMock.Setup(x => x.UpdateDocument(It.IsAny<DepositionDocument>(), It.IsAny<string>(), It.IsAny<FileTransferInfo>(), It.IsAny<string>(), It.IsAny<DocumentType>())).ReturnsAsync(Result.Ok());
             _documentServiceMock.Setup(x => x.RemoveDepositionUserDocuments(It.Is<Guid>(a => a == depositionDocument.DocumentId))).ReturnsAsync(Result.Ok());
             _annotationEventServiceMock.Setup(x => x.RemoveUserDocumentAnnotations(depositionDocument.DocumentId)).ReturnsAsync(Result.Ok());
             _depositionServiceMock.Setup(x => x.ClearDepositionDocumentSharingId(depositionDocument.DepositionId)).ReturnsAsync(Result.Ok());
@@ -339,7 +339,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             // Assert
             _userServiceMock.Verify(x => x.GetCurrentUserAsync(), Times.Once());
             _depositionDocumentRepositoryMock.Verify(x => x.Create(It.IsAny<DepositionDocument>()), Times.Once());
-            _documentServiceMock.Verify(x => x.UpdateDocument(It.IsAny<DepositionDocument>(), It.IsAny<string>(), It.IsAny<FileTransferInfo>()), Times.Once());
+            _documentServiceMock.Verify(x => x.UpdateDocument(It.IsAny<DepositionDocument>(), It.IsAny<string>(), It.IsAny<FileTransferInfo>(), It.IsAny<string>(), It.IsAny<DocumentType>()), Times.Once());
             _documentServiceMock.Verify(x => x.RemoveDepositionUserDocuments(It.Is<Guid>(a => a == depositionDocument.DocumentId)), Times.Once());
             _annotationEventServiceMock.Verify(x => x.RemoveUserDocumentAnnotations(depositionDocument.DocumentId), Times.Once());
             _depositionServiceMock.Verify(x => x.ClearDepositionDocumentSharingId(depositionDocument.DepositionId), Times.Once());
@@ -380,7 +380,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             _userServiceMock.Setup(x => x.GetCurrentUserAsync()).ReturnsAsync(user);
             _depositionDocumentRepositoryMock.Setup(x => x.Create(It.IsAny<DepositionDocument>())).ReturnsAsync(depositionDocument);
-            _documentServiceMock.Setup(x => x.UpdateDocument(It.IsAny<DepositionDocument>(), It.IsAny<string>(), It.IsAny<FileTransferInfo>())).ReturnsAsync(Result.Ok());
+            _documentServiceMock.Setup(x => x.UpdateDocument(It.IsAny<DepositionDocument>(), It.IsAny<string>(), It.IsAny<FileTransferInfo>(), It.IsAny<string>(), It.IsAny<DocumentType>())).ReturnsAsync(Result.Ok());
             _documentServiceMock.Setup(x => x.RemoveDepositionUserDocuments(It.Is<Guid>(a => a == depositionDocument.DocumentId))).ReturnsAsync(Result.Ok());
             _annotationEventServiceMock.Setup(x => x.RemoveUserDocumentAnnotations(depositionDocument.DocumentId)).ReturnsAsync(Result.Ok());
             _depositionServiceMock.Setup(x => x.ClearDepositionDocumentSharingId(depositionDocument.DepositionId)).ReturnsAsync(Result.Ok());
@@ -391,7 +391,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             // Assert
             _userServiceMock.Verify(x => x.GetCurrentUserAsync(), Times.Once());
             _depositionDocumentRepositoryMock.Verify(x => x.Create(It.IsAny<DepositionDocument>()), Times.Once());
-            _documentServiceMock.Verify(x => x.UpdateDocument(It.IsAny<DepositionDocument>(), It.IsAny<string>(), It.IsAny<FileTransferInfo>()), Times.Once());
+            _documentServiceMock.Verify(x => x.UpdateDocument(It.IsAny<DepositionDocument>(), It.IsAny<string>(), It.IsAny<FileTransferInfo>(), It.IsAny<string>(), It.IsAny<DocumentType>()), Times.Once());
             _documentServiceMock.Verify(x => x.RemoveDepositionUserDocuments(It.Is<Guid>(a => a == depositionDocument.DocumentId)), Times.Once());
             _annotationEventServiceMock.Verify(x => x.RemoveUserDocumentAnnotations(depositionDocument.DocumentId), Times.Once());
             _depositionServiceMock.Verify(x => x.ClearDepositionDocumentSharingId(depositionDocument.DepositionId), Times.Once());

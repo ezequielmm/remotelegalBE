@@ -80,6 +80,10 @@ namespace PrecisionReporters.Platform.Data
                 .Property(x => x.Action)
                 .HasConversion(new EnumToStringConverter<AnnotationAction>());
 
+            modelBuilder.Entity<Document>()
+                .Property(x => x.DocumentType)
+                .HasConversion(new EnumToStringConverter<DocumentType>());
+
             modelBuilder.Entity<BreakRoomAttendee>().HasKey(x => new { x.BreakRoomId, x.UserId });
 
             // Seeds

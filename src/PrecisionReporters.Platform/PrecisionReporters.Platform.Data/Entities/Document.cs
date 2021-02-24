@@ -1,4 +1,5 @@
-﻿using System;
+﻿using PrecisionReporters.Platform.Data.Enums;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -21,6 +22,7 @@ namespace PrecisionReporters.Platform.Data.Entities
         public DateTime? SharedAt { get; set; }
 
         public List<AnnotationEvent> AnnotationEvents { get; set; }
+        public DocumentType DocumentType { get; set; } 
 
         public override void CopyFrom(Document entity)
         {
@@ -31,6 +33,7 @@ namespace PrecisionReporters.Platform.Data.Entities
             Size = entity.Size;
             DisplayName = entity.DisplayName;
             AnnotationEvents = entity.AnnotationEvents;
+            DocumentType = entity.DocumentType;
         }
     }
 }

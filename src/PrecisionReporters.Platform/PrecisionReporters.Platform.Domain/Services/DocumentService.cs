@@ -45,11 +45,11 @@ namespace PrecisionReporters.Platform.Domain.Services
             _documentRepository = documentRepository;
         }
 
-        public async Task<Result<Document>> UploadDocumentFile(KeyValuePair<string, FileTransferInfo> file, User user, string parentPath)
+        public async Task<Result<Document>> UploadDocumentFile(KeyValuePair<string, FileTransferInfo> file, User user, string parentPath, DocumentType documentType)
         {
             var fileName = $"{Guid.NewGuid()}{Path.GetExtension(file.Value.Name)}";
 
-            var document = await UploadFileToStorage(file.Value, user, fileName, parentPath);
+            var document = await UploadFileToStorage(file.Value, user, fileName, parentPath, documentType);
             if (document.IsFailed)
                 return document;
 
@@ -57,11 +57,11 @@ namespace PrecisionReporters.Platform.Domain.Services
             return document;
         }
 
-        public async Task<Result<Document>> UploadDocumentFile(FileTransferInfo file, User user, string parentPath)
+        public async Task<Result<Document>> UploadDocumentFile(FileTransferInfo file, User user, string parentPath, DocumentType documentType)
         {
             var fileName = $"{Guid.NewGuid()}{Path.GetExtension(file.Name)}";
 
-            var document = await UploadFileToStorage(file, user, fileName, parentPath);
+            var document = await UploadFileToStorage(file, user, fileName, parentPath, documentType);
             return document;
         }
 
@@ -97,7 +97,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             return Result.Ok();
         }
 
-        public async Task<Result> UploadDocuments(Guid id, string identity, List<FileTransferInfo> files)
+        public async Task<Result> UploadDocuments(Guid id, string identity, List<FileTransferInfo> files, string folder, DocumentType documentType)
         {
             var userResult = await _userService.GetUserByEmail(identity);
             if (userResult.IsFailed)
@@ -116,7 +116,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             foreach (var file in files)
             {
                 // TODO: Use depositionId for bucket folder
-                var documentResult = await UploadDocumentFile(file, userResult.Value, $"{deposition.CaseId}/exhibits");
+                var documentResult = await UploadDocumentFile(file, userResult.Value, $"{deposition.CaseId}/{folder}", documentType);
                 if (documentResult.IsFailed)
                 {
                     _logger.LogError(new Exception(documentResult.Errors.First().Message), "Unable to load one or more documents to storage");
@@ -124,7 +124,6 @@ namespace PrecisionReporters.Platform.Domain.Services
                     await DeleteUploadedFiles(uploadedDocuments.Select(d => d.Document).ToList());
                     return documentResult.ToResult();
                 }
-
                 uploadedDocuments.Add(new DocumentUserDeposition { Deposition = deposition, Document = documentResult.Value, User = userResult.Value });
             }
             var documentCreationResult = Result.Ok();
@@ -172,7 +171,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (depositionResult.IsFailed)
                 return depositionResult.ToResult<List<Document>>();
 
-            var documentUserDeposition = await _documentUserDepositionRepository.GetByFilter(x => x.DepositionId == depositionId && x.UserId == userResult.Value.Id, new[] { nameof(DocumentUserDeposition.Document) });
+            var documentUserDeposition = await _documentUserDepositionRepository.GetByFilter(x => x.DepositionId == depositionId && x.UserId == userResult.Value.Id && x.Document.DocumentType == DocumentType.Exhibit, new[] { nameof(DocumentUserDeposition.Document) });
 
             return Result.Ok(documentUserDeposition.Select(d => d.Document).ToList());
         }
@@ -237,7 +236,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             return Result.Ok(document);
         }
 
-        public async Task<Result> UpdateDocument(DepositionDocument depositionDocument, string identity, FileTransferInfo file)
+        public async Task<Result> UpdateDocument(DepositionDocument depositionDocument, string identity, FileTransferInfo file, string folder, DocumentType documentType)
         {
             var userResult = await _userService.GetUserByEmail(identity);
             if (userResult.IsFailed)
@@ -255,7 +254,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             // TODO: when original file was not a pdf we need to make sure we remove it from S3 since in that case it won't get overriden
             var fileName = $"{Path.GetFileNameWithoutExtension(depositionDocument.Document.Name)}.pdf";
-            var documentResult = await UploadFileToStorage(file, userResult.Value, fileName, $"{deposition.CaseId}/{deposition.Id}/exhibits");
+            var documentResult = await UploadFileToStorage(file, userResult.Value, fileName, $"{deposition.CaseId}/{deposition.Id}/{folder}", documentType);
             if (documentResult.IsFailed)
             {
                 _logger.LogError(new Exception(documentResult.Errors.First().Message), "Unable to update the document to storage");
@@ -284,7 +283,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             return Result.Ok();
         }
 
-        private async Task<Result<Document>> UploadFileToStorage(FileTransferInfo file, User user, string fileName, string parentPath)
+        private async Task<Result<Document>> UploadFileToStorage(FileTransferInfo file, User user, string fileName, string parentPath, DocumentType documentType)
         {
             var documentKeyName = $"/{parentPath}/{fileName}";
             var uploadedDocument = await _awsStorageService.UploadMultipartAsync(documentKeyName, file, _documentsConfiguration.BucketName);
@@ -299,6 +298,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 DisplayName = file.Name,
                 FilePath = documentKeyName,
                 Size = file.Length,
+                DocumentType = documentType
             };
 
             return Result.Ok(document);

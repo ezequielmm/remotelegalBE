@@ -13,6 +13,7 @@ using PrecisionReporters.Platform.Domain.Errors;
 using PrecisionReporters.Platform.Domain.Services;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using PrecisionReporters.Platform.UnitTests.Utils;
+using PrecisionReporters.Platform.Domain.Extensions;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -90,7 +91,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             };
 
             //Act
-            var result = await _service.UploadDocumentFile(new KeyValuePair<string, FileTransferInfo>("fileKey", file), user, path);
+            var result = await _service.UploadDocumentFile(new KeyValuePair<string, FileTransferInfo>("fileKey", file), user, path, DocumentType.Exhibit);
 
             // Assert
             _awsStorageServiceMock.Verify(x => x.UploadMultipartAsync(
@@ -124,7 +125,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             };
 
             //Act
-            var result = await _service.UploadDocumentFile(file, user, path);
+            var result = await _service.UploadDocumentFile(file, user, path, DocumentType.Exhibit);
 
             // Assert
             _awsStorageServiceMock.Verify(x => x.UploadMultipartAsync(
@@ -157,7 +158,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             };
 
             //Act
-            var result = await _service.UploadDocumentFile(new KeyValuePair<string, FileTransferInfo>("fileKey", file), user, path);
+            var result = await _service.UploadDocumentFile(new KeyValuePair<string, FileTransferInfo>("fileKey", file), user, path, DocumentType.Exhibit);
 
             // Assert
             _awsStorageServiceMock.Verify(x => x.UploadMultipartAsync(
@@ -194,7 +195,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             };
 
             //Act
-            var result = await _service.UploadDocumentFile(new KeyValuePair<string, FileTransferInfo>("fileKey", file), user, path);
+            var result = await _service.UploadDocumentFile(new KeyValuePair<string, FileTransferInfo>("fileKey", file), user, path, DocumentType.Exhibit);
 
             // Assert
             _awsStorageServiceMock.Verify(x => x.UploadMultipartAsync(
@@ -422,9 +423,10 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var userEmail = "notExisitingUser@mail.com";
             var expectedError = $"User with email {userEmail} not found.";
             _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Fail(new ResourceNotFoundError(expectedError)));
-
+            var folder = DocumentType.Exhibit.GetDescription();
+            
             // Act
-            var result = await _service.UploadDocuments(Guid.NewGuid(), userEmail, new List<FileTransferInfo>());
+            var result = await _service.UploadDocuments(Guid.NewGuid(), userEmail, new List<FileTransferInfo>(), folder, DocumentType.Exhibit);
 
             // Assert
             _userServiceMock.Verify(x => x.GetUserByEmail(It.Is<string>(a => a == userEmail)), Times.Once);
@@ -443,9 +445,10 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var expectedError = $"Deposition with id {depositionId} not found.";
             _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(new User()));
             _depositionServiceMock.Setup(x => x.GetDepositionByIdWithDocumentUsers(It.IsAny<Guid>())).ReturnsAsync(Result.Fail(new Error(expectedError)));
+            var folder = DocumentType.Exhibit.GetDescription();
 
             // Act
-            var result = await _service.UploadDocuments(depositionId, userEmail, new List<FileTransferInfo>());
+            var result = await _service.UploadDocuments(depositionId, userEmail, new List<FileTransferInfo>(), folder, DocumentType.Exhibit);
 
             // Assert
             _userServiceMock.Verify(x => x.GetUserByEmail(It.Is<string>(a => a == userEmail)), Times.Once);
@@ -465,9 +468,10 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var file = new FileTransferInfo { Name = "incorrectFile.err" };
             _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(new User()));
             _depositionServiceMock.Setup(x => x.GetDepositionByIdWithDocumentUsers(It.IsAny<Guid>())).ReturnsAsync(Result.Ok(new Deposition()));
+            var folder = DocumentType.Exhibit.GetDescription();
 
             // Act
-            var result = await _service.UploadDocuments(depositionId, userEmail, new List<FileTransferInfo> { file });
+            var result = await _service.UploadDocuments(depositionId, userEmail, new List<FileTransferInfo> { file }, folder, DocumentType.Exhibit);
 
             // Assert
             _userServiceMock.Verify(x => x.GetUserByEmail(It.Is<string>(a => a == userEmail)), Times.Once);
@@ -490,9 +494,10 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _depositionServiceMock.Setup(x => x.GetDepositionByIdWithDocumentUsers(It.IsAny<Guid>())).ReturnsAsync(Result.Ok(new Deposition()));
             _awsStorageServiceMock.Setup(x => x.UploadMultipartAsync(It.IsAny<string>(), It.IsAny<FileTransferInfo>(), It.IsAny<string>())).ReturnsAsync(Result.Fail(new Error(expectedError)));
             _awsStorageServiceMock.Setup(x => x.DeleteObjectAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(Result.Ok());
+            var folder = DocumentType.Exhibit.GetDescription();
 
             // Act
-            var result = await _service.UploadDocuments(depositionId, userEmail, new List<FileTransferInfo> { file });
+            var result = await _service.UploadDocuments(depositionId, userEmail, new List<FileTransferInfo> { file }, folder, DocumentType.Exhibit);
 
             // Assert
             _userServiceMock.Verify(x => x.GetUserByEmail(It.Is<string>(a => a == userEmail)), Times.Once);
@@ -539,9 +544,10 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                     await action();
                     return Result.Ok();
                 });
+            var folder = DocumentType.Exhibit.GetDescription();
 
             // Act
-            var result = await _service.UploadDocuments(depositionId, userEmail, new List<FileTransferInfo> { file });
+            var result = await _service.UploadDocuments(depositionId, userEmail, new List<FileTransferInfo> { file }, folder, DocumentType.Exhibit);
 
             // Assert
             _userServiceMock.Verify(x => x.GetUserByEmail(It.Is<string>(a => a == userEmail)), Times.Once);
@@ -585,9 +591,10 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                     await action();
                     return Result.Ok();
                 });
+            var folder = DocumentType.Exhibit.GetDescription();
 
             // Act
-            var result = await _service.UploadDocuments(depositionId, userEmail, new List<FileTransferInfo> { file });
+            var result = await _service.UploadDocuments(depositionId, userEmail, new List<FileTransferInfo> { file }, folder, DocumentType.Exhibit);
 
             // Assert
             _userServiceMock.Verify(x => x.GetUserByEmail(It.Is<string>(a => a == userEmail)), Times.Once);
@@ -635,9 +642,10 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                     await action();
                     return Result.Ok();
                 });
+            var folder = DocumentType.Exhibit.GetDescription();
 
             // Act
-            var result = await _service.UploadDocuments(depositionId, userEmail, new List<FileTransferInfo> { file });
+            var result = await _service.UploadDocuments(depositionId, userEmail, new List<FileTransferInfo> { file }, folder, DocumentType.Exhibit);
 
             // Assert
             _userServiceMock.Verify(x => x.GetUserByEmail(It.Is<string>(a => a == userEmail)), Times.Once);

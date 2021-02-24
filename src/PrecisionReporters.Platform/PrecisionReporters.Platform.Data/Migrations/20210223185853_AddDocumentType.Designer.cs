@@ -2,15 +2,17 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PrecisionReporters.Platform.Data;
 
 namespace PrecisionReporters.Platform.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20210223185853_AddDocumentType")]
+    partial class AddDocumentType
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -234,6 +236,9 @@ namespace PrecisionReporters.Platform.Data.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("WitnessId")
+                        .HasColumnType("char(36)");
+
                     b.HasKey("Id");
 
                     b.HasIndex("AddedById");
@@ -247,6 +252,8 @@ namespace PrecisionReporters.Platform.Data.Migrations
                     b.HasIndex("RoomId");
 
                     b.HasIndex("SharingDocumentId");
+
+                    b.HasIndex("WitnessId");
 
                     b.ToTable("Depositions");
                 });
@@ -869,6 +876,10 @@ namespace PrecisionReporters.Platform.Data.Migrations
                     b.HasOne("PrecisionReporters.Platform.Data.Entities.Document", "SharingDocument")
                         .WithMany()
                         .HasForeignKey("SharingDocumentId");
+
+                    b.HasOne("PrecisionReporters.Platform.Data.Entities.Participant", "Witness")
+                        .WithMany()
+                        .HasForeignKey("WitnessId");
                 });
 
             modelBuilder.Entity("PrecisionReporters.Platform.Data.Entities.DepositionDocument", b =>

@@ -13,6 +13,7 @@ using PrecisionReporters.Platform.Api.Mappers;
 using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Data.Enums;
 using PrecisionReporters.Platform.Domain.Commons;
+using PrecisionReporters.Platform.Domain.Extensions;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 
 namespace PrecisionReporters.Platform.Api.Controllers
@@ -56,7 +57,8 @@ namespace PrecisionReporters.Platform.Api.Controllers
                 };
                 files.Add(fileTransferInfo);
             }
-            var depositionWithNewFilesResult = await _documentService.UploadDocuments(depositionId, identity, files);
+            var folder = DocumentType.Exhibit.GetDescription();
+            var depositionWithNewFilesResult = await _documentService.UploadDocuments(depositionId, identity, files, folder, DocumentType.Exhibit);
             if (depositionWithNewFilesResult.IsFailed)
                 return WebApiResponses.GetErrorResponse(depositionWithNewFilesResult);
 

@@ -6,6 +6,7 @@ using PrecisionReporters.Platform.Data.Repositories.Interfaces;
 using PrecisionReporters.Platform.Domain.Commons;
 using PrecisionReporters.Platform.Domain.Errors;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
+using PrecisionReporters.Platform.Domain.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -49,7 +50,8 @@ namespace PrecisionReporters.Platform.Domain.Services
             {
                 newDepositionDocument = await _depositionDocumentRepository.Create(depositionDocument);
                 // Update document in S3 and Delete entry from DocumentUserDepositions table
-                var uploadResult = await _documentService.UpdateDocument(newDepositionDocument, identity, file);
+                var folder = DocumentType.Exhibit.GetDescription();
+                var uploadResult = await _documentService.UpdateDocument(newDepositionDocument, identity, file, folder, DocumentType.Exhibit);
                 if (uploadResult.IsFailed)
                     return uploadResult.ToResult<bool>();
 
@@ -100,7 +102,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             var depositionDocuments = await _depositionDocumentRepository.GetByFilterOrderByThen(
                 orderBy,
                 sortDirection ?? SortDirection.Descend,
-                x => x.DepositionId == depostionId,
+                x => x.DepositionId == depostionId && x.Document.DocumentType == DocumentType.Exhibit,
                 includes,
                 sortedField == ExhibitSortField.Owner ? orderByThen : null);
 

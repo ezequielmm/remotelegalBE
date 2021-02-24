@@ -322,7 +322,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 .ReturnsAsync(new Case { Id = caseId });
             _documentServiceMock
                 .Setup(x => x.UploadDocumentFile(It.IsAny<KeyValuePair<string, FileTransferInfo>>(), It.IsAny<User>(),
-                    It.IsAny<string>()))
+                    It.IsAny<string>(), It.IsAny<DocumentType>()))
                 .ReturnsAsync(Result.Fail("Unable to upload document"));
 
             // Act
@@ -335,7 +335,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _documentServiceMock.Verify(x => x.UploadDocumentFile(
                 It.IsAny<KeyValuePair<string, FileTransferInfo>>(),
                 It.Is<User>(a => a == user),
-                It.Is<string>(a => a.Contains(caseId.ToString()))), Times.Once);
+                It.Is<string>(a => a.Contains(caseId.ToString())),
+                It.IsAny<DocumentType>()), Times.Once);
             _loggerMock.Verify(x => x.Log(
                 It.Is<LogLevel>(l => l == LogLevel.Error),
                 It.IsAny<EventId>(),
@@ -385,8 +386,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 .ReturnsAsync(new Case { Id = caseId });
             _documentServiceMock
                 .Setup(x => x.UploadDocumentFile(It.IsAny<KeyValuePair<string, FileTransferInfo>>(), It.IsAny<User>(),
-                    It.IsAny<string>()))
-                .ReturnsAsync(Result.Ok());
+                    It.IsAny<string>(), It.IsAny<DocumentType>()))
+                .ReturnsAsync(Result.Ok(new Document()));
             _depositionServiceMock
                 .Setup(x => x.GenerateScheduledDeposition(It.IsAny<Guid>(), It.IsAny<Deposition>(), It.IsAny<List<Document>>(), It.IsAny<User>()))
                 .ReturnsAsync(Result.Fail(errorMessage));
@@ -398,7 +399,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _documentServiceMock.Verify(x => x.UploadDocumentFile(
                 It.IsAny<KeyValuePair<string, FileTransferInfo>>(),
                 It.Is<User>(a => a == user),
-                It.Is<string>(a => a.Contains(caseId.ToString()))), Times.Exactly(depositions.Count));
+                It.Is<string>(a => a.Contains(caseId.ToString())),
+                It.IsAny<DocumentType>()), Times.Exactly(depositions.Count));
             _depositionServiceMock.Verify(
                 x => x.GenerateScheduledDeposition(It.IsAny<Guid>(), It.IsAny<Deposition>(), It.IsAny<List<Document>>(), It.IsAny<User>()),
                 Times.Once);
@@ -440,8 +442,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 .ReturnsAsync(new Case { Id = caseId, Depositions = new List<Deposition>() });
             _documentServiceMock
                 .Setup(x => x.UploadDocumentFile(It.IsAny<KeyValuePair<string, FileTransferInfo>>(), It.IsAny<User>(),
-                    It.IsAny<string>()))
-                .ReturnsAsync(Result.Ok());
+                    It.IsAny<string>(), It.IsAny<DocumentType>()))
+                .ReturnsAsync(Result.Ok(new Document()));
             _depositionServiceMock
                 .SetupSequence(x =>
                     x.GenerateScheduledDeposition(It.IsAny<Guid>(), It.IsAny<Deposition>(), It.IsAny<List<Document>>(), It.IsAny<User>()))
@@ -456,7 +458,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _documentServiceMock.Verify(x => x.UploadDocumentFile(
                 It.IsAny<KeyValuePair<string, FileTransferInfo>>(),
                 It.Is<User>(a => a == user),
-                It.Is<string>(a => a.Contains(caseId.ToString()))), Times.Exactly(depositions.Count));
+                It.Is<string>(a => a.Contains(caseId.ToString())),
+                It.IsAny<DocumentType>()), Times.Exactly(depositions.Count));
             _depositionServiceMock.Verify(
                 x => x.GenerateScheduledDeposition(It.IsAny<Guid>(), It.IsAny<Deposition>(), It.IsAny<List<Document>>(), It.IsAny<User>()),
                 Times.Exactly(depositions.Count));
@@ -502,8 +505,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 .ReturnsAsync(new Case { Id = caseId, Depositions = new List<Deposition>() });
             _documentServiceMock
                 .Setup(x => x.UploadDocumentFile(It.IsAny<KeyValuePair<string, FileTransferInfo>>(), It.IsAny<User>(),
-                    It.IsAny<string>()))
-                .ReturnsAsync(Result.Ok());
+                    It.IsAny<string>(), It.IsAny<DocumentType>()))
+                .ReturnsAsync(Result.Ok(new Document()));
             _depositionServiceMock
                 .SetupSequence(x =>
                     x.GenerateScheduledDeposition(It.IsAny<Guid>(), It.IsAny<Deposition>(), It.IsAny<List<Document>>(), It.IsAny<User>()))
@@ -521,7 +524,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _documentServiceMock.Verify(x => x.UploadDocumentFile(
                 It.IsAny<KeyValuePair<string, FileTransferInfo>>(),
                 It.Is<User>(a => a == user),
-                It.Is<string>(a => a.Contains(caseId.ToString()))), Times.Exactly(depositions.Count));
+                It.Is<string>(a => a.Contains(caseId.ToString())),
+                It.IsAny<DocumentType>()), Times.Exactly(depositions.Count));
             _depositionServiceMock.Verify(
                 x => x.GenerateScheduledDeposition(It.IsAny<Guid>(), It.IsAny<Deposition>(), It.IsAny<List<Document>>(), It.IsAny<User>()),
                 Times.Exactly(depositions.Count));

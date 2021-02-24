@@ -135,7 +135,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
                     foreach (var file in filesToUpload)
                     {
-                        var documentResult = await _documentService.UploadDocumentFile(file, userResult.Value, $"{caseId}/caption");
+                        var documentResult = await _documentService.UploadDocumentFile(file, userResult.Value, $"{caseId}/caption", DocumentType.Caption);
                         if (documentResult.IsFailed)
                         {
                             _logger.LogError(new Exception(documentResult.Errors.First().Message), "Unable to load one or more documents to storage");
