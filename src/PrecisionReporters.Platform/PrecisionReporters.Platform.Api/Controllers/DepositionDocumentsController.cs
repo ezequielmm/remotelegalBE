@@ -151,5 +151,31 @@ namespace PrecisionReporters.Platform.Api.Controllers
             documentDto.StampLabel = depositionDocument.StampLabel;
             return documentDto;
         }
+        
+
+        /// <summary>
+        /// Gets the public url of a file. This url exipres after deposition end or after 2 hours if deposition doesn't have an end date
+        /// </summary>
+        /// <param name="id">Deposition identifier</param>
+        /// <returns>Document information and a presigned url to the asociated file</returns>
+        [HttpGet("{id}/Caption")]
+        [UserAuthorize(ResourceType.Deposition, ResourceAction.View)]
+        public async Task<ActionResult<DocumentWithSignedUrlDto>> GetDepositionCaption([ResourceId(ResourceType.Deposition)] Guid id)
+        {
+            var documentResult = await _depositionService.GetDepositionCaption(id);
+            if (documentResult.IsFailed)
+                return WebApiResponses.GetErrorResponse(documentResult);
+
+            var document = documentResult.Value;
+
+            var fileSignedUrlResult = _documentService.GetFileSignedUrl(document);
+            if (fileSignedUrlResult.IsFailed)
+                return WebApiResponses.GetErrorResponse(fileSignedUrlResult);
+
+            var documentSignedDto = _documentWithSignedUrlMapper.ToDto(document);
+            documentSignedDto.PreSignedUrl = fileSignedUrlResult.Value;
+
+            return Ok(documentSignedDto);
+        }
     }
 }

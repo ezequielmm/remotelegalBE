@@ -58,7 +58,8 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<Deposition>> GetDepositionById(Guid id)
         {
-            var includes = new[] { nameof(Deposition.Requester), nameof(Deposition.Participants), nameof(Deposition.Case), nameof(Deposition.AddedBy)};
+            var includes = new[] { nameof(Deposition.Requester), nameof(Deposition.Participants),
+                nameof(Deposition.Case), nameof(Deposition.AddedBy),nameof(Deposition.Caption)};
             return await GetByIdWithIncludes(id, includes);
         }
 
@@ -574,6 +575,18 @@ namespace PrecisionReporters.Platform.Domain.Services
                     return list;
                 });
             return total;
+        }
+
+        public async Task<Result<Document>> GetDepositionCaption(Guid id)
+        {
+            var deposition = await _depositionRepository.GetById(id, new[] { $"{nameof(Deposition.Caption)}" });
+
+            if (deposition == null)
+                return Result.Fail(new ResourceNotFoundError("Deposition not found"));
+            if (!deposition.CaptionId.HasValue)
+                return Result.Fail(new ResourceNotFoundError("Caption not found in this deposition"));
+
+            return Result.Ok(deposition.Caption);
         }
     }
 }

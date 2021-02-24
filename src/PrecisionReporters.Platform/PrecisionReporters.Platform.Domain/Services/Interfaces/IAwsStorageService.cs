@@ -10,6 +10,6 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
     {
         Task<Result> UploadMultipartAsync(string keyName, FileTransferInfo file, string bucketName);
         Task<Result> DeleteObjectAsync(string bucketName, string key);
-        string GetFilePublicUri(string key, string bucketName, DateTime expirationDate);
+        string GetFilePublicUri(string key, string bucketName, DateTime expirationDate, string displayName = null);
     }
 }

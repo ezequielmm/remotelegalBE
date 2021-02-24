@@ -196,7 +196,8 @@ namespace PrecisionReporters.Platform.Domain.Services
         public Result<string> GetFileSignedUrl(Document document)
         {
             var expirationDate = DateTime.UtcNow.AddHours(_documentsConfiguration.PreSignedUrlValidHours);
-            var signedUrl = _awsStorageService.GetFilePublicUri(document.FilePath, _documentsConfiguration.BucketName, expirationDate);
+            var signedUrl = _awsStorageService.GetFilePublicUri(document.FilePath,
+                _documentsConfiguration.BucketName, expirationDate, document.DisplayName);
 
             return Result.Ok(signedUrl);
         }
@@ -256,7 +257,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             var fileName = $"{Path.GetFileNameWithoutExtension(depositionDocument.Document.Name)}.pdf";
             var documentResult = await UploadFileToStorage(file, userResult.Value, fileName, $"{deposition.CaseId}/{deposition.Id}/exhibits");
             if (documentResult.IsFailed)
-            { 
+            {
                 _logger.LogError(new Exception(documentResult.Errors.First().Message), "Unable to update the document to storage");
                 return documentResult;
             }
@@ -348,5 +349,5 @@ namespace PrecisionReporters.Platform.Domain.Services
             await _documentUserDepositionRepository.Remove(documentUser);
             return Result.Ok();
         }
-    }    
+    }
 }

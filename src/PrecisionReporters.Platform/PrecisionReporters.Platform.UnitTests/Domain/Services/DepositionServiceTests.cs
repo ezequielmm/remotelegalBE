@@ -1159,7 +1159,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             deposition.Room.EndDate = DateTime.UtcNow.AddSeconds(300);
 
             _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
-            _awsStorageServiceMock.Setup(x => x.GetFilePublicUri(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>())).Returns("urlMocked");
+            _awsStorageServiceMock.Setup(x => x.GetFilePublicUri(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>(), null)).Returns("urlMocked");
 
             //Act
             var result = await _depositionService.GetDepositionVideoInformation(depositionId);
@@ -1170,5 +1170,67 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             Assert.True(result.Value.TotalTime == 300);
             Assert.True(result.Value.OnTheRecordTime == 90);
         }
+
+        [Fact]
+        public async Task GetDepositionCaption_ShouldReturnOk()
+        {
+            // Arrange
+            var depositionId = Guid.NewGuid();
+            var user = new User { Id = Guid.NewGuid() };
+            var document = new Document { Id = Guid.NewGuid() };
+            var deposition = new Deposition { Id = depositionId, CaptionId = document.Id, Caption = document };
+
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
+
+            // Act
+            var result = await _depositionService.GetDepositionCaption(depositionId);
+
+            // Assert
+            _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(a => a == depositionId), It.Is<string[]>(a => a.SequenceEqual(new[] { $"{nameof(Deposition.Caption)}" }))), Times.Once);
+            Assert.NotNull(result);
+            Assert.IsType<Result<Document>>(result);
+            Assert.True(result.IsSuccess);
+            Assert.Equal(deposition.Caption, result.Value);
+        }
+
+        [Fact]
+        public async Task GetDepositionCaption_ShouldReturnFail_IfDepositionNotFound()
+        {
+            // Arrange
+            var depositionId = Guid.NewGuid();
+            var expectedError = "Deposition not found";
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync((Deposition)null);
+
+            // Act
+            var result = await _depositionService.GetDepositionCaption(depositionId);
+
+            // Assert
+            _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(a => a == depositionId), It.Is<string[]>(a => a.SequenceEqual(new[] { $"{nameof(Deposition.Caption)}" }))), Times.Once);
+            Assert.NotNull(result);
+            Assert.IsType<Result<Document>>(result);
+            Assert.True(result.IsFailed);
+            Assert.Contains(expectedError, result.Errors.Select(e => e.Message));
+        }
+
+        [Fact]
+        public async Task GetDepositionCaption_ShouldReturnFail_IfThereIsNotCaption()
+        {
+            // Arrange
+            var depositionId = Guid.NewGuid();
+            var deposition = new Deposition { Id = depositionId };
+            var expectedError = "Caption not found in this deposition";
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
+
+            // Act
+            var result = await _depositionService.GetDepositionCaption(depositionId);
+
+            // Assert
+            _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(a => a == depositionId), It.Is<string[]>(a => a.SequenceEqual(new[] { $"{nameof(Deposition.Caption)}" }))), Times.Once);
+            Assert.NotNull(result);
+            Assert.IsType<Result<Document>>(result);
+            Assert.True(result.IsFailed);
+            Assert.Contains(expectedError, result.Errors.Select(e => e.Message));
+        }
+
     }
 }
