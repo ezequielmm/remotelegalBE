@@ -187,7 +187,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
                 return WebApiResponses.GetErrorResponse(breakRoomsResult);
 
             return Ok(breakRoomsResult.Value.Select(i => _breakRoomMapper.ToDto(i)));
-        }        
+        }
 
         /// <summary>
         /// Gets the events of a an existing Deposition.
@@ -284,12 +284,12 @@ namespace PrecisionReporters.Platform.Api.Controllers
         [AllowAnonymous]
         public async Task<ActionResult<Guid>> AddParticipant(Guid id, AddParticipantDto participant)
         {
-            var addParticipantResult = await _depositionService.AddParticipant(id,_guestMapper.ToModel(participant));
-            
+            var addParticipantResult = await _depositionService.AddParticipant(id, _guestMapper.ToModel(participant));
+
             if (addParticipantResult.IsFailed)
                 return WebApiResponses.GetErrorResponse(addParticipantResult);
 
-            return Ok(new ParticipantOutputDto() { Id = addParticipantResult.Value});
+            return Ok(new ParticipantOutputDto() { Id = addParticipantResult.Value });
         }
 
         /// <summary>
@@ -306,6 +306,23 @@ namespace PrecisionReporters.Platform.Api.Controllers
                 return WebApiResponses.GetErrorResponse(videoInformationResult);
 
             return Ok(videoInformationResult.Value);
+        }
+
+        ///<summary>
+        ///Get Participant list by Deposition ID
+        ///</summary>
+        ///<param name="id"></param>
+        ///<returns>Ok if succeded</returns>
+        [HttpGet("{id}/participants")]
+        [UserAuthorize(ResourceType.Deposition, ResourceAction.View)]
+        public async Task<ActionResult<List<Participant>>> GetParticipantList([ResourceId(ResourceType.Deposition)] Guid id,
+            ParticipantSortField sortField = ParticipantSortField.Role,
+            SortDirection sortDirection = SortDirection.Descend)
+        {
+            var lstParticipantResult = await _depositionService.GetDepositionParticipants(id, sortField, sortDirection);
+            if (lstParticipantResult.IsFailed)
+                return WebApiResponses.GetErrorResponse(lstParticipantResult);
+            return Ok(lstParticipantResult.Value);
         }
     }
 }

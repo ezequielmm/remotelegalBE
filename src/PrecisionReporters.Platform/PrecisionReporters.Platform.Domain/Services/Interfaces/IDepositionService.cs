@@ -34,6 +34,9 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
         Task<Result<Deposition>> ClearDepositionDocumentSharingId(Guid depositionId);
         Task<Result<Deposition>> GetDepositionByRoomId(Guid roomId);
         Task<Result<DepositionVideoDto>> GetDepositionVideoInformation(Guid depositionId);
+        Task<Result<List<Participant>>> GetDepositionParticipants(Guid depositionId,
+            ParticipantSortField sortedField = ParticipantSortField.Role,
+            SortDirection sortDirection = SortDirection.Descend);
         Task<Result<Document>> GetDepositionCaption(Guid id);
     }
 }

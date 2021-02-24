@@ -290,7 +290,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<DepositionEvent>> GoOnTheRecord(Guid id, bool onTheRecord, string userEmail)
         {
-            var includes = new[] { nameof(Deposition.Requester), nameof(Deposition.Participants), nameof(Deposition.Case), nameof(Deposition.Events)};
+            var includes = new[] { nameof(Deposition.Requester), nameof(Deposition.Participants), nameof(Deposition.Case), nameof(Deposition.Events) };
 
             var depositionResult = await GetByIdWithIncludes(id, includes);
             if (depositionResult.IsFailed)
@@ -525,7 +525,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<DepositionVideoDto>> GetDepositionVideoInformation(Guid depositionId)
         {
-            var include = new[] {$"{nameof(Deposition.Room)}.{nameof(Room.Composition)}", nameof(Deposition.Events)};
+            var include = new[] { $"{nameof(Deposition.Room)}.{nameof(Room.Composition)}", nameof(Deposition.Events) };
             var depositionResult = await GetByIdWithIncludes(depositionId, include);
 
             if (depositionResult.IsFailed)
@@ -563,7 +563,8 @@ namespace PrecisionReporters.Platform.Domain.Services
                 .OrderBy(x => x.CreationDate)
                 .Where(x => x.EventType == EventType.OnTheRecord || x.EventType == EventType.OffTheRecord)
                 .Aggregate(new List<DateTime>(),
-                (list, x) => {
+                (list, x) =>
+                {
                     if (x.EventType == EventType.OnTheRecord)
                         list.Add(x.CreationDate);
                     if (x.EventType == EventType.OffTheRecord)
@@ -571,7 +572,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                         total += (int)(x.CreationDate - list.Last()).TotalSeconds;
                         list.Add(x.CreationDate);
                     }
-                        
+
                     return list;
                 });
             return total;
@@ -587,6 +588,23 @@ namespace PrecisionReporters.Platform.Domain.Services
                 return Result.Fail(new ResourceNotFoundError("Caption not found in this deposition"));
 
             return Result.Ok(deposition.Caption);
+        }
+
+        public async Task<Result<List<Participant>>> GetDepositionParticipants(Guid depositionId,
+            ParticipantSortField sortedField,
+            SortDirection sortDirection)
+        {
+            Expression<Func<Participant, object>> orderBy = sortedField switch
+            {
+                ParticipantSortField.Role => x => x.Role,
+                ParticipantSortField.Name => x => x.Name,
+                ParticipantSortField.Email => x => x.Email,
+                _ => x => x.Role
+            };
+            var lstParticipant = await _participantRepository.GetByFilter(orderBy,
+                sortDirection,
+                x => x.DepositionId == depositionId);            
+            return Result.Ok(lstParticipant);
         }
     }
 }

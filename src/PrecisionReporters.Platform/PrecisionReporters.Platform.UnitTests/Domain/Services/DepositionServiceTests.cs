@@ -1232,5 +1232,56 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             Assert.Contains(expectedError, result.Errors.Select(e => e.Message));
         }
 
+        [Fact]
+        public async Task GetParticipantsList_ShouldReturnOk()
+        {
+            var depositionId = Guid.NewGuid();
+            var participant = new Participant
+            {
+                DepositionId = depositionId
+            };
+            var lstParticipantList = new List<Participant>() { participant };
+            _participantRepositoryMock.Setup(x => x.GetByFilter(It.IsAny<Expression<Func<Participant, object>>>(),
+                It.IsAny<SortDirection>(),
+                It.IsAny<Expression<Func<Participant, bool>>>(),
+                It.IsAny<string[]>())).ReturnsAsync(lstParticipantList);
+
+            // Act
+            var result = await _depositionService.GetDepositionParticipants(depositionId, ParticipantSortField.Role, SortDirection.Descend);
+
+            // Assert
+            _participantRepositoryMock.Verify(x => x.GetByFilter(It.IsAny<Expression<Func<Participant, object>>>(),
+                It.IsAny<SortDirection>(),
+                It.IsAny<Expression<Func<Participant, bool>>>(),
+                It.IsAny<string[]>()), Times.Once);
+            Assert.NotNull(result);
+            Assert.IsType<Result<List<Participant>>>(result);
+            Assert.True(result.Value.Any());
+        }
+        [Fact]
+        public async Task GetParticipantsList_ShouldReturnOk_With_Zero_Participants()
+        {
+            // Arrange
+            var depositionId = Guid.NewGuid();
+            var lstParticipantResult = new List<Participant>();
+            //var expectedError = $"There are not participants for deposition with Id: {depositionId}";
+            _participantRepositoryMock.Setup(x => x.GetByFilter(It.IsAny<Expression<Func<Participant, object>>>(),
+                It.IsAny<SortDirection>(),
+                It.IsAny<Expression<Func<Participant, bool>>>(),
+                It.IsAny<string[]>())).ReturnsAsync(lstParticipantResult);
+
+            // Act
+            var result = await _depositionService.GetDepositionParticipants(depositionId, ParticipantSortField.Role, SortDirection.Descend);
+
+            // Assert
+            _participantRepositoryMock.Verify(x => x.GetByFilter(It.IsAny<Expression<Func<Participant, object>>>(),
+                It.IsAny<SortDirection>(),
+                It.IsAny<Expression<Func<Participant, bool>>>(),
+                It.IsAny<string[]>()), Times.Once);
+            Assert.NotNull(result);
+            Assert.IsType<Result<List<Participant>>>(result);
+            Assert.True(result.IsSuccess);
+            Assert.True(!result.Value.Any());
+        }
     }
 }
