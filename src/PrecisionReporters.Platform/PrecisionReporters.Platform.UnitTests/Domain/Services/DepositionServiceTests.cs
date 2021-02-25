@@ -207,6 +207,33 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var result = await _depositionService.GenerateScheduledDeposition(caseId, deposition, null, null);
 
             // Assert
+            Assert.NotNull(result);
+            Assert.True(result.IsSuccess);
+        }
+
+        [Fact]
+        public async Task GenerateScheduledDeposition_ShouldWork_WithWitnessAndRequesterWithSameEmail()
+        {
+            // Arrange
+            var caseId = Guid.NewGuid();
+            var witnessEmail = "testWitness@mail.com";
+            var deposition = new Deposition
+            {
+                Participants = new List<Participant> {
+                    new Participant { Email = witnessEmail, Role = ParticipantType.Witness }
+                },
+                Requester = new User
+                {
+                    EmailAddress = witnessEmail
+                }
+            };
+            _userServiceMock.Setup(x => x.GetUsersByFilter(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<string[]>())).ReturnsAsync(new List<User>());
+            _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(new User()));
+
+            // Act
+            var result = await _depositionService.GenerateScheduledDeposition(caseId, deposition, null, null);
+
+            // Assert
             _userServiceMock.Verify(mock => mock.GetUserByEmail(It.Is<string>(a => a == witnessEmail)), Times.Once());
             Assert.NotNull(result);
             Assert.True(result.IsSuccess);

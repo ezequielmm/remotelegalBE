@@ -82,19 +82,10 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (deposition.Participants == null)
                 deposition.Participants = new List<Participant>();
 
-            deposition.Participants.Add(new Participant(deposition.Requester, ParticipantType.Observer));
+            if (!deposition.Participants.Any(x => x.Email == deposition.Requester.EmailAddress))
+                deposition.Participants.Add(new Participant(deposition.Requester, ParticipantType.Observer));
 
             deposition.AddedBy = addedBy;
-
-            var witness = deposition.Participants.Single(x => x.Role == ParticipantType.Witness);
-            if (!string.IsNullOrWhiteSpace(witness.Email))
-            {
-                var witnessUser = await _userService.GetUserByEmail(witness.Email);
-                if (witnessUser.IsSuccess)
-                {
-                    witness.User = witnessUser.Value;
-                }
-            }
 
             // If caption has a FileKey, find the matching document. If it doesn't has a FileKey, remove caption
             deposition.Caption = !string.IsNullOrWhiteSpace(deposition.FileKey) ? uploadedDocuments.First(d => d.FileKey == deposition.FileKey) : null;
