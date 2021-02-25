@@ -345,6 +345,8 @@ namespace PrecisionReporters.Platform.Domain.Services
             var depositionResult = await GetDepositionById(depositionId);
             if (depositionResult.IsFailed)
                 return depositionResult.ToResult<string>();
+            if (depositionResult.Value.IsOnTheRecord)
+                return Result.Fail(new InvalidInputError("Deposition is on the record"));
 
             return await _breakRoomService.JoinBreakRoom(breakRoomId);
         }

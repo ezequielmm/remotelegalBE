@@ -520,6 +520,54 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         }
 
         [Fact]
+        public async Task JoinBreakRoom_ShouldReturnError_WhenDepositionDoesNotExist()
+        {
+            // Arrange
+            var depositionId = Guid.NewGuid();
+            var breakRoomId = Guid.NewGuid();
+
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync((Deposition)null);
+
+            // Act
+            var result = await _depositionService.JoinBreakRoom(depositionId, breakRoomId);
+
+            Assert.True(result.IsFailed);
+        }
+
+        [Fact]
+        public async Task JoinBreakRoom_ShouldReturnError_WhenDepositionIsOnTheRecord()
+        {
+            // Arrange
+            var depositionId = Guid.NewGuid();
+            var breakRoomId = Guid.NewGuid();
+            var deposition = new Deposition { Id = Guid.NewGuid(), IsOnTheRecord = true };
+
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
+
+            // Act
+            var result = await _depositionService.JoinBreakRoom(depositionId, breakRoomId);
+
+            Assert.True(result.IsFailed);
+        }
+
+        [Fact]
+        public async Task JoinBreakRoom_ShouldReturnToken()
+        {
+            // Arrange
+            var depositionId = Guid.NewGuid();
+            var breakRoomId = Guid.NewGuid();
+            var deposition = new Deposition { Id = Guid.NewGuid(), IsOnTheRecord = false };
+
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
+            _breakRoomServiceMock.Setup(x => x.JoinBreakRoom(breakRoomId)).ReturnsAsync(Result.Ok("token"));
+
+            // Act
+            var result = await _depositionService.JoinBreakRoom(depositionId, breakRoomId);
+
+            Assert.Equal(result.Value, "token");
+        }
+
+        [Fact]
         public async Task EndDeposition_ShouldReturnError_WhenDepositionIdDoesNotExist()
         {
             // Arrange
