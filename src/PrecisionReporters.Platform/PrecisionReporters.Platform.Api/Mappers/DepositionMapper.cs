@@ -93,7 +93,8 @@ namespace PrecisionReporters.Platform.Api.Mappers
                 SharingDocument = model.SharingDocument != null ? _documentMapper.ToDto(model.SharingDocument) : null,
                 Job = model.Job,
                 RequesterNotes = model.RequesterNotes,
-                AddedBy = model.AddedBy != null ? _userMapper.ToDto(model.AddedBy) : null
+                AddedBy = model.AddedBy != null ? _userMapper.ToDto(model.AddedBy) : null,
+                EndedBy = model.EndedBy != null ? _userMapper.ToDto(model.EndedBy) : null
             };
         }
     }

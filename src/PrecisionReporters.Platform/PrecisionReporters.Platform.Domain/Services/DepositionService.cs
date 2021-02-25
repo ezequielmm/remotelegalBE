@@ -28,6 +28,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly IPermissionService _permissionService;
         private readonly DocumentConfiguration _documentsConfiguration;
         private readonly IAwsStorageService _awsStorageService;
+        private readonly IDraftTranscriptGeneratorService _draftTranscriptGeneratorService;
 
         public DepositionService(IDepositionRepository depositionRepository,
             IParticipantRepository participantRepository,
@@ -37,7 +38,8 @@ namespace PrecisionReporters.Platform.Domain.Services
             IBreakRoomService breakRoomService,
             IPermissionService permissionService,
             IAwsStorageService awsStorageService,
-            IOptions<DocumentConfiguration> documentConfigurations)
+            IOptions<DocumentConfiguration> documentConfigurations,
+            IDraftTranscriptGeneratorService draftTranscriptGeneratorService)
         {
             _awsStorageService = awsStorageService;
             _documentsConfiguration = documentConfigurations.Value ?? throw new ArgumentException(nameof(documentConfigurations));
@@ -48,6 +50,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             _roomService = roomService;
             _breakRoomService = breakRoomService;
             _permissionService = permissionService;
+            _draftTranscriptGeneratorService = draftTranscriptGeneratorService;
         }
 
         public async Task<List<Deposition>> GetDepositions(Expression<Func<Deposition, bool>> filter = null,
@@ -210,8 +213,9 @@ namespace PrecisionReporters.Platform.Domain.Services
             return Result.Ok(joinDepositionInfo);
         }
 
-        public async Task<Result<Deposition>> EndDeposition(Guid id)
+        public async Task<Result<Deposition>> EndDeposition(Guid id, string userEmail)
         {
+            var currentUser = await _userService.GetUserByEmail(userEmail);
             var deposition = await _depositionRepository.GetById(id, new[] { nameof(Deposition.Room),
                 $"{nameof(Deposition.Participants)}.{nameof(Participant.User)}" });
             if (deposition == null)
@@ -224,6 +228,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             deposition.CompleteDate = DateTime.UtcNow;
             deposition.Status = DepositionStatus.Completed;
+            deposition.EndedById = currentUser.Value.Id;
 
             var user = await _userService.GetCurrentUserAsync();
             await GoOnTheRecord(id, false, user.EmailAddress);
@@ -231,6 +236,13 @@ namespace PrecisionReporters.Platform.Domain.Services
             var updatedDeposition = await _depositionRepository.Update(deposition);
 
             await _userService.RemoveGuestParticipants(deposition.Participants);
+            
+            //TODO: Add a Background Task Queue for the generation and saving Draft Transcripts PDF
+            var generateDraftTranscriptResult = await _draftTranscriptGeneratorService.GenerateDraftTranscriptionPDF(id);
+            if (generateDraftTranscriptResult.IsSuccess) 
+            {
+                await _draftTranscriptGeneratorService.SaveDraftTranscriptionPDF(id, currentUser.Value.Id);
+            }
 
             return Result.Ok(updatedDeposition);
         }

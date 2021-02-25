@@ -83,7 +83,8 @@ namespace PrecisionReporters.Platform.Api.Controllers
         [UserAuthorize(ResourceType.Deposition, ResourceAction.EndDeposition)]
         public async Task<ActionResult<DepositionDto>> EndDeposition([ResourceId(ResourceType.Deposition)] Guid id)
         {
-            var endDepositionResult = await _depositionService.EndDeposition(id);
+            var userEmail = HttpContext.User.FindFirstValue(ClaimTypes.Email);
+            var endDepositionResult = await _depositionService.EndDeposition(id, userEmail);
             if (endDepositionResult.IsFailed)
                 return WebApiResponses.GetErrorResponse(endDepositionResult);
 

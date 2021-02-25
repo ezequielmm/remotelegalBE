@@ -53,6 +53,10 @@ namespace PrecisionReporters.Platform.Data.Entities
         [Column(TypeName = "varchar(50)")]
         public string Job { get; set; }
         public string RequesterNotes { get; set; }
+        [ForeignKey(nameof(EndedBy))]
+        [Column(TypeName = "char(36)")]
+        public Guid? EndedById { get; set; }
+        public User EndedBy { get; set; }
         public override void CopyFrom(Deposition entity)
         {
             StartDate = entity.StartDate;

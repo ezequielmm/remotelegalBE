@@ -32,5 +32,6 @@ namespace PrecisionReporters.Platform.Api.Dtos
         public string Job { get; set; }
         public string RequesterNotes { get; set; }
         public UserDto AddedBy { get; set; }
+        public UserDto EndedBy { get; set; }
     }
 }

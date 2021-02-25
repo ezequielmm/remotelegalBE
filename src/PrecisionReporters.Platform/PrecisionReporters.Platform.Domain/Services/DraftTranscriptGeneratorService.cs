@@ -3,6 +3,8 @@ using Microsoft.Extensions.Options;
 using pdftron.PDF;
 using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Data.Enums;
+using PrecisionReporters.Platform.Data.Handlers.Interfaces;
+using PrecisionReporters.Platform.Data.Repositories.Interfaces;
 using PrecisionReporters.Platform.Domain.Commons;
 using PrecisionReporters.Platform.Domain.Configurations;
 using PrecisionReporters.Platform.Domain.Extensions;
@@ -19,26 +21,35 @@ namespace PrecisionReporters.Platform.Domain.Services
     public class DraftTranscriptGeneratorService : IDraftTranscriptGeneratorService
     {
         private readonly ITranscriptionService _transcriptionService;
-        private readonly IDepositionService _depositionService;
         private readonly IAwsStorageService _awsStorageService;
+        private readonly IDepositionRepository _depositionRepository;
+        private readonly IDepositionDocumentRepository _depositionDocumentRepository;
+        private readonly IDocumentRepository _documentRepository;
+        private readonly ITransactionHandler _transactionHandler;
         private readonly DocumentConfiguration _documentsConfigurations;
         private const int MAX_LENGHT = 56;
 
         public DraftTranscriptGeneratorService(ITranscriptionService transcriptionService,
-            IDepositionService depositionService,
             IAwsStorageService awsStorageService,
-            IOptions<DocumentConfiguration> documentConfigurations)
+            IDepositionRepository depositionRepository,
+            IOptions<DocumentConfiguration> documentConfigurations,
+            IDepositionDocumentRepository depositionDocumentRepository,
+            IDocumentRepository documentRepository,
+            ITransactionHandler transactionHandler)
         {
             _transcriptionService = transcriptionService;
-            _depositionService = depositionService;
             _awsStorageService = awsStorageService;
+            _depositionRepository = depositionRepository;
             _documentsConfigurations = documentConfigurations.Value;
+            _depositionDocumentRepository = depositionDocumentRepository;
+            _documentRepository = documentRepository;
+            _transactionHandler = transactionHandler;
         }
 
         public async Task<Result> GenerateDraftTranscriptionPDF(Guid depositionId)
         {
             var result = await _transcriptionService.GetTranscriptionsByDepositionId(depositionId);
-            var deposition = await _depositionService.GetDepositionById(depositionId);
+            var deposition = await _depositionRepository.GetById(depositionId);
             try
             {
                 var s3FileStream = await _awsStorageService.GetObjectAsync(ApplicationConstants.DraftTranscriptTemplateName, _documentsConfigurations.EnvironmentFilesBucket);
@@ -53,14 +64,14 @@ namespace PrecisionReporters.Platform.Domain.Services
 
                     AddTemplatePages(pagesToAdd, doc);
 
-                    GeneratePage1(replacer, doc, deposition.Value);
+                    GeneratePage1(replacer, doc, deposition);
 
                     GeneratePage4(transcriptsLines, replacer, doc);
 
                     // Replace the rest of the pages up to 25 lines
                     GenerateTemplatedPages(transcriptsLines, replacer, doc, pagesToAdd);
 
-                    await SaveFinalDraftOnS3(doc, deposition.Value);
+                    await SaveFinalDraftOnS3(doc, deposition);
 
                 }
             }
@@ -68,6 +79,46 @@ namespace PrecisionReporters.Platform.Domain.Services
             {
                 return Result.Fail(new ExceptionalError("Error generating file form stream.", ex));
             }
+
+            return Result.Ok();
+        }
+
+        public async Task<Result> SaveDraftTranscriptionPDF(Guid depositionId, Guid userId)
+        {
+            var deposition = await _depositionRepository.GetById(depositionId);
+            var filePath = $"/{deposition.CaseId}/{deposition.Id}/{ApplicationConstants.TranscriptFolderName}/{ApplicationConstants.DraftTranscriptFileName}";
+            var draftTranscript = await _awsStorageService.GetObjectAsync(filePath, _documentsConfigurations.BucketName);
+            
+            var transactionResult = await _transactionHandler.RunAsync(async () =>
+            {
+                var document = new Document()
+                {
+                    Name = ApplicationConstants.DraftTranscriptFileName,
+                    DisplayName = ApplicationConstants.DraftTranscriptFileName,
+                    CreationDate = DateTime.UtcNow,
+                    Type = ".pdf",
+                    FilePath = filePath, 
+                    DocumentType = DocumentType.DraftTranscription,
+                    Size = draftTranscript.Length,
+                    AddedById = userId,
+                };
+
+                var createdDocument = await _documentRepository.Create(document);
+                if (createdDocument != null)
+                {
+                    var depositionDocument = new DepositionDocument
+                    {
+                        CreationDate = DateTime.UtcNow,
+                        DepositionId = deposition.Id,
+                        DocumentId = createdDocument.Id
+                    };
+
+                    await _depositionDocumentRepository.Create(depositionDocument);
+                }
+            });
+
+            if (transactionResult.IsFailed)
+                return transactionResult;
 
             return Result.Ok();
         }
@@ -124,7 +175,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             var page4Transcripts = transcriptsLines.Take(24).Select((text, index) => new { text, index }).ToList();
             page4Transcripts.ForEach(x => replacer.AddString($"line{x.index + 2}_tmp", x.text));
             replacer.Process(page4);
-            transcriptsLines.RemoveRange(0, 24);          
+            transcriptsLines.RemoveRange(0, 24);
         }
 
         private void GenerateTemplatedPages(List<string> transcriptsLines, ContentReplacer replacer, PDFDoc doc, int pagesToAdd)
@@ -217,6 +268,6 @@ namespace PrecisionReporters.Platform.Domain.Services
             }
 
             return transcripts;
-        }        
+        }
     }
 }

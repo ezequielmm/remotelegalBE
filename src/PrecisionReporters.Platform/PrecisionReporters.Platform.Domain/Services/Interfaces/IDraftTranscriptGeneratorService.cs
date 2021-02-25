@@ -6,6 +6,7 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
 {
     public interface IDraftTranscriptGeneratorService
     {
-        Task<Result> GenerateDraftTranscriptionPDF(Guid depositionId);
+        Task<Result> GenerateDraftTranscriptionPDF(Guid depositionId); 
+        Task<Result> SaveDraftTranscriptionPDF(Guid depositionId, Guid userId);
     }
 }
