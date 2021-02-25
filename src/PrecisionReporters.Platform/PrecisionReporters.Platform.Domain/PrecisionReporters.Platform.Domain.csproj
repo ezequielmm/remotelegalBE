@@ -25,6 +25,7 @@
     <PackageReference Include="AWSSDK.S3" Version="3.5.3.12" />
     <PackageReference Include="AWSSDK.Core" Version="3.5.1.34" />
     <PackageReference Include="Microsoft.CognitiveServices.Speech" Version="1.15.0" />
+    <PackageReference Include="PDFTron.NETCore.Windows.x64" Version="8.1.0.76931" />
     <PackageReference Include="Twilio" Version="5.48.0" />
   </ItemGroup>
 

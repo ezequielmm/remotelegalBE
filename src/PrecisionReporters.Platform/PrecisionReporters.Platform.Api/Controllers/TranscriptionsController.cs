@@ -22,6 +22,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
         private readonly ITranscriptionService _transcriptionService;
         private readonly IMapper<Transcription, TranscriptionDto, object> _transcriptionMapper;
         private readonly IMapper<Document, DocumentDto, CreateDocumentDto> _documentMapper;
+
         public TranscriptionsController(ITranscriptionsHandler transcriptionsHandler, ITranscriptionService transcriptionService,
             IMapper<Transcription, TranscriptionDto, object> transcriptionMapper, IMapper<Document, DocumentDto, CreateDocumentDto> documentMapper)
         {

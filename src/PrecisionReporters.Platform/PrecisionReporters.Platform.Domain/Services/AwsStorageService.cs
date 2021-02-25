@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Net;
-using System.Threading.Tasks;
-using Amazon.Runtime;
+﻿using Amazon.Runtime;
 using Amazon.S3.Model;
 using Amazon.S3.Transfer;
 using FluentResults;
@@ -10,6 +6,11 @@ using Microsoft.Extensions.Logging;
 using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Domain.Commons;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Net;
+using System.Threading.Tasks;
 
 namespace PrecisionReporters.Platform.Domain.Services
 {
@@ -104,6 +105,20 @@ namespace PrecisionReporters.Platform.Domain.Services
             }
         }
 
+        public async Task<Result> UploadObjectFromStreamAsync(string keyName, Stream fileStream, string bucketName) 
+        {
+            try
+            {
+                await _fileTransferUtility.S3Client.UploadObjectFromStreamAsync(bucketName, keyName, fileStream, null);
+            }
+            catch (Exception ex)
+            {
+                return Result.Fail(new ExceptionalError("Error saving file form stream.", ex));
+            }
+
+            return Result.Ok();
+        }
+
         public async Task<Result> DeleteObjectAsync(string bucketName, string key)
         {
             var response = await _fileTransferUtility.S3Client.DeleteObjectAsync(bucketName, key);
@@ -124,6 +139,15 @@ namespace PrecisionReporters.Platform.Domain.Services
                 }
             }
             );
+        }
+
+        public async Task<Stream> GetObjectAsync(string objectKey, string bucketName)
+        {
+            var request = new GetObjectRequest();
+            request.BucketName = bucketName;
+            request.Key = objectKey;
+            var response = await _fileTransferUtility.S3Client.GetObjectAsync(request);
+            return response.ResponseStream;
         }
 
         private void UploadPartProgressEventCallback(object sender, StreamTransferProgressArgs e)

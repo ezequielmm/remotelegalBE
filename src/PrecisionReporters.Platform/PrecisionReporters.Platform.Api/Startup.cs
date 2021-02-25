@@ -180,6 +180,7 @@ namespace PrecisionReporters.Platform.Api
                 x.MaxFileSize = appConfiguration.DocumentConfiguration.MaxFileSize;
                 x.PreSignedUrlValidHours = appConfiguration.DocumentConfiguration.PreSignedUrlValidHours;
                 x.PostDepoVideoBucket = appConfiguration.DocumentConfiguration.PostDepoVideoBucket;
+                x.EnvironmentFilesBucket = appConfiguration.DocumentConfiguration.EnvironmentFilesBucket;
             });
             services.AddScoped<IDepositionService, DepositionService>();
             services.AddScoped<IAnnotationEventService, AnnotationEventService>();
@@ -205,6 +206,7 @@ namespace PrecisionReporters.Platform.Api
                 services.AddTransient<ITranscriptionLiveService, TranscriptionLiveAzureService>();
             }
 
+            services.AddScoped<IDraftTranscriptGeneratorService, DraftTranscriptGeneratorService>();
             services.Configure<GcpConfiguration>(x =>
             {
                 x.type = appConfiguration.GcpConfiguration.type;

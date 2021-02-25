@@ -61,6 +61,10 @@
                     "name": "AppConfiguration__DocumentConfiguration__PostDepoVideoBucket",
                     "value": "output-elastictranscoder-dev"
                 },
+				{
+                    "name": "AppConfiguration__DocumentConfiguration__EnvironmentFilesBucket",
+                    "value": "environment-files-dev"
+                },
                 {
                     "name": "AppConfiguration__EmailConfiguration__VerifyEmailSubject",
                     "value": "[DEV] Verify your Remote Legal account"

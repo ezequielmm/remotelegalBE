@@ -12,5 +12,6 @@ namespace PrecisionReporters.Platform.Domain.Configurations
         public int PreSignedUrlValidHours { get; set; }
         public long MaxRequestBodySize { get; set; }
         public string PostDepoVideoBucket { get; set; }
+        public string EnvironmentFilesBucket { get; set; }
     }
 }
