@@ -21,13 +21,14 @@ namespace PrecisionReporters.Platform.Api.Controllers
         private readonly ITranscriptionsHandler _transcriptionsHandler;
         private readonly ITranscriptionService _transcriptionService;
         private readonly IMapper<Transcription, TranscriptionDto, object> _transcriptionMapper;
-
+        private readonly IMapper<Document, DocumentDto, CreateDocumentDto> _documentMapper;
         public TranscriptionsController(ITranscriptionsHandler transcriptionsHandler, ITranscriptionService transcriptionService,
-            IMapper<Transcription, TranscriptionDto, object> transcriptionMapper)
+            IMapper<Transcription, TranscriptionDto, object> transcriptionMapper, IMapper<Document, DocumentDto, CreateDocumentDto> documentMapper)
         {
             _transcriptionsHandler = transcriptionsHandler;
             _transcriptionService = transcriptionService;
             _transcriptionMapper = transcriptionMapper;
+            _documentMapper = documentMapper;
         }
 
         [HttpGet]
@@ -49,6 +50,17 @@ namespace PrecisionReporters.Platform.Api.Controllers
 
             var transcriptionList = transcriptionsResult.Value.Select(t => _transcriptionMapper.ToDto(t));
             return Ok(transcriptionList);            
+        }
+
+        [HttpGet("{depositionId}/Files")]
+        public async Task<ActionResult<List<DocumentDto>>> GetTranscrpitionsFiles(Guid depositionId)
+        {
+            var transcriptionsResult = await _transcriptionService.GetTranscriptionsFiles(depositionId);
+            if (transcriptionsResult.IsFailed)
+                return WebApiResponses.GetErrorResponse(transcriptionsResult);
+
+            var transcriptionList = transcriptionsResult.Value.Select(d => _documentMapper.ToDto(d.Document));
+            return Ok(transcriptionList);
         }
     }
 }
