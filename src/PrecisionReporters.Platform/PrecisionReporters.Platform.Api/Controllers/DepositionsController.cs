@@ -324,5 +324,24 @@ namespace PrecisionReporters.Platform.Api.Controllers
                 return WebApiResponses.GetErrorResponse(lstParticipantResult);
             return Ok(lstParticipantResult.Value);
         }
+
+        /// <summary>
+        /// Add a registered participant to the deposition
+        /// </summary>
+        /// <param name="id">Deposition identifier</param>
+        /// <param name="participant">Participant data</param>
+        /// <returns>Ok if succeeded</returns>
+        [HttpPost("{id}/participants")]
+        [UserAuthorize(ResourceType.Deposition, ResourceAction.Update)]
+        public async Task<ActionResult<ParticipantDto>> AddParticipantToExistingDeposition([ResourceId(ResourceType.Deposition)] Guid id, CreateParticipantDto participant)
+        {
+            var addParticipantResult = await _depositionService.AddParticipantToExistingDeposition(id,
+                _participantMapper.ToModel(participant));
+
+            if (addParticipantResult.IsFailed)
+                return WebApiResponses.GetErrorResponse(addParticipantResult);
+
+            return Ok(_participantMapper.ToDto(addParticipantResult.Value));
+        }
     }
 }

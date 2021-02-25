@@ -604,8 +604,39 @@ namespace PrecisionReporters.Platform.Domain.Services
             };
             var lstParticipant = await _participantRepository.GetByFilter(orderBy,
                 sortDirection,
-                x => x.DepositionId == depositionId);            
+                x => x.DepositionId == depositionId);
             return Result.Ok(lstParticipant);
+        }
+
+        public async Task<Result<Participant>> AddParticipantToExistingDeposition(Guid id, Participant participant)
+        {
+            var deposition = await _depositionRepository.GetById(id, new[] { $"{nameof(Deposition.Participants)}" });
+            if (deposition == null)
+                return Result.Fail(new ResourceNotFoundError("Deposition not found"));
+
+            if (deposition.Participants.Any(x => !string.IsNullOrWhiteSpace(participant.Email) && x.Email == participant.Email))
+                return Result.Fail(new InvalidInputError("Participant already exists"));
+
+            if ((participant.Role == ParticipantType.Witness ||
+                participant.Role == ParticipantType.CourtReporter) &&
+                deposition.Participants.Any(x => x.Role == participant.Role))
+            {
+                var role = participant.Role == ParticipantType.Witness ? "witness" : "court reporter";
+                return Result.Fail(new InvalidInputError($"The deposition already has a participant as {role}"));
+            }
+
+            var newParticipant = new Participant();
+            newParticipant.CopyFrom(participant);
+            var userResult = await _userService.GetUserByEmail(participant.Email);
+            if (userResult.IsSuccess)
+            {                
+                newParticipant.User = userResult.Value;
+            }
+            deposition.Participants.Add(newParticipant);
+            await _depositionRepository.Update(deposition);
+            await _permissionService.AddParticipantPermissions(newParticipant);
+
+            return Result.Ok(newParticipant);
         }
     }
 }

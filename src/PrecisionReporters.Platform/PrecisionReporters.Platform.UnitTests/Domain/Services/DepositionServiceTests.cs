@@ -1296,5 +1296,213 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             Assert.True(result.IsSuccess);
             Assert.True(!result.Value.Any());
         }
+        [Fact]
+        public async Task AddParticipantToExistingDeposition_ShouldAddNewParticipant_WithExistingUser()
+        {
+            // Arrange
+            var participantEmail = "participant@mail.com";
+            var user = new User { Id = Guid.NewGuid(), EmailAddress = participantEmail };
+            var depositionId = Guid.NewGuid();
+            var deposition = new Deposition { Id = depositionId, Participants = new List<Participant>() };
+            var participant = new Participant
+            {
+                User = user,
+                UserId = user.Id,
+                Email = participantEmail,
+                DepositionId = depositionId,
+                Role = ParticipantType.Observer
+            };
+
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
+            _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(user));
+
+            // Act
+            var result = await _depositionService.AddParticipantToExistingDeposition(depositionId, participant);
+
+            // Assert
+            _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(a => a == depositionId), It.Is<string[]>(a => a.SequenceEqual(new[] { $"{nameof(Deposition.Participants)}" }))), Times.Once);
+            _depositionRepositoryMock.Verify(x => x.Update(It.Is<Deposition>(x => x.Id == depositionId)), Times.Once);
+            _permissionServiceMock.Verify(x => x.AddParticipantPermissions(It.Is<Participant>(x => x.Email == participantEmail)), Times.Once);
+            Assert.NotNull(result);
+            Assert.IsType<Result<Participant>>(result);
+            Assert.True(result.IsSuccess);
+        }
+
+        [Fact]
+        public async Task AddParticipantToExistingDeposition_ShouldAddNewParticipant_WithoutExistingUser()
+        {
+            // Arrange
+            var participantEmail = "participant@mail.com";
+            var depositionId = Guid.NewGuid();
+            var deposition = new Deposition { Id = depositionId, Participants = new List<Participant>() };
+            var participant = new Participant
+            {
+                Email = participantEmail,
+                DepositionId = depositionId,
+                Role = ParticipantType.Observer
+            };
+
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
+            _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Fail(new Error()));
+
+            // Act
+            var result = await _depositionService.AddParticipantToExistingDeposition(depositionId, participant);
+
+            // Assert
+            _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(a => a == depositionId), It.Is<string[]>(a => a.SequenceEqual(new[] { $"{nameof(Deposition.Participants)}" }))), Times.Once);
+            _depositionRepositoryMock.Verify(x => x.Update(It.Is<Deposition>(x => x.Id == depositionId)), Times.Once);
+            _permissionServiceMock.Verify(x => x.AddParticipantPermissions(It.Is<Participant>(x => x.Email == participantEmail)), Times.Once);
+            Assert.NotNull(result);
+            Assert.IsType<Result<Participant>>(result);
+            Assert.True(result.IsSuccess);
+        }
+
+        [Fact]
+        public async Task AddParticipantToExistingDeposition_ShouldFail_IfDepositionNotFound()
+        {
+            // Arrange
+            var expectedError = "Deposition not found";
+            var participantEmail = "participant@mail.com";
+            var depositionId = Guid.NewGuid();
+            var deposition = new Deposition
+            {
+                Id = depositionId,
+                Participants = new List<Participant>() {
+                    new Participant() {
+                        Email=participantEmail
+                    }
+                }
+            };
+
+            var participant = new Participant
+            {
+                Email = participantEmail,
+                DepositionId = depositionId,
+                Role = ParticipantType.Observer
+            };
+
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync((Deposition)null);
+
+            // Act
+            var result = await _depositionService.AddParticipantToExistingDeposition(depositionId, participant);
+
+            // Assert 
+            _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(a => a == depositionId), It.Is<string[]>(a => a.SequenceEqual(new[] { $"{nameof(Deposition.Participants)}" }))), Times.Once);
+            Assert.NotNull(result);
+            Assert.True(result.IsFailed);
+            Assert.IsType<Result<Participant>>(result);
+            Assert.Contains(expectedError, result.Errors.Select(e => e.Message));
+        }
+
+        [Fact]
+        public async Task AddParticipantToExistingDeposition_ShouldFail_IfParticipantAlreadyExists()
+        {
+            // Arrange
+            var expectedError = "Participant already exists";
+            var participantEmail = "participant@mail.com";
+            var depositionId = Guid.NewGuid();
+            var deposition = new Deposition
+            {
+                Id = depositionId,
+                Participants = new List<Participant>() {
+                    new Participant() {
+                        Email=participantEmail
+                    }
+                }
+            };
+
+            var participant = new Participant
+            {
+                Email = participantEmail,
+                DepositionId = depositionId,
+                Role = ParticipantType.Observer
+            };
+
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
+
+            // Act
+            var result = await _depositionService.AddParticipantToExistingDeposition(depositionId, participant);
+
+            // Assert  
+            _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(a => a == depositionId), It.Is<string[]>(a => a.SequenceEqual(new[] { $"{nameof(Deposition.Participants)}" }))), Times.Once);
+            Assert.NotNull(result);
+            Assert.True(result.IsFailed);
+            Assert.IsType<Result<Participant>>(result);
+            Assert.Contains(expectedError, result.Errors.Select(e => e.Message));
+        }
+
+        [Fact]
+        public async Task AddParticipantToExistingDeposition_ShouldFail_IfCourtReporterAlreadyExists()
+        {
+            // Arrange
+            var expectedError = "The deposition already has a participant as court reporter";
+            var participantEmail = "participant@mail.com";
+            var depositionId = Guid.NewGuid();
+            var deposition = new Deposition
+            {
+                Id = depositionId,
+                Participants = new List<Participant>() {
+                    new Participant() {
+                        Role = ParticipantType.CourtReporter
+                    }
+                }
+            };
+
+            var participant = new Participant
+            {
+                Email = participantEmail,
+                DepositionId = depositionId,
+                Role = ParticipantType.CourtReporter
+            };
+
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
+
+            // Act
+            var result = await _depositionService.AddParticipantToExistingDeposition(depositionId, participant);
+
+            // Assert  
+            _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(a => a == depositionId), It.Is<string[]>(a => a.SequenceEqual(new[] { $"{nameof(Deposition.Participants)}" }))), Times.Once);
+            Assert.NotNull(result);
+            Assert.True(result.IsFailed);
+            Assert.IsType<Result<Participant>>(result);
+            Assert.Contains(expectedError, result.Errors.Select(e => e.Message));
+        }
+
+        [Fact]
+        public async Task AddParticipantToExistingDeposition_ShouldFail_IfWitnessAlreadyExists()
+        {
+            // Arrange
+            var expectedError = "The deposition already has a participant as witness";
+            var participantEmail = "participant@mail.com";
+            var depositionId = Guid.NewGuid();
+            var deposition = new Deposition
+            {
+                Id = depositionId,
+                Participants = new List<Participant>() {
+                    new Participant() {
+                        Role = ParticipantType.Witness
+                    }
+                }
+            };
+
+            var participant = new Participant
+            {
+                Email = participantEmail,
+                DepositionId = depositionId,
+                Role = ParticipantType.Witness
+            };
+
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
+
+            // Act
+            var result = await _depositionService.AddParticipantToExistingDeposition(depositionId, participant);
+
+            // Assert  
+            _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(a => a == depositionId), It.Is<string[]>(a => a.SequenceEqual(new[] { $"{nameof(Deposition.Participants)}" }))), Times.Once);
+            Assert.NotNull(result);
+            Assert.True(result.IsFailed);
+            Assert.IsType<Result<Participant>>(result);
+            Assert.Contains(expectedError, result.Errors.Select(e => e.Message));
+        }
     }
 }

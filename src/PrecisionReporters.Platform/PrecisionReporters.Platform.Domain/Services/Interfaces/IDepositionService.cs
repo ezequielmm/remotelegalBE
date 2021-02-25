@@ -38,5 +38,6 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
             ParticipantSortField sortedField = ParticipantSortField.Role,
             SortDirection sortDirection = SortDirection.Descend);
         Task<Result<Document>> GetDepositionCaption(Guid id);
+        Task<Result<Participant>> AddParticipantToExistingDeposition(Guid id, Participant participant);
     }
 }
