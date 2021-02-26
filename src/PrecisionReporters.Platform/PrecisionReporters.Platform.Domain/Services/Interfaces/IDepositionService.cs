@@ -39,5 +39,6 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
             SortDirection sortDirection = SortDirection.Descend);
         Task<Result<Document>> GetDepositionCaption(Guid id);
         Task<Result<Participant>> AddParticipantToExistingDeposition(Guid id, Participant participant);
+        Task<Result> RemoveParticipantFromDeposition(Guid id, Guid participantId);
     }
 }

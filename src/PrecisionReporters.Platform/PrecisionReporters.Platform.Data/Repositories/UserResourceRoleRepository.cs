@@ -5,12 +5,16 @@ using PrecisionReporters.Platform.Data.Repositories.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 
 namespace PrecisionReporters.Platform.Data.Repositories
 {
     public class UserResourceRoleRepository : IUserResourceRoleRepository
     {
+        //TODO: Refactor the entity and add new BaseEntity without Id Field
+        //TODO: Refactor - Create a new BaseRepository with the new BaseEntity 
+
         private readonly ApplicationDbContext _dbContext;
 
         public UserResourceRoleRepository(ApplicationDbContext dbContext)
@@ -40,6 +44,32 @@ namespace PrecisionReporters.Platform.Data.Repositories
             await _dbContext.Set<UserResourceRole>().AddAsync(entity);
             await _dbContext.SaveChangesAsync();
             return entity;
+        }
+
+        public async Task Remove(UserResourceRole entity)
+        {
+            _dbContext.Set<UserResourceRole>().Remove(entity);
+            await _dbContext.SaveChangesAsync();
+        }
+
+        public async Task<UserResourceRole> GetFirstOrDefaultByFilter(Expression<Func<UserResourceRole, bool>> filter = null, string[] include = null)
+        {
+            IQueryable<UserResourceRole> query = _dbContext.Set<UserResourceRole>();
+
+            if (include != null)
+            {
+                foreach (var property in include)
+                {
+                    query = query.Include(property);
+                }
+            }
+
+            if (filter != null)
+            {
+                query = query.Where(filter);
+            }
+
+            return await query.FirstOrDefaultAsync();
         }
     }
 }

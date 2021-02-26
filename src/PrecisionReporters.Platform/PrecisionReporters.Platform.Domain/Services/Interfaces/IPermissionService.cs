@@ -13,5 +13,6 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
         Task<bool> CheckUserHasPermissionForAction(string userEmail, ResourceType resourceType, Guid resourceId, ResourceAction resourceAction);
         Task<Result<List<ResourceAction>>> GetDepositionUserPermissions(Participant participant, Guid depositionId, bool isAdmin = false);
         Task AddParticipantPermissions(Participant participant);
+        Task RemoveParticipantPermissions(Guid depositionId, Participant participant);
     }
 }

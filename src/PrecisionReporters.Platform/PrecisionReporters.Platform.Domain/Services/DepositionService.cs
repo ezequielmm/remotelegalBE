@@ -236,10 +236,10 @@ namespace PrecisionReporters.Platform.Domain.Services
             var updatedDeposition = await _depositionRepository.Update(deposition);
 
             await _userService.RemoveGuestParticipants(deposition.Participants);
-            
+
             //TODO: Add a Background Task Queue for the generation and saving Draft Transcripts PDF
             var generateDraftTranscriptResult = await _draftTranscriptGeneratorService.GenerateDraftTranscriptionPDF(id);
-            if (generateDraftTranscriptResult.IsSuccess) 
+            if (generateDraftTranscriptResult.IsSuccess)
             {
                 await _draftTranscriptGeneratorService.SaveDraftTranscriptionPDF(id, currentUser.Value.Id);
             }
@@ -634,7 +634,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             newParticipant.CopyFrom(participant);
             var userResult = await _userService.GetUserByEmail(participant.Email);
             if (userResult.IsSuccess)
-            {                
+            {
                 newParticipant.User = userResult.Value;
             }
             deposition.Participants.Add(newParticipant);
@@ -642,6 +642,22 @@ namespace PrecisionReporters.Platform.Domain.Services
             await _permissionService.AddParticipantPermissions(newParticipant);
 
             return Result.Ok(newParticipant);
+        }
+
+        public async Task<Result> RemoveParticipantFromDeposition(Guid id, Guid participantId)
+        {
+            var deposition = await _depositionRepository.GetById(id,
+                new[] { $"{nameof(Deposition.Participants)}.{nameof(Participant.User)}" });
+            if (deposition == null)
+                return Result.Fail(new ResourceNotFoundError($"Deposition not found with ID {id}"));
+
+            var participant = deposition.Participants.FirstOrDefault(x => x.Id == participantId);
+            if (participant == null)
+                return Result.Fail(new ResourceNotFoundError($"Participant not found with ID {participantId}"));
+
+            await _permissionService.RemoveParticipantPermissions(id, participant);
+            await _participantRepository.Remove(participant);
+            return Result.Ok();
         }
     }
 }

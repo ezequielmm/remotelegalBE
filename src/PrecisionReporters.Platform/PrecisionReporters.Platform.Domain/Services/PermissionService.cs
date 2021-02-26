@@ -84,5 +84,15 @@ namespace PrecisionReporters.Platform.Domain.Services
                     ResourceType.Deposition, ParticipantType.CourtReporter == participant.Role ? RoleName.DepositionCourtReporter : RoleName.DepositionAttendee);
             }
         }
+
+        public async Task RemoveParticipantPermissions(Guid depositionId, Participant participant)
+        {
+            if (participant.User != null)
+            {
+                var userResource = await _userResourceRoleRepository.GetFirstOrDefaultByFilter(x => x.ResourceId == depositionId && x.UserId == participant.UserId);
+                if (userResource != null)
+                    await _userResourceRoleRepository.Remove(userResource);
+            }
+        }
     }
 }

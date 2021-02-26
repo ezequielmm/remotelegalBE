@@ -66,7 +66,7 @@ namespace PrecisionReporters.Platform.Data
             modelBuilder.Entity<DepositionEvent>()
                 .Property(x => x.EventType)
                 .HasConversion(new EnumToStringConverter<EventType>());
-                
+
             modelBuilder.Entity<UserResourceRole>().Property(x => x.ResourceType).HasConversion(new EnumToStringConverter<ResourceType>());
 
             modelBuilder.Entity<RolePermission>().HasKey(x => new { x.RoleId, x.Action });
@@ -85,7 +85,6 @@ namespace PrecisionReporters.Platform.Data
                 .HasConversion(new EnumToStringConverter<DocumentType>());
 
             modelBuilder.Entity<BreakRoomAttendee>().HasKey(x => new { x.BreakRoomId, x.UserId });
-
             // Seeds
             modelBuilder.SeedRoles();
         }
