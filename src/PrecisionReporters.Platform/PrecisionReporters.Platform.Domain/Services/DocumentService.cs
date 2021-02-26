@@ -130,7 +130,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             foreach (var file in files)
             {
                 // TODO: Use depositionId for bucket folder
-                var documentResult = await UploadDocumentFile(file, userResult.Value, $"{deposition.CaseId}/{folder}", documentType);
+                var documentResult = await UploadDocumentFile(file, userResult.Value, $"{deposition.CaseId}/{deposition.Id}/{folder}", documentType);
                 if (documentResult.IsFailed)
                 {
                     _logger.LogError(new Exception(documentResult.Errors.First().Message), "Unable to load one or more documents to storage");
