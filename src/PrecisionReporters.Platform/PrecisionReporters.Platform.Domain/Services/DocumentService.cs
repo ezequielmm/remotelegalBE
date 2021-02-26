@@ -403,5 +403,26 @@ namespace PrecisionReporters.Platform.Domain.Services
             await _documentUserDepositionRepository.Remove(documentUser);
             return Result.Ok();
         }
+
+        public async Task<Result> ShareEnteredExhibit(Guid depositionId, Guid documentId)
+        {
+
+            var depositionResult = await _depositionService.GetDepositionById(depositionId);
+            if (depositionResult.IsFailed)
+                return depositionResult;
+
+            if (depositionResult.Value.SharingDocumentId.HasValue)
+                return Result.Fail(new ResourceConflictError("Can't share document while another document is being shared."));
+
+            var document = await _documentRepository.GetById(documentId);
+            if (document == null)
+                return Result.Fail(new Error($"Could not find any document with Id {documentId}"));
+
+            depositionResult.Value.SharingDocumentId = document.Id;
+            document.SharedAt = DateTime.UtcNow;
+            await _documentRepository.Update(document);
+
+            return await _depositionService.Update(depositionResult.Value);
+        }
     }
 }

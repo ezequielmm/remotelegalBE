@@ -358,5 +358,19 @@ namespace PrecisionReporters.Platform.Api.Controllers
             var result = await _depositionService.RemoveParticipantFromDeposition(id, participantId);
             return Ok(result);
         }
+        
+        /// Shares a documents with all users in a deposition
+        /// </summary>
+        /// <param name="id">Document identifier</param>
+        /// <returns>Ok if the process has completed successfully</returns>
+        [HttpPut("{depositionId}/documents/{documentId}/Share")]
+        [UserAuthorize(ResourceType.Document, ResourceAction.Update)]
+        public async Task<IActionResult> ShareEnteredExhibit(Guid depositionId, [ResourceId(ResourceType.Document)] Guid documentId)
+        {
+            var documentsResult = await _documentService.ShareEnteredExhibit(depositionId, documentId);
+            if (documentsResult.IsFailed)
+                return WebApiResponses.GetErrorResponse(documentsResult);
+            return Ok();
+        }
     }
 }
