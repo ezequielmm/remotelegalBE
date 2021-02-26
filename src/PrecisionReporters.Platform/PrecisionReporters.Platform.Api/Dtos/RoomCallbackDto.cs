@@ -10,6 +10,6 @@ namespace PrecisionReporters.Platform.Api.Dtos
         public string Url { get; set; }
         public string RoomName { get; set; }
         public DateTimeOffset Timestamp { get; set; }
-
+        public int Duration { get; set; }
     }
 }

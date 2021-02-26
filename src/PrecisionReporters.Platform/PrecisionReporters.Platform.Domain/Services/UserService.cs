@@ -201,7 +201,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task RemoveGuestParticipants(List<Participant> participants)
         {
-            foreach (var participant in participants.Where(x => x.User.IsGuest))
+            foreach (var participant in participants?.Where(x => x.User != null && x.User.IsGuest))
             {
                 var userExists = await _cognitoService.CheckUserExists(participant.User.EmailAddress);
                 if (userExists.IsSuccess)

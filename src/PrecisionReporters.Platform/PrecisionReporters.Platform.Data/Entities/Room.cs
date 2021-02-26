@@ -24,6 +24,10 @@ namespace PrecisionReporters.Platform.Data.Entities
 
         public Composition Composition { get; set; }
 
+        public DateTime? RecordingEndDate { get; set; }
+
+        public int RecordingDuration { get; set; }
+
         public Room() {}
 
         public Room(string name, bool isRecordingEnabled = false)

@@ -132,7 +132,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             return Result.Ok(room);
         }
 
-        public async Task<Result<Room>> UpdateStatusCallback(string roomSid, DateTimeOffset timestamp, string statusCallbackEvent)
+        public async Task<Result<Room>> UpdateStatusCallback(string roomSid, DateTimeOffset timestamp, string statusCallbackEvent, int duration)
         {
             //TODO create an Enum or cons for recording status
             if ("recording-started" == statusCallbackEvent)
@@ -150,8 +150,19 @@ namespace PrecisionReporters.Platform.Domain.Services
                 }
                 return Result.Ok(room);
             }
-            else
-                return Result.Fail(new InvalidInputError("Invalid recording status."));
+            if ("recording-completed" == statusCallbackEvent)
+            {
+                var roomResult = await GetRoomBySId(roomSid);
+                if (roomResult.IsFailed)
+                    return roomResult;
+
+                var room = roomResult.Value;
+                room.RecordingEndDate = timestamp.UtcDateTime;
+                room.RecordingDuration = duration;
+                await _roomRepository.Update(room);
+            }
+
+            return Result.Fail(new InvalidInputError("Invalid recording status."));
             
         }
     }
