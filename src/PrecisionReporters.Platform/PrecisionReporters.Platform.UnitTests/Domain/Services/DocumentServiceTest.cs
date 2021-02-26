@@ -741,43 +741,23 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         }
 
         [Fact]
-        public async Task GetGetFileSignedUrl_ShouldReturnFail_IfUserNotFound()
-        {
-            // Arrange
-            var userEmail = "notExisitingUser@mail.com";
-            var expectedError = $"User with email {userEmail} not found.";
-            _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Fail(new ResourceNotFoundError(expectedError)));
-
-            // Act
-            var result = await _service.GetFileSignedUrl(userEmail, Guid.NewGuid());
-
-            // Assert
-            _userServiceMock.Verify(x => x.GetUserByEmail(It.Is<string>(a => a == userEmail)), Times.Once);
-            Assert.NotNull(result);
-            Assert.IsType<Result<string>>(result);
-            Assert.True(result.IsFailed);
-            Assert.Contains(expectedError, result.Errors.Select(e => e.Message));
-        }
-
-        [Fact]
         public async Task GetGetFileSignedUrl_ShouldReturnFail_IfDocumentNotFound()
         {
             // Arrange
             var userEmail = "notExisitingUser@mail.com";
             var documentId = Guid.NewGuid();
-            var expectedError = $"Could not find any document with Id {documentId} for user {userEmail}";
+            var expectedError = $"Could not find any document with Id {documentId}";
             _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(new User()));
 
-            _documentUserDepositionRepositoryMock
-                .Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<DocumentUserDeposition, bool>>>(), It.IsAny<string[]>()))
-                    .ReturnsAsync((DocumentUserDeposition)null);
+            _documentRepositoryMock
+                .Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Document, bool>>>(), It.IsAny<string[]>()))
+                    .ReturnsAsync((Document)null);
 
             // Act
-            var result = await _service.GetFileSignedUrl(userEmail, documentId);
+            var result = await _service.GetFileSignedUrl(documentId);
 
             // Assert
-            _userServiceMock.Verify(x => x.GetUserByEmail(It.Is<string>(a => a == userEmail)), Times.Once);
-            _documentUserDepositionRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<DocumentUserDeposition, bool>>>(), It.Is<string[]>(a => a.Contains(nameof(DocumentUserDeposition.Document)))), Times.Once);
+            _documentRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Document, bool>>>(), It.Is<string[]>(x => x == null)), Times.Once);
             Assert.NotNull(result);
             Assert.IsType<Result<string>>(result);
             Assert.True(result.IsFailed);
@@ -794,17 +774,18 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var deposition = new Deposition { EndDate = DateTime.Now };
             _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(new User()));
 
-            _documentUserDepositionRepositoryMock
-                .Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<DocumentUserDeposition, bool>>>(), It.IsAny<string[]>()))
-                .ReturnsAsync(new DocumentUserDeposition { Document = new Document { Id = documentId, DisplayName = "testName.pdf" }, Deposition = deposition });
+            _documentRepositoryMock
+                .Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Document, bool>>>(), It.IsAny<string[]>()))
+                .ReturnsAsync(new Document { Id = documentId, DisplayName = "testName.pdf" });
+
             _awsStorageServiceMock.Setup(x => x.GetFilePublicUri(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<string>())).Returns(signedUrl);
 
             // Act
-            var result = await _service.GetFileSignedUrl(userEmail, documentId);
+            var result = await _service.GetFileSignedUrl(documentId);
 
             // Assert
-            _userServiceMock.Verify(x => x.GetUserByEmail(It.Is<string>(a => a == userEmail)), Times.Once);
-            _documentUserDepositionRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<DocumentUserDeposition, bool>>>(), It.Is<string[]>(a => a.Contains(nameof(DocumentUserDeposition.Document)))), Times.Once);
+
+            _documentRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Document, bool>>>(), It.Is<string[]>(x => x == null)), Times.Once);
             _awsStorageServiceMock.Verify(x => x.GetFilePublicUri(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<string>()), Times.Once);
             Assert.NotNull(result);
             Assert.IsType<Result<string>>(result);

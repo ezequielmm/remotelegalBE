@@ -176,20 +176,15 @@ namespace PrecisionReporters.Platform.Domain.Services
             return Result.Ok(documentUserDeposition.Select(d => d.Document).ToList());
         }
 
-        public async Task<Result<string>> GetFileSignedUrl(string userEmail, Guid documentId)
+        public async Task<Result<string>> GetFileSignedUrl(Guid documentId)
         {
-            var userResult = await _userService.GetUserByEmail(userEmail);
-            if (userResult.IsFailed)
-                return userResult.ToResult<string>();
+            var document = await _documentRepository.GetFirstOrDefaultByFilter(x => x.Id == documentId);
+            if (document == null)
+                return Result.Fail(new ResourceNotFoundError($"Could not find any document with Id {documentId}"));
 
-            var documentUserDeposition = await _documentUserDepositionRepository.GetFirstOrDefaultByFilter(x => x.User == userResult.Value && x.DocumentId == documentId, new[] { nameof(DocumentUserDeposition.Document) });
-            if (documentUserDeposition == null)
-                return Result.Fail(new ResourceNotFoundError($"Could not find any document with Id {documentId} for user {userEmail}"));
+            var signedUrl = GetFileSignedUrl(document);
 
-            var expirationDate = DateTime.UtcNow.AddHours(_documentsConfiguration.PreSignedUrlValidHours);
-            var signedUrl = _awsStorageService.GetFilePublicUri(documentUserDeposition.Document.FilePath, _documentsConfiguration.BucketName, expirationDate);
-
-            return Result.Ok(signedUrl);
+            return Result.Ok(signedUrl.Value);
         }
 
         public Result<string> GetFileSignedUrl(Document document)
