@@ -76,7 +76,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 _roomServiceMock.Object,
                 _breakRoomServiceMock.Object,
                 _permissionServiceMock.Object,
-                _awsStorageServiceMock.Object,                
+                _awsStorageServiceMock.Object,
                 _depositionDocumentConfigurationMock.Object,
                 _draftTranscriptGeneratorServiceMock.Object);
         }
@@ -1584,6 +1584,85 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             Assert.True(result.IsFailed);
             Assert.IsType<Result<Participant>>(result);
             Assert.Contains(expectedError, result.Errors.Select(e => e.Message));
+        }
+
+        [Fact]
+        public async Task RemoveParticipant_ShouldReturnFail_IfDepositionNotFound()
+        {
+            // Arrange
+            var depositionId = Guid.NewGuid();
+            var participantId = Guid.NewGuid();
+            var expectedError = $"Deposition not found with ID {depositionId}";
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync((Deposition)null);
+
+            // Act
+            var result = await _depositionService.RemoveParticipantFromDeposition(depositionId, participantId);
+
+            // Assert
+            _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(a => a == depositionId), It.Is<string[]>(a => a.SequenceEqual(new[] { $"{nameof(Deposition.Participants)}.{nameof(Participant.User)}" }))), Times.Once);
+            Assert.NotNull(result);
+            Assert.True(result.IsFailed);
+            Assert.Contains(expectedError, result.Errors.Select(e => e.Message));
+        }
+
+        [Fact]
+        public async Task RemoveParticipant_ShouldReturnFail_IfParticipantNotFound()
+        {
+            // Arrange
+            var depositionId = Guid.NewGuid();
+            var mockDeposition = new Deposition()
+            {
+                Id = depositionId,
+                Participants = new List<Participant>()
+                {
+                    new Participant()
+                    {
+                        Id = Guid.NewGuid()
+                    }
+                }
+            };
+            var participantId = Guid.NewGuid();
+            var expectedError = $"Participant not found with ID {participantId}";
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(mockDeposition);
+
+            // Act
+            var result = await _depositionService.RemoveParticipantFromDeposition(depositionId, participantId);
+
+            // Assert
+            _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(a => a == depositionId), It.Is<string[]>(a => a.SequenceEqual(new[] { $"{nameof(Deposition.Participants)}.{nameof(Participant.User)}" }))), Times.Once);
+            Assert.NotNull(result);
+            Assert.True(result.IsFailed);
+            Assert.Contains(expectedError, result.Errors.Select(e => e.Message));
+        }
+
+        [Fact]
+        public async Task RemoveParticipant_ShouldReturnOk()
+        {
+            // Arrange
+            var depositionId = Guid.NewGuid();
+            var participantId = Guid.NewGuid();
+            var mockDeposition = new Deposition()
+            {
+                Id = depositionId,
+                Participants = new List<Participant>()
+                {
+                    new Participant()
+                    {
+                        Id = participantId
+                    }
+                }
+            };
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(mockDeposition);
+
+            // Act
+            var result = await _depositionService.RemoveParticipantFromDeposition(depositionId, participantId);
+
+            // Assert
+            _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(a => a == depositionId), It.Is<string[]>(a => a.SequenceEqual(new[] { $"{nameof(Deposition.Participants)}.{nameof(Participant.User)}" }))), Times.Once);
+            _permissionServiceMock.Verify(x => x.RemoveParticipantPermissions(It.IsAny<Guid>(), It.IsAny<Participant>()), Times.Once);
+            _participantRepositoryMock.Verify(x => x.Remove(It.IsAny<Participant>()));
+            Assert.NotNull(result);
+            Assert.True(result.IsSuccess);
         }
     }
 }

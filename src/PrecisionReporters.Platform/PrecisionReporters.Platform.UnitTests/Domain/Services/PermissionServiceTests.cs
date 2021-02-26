@@ -140,5 +140,31 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             Assert.True(result.IsSuccess);
             Assert.Equal(result.Value, expectedResult);
         }
+
+        [Fact]
+        public async Task RemoveParticipantPermissions_ShouldReturnOk()
+        {
+            //Arrange
+            var depositionId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
+            var participant = new Participant
+            {
+                UserId = userId,
+                User = new User()
+                {
+                    Id = userId
+                }
+            };
+            var userResourceRole = new UserResourceRole() { UserId = userId, ResourceId = depositionId };
+            _userResourceRoleRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<UserResourceRole, bool>>>(),
+                It.IsAny<string[]>())).ReturnsAsync(userResourceRole);
+            _userResourceRoleRepositoryMock.Setup(x => x.Remove(It.IsAny<UserResourceRole>()));
+
+            //Act
+            await _permissionService.RemoveParticipantPermissions(depositionId, participant);
+
+            //Assert
+            _userResourceRoleRepositoryMock.Verify(x => x.Remove(It.IsAny<UserResourceRole>()), Times.Once);
+        }
     }
 }
