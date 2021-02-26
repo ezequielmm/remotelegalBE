@@ -1,5 +1,5 @@
 name: Static analysis code
-on: 
+on:
   push:
     branches:
       - develop
@@ -11,11 +11,12 @@ jobs:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v2
-      - uses: Secbyte/dotnet-sonarscanner@v2.3
+      - uses: highbyte/sonarscan-dotnet@1.0.2
         with:
-          projectKey: prp-be
-          projectName: prp-be
+          sonarProjectKey: prp-be
+          sonarProjectName: prp-be
           sonarHostname: https://sonarqube.prdevelopment.net/
-          buildCommand: dotnet build ./src/PrecisionReporters.Platform/PrecisionReporters.Platform.sln
-          testCommand: dotnet test ./src/PrecisionReporters.Platform/PrecisionReporters.Platform.sln
-          sonarOrganisation: default-organization
+          dotnetBuildArguments: ./src/PrecisionReporters.Platform/PrecisionReporters.Platform.sln
+          dotnetTestArguments: ./src/PrecisionReporters.Platform/PrecisionReporters.Platform.sln --logger trx --collect:"XPlat Code Coverage" -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
+          sonarOrganization: default-organization
+          sonarBeginArguments: /d:sonar.cs.opencover.reportsPaths="./src/PrecisionReporters.Platform/PrecisionReporters.Platform.UnitTests/TestResults/**/coverage.opencover.xml" -d:sonar.cs.vstest.reportsPaths="**/TestResults/*.trx"
