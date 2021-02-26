@@ -25,5 +25,6 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
         Task<Result<Document>> GetDocument(Guid id);
         Result<string> GetFileSignedUrl(Document document);
         Task<Result> RemoveDepositionUserDocuments(Guid documentId);
+        Task<Result> UploadTranscriptions(Guid id, List<FileTransferInfo> files);
     }
 }

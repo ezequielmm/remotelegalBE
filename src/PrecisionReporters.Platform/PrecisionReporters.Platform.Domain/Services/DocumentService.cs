@@ -9,6 +9,7 @@ using PrecisionReporters.Platform.Data.Repositories.Interfaces;
 using PrecisionReporters.Platform.Domain.Commons;
 using PrecisionReporters.Platform.Domain.Configurations;
 using PrecisionReporters.Platform.Domain.Errors;
+using PrecisionReporters.Platform.Domain.Extensions;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -27,12 +28,13 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly IPermissionService _permissionService;
         private readonly ITransactionHandler _transactionHandler;
         private readonly IDocumentRepository _documentRepository;
+        private readonly IDepositionDocumentRepository _depositionDocumentRepository;
         private readonly ILogger<DocumentService> _logger;
         private readonly DocumentConfiguration _documentsConfiguration;
 
         public DocumentService(IAwsStorageService awsStorageService, IOptions<DocumentConfiguration> documentConfigurations, ILogger<DocumentService> logger,
             IUserService userService, IDepositionService depositionService, IDocumentUserDepositionRepository documentUserDepositionRepository,
-            IPermissionService permissionService, ITransactionHandler transactionHandler, IDocumentRepository documentRepository)
+            IPermissionService permissionService, ITransactionHandler transactionHandler, IDocumentRepository documentRepository, IDepositionDocumentRepository depositionDocumentRepository)
         {
             _awsStorageService = awsStorageService;
             _documentsConfiguration = documentConfigurations.Value ?? throw new ArgumentException(nameof(documentConfigurations));
@@ -43,6 +45,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             _permissionService = permissionService;
             _transactionHandler = transactionHandler;
             _documentRepository = documentRepository;
+            _depositionDocumentRepository = depositionDocumentRepository;
         }
 
         public async Task<Result<Document>> UploadDocumentFile(KeyValuePair<string, FileTransferInfo> file, User user, string parentPath, DocumentType documentType)
@@ -93,6 +96,17 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             if (!_documentsConfiguration.AcceptedFileExtensions.Contains(Path.GetExtension(file.Name)))
                 return Result.Fail(new InvalidInputError("Failed to upload the file. Please try again"));
+
+            return Result.Ok();
+        }
+
+        private Result ValidateTranscriptions(List<FileTransferInfo> files)
+        {
+            if (files.Any(f => f.Length > _documentsConfiguration.MaxFileSize))
+                return Result.Fail(new InvalidInputError("Exhibit size exceeds the allowed limit"));
+
+            if (files.Any(f => !_documentsConfiguration.AcceptedTranscriptionExtensions.Contains(Path.GetExtension(f.Name))))
+                return Result.Fail(new InvalidInputError("Extension of the file is not correct"));
 
             return Result.Ok();
         }
@@ -157,6 +171,51 @@ namespace PrecisionReporters.Platform.Domain.Services
             {
                 return transactionResult;
             }
+
+            return documentCreationResult;
+        }
+
+        public async Task<Result> UploadTranscriptions(Guid id, List<FileTransferInfo> files)
+        {
+            var currentUser = await _userService.GetCurrentUserAsync();
+
+            var depositionResult = await _depositionService.GetDepositionById(id);
+            if (depositionResult.IsFailed)
+                return depositionResult.ToResult();
+
+            var fileValidationResult = ValidateTranscriptions(files);
+            if (fileValidationResult.IsFailed)
+                return fileValidationResult;
+
+            var deposition = depositionResult.Value;
+            var uploadedDocuments = new List<DepositionDocument>();
+            var folder = DocumentType.Transcription.GetDescription();
+            foreach (var file in files)
+            {
+                var documentResult = await UploadDocumentFile(file, currentUser, $"{deposition.CaseId}/{deposition.Id}/{folder}", DocumentType.Transcription);
+                if (documentResult.IsFailed)
+                {
+                    _logger.LogError(documentResult.Errors.First().Message, "Unable to load one or more documents to storage");
+                    _logger.LogInformation("Removing uploaded documents");
+                    await DeleteUploadedFiles(uploadedDocuments.Select(d => d.Document).ToList());
+                    return documentResult.ToResult();
+                }
+                uploadedDocuments.Add(new DepositionDocument { Deposition = deposition, Document = documentResult.Value });
+            }
+            var documentCreationResult = Result.Ok();
+            var transactionResult = await _transactionHandler.RunAsync(async () =>
+            {
+                try
+                {
+                    uploadedDocuments = await _depositionDocumentRepository.CreateRange(uploadedDocuments);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Unable to add documents to deposition");
+                    await DeleteUploadedFiles(uploadedDocuments.Select(d => d.Document).ToList());
+                    documentCreationResult = Result.Fail(new ExceptionalError("Unable to add documents to deposition", ex));
+                }
+            });
 
             return documentCreationResult;
         }

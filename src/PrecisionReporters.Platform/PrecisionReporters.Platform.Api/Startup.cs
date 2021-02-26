@@ -177,6 +177,7 @@ namespace PrecisionReporters.Platform.Api
             {
                 x.BucketName = appConfiguration.DocumentConfiguration.BucketName;
                 x.AcceptedFileExtensions = appConfiguration.DocumentConfiguration.AcceptedFileExtensions;
+                x.AcceptedTranscriptionExtensions = appConfiguration.DocumentConfiguration.AcceptedTranscriptionExtensions;
                 x.MaxFileSize = appConfiguration.DocumentConfiguration.MaxFileSize;
                 x.PreSignedUrlValidHours = appConfiguration.DocumentConfiguration.PreSignedUrlValidHours;
                 x.PostDepoVideoBucket = appConfiguration.DocumentConfiguration.PostDepoVideoBucket;

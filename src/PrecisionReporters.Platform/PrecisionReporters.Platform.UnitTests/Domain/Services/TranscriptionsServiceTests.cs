@@ -3,11 +3,9 @@ using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Data.Enums;
 using PrecisionReporters.Platform.Data.Repositories.Interfaces;
 using PrecisionReporters.Platform.Domain.Services;
-using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
-using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -25,7 +23,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _transcriptionRepository = new Mock<ITranscriptionRepository>();
             _depositionDocumentRepositoryMock = new Mock<IDepositionDocumentRepository>();
             _userRepository = new Mock<IUserRepository>();
-            _transcriptionService = new TranscriptionService(_transcriptionRepository.Object, _userRepository.Object, _depositionDocumentRepositoryMock.Object);
+            _transcriptionService = new TranscriptionService(_transcriptionRepository.Object, _userRepository.Object,_depositionDocumentRepositoryMock.Object);
         }
 
         [Fact]
