@@ -235,13 +235,13 @@ namespace PrecisionReporters.Platform.Domain.Services
             return Result.Ok(documentUserDeposition.Select(d => d.Document).ToList());
         }
 
-        public async Task<Result<string>> GetFileSignedUrl(Guid documentId)
+        public async Task<Result<string>> GetFileSignedUrl(Guid depositionId, Guid documentId)
         {
-            var document = await _documentRepository.GetFirstOrDefaultByFilter(x => x.Id == documentId);
-            if (document == null)
+            var depositionDocument = await _depositionDocumentRepository.GetFirstOrDefaultByFilter(x => x.DepositionId == depositionId && x.DocumentId == documentId, new[] { nameof(DepositionDocument.Document) });
+            if (depositionDocument == null)
                 return Result.Fail(new ResourceNotFoundError($"Could not find any document with Id {documentId}"));
 
-            var signedUrl = GetFileSignedUrl(document);
+            var signedUrl = GetFileSignedUrl(depositionDocument.Document);
 
             return Result.Ok(signedUrl.Value);
         }

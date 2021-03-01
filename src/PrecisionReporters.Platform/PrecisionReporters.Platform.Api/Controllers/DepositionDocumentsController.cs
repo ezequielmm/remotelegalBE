@@ -177,5 +177,35 @@ namespace PrecisionReporters.Platform.Api.Controllers
 
             return Ok(documentSignedDto);
         }
+
+        /// Shares a documents with all users in a deposition
+        /// </summary>
+        /// <param name="id">Document identifier</param>
+        /// <returns>Ok if the process has completed successfully</returns>
+        [HttpPut("{depositionId}/documents/{documentId}/Share")]
+        [UserAuthorize(ResourceType.Deposition, ResourceAction.ViewSharedDocument)]
+        public async Task<IActionResult> ShareEnteredExhibit([ResourceId(ResourceType.Deposition)] Guid depositionId, Guid documentId)
+        {
+            var documentsResult = await _documentService.ShareEnteredExhibit(depositionId, documentId);
+            if (documentsResult.IsFailed)
+                return WebApiResponses.GetErrorResponse(documentsResult);
+            return Ok();
+        }
+
+        /// <summary>
+        /// Gets the public url of a file. This url exipres after deposition end or after 2 hours if deposition doesn't have an end date
+        /// </summary>
+        /// <param name="id">Document identifier</param>
+        /// <returns></returns>
+        [HttpGet("{depositionId}/documents/{documentId}/PreSignedUrl")]
+        [UserAuthorize(ResourceType.Deposition, ResourceAction.ViewSharedDocument)]
+        public async Task<ActionResult<string>> GetFileSignedUrl([ResourceId(ResourceType.Deposition)] Guid depositionId, Guid documentId)
+        {
+            var fileSignedUrlResult = await _documentService.GetFileSignedUrl(depositionId, documentId);
+            if (fileSignedUrlResult.IsFailed)
+                return WebApiResponses.GetErrorResponse(fileSignedUrlResult);
+
+            return Ok(fileSignedUrlResult.Value);
+        }
     }
 }

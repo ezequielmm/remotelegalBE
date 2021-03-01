@@ -750,18 +750,19 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             // Arrange
             var userEmail = "notExisitingUser@mail.com";
             var documentId = Guid.NewGuid();
+            var depositionId = Guid.NewGuid();
             var expectedError = $"Could not find any document with Id {documentId}";
             _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(new User()));
 
-            _documentRepositoryMock
-                .Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Document, bool>>>(), It.IsAny<string[]>()))
-                    .ReturnsAsync((Document)null);
+            _depositionDocumentRepositoryMock
+                .Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<DepositionDocument, bool>>>(), It.IsAny<string[]>()))
+                    .ReturnsAsync((DepositionDocument)null);
 
             // Act
-            var result = await _service.GetFileSignedUrl(documentId);
+            var result = await _service.GetFileSignedUrl(depositionId, documentId);
 
             // Assert
-            _documentRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Document, bool>>>(), It.Is<string[]>(x => x == null)), Times.Once);
+            _depositionDocumentRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<DepositionDocument, bool>>>(), It.IsAny<string[]>()), Times.Once);
             Assert.NotNull(result);
             Assert.IsType<Result<string>>(result);
             Assert.True(result.IsFailed);
@@ -774,22 +775,23 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             // Arrange
             var userEmail = "notExisitingUser@mail.com";
             var documentId = Guid.NewGuid();
+            var depositionId = Guid.NewGuid();
             var signedUrl = "signedUrl";
             var deposition = new Deposition { EndDate = DateTime.Now };
             _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(new User()));
 
-            _documentRepositoryMock
-                .Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Document, bool>>>(), It.IsAny<string[]>()))
-                .ReturnsAsync(new Document { Id = documentId, DisplayName = "testName.pdf" });
+            _depositionDocumentRepositoryMock
+                .Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<DepositionDocument, bool>>>(), It.IsAny<string[]>()))
+                .ReturnsAsync(new DepositionDocument { Id = documentId, Document = new Document { Id = documentId, DisplayName = "testName.pdf" } });
 
             _awsStorageServiceMock.Setup(x => x.GetFilePublicUri(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<string>())).Returns(signedUrl);
 
             // Act
-            var result = await _service.GetFileSignedUrl(documentId);
+            var result = await _service.GetFileSignedUrl(depositionId, documentId);
 
             // Assert
 
-            _documentRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Document, bool>>>(), It.Is<string[]>(x => x == null)), Times.Once);
+            _depositionDocumentRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<DepositionDocument, bool>>>(), It.IsAny<string[]>()), Times.Once);
             _awsStorageServiceMock.Verify(x => x.GetFilePublicUri(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<string>()), Times.Once);
             Assert.NotNull(result);
             Assert.IsType<Result<string>>(result);
