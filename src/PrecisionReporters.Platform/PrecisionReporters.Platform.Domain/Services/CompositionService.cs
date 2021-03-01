@@ -97,7 +97,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         private CompositionRecordingMetadata CreateCompositioMetadata(Deposition deposition)
         {
-            var startDateTime = GetDateTimestamp(deposition.Room.RecordingEndDate.Value.AddSeconds(-deposition.Room.RecordingDuration));
+            var startDateTime = GetDateTimestamp(deposition.Room.RecordingStartDate.Value);
             return new CompositionRecordingMetadata
             {
                 //TODO unified file name generation in one place

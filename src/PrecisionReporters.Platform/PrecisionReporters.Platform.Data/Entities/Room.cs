@@ -28,6 +28,8 @@ namespace PrecisionReporters.Platform.Data.Entities
 
         public int RecordingDuration { get; set; }
 
+        public string StartedReference { get; set; }
+
         public Room() {}
 
         public Room(string name, bool isRecordingEnabled = false)

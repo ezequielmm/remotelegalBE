@@ -53,7 +53,8 @@ namespace PrecisionReporters.Platform.Api.Controllers
         public async Task<IActionResult> RoomStatusCallback([FromForm] RoomCallbackDto roomEvent)
         {
             var updateRoomStatusResult = await _roomService.UpdateStatusCallback(
-                roomEvent.RoomSid, roomEvent.Timestamp, roomEvent.StatusCallbackEvent, roomEvent.Duration);
+                roomEvent.RoomSid, roomEvent.Timestamp, roomEvent.StatusCallbackEvent,
+                roomEvent.Duration, roomEvent.ParticipantSid);
             if (updateRoomStatusResult.IsFailed)
                 return WebApiResponses.GetErrorResponse(updateRoomStatusResult);
 

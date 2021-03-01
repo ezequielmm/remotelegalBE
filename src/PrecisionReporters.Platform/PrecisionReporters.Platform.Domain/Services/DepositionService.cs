@@ -221,7 +221,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (deposition == null)
                 return Result.Fail(new ResourceNotFoundError($"Deposition with id {id} not found."));
 
-            var witness = deposition.Participants.Single(x => x.Role == ParticipantType.Witness);
+            var witness = deposition.Participants.FirstOrDefault(x => x.Role == ParticipantType.Witness);
             var roomResult = await _roomService.EndRoom(deposition.Room, witness.Email);
             if (roomResult.IsFailed)
                 return roomResult.ToResult<Deposition>();
