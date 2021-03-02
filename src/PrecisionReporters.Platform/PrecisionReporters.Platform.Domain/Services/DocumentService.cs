@@ -319,7 +319,8 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             // TODO: when original file was not a pdf we need to make sure we remove it from S3 since in that case it won't get overriden
             var fileName = $"{Path.GetFileNameWithoutExtension(depositionDocument.Document.Name)}.pdf";
-            var documentResult = await UploadFileToStorage(file, userResult.Value, fileName, $"{deposition.CaseId}/{deposition.Id}/{folder}", documentType);
+            var filePath = $"{deposition.CaseId}/{deposition.Id}/{folder}";
+            var documentResult = await UploadFileToStorage(file, userResult.Value, fileName, filePath, documentType);
             if (documentResult.IsFailed)
             {
                 _logger.LogError(new Exception(documentResult.Errors.First().Message), "Unable to update the document to storage");
@@ -330,8 +331,13 @@ namespace PrecisionReporters.Platform.Domain.Services
             {
                 try
                 {
-                    var documentUser = await _documentUserDepositionRepository.GetFirstOrDefaultByFilter(x => x.DocumentId == documentResult.Value.Id && x.DepositionId == deposition.Id);
-                    await _documentUserDepositionRepository.Remove(documentUser);
+                    // Update document file Name and Path with the PDF extension that PDFTron response
+                    var updateDocument = await _documentRepository.GetById(depositionDocument.DocumentId);
+                    updateDocument.Name = fileName;
+                    updateDocument.DisplayName = $"{Path.GetFileNameWithoutExtension(depositionDocument.Document.DisplayName)}.pdf";
+                    updateDocument.FilePath = $"{filePath}/{fileName}";
+                    updateDocument.Type = ".pdf";
+                    await _documentRepository.Update(updateDocument);                                                     
                 }
                 catch (Exception ex)
                 {
