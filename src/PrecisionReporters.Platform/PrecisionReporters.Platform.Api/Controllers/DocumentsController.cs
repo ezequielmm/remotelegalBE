@@ -80,6 +80,22 @@ namespace PrecisionReporters.Platform.Api.Controllers
             return Ok(documentsResult.Value.Select(d => _documentMapper.ToDto(d)));
         }
 
+        /// <summary>
+        /// Gets the public url of a file. This url exipres after deposition end or after 2 hours if deposition doesn't have an end date
+        /// </summary>
+        /// <param name="id">Document identifier</param>
+        /// <returns></returns>
+        [HttpGet("[controller]/{id}/PreSignedUrl")]
+        [UserAuthorize(ResourceType.Document, ResourceAction.View)]
+        public async Task<ActionResult<string>> GetFileSignedUrl([ResourceId(ResourceType.Document)] Guid id)
+        {
+            var fileSignedUrlResult = await _documentService.GetFileSignedUrl(id);
+            if (fileSignedUrlResult.IsFailed)
+                return WebApiResponses.GetErrorResponse(fileSignedUrlResult);
+
+            return Ok(fileSignedUrlResult.Value);
+        }
+
         /// Shares a documents with all users in a deposition
         /// </summary>
         /// <param name="id">Document identifier</param>
