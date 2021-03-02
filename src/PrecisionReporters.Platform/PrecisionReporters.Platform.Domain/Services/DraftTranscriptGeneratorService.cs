@@ -88,7 +88,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             var deposition = await _depositionRepository.GetById(depositionId);
             var filePath = $"/{deposition.CaseId}/{deposition.Id}/{ApplicationConstants.TranscriptFolderName}/{ApplicationConstants.DraftTranscriptFileName}";
             var draftTranscript = await _awsStorageService.GetObjectAsync(filePath, _documentsConfigurations.BucketName);
-            
+
             var transactionResult = await _transactionHandler.RunAsync(async () =>
             {
                 var document = new Document()
@@ -97,7 +97,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                     DisplayName = ApplicationConstants.DraftTranscriptFileName,
                     CreationDate = DateTime.UtcNow,
                     Type = ".pdf",
-                    FilePath = filePath, 
+                    FilePath = filePath,
                     DocumentType = DocumentType.DraftTranscription,
                     Size = draftTranscript.Length,
                     AddedById = userId,
@@ -128,12 +128,15 @@ namespace PrecisionReporters.Platform.Domain.Services
             var transcriptsLines = new List<string>();
             foreach (var sentence in transcripts)
             {
-                var text = $"\t\t{ sentence.User.FirstName } { sentence.User.LastName }: {sentence.Text}";
+                if (!string.IsNullOrEmpty(sentence.Text))
+                {
+                    var text = $"\t\t{ sentence.User.FirstName } { sentence.User.LastName }: {sentence.Text}";
 
-                if (text.Length > MAX_LENGHT)
-                    transcriptsLines.AddRange(SplitSentences(text));
-                else
-                    transcriptsLines.Add(text);
+                    if (text.Length > MAX_LENGHT)
+                        transcriptsLines.AddRange(SplitSentences(text));
+                    else
+                        transcriptsLines.Add(text);
+                }
             }
 
             return transcriptsLines;
@@ -170,12 +173,21 @@ namespace PrecisionReporters.Platform.Domain.Services
         private void GeneratePage4(List<string> transcriptsLines, ContentReplacer replacer, PDFDoc doc)
         {
             Page page4 = doc.GetPage(4);
-
             // In the first transcript page we need to start writing on line two after PROCEEDINGS.
-            var page4Transcripts = transcriptsLines.Take(24).Select((text, index) => new { text, index }).ToList();
-            page4Transcripts.ForEach(x => replacer.AddString($"line{x.index + 2}_tmp", x.text));
+            if (transcriptsLines.Count < 24)
+            {
+                var totalTranscriptLInes = AddBlankRowsToList(transcriptsLines).Select((text, index) => new { text, index }).ToList();
+                totalTranscriptLInes.ForEach(x => replacer.AddString($"line{x.index + 2}_tmp", x.text));
+                transcriptsLines.RemoveRange(0, transcriptsLines.Count);
+                doc.PageRemove(doc.GetPageIterator(5));
+            }
+            else
+            {                
+                var partialTranscriptLines = transcriptsLines.Take(24).Select((text, index) => new { text, index }).ToList();
+                partialTranscriptLines.ForEach(x => replacer.AddString($"line{x.index + 2}_tmp", x.text));
+                transcriptsLines.RemoveRange(0, 24);
+            }
             replacer.Process(page4);
-            transcriptsLines.RemoveRange(0, 24);
         }
 
         private void GenerateTemplatedPages(List<string> transcriptsLines, ContentReplacer replacer, PDFDoc doc, int pagesToAdd)
@@ -196,7 +208,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 else
                 {
                     // Replace the remaining lines 
-                    var remainingTranscripts = AddBlankRowsToList(transcriptsLines).Select((text, index) => new { text, index }).ToList(); ;
+                    var remainingTranscripts = AddBlankRowsToList(transcriptsLines).Select((text, index) => new { text, index }).ToList();
                     remainingTranscripts.ForEach(x => replacer.AddString($"line{x.index + 1}_tmp", x.text));
                     replacer.Process(page);
                 }
