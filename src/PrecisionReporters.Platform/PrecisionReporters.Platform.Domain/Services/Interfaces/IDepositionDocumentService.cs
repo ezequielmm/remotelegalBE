@@ -14,5 +14,6 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
         Task<Result> CloseDepositionDocument(Document document, Guid depostionId);
         Task<Result<List<DepositionDocument>>> GetEnteredExhibits(Guid depostionId, ExhibitSortField? sortedField = null, SortDirection? sortDirection = null);
         Task<bool> ParticipantCanCloseDocument(Document document, Guid depositionId);
+        Task<bool> IsPublicDocument(Guid depositionId, Guid documentId);
     }
 }

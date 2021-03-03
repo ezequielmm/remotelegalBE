@@ -335,7 +335,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                     var updateDocument = await _documentRepository.GetById(depositionDocument.DocumentId);
                     updateDocument.Name = fileName;
                     updateDocument.DisplayName = $"{Path.GetFileNameWithoutExtension(depositionDocument.Document.DisplayName)}.pdf";
-                    updateDocument.FilePath = $"{filePath}/{fileName}";
+                    updateDocument.FilePath = $"/{filePath}/{fileName}";
                     updateDocument.Type = ".pdf";
                     await _documentRepository.Update(updateDocument);                                                     
                 }

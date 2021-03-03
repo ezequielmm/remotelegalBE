@@ -67,6 +67,8 @@ namespace PrecisionReporters.Platform.Api.Controllers
             documentSignedDto.PreSignedUrl = fileSignedUrlResult.Value;
             documentSignedDto.Close = close;
 
+            documentSignedDto.IsPublic = await _depositionDocumentService.IsPublicDocument(id, document.Id);
+
             return Ok(documentSignedDto);
         }
 
@@ -199,13 +201,19 @@ namespace PrecisionReporters.Platform.Api.Controllers
         /// <returns></returns>
         [HttpGet("{depositionId}/documents/{documentId}/PreSignedUrl")]
         [UserAuthorize(ResourceType.Deposition, ResourceAction.ViewSharedDocument)]
-        public async Task<ActionResult<string>> GetFileSignedUrl([ResourceId(ResourceType.Deposition)] Guid depositionId, Guid documentId)
+        public async Task<ActionResult<FileSignedDto>> GetFileSignedUrl([ResourceId(ResourceType.Deposition)] Guid depositionId, Guid documentId)
         {
             var fileSignedUrlResult = await _documentService.GetFileSignedUrl(depositionId, documentId);
             if (fileSignedUrlResult.IsFailed)
                 return WebApiResponses.GetErrorResponse(fileSignedUrlResult);
 
-            return Ok(fileSignedUrlResult.Value);
+            var fileSignedDto = new FileSignedDto
+            {
+                Url = fileSignedUrlResult.Value,
+                IsPublic = true
+            };
+
+            return Ok(fileSignedDto);
         }
     }
 }

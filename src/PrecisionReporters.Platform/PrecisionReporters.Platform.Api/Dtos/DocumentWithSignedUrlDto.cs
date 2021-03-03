@@ -4,5 +4,6 @@
     {
         public string PreSignedUrl { get; set; }
         public bool Close { get; set; }
+        public bool IsPublic { get; set; }
     }
 }

@@ -126,6 +126,12 @@ namespace PrecisionReporters.Platform.Domain.Services
             return role == ParticipantType.CourtReporter;
         }
 
+        public async Task<bool> IsPublicDocument(Guid depositionId, Guid documentId)
+        {
+            var depositionDocument = await _depositionDocumentRepository.GetFirstOrDefaultByFilter(x => x.DepositionId == depositionId && x.DocumentId == documentId);
+            return depositionDocument != null;
+        }
+
         private async Task<Result> RemoveAnnotationEvents(Guid documentId)
         {
             return await _annotationEventService.RemoveUserDocumentAnnotations(documentId);

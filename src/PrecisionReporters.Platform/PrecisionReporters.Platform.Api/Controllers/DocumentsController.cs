@@ -87,13 +87,19 @@ namespace PrecisionReporters.Platform.Api.Controllers
         /// <returns></returns>
         [HttpGet("[controller]/{id}/PreSignedUrl")]
         [UserAuthorize(ResourceType.Document, ResourceAction.View)]
-        public async Task<ActionResult<string>> GetFileSignedUrl([ResourceId(ResourceType.Document)] Guid id)
+        public async Task<ActionResult<FileSignedDto>> GetFileSignedUrl([ResourceId(ResourceType.Document)] Guid id)
         {
             var fileSignedUrlResult = await _documentService.GetFileSignedUrl(id);
             if (fileSignedUrlResult.IsFailed)
                 return WebApiResponses.GetErrorResponse(fileSignedUrlResult);
 
-            return Ok(fileSignedUrlResult.Value);
+            var fileSignedDto = new FileSignedDto
+            {
+                Url = fileSignedUrlResult.Value,
+                IsPublic = false
+            };
+
+            return Ok(fileSignedDto);
         }
 
         /// Shares a documents with all users in a deposition
