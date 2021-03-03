@@ -6,11 +6,13 @@ using PrecisionReporters.Platform.Data.Repositories.Interfaces;
 using PrecisionReporters.Platform.Domain.Configurations;
 using PrecisionReporters.Platform.Domain.Dtos;
 using PrecisionReporters.Platform.Domain.Errors;
+using PrecisionReporters.Platform.Domain.QueuedBackgroundTasks.Interfaces;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace PrecisionReporters.Platform.Domain.Services
@@ -28,7 +30,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly IPermissionService _permissionService;
         private readonly DocumentConfiguration _documentsConfiguration;
         private readonly IAwsStorageService _awsStorageService;
-        private readonly IDraftTranscriptGeneratorService _draftTranscriptGeneratorService;
+        private readonly IBackgroundTaskQueue _backgroundTaskQueue;
 
         public DepositionService(IDepositionRepository depositionRepository,
             IParticipantRepository participantRepository,
@@ -39,7 +41,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             IPermissionService permissionService,
             IAwsStorageService awsStorageService,
             IOptions<DocumentConfiguration> documentConfigurations,
-            IDraftTranscriptGeneratorService draftTranscriptGeneratorService)
+            IBackgroundTaskQueue backgroundTaskQueue)
         {
             _awsStorageService = awsStorageService;
             _documentsConfiguration = documentConfigurations.Value ?? throw new ArgumentException(nameof(documentConfigurations));
@@ -50,7 +52,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             _roomService = roomService;
             _breakRoomService = breakRoomService;
             _permissionService = permissionService;
-            _draftTranscriptGeneratorService = draftTranscriptGeneratorService;
+            _backgroundTaskQueue = backgroundTaskQueue;
         }
 
         public async Task<List<Deposition>> GetDepositions(Expression<Func<Deposition, bool>> filter = null,
@@ -237,12 +239,8 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             await _userService.RemoveGuestParticipants(deposition.Participants);
 
-            //TODO: Add a Background Task Queue for the generation and saving Draft Transcripts PDF
-            var generateDraftTranscriptResult = await _draftTranscriptGeneratorService.GenerateDraftTranscriptionPDF(id);
-            if (generateDraftTranscriptResult.IsSuccess)
-            {
-                await _draftTranscriptGeneratorService.SaveDraftTranscriptionPDF(id, currentUser.Value.Id);
-            }
+            var transcriptDto = new DraftTranscriptDto { DepositionId = id, CurrentUserId = currentUser.Value.Id };
+            _backgroundTaskQueue.QueueBackgroundWorkItem(transcriptDto);
 
             return Result.Ok(updatedDeposition);
         }

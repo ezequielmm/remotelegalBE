@@ -8,6 +8,7 @@ using PrecisionReporters.Platform.Data.Repositories.Interfaces;
 using PrecisionReporters.Platform.Domain.Configurations;
 using PrecisionReporters.Platform.Domain.Dtos;
 using PrecisionReporters.Platform.Domain.Errors;
+using PrecisionReporters.Platform.Domain.QueuedBackgroundTasks.Interfaces;
 using PrecisionReporters.Platform.Domain.Services;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using PrecisionReporters.Platform.UnitTests.Utils;
@@ -33,7 +34,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         private readonly Mock<IPermissionService> _permissionServiceMock;
         private readonly DocumentConfiguration _documentConfiguration;
         private readonly Mock<IAwsStorageService> _awsStorageServiceMock;
-        private readonly Mock<IDraftTranscriptGeneratorService> _draftTranscriptGeneratorServiceMock;
+        private readonly Mock<IBackgroundTaskQueue> _backgroundTaskQueueMock;
         private readonly Mock<IOptions<DocumentConfiguration>> _depositionDocumentConfigurationMock;
 
         private readonly List<Deposition> _depositions = new List<Deposition>();
@@ -59,7 +60,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _breakRoomServiceMock = new Mock<IBreakRoomService>();
             _permissionServiceMock = new Mock<IPermissionService>();
             _awsStorageServiceMock = new Mock<IAwsStorageService>();
-            _draftTranscriptGeneratorServiceMock = new Mock<IDraftTranscriptGeneratorService>();
+            _backgroundTaskQueueMock = new Mock<IBackgroundTaskQueue>();
             _documentConfiguration = new DocumentConfiguration
             {
                 PostDepoVideoBucket = "foo"
@@ -76,9 +77,9 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 _roomServiceMock.Object,
                 _breakRoomServiceMock.Object,
                 _permissionServiceMock.Object,
-                _awsStorageServiceMock.Object,
+                _awsStorageServiceMock.Object,                
                 _depositionDocumentConfigurationMock.Object,
-                _draftTranscriptGeneratorServiceMock.Object);
+                _backgroundTaskQueueMock.Object);
         }
 
         public void Dispose()
@@ -609,8 +610,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(() => _depositions.FirstOrDefault());
 
             _roomServiceMock.Setup(x => x.EndRoom(It.IsAny<Room>(), It.IsAny<string>())).ReturnsAsync(() => Result.Ok(new Room()));
-            _draftTranscriptGeneratorServiceMock.Setup(x => x.GenerateDraftTranscriptionPDF(It.IsAny<Guid>())).ReturnsAsync(() => Result.Ok());
-            _draftTranscriptGeneratorServiceMock.Setup(x => x.SaveDraftTranscriptionPDF(It.IsAny<Guid>(), It.IsAny<Guid>())).ReturnsAsync(() => Result.Ok());
+            _backgroundTaskQueueMock.Setup(x => x.QueueBackgroundWorkItem(It.IsAny<DraftTranscriptDto>()));            
 
             // Act
             var result = await _depositionService.EndDeposition(depositionId, userEmail);

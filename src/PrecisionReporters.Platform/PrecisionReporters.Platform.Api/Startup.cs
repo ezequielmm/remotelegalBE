@@ -29,6 +29,8 @@ using PrecisionReporters.Platform.Data.Handlers.Interfaces;
 using PrecisionReporters.Platform.Data.Repositories;
 using PrecisionReporters.Platform.Data.Repositories.Interfaces;
 using PrecisionReporters.Platform.Domain.Configurations;
+using PrecisionReporters.Platform.Domain.QueuedBackgroundTasks;
+using PrecisionReporters.Platform.Domain.QueuedBackgroundTasks.Interfaces;
 using PrecisionReporters.Platform.Domain.Services;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using System;
@@ -208,6 +210,9 @@ namespace PrecisionReporters.Platform.Api
             }
 
             services.AddScoped<IDraftTranscriptGeneratorService, DraftTranscriptGeneratorService>();
+            services.AddHostedService<GenerateTranscriptHostedService>();
+            services.AddSingleton<IBackgroundTaskQueue, BackgroundTaskQueue>();
+
             services.Configure<GcpConfiguration>(x =>
             {
                 x.type = appConfiguration.GcpConfiguration.type;

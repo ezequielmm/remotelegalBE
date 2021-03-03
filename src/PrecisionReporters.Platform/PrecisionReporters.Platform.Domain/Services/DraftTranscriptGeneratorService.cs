@@ -7,6 +7,7 @@ using PrecisionReporters.Platform.Data.Handlers.Interfaces;
 using PrecisionReporters.Platform.Data.Repositories.Interfaces;
 using PrecisionReporters.Platform.Domain.Commons;
 using PrecisionReporters.Platform.Domain.Configurations;
+using PrecisionReporters.Platform.Domain.Dtos;
 using PrecisionReporters.Platform.Domain.Extensions;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using System;
@@ -46,10 +47,11 @@ namespace PrecisionReporters.Platform.Domain.Services
             _transactionHandler = transactionHandler;
         }
 
-        public async Task<Result> GenerateDraftTranscriptionPDF(Guid depositionId)
+        public async Task<Result> GenerateDraftTranscriptionPDF(DraftTranscriptDto draftTranscriptDto)
         {
-            var result = await _transcriptionService.GetTranscriptionsByDepositionId(depositionId);
-            var deposition = await _depositionRepository.GetById(depositionId);
+            var include = new[] { nameof(Deposition.Case), nameof(Deposition.Participants) };
+            var result = await _transcriptionService.GetTranscriptionsByDepositionId(draftTranscriptDto.DepositionId);
+            var deposition = await _depositionRepository.GetFirstOrDefaultByFilter(x => x.Id == draftTranscriptDto.DepositionId, include);
             try
             {
                 var s3FileStream = await _awsStorageService.GetObjectAsync(ApplicationConstants.DraftTranscriptTemplateName, _documentsConfigurations.EnvironmentFilesBucket);
@@ -71,8 +73,10 @@ namespace PrecisionReporters.Platform.Domain.Services
                     // Replace the rest of the pages up to 25 lines
                     GenerateTemplatedPages(transcriptsLines, replacer, doc, pagesToAdd);
 
-                    await SaveFinalDraftOnS3(doc, deposition);
+                    var s3Result = await SaveFinalDraftOnS3(doc, deposition);
 
+                    if (s3Result.IsSuccess)
+                        await SaveDraftTranscriptionPDF(draftTranscriptDto);                    
                 }
             }
             catch (Exception ex)
@@ -83,9 +87,9 @@ namespace PrecisionReporters.Platform.Domain.Services
             return Result.Ok();
         }
 
-        public async Task<Result> SaveDraftTranscriptionPDF(Guid depositionId, Guid userId)
+        public async Task<Result> SaveDraftTranscriptionPDF(DraftTranscriptDto draftTranscriptDto)
         {
-            var deposition = await _depositionRepository.GetById(depositionId);
+            var deposition = await _depositionRepository.GetById(draftTranscriptDto.DepositionId);
             var filePath = $"/{deposition.CaseId}/{deposition.Id}/{ApplicationConstants.TranscriptFolderName}/{ApplicationConstants.DraftTranscriptFileName}";
             var draftTranscript = await _awsStorageService.GetObjectAsync(filePath, _documentsConfigurations.BucketName);
 
@@ -100,7 +104,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                     FilePath = filePath,
                     DocumentType = DocumentType.DraftTranscription,
                     Size = draftTranscript.Length,
-                    AddedById = userId,
+                    AddedById = draftTranscriptDto.CurrentUserId,
                 };
 
                 var createdDocument = await _documentRepository.Create(document);
@@ -156,6 +160,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 pagesAmount++;
             }
         }
+
         private void GeneratePage1(ContentReplacer replacer, PDFDoc doc, Deposition deposition)
         {
             Page page1 = doc.GetPage(1);
@@ -215,16 +220,24 @@ namespace PrecisionReporters.Platform.Domain.Services
             }
         }
 
-        private async Task SaveFinalDraftOnS3(PDFDoc doc, Deposition deposition)
+        private async Task<Result> SaveFinalDraftOnS3(PDFDoc doc, Deposition deposition)
         {
-            using (Stream streamDoc = new MemoryStream())
+            try
             {
-                // Save the document to a stream
-                doc.Save(streamDoc, 0);
+                using (Stream streamDoc = new MemoryStream())
+                {
+                    // Save the document to a stream
+                    doc.Save(streamDoc, 0);
 
-                var fileName = $"{ApplicationConstants.DraftTranscriptFileName}";
-                var parentPath = $"/{deposition.CaseId}/{deposition.Id}/{ApplicationConstants.TranscriptFolderName}/";
-                await _awsStorageService.UploadObjectFromStreamAsync($"{parentPath}{fileName}", streamDoc, _documentsConfigurations.BucketName);
+                    var fileName = $"{ApplicationConstants.DraftTranscriptFileName}";
+                    var parentPath = $"/{deposition.CaseId}/{deposition.Id}/{ApplicationConstants.TranscriptFolderName}/";
+                    await _awsStorageService.UploadObjectFromStreamAsync($"{parentPath}{fileName}", streamDoc, _documentsConfigurations.BucketName);
+                }
+                return Result.Ok();
+            }
+            catch(Exception ex)
+            {
+                return Result.Fail(new ExceptionalError("Error executing transaction operation in S3.", ex));
             }
         }
 

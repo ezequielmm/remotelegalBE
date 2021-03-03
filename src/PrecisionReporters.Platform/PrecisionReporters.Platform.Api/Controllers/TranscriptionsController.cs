@@ -53,7 +53,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
                 return WebApiResponses.GetErrorResponse(transcriptionsResult);
 
             var transcriptionList = transcriptionsResult.Value.Select(t => _transcriptionMapper.ToDto(t));
-            return Ok(transcriptionList);            
+            return Ok(transcriptionList);
         }
 
         [HttpGet("{depositionId}/Files")]
@@ -82,7 +82,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
                 return BadRequest("No files to upload");
 
             var uploadTranscriptionsFilesResult = await _documentService.UploadTranscriptions(depositionId, files);
-            
+
             if (uploadTranscriptionsFilesResult.IsFailed)
                 return WebApiResponses.GetErrorResponse(uploadTranscriptionsFilesResult);
 
