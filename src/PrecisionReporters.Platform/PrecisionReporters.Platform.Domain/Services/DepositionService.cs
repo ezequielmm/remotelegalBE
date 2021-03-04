@@ -467,8 +467,14 @@ namespace PrecisionReporters.Platform.Domain.Services
             else
             {
                 shouldAddPermissions = true;
-                guest.User = userResult.Value;
-                deposition.Participants.Add(guest);
+
+                if (guest.Role == ParticipantType.Witness)
+                    deposition.Participants[deposition.Participants.FindIndex(x => x.Role == ParticipantType.Witness)] =  guest;
+                else 
+                {
+                    guest.User = userResult.Value;
+                    deposition.Participants.Add(guest);
+                }
                 await _depositionRepository.Update(deposition);
             }
 
@@ -507,7 +513,10 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (participant.Role == ParticipantType.Witness && deposition.Participants.Single(x => x.Role == ParticipantType.Witness).UserId != null)
                 return Result.Fail(new InvalidInputError("The deposition already has a participant as witness"));
 
-            deposition.Participants.Add(participant);
+            if (participant.Role == ParticipantType.Witness)
+                deposition.Participants[deposition.Participants.FindIndex(x => x.Role == ParticipantType.Witness)] =  participant;
+            else
+                deposition.Participants.Add(participant);
 
             await _depositionRepository.Update(deposition);
 
