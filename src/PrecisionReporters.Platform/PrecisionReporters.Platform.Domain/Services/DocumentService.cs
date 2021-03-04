@@ -23,7 +23,6 @@ namespace PrecisionReporters.Platform.Domain.Services
     {
         private readonly IAwsStorageService _awsStorageService;
         private readonly IUserService _userService;
-        private readonly IDepositionService _depositionService;
         private readonly IDocumentUserDepositionRepository _documentUserDepositionRepository;
         private readonly IPermissionService _permissionService;
         private readonly ITransactionHandler _transactionHandler;
@@ -31,21 +30,22 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly IDepositionDocumentRepository _depositionDocumentRepository;
         private readonly ILogger<DocumentService> _logger;
         private readonly DocumentConfiguration _documentsConfiguration;
+        private readonly IDepositionRepository _depositionRepository;
 
         public DocumentService(IAwsStorageService awsStorageService, IOptions<DocumentConfiguration> documentConfigurations, ILogger<DocumentService> logger,
-            IUserService userService, IDepositionService depositionService, IDocumentUserDepositionRepository documentUserDepositionRepository,
-            IPermissionService permissionService, ITransactionHandler transactionHandler, IDocumentRepository documentRepository, IDepositionDocumentRepository depositionDocumentRepository)
+            IUserService userService, IDocumentUserDepositionRepository documentUserDepositionRepository,
+            IPermissionService permissionService, ITransactionHandler transactionHandler, IDocumentRepository documentRepository, IDepositionDocumentRepository depositionDocumentRepository, IDepositionRepository depositionRepository)
         {
             _awsStorageService = awsStorageService;
             _documentsConfiguration = documentConfigurations.Value ?? throw new ArgumentException(nameof(documentConfigurations));
             _logger = logger;
             _userService = userService;
-            _depositionService = depositionService;
             _documentUserDepositionRepository = documentUserDepositionRepository;
             _permissionService = permissionService;
             _transactionHandler = transactionHandler;
             _documentRepository = documentRepository;
             _depositionDocumentRepository = depositionDocumentRepository;
+            _depositionRepository = depositionRepository;
         }
 
         public async Task<Result<Document>> UploadDocumentFile(KeyValuePair<string, FileTransferInfo> file, User user, string parentPath, DocumentType documentType)
@@ -116,21 +116,20 @@ namespace PrecisionReporters.Platform.Domain.Services
             var userResult = await _userService.GetUserByEmail(identity);
             if (userResult.IsFailed)
                 return userResult.ToResult();
-
-            var depositionResult = await _depositionService.GetDepositionByIdWithDocumentUsers(id);
-            if (depositionResult.IsFailed)
-                return depositionResult.ToResult();
+            var include = new[] { nameof(Deposition.DocumentUserDepositions) };
+            var depositionResult = await _depositionRepository.GetById(id, include);
+            if (depositionResult == null)
+                return Result.Fail(new ResourceNotFoundError($"Deposition with id {id} not found."));
 
             var fileValidationResult = ValidateFiles(files);
             if (fileValidationResult.IsFailed)
                 return fileValidationResult;
 
             var uploadedDocuments = new List<DocumentUserDeposition>();
-            var deposition = depositionResult.Value;
             foreach (var file in files)
             {
                 // TODO: Use depositionId for bucket folder
-                var documentResult = await UploadDocumentFile(file, userResult.Value, $"{deposition.CaseId}/{deposition.Id}/{folder}", documentType);
+                var documentResult = await UploadDocumentFile(file, userResult.Value, $"{depositionResult.CaseId}/{depositionResult.Id}/{folder}", documentType);
                 if (documentResult.IsFailed)
                 {
                     _logger.LogError(new Exception(documentResult.Errors.First().Message), "Unable to load one or more documents to storage");
@@ -138,7 +137,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                     await DeleteUploadedFiles(uploadedDocuments.Select(d => d.Document).ToList());
                     return documentResult.ToResult();
                 }
-                uploadedDocuments.Add(new DocumentUserDeposition { Deposition = deposition, Document = documentResult.Value, User = userResult.Value });
+                uploadedDocuments.Add(new DocumentUserDeposition { Deposition = depositionResult, Document = documentResult.Value, User = userResult.Value });
             }
             var documentCreationResult = Result.Ok();
 
@@ -178,21 +177,22 @@ namespace PrecisionReporters.Platform.Domain.Services
         public async Task<Result> UploadTranscriptions(Guid id, List<FileTransferInfo> files)
         {
             var currentUser = await _userService.GetCurrentUserAsync();
+            var includes = new[] { nameof(Deposition.Requester), nameof(Deposition.Participants),
+                nameof(Deposition.Case), nameof(Deposition.AddedBy),nameof(Deposition.Caption)};
 
-            var depositionResult = await _depositionService.GetDepositionById(id);
-            if (depositionResult.IsFailed)
-                return depositionResult.ToResult();
+            var depositionResult = await _depositionRepository.GetById(id, includes);
+            if (depositionResult == null)
+                return Result.Fail(new ResourceNotFoundError($"Deposition with id {id} not found."));
 
             var fileValidationResult = ValidateTranscriptions(files);
             if (fileValidationResult.IsFailed)
                 return fileValidationResult;
 
-            var deposition = depositionResult.Value;
             var uploadedDocuments = new List<DepositionDocument>();
             var folder = DocumentType.Transcription.GetDescription();
             foreach (var file in files)
             {
-                var documentResult = await UploadDocumentFile(file, currentUser, $"{deposition.CaseId}/{deposition.Id}/{folder}", DocumentType.Transcription);
+                var documentResult = await UploadDocumentFile(file, currentUser, $"{depositionResult.CaseId}/{depositionResult.Id}/{folder}", DocumentType.Transcription);
                 if (documentResult.IsFailed)
                 {
                     _logger.LogError(documentResult.Errors.First().Message, "Unable to load one or more documents to storage");
@@ -200,7 +200,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                     await DeleteUploadedFiles(uploadedDocuments.Select(d => d.Document).ToList());
                     return documentResult.ToResult();
                 }
-                uploadedDocuments.Add(new DepositionDocument { Deposition = deposition, Document = documentResult.Value });
+                uploadedDocuments.Add(new DepositionDocument { Deposition = depositionResult, Document = documentResult.Value });
             }
             var documentCreationResult = Result.Ok();
             var transactionResult = await _transactionHandler.RunAsync(async () =>
@@ -226,9 +226,12 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (userResult.IsFailed)
                 return userResult.ToResult<List<Document>>();
 
-            var depositionResult = await _depositionService.GetDepositionById(depositionId);
-            if (depositionResult.IsFailed)
-                return depositionResult.ToResult<List<Document>>();
+            var includes = new[] { nameof(Deposition.Requester), nameof(Deposition.Participants),
+                nameof(Deposition.Case), nameof(Deposition.AddedBy),nameof(Deposition.Caption)};
+
+            var depositionResult = await _depositionRepository.GetById(depositionId, includes);
+            if (depositionResult == null)
+                return Result.Fail(new ResourceNotFoundError($"Deposition with id {depositionId} not found."));
 
             var documentUserDeposition = await _documentUserDepositionRepository.GetByFilter(x => x.DepositionId == depositionId && x.UserId == userResult.Value.Id && x.Document.DocumentType == DocumentType.Exhibit, new[] { nameof(DocumentUserDeposition.Document) });
 
@@ -276,21 +279,24 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (documentUserDepositionResult == null)
                 return Result.Fail(new Error($"Could not find any document with Id {id} for user {userEmail}"));
 
-            var depositionResult = await _depositionService.GetDepositionById(documentUserDepositionResult.DepositionId);
-            if (depositionResult.IsFailed)
-                return depositionResult;
+            var includes = new[] { nameof(Deposition.Requester), nameof(Deposition.Participants),
+                nameof(Deposition.Case), nameof(Deposition.AddedBy),nameof(Deposition.Caption)};
 
-            if (depositionResult.Value.SharingDocumentId.HasValue)
+            var depositionResult = await _depositionRepository.GetById(documentUserDepositionResult.DepositionId, includes);
+            if (depositionResult == null)
+                return Result.Fail(new ResourceNotFoundError($"Deposition with id {documentUserDepositionResult.DepositionId} not found."));
+
+            if (depositionResult.SharingDocumentId.HasValue)
                 return Result.Fail(new ResourceConflictError("Can't share document while another document is being shared."));
 
-            depositionResult.Value.SharingDocumentId = id;
+            depositionResult.SharingDocumentId = id;
 
             // Save ShareAt information as soon as the document is been shared
             var document = await _documentRepository.GetById(id);
             document.SharedAt = DateTime.UtcNow;
             await _documentRepository.Update(document);
 
-            return await _depositionService.Update(depositionResult.Value);
+            return Result.Ok(await _depositionRepository.Update(depositionResult));
         }
 
         public async Task<Result<Document>> GetDocument(Guid id)
@@ -307,15 +313,16 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (userResult.IsFailed)
                 return userResult.ToResult();
 
-            var depositionResult = await _depositionService.GetDepositionByIdWithDocumentUsers(depositionDocument.DepositionId);
-            if (depositionResult.IsFailed)
-                return depositionResult.ToResult();
+            var include = new[] { nameof(Deposition.DocumentUserDepositions) };
+            var depositionResult = await _depositionRepository.GetById(depositionDocument.DepositionId, include);
+            if (depositionResult == null)
+                return Result.Fail(new ResourceNotFoundError($"Deposition with id {depositionDocument.DepositionId} not found."));
 
             var fileValidationResult = ValidateFile(file);
             if (fileValidationResult.IsFailed)
                 return fileValidationResult;
 
-            var deposition = depositionResult.Value;
+            var deposition = depositionResult;
 
             // TODO: when original file was not a pdf we need to make sure we remove it from S3 since in that case it won't get overriden
             var fileName = $"{Path.GetFileNameWithoutExtension(depositionDocument.Document.Name)}.pdf";
@@ -337,7 +344,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                     updateDocument.DisplayName = $"{Path.GetFileNameWithoutExtension(depositionDocument.Document.DisplayName)}.pdf";
                     updateDocument.FilePath = $"/{filePath}/{fileName}";
                     updateDocument.Type = ".pdf";
-                    await _documentRepository.Update(updateDocument);                                                     
+                    await _documentRepository.Update(updateDocument);
                 }
                 catch (Exception ex)
                 {
@@ -389,14 +396,16 @@ namespace PrecisionReporters.Platform.Domain.Services
             var currentUser = await _userService.GetCurrentUserAsync();
 
             // TODO include sharingDocument
-            var depositionResult = await _depositionService.GetDepositionById(depositionId);
-            if (depositionResult.IsFailed)
-                return depositionResult.ToResult<Document>();
+            var includes = new[] { nameof(Deposition.Requester), nameof(Deposition.Participants),
+                nameof(Deposition.Case), nameof(Deposition.AddedBy),nameof(Deposition.Caption)};
+            var depositionResult = await _depositionRepository.GetById(depositionId, includes);
+            if (depositionResult == null)
+                return Result.Fail(new ResourceNotFoundError($"Deposition with id {depositionId} not found."));
 
-            if (!depositionResult.Value.SharingDocumentId.HasValue)
+            if (!depositionResult.SharingDocumentId.HasValue)
                 return Result.Fail(new ResourceNotFoundError($"There is no shared document for deposition {depositionId}"));
 
-            var documentResult = await GetDocumentById(depositionResult.Value.SharingDocumentId.Value);
+            var documentResult = await GetDocumentById(depositionResult.SharingDocumentId.Value);
             if (documentResult.IsFailed)
                 return documentResult;
 
@@ -423,23 +432,24 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result> ShareEnteredExhibit(Guid depositionId, Guid documentId)
         {
+            var includes = new[] { nameof(Deposition.Requester), nameof(Deposition.Participants),
+                nameof(Deposition.Case), nameof(Deposition.AddedBy),nameof(Deposition.Caption)};
+            var depositionResult = await _depositionRepository.GetById(depositionId, includes);
+            if (depositionResult == null)
+                return Result.Fail(new ResourceNotFoundError($"Deposition with id {depositionId} not found."));
 
-            var depositionResult = await _depositionService.GetDepositionById(depositionId);
-            if (depositionResult.IsFailed)
-                return depositionResult;
-
-            if (depositionResult.Value.SharingDocumentId.HasValue)
+            if (depositionResult.SharingDocumentId.HasValue)
                 return Result.Fail(new ResourceConflictError("Can't share document while another document is being shared."));
 
             var document = await _documentRepository.GetById(documentId);
             if (document == null)
                 return Result.Fail(new Error($"Could not find any document with Id {documentId}"));
 
-            depositionResult.Value.SharingDocumentId = document.Id;
+            depositionResult.SharingDocumentId = document.Id;
             document.SharedAt = DateTime.UtcNow;
             await _documentRepository.Update(document);
 
-            return await _depositionService.Update(depositionResult.Value);
+            return Result.Ok(await _depositionRepository.Update(depositionResult));
         }
     }
 }
