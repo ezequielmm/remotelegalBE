@@ -616,7 +616,8 @@ namespace PrecisionReporters.Platform.Domain.Services
             };
             var lstParticipant = await _participantRepository.GetByFilter(orderBy,
                 sortDirection,
-                x => x.DepositionId == depositionId);
+                x => x.DepositionId == depositionId,
+                new string[] {nameof(Participant.User)});
             return Result.Ok(lstParticipant);
         }
 
