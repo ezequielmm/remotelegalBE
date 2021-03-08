@@ -679,55 +679,45 @@ namespace PrecisionReporters.Platform.Domain.Services
             return Result.Ok();
         }
 
-        public async Task<Result<Deposition>> EditDepositionDetails(string userEmail, Deposition deposition, FileTransferInfo file, bool deleteCaption)
+        public async Task<Result<Deposition>> EditDepositionDetails(Deposition deposition, FileTransferInfo file, bool deleteCaption)
         {
-            var userResult = await _userService.GetUserByEmail(userEmail);
-            if (userResult.IsFailed)
-                return userResult.ToResult<Deposition>();
+            var currentUser = await _userService.GetCurrentUserAsync();
 
-            var oldDeposition = await _depositionRepository.GetById(deposition.Id, new[] { $"{nameof(Deposition.Caption)}" });
-            if (oldDeposition == null)
+            var currentDeposition = await _depositionRepository.GetById(deposition.Id, new[] { $"{nameof(Deposition.Caption)}" });
+            if (currentDeposition == null)
                 return Result.Fail(new ResourceNotFoundError($"Deposition not found with ID {deposition.Id}"));
             var uploadedDocs = new List<Document>();
             try
             {
                 var transactionResult = await _transactionHandler.RunAsync<Deposition>(async () =>
                 {
-                    Result<Document> documentResult = null;
-                    if (file != null)
+                    var uploadDocumentResult = await UploadFile(file, currentUser, currentDeposition);
+
+                    if (uploadDocumentResult.IsFailed)
+                        return uploadDocumentResult.ToResult();
+
+                    if (uploadDocumentResult.Value != null)
+                        uploadedDocs.Add(uploadDocumentResult.Value);
+
+                    if (currentDeposition.Caption != null && deleteCaption)
                     {
-                        documentResult = await _documentService.UploadDocumentFile(file, userResult.Value, $"{oldDeposition.CaseId}/caption", DocumentType.Caption);
-                        uploadedDocs.Add(documentResult.Value);
-                        if (documentResult.IsFailed)
-                        {
-                            _logger.LogError(new Exception(documentResult.Errors.First().Message), "Unable to load one or more documents to storage");
-                            _logger.LogInformation("Removing uploaded documents");
-                            await _documentService.DeleteUploadedFiles(uploadedDocs);
-                            return Result.Fail(new Error("Unable to upload one or more documents to deposition"));
-                        }
+                        await _documentService.DeleteUploadedFiles(new List<Document>() { currentDeposition.Caption });
+                        currentDeposition.Caption = null;
                     }
-                    if (oldDeposition.Caption != null && deleteCaption)
-                    {
-                        await _documentService.DeleteUploadedFiles(new List<Document>() { oldDeposition.Caption });
-                        oldDeposition.Caption = null;
-                    }
-                    var depoToUpdate = new Deposition();
-                    depoToUpdate.CopyFrom(oldDeposition);
-                    depoToUpdate.Id = deposition.Id;
                     if (!string.IsNullOrWhiteSpace(deposition.RequesterNotes))
                     {
-                        depoToUpdate.RequesterNotes = deposition.RequesterNotes;
+                        currentDeposition.RequesterNotes = deposition.RequesterNotes;
                     }
                     else
                     {
-                        depoToUpdate.Job = deposition.Job;
-                        depoToUpdate.Details = deposition.Details;
-                        depoToUpdate.IsVideoRecordingNeeded = deposition.IsVideoRecordingNeeded;
-                        depoToUpdate.Status = deposition.Status;
+                        currentDeposition.Job = deposition.Job;
+                        currentDeposition.Details = deposition.Details;
+                        currentDeposition.IsVideoRecordingNeeded = deposition.IsVideoRecordingNeeded;
+                        currentDeposition.Status = deposition.Status;
                     }
-                    depoToUpdate.Caption = documentResult != null ? documentResult.Value : oldDeposition.Caption;
-                    await _depositionRepository.Update(depoToUpdate);
-                    return Result.Ok(depoToUpdate);
+                    currentDeposition.Caption = uploadDocumentResult.Value != null ? uploadDocumentResult.Value : currentDeposition.Caption;
+                    await _depositionRepository.Update(currentDeposition);
+                    return Result.Ok(currentDeposition);
                 });
 
                 return transactionResult;
@@ -738,6 +728,25 @@ namespace PrecisionReporters.Platform.Domain.Services
                 await _documentService.DeleteUploadedFiles(uploadedDocs);
                 return Result.Fail(new ExceptionalError("Unable to edit the deposition", ex));
             }
+        }
+
+        private async Task<Result<Document>> UploadFile(FileTransferInfo file, User user, Deposition deposition)
+        {
+            if (file != null)
+            {
+                var documentResult = await _documentService.UploadDocumentFile(file, user, $"{deposition.CaseId}/caption", DocumentType.Caption);
+                if (documentResult.IsFailed)
+                {
+                    var uploadedDocuments = new List<Document>();
+                    uploadedDocuments.Add(documentResult.Value);
+                    _logger.LogError(new Exception(documentResult.Errors.First().Message), "Unable to load one or more documents to storage");
+                    _logger.LogInformation("Removing uploaded documents");
+                    await _documentService.DeleteUploadedFiles(uploadedDocuments);
+                    return Result.Fail(new Error("Unable to upload one or more documents to deposition"));
+                }
+                return documentResult;
+            }
+            return Result.Ok((Document)null);
         }
     }
 }

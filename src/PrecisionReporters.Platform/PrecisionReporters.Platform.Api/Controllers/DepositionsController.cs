@@ -370,11 +370,10 @@ namespace PrecisionReporters.Platform.Api.Controllers
         [AllowAnonymous]
         public async Task<ActionResult<DepositionDto>> EditDepositionDetails([ResourceId(ResourceType.Deposition)] Guid id, EditDepositionDto editDepositionDto)
         {
-            var userEmail = HttpContext.User.FindFirstValue(ClaimTypes.Email);
             var file = FileHandlerHelper.GetFilesFromRequest(Request.Form.Files).FirstOrDefault().Value;
             editDepositionDto.Deposition.Id = id;
             var deposition = _depositionMapper.ToModel(editDepositionDto.Deposition);
-            var result = await _depositionService.EditDepositionDetails(userEmail, deposition, file, editDepositionDto.DeleteCaption);
+            var result = await _depositionService.EditDepositionDetails(deposition, file, editDepositionDto.DeleteCaption);
             if (result.IsFailed)
                 return WebApiResponses.GetErrorResponse(result);
 
