@@ -1,10 +1,10 @@
 ﻿using System.IO;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using PrecisionReporters.Platform.Api.Dtos;
+using PrecisionReporters.Platform.Domain.Dtos;
 using PrecisionReporters.Platform.Api.Filters;
 using PrecisionReporters.Platform.Api.Helpers;
-using PrecisionReporters.Platform.Api.Mappers;
+using PrecisionReporters.Platform.Domain.Mappers;
 using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using Amazon.SimpleNotificationService.Util;

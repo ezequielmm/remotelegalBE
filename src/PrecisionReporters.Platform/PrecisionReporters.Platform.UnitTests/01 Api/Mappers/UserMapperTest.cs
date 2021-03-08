@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Threading.Tasks;
-using PrecisionReporters.Platform.Api.Dtos;
-using PrecisionReporters.Platform.Api.Mappers;
+using PrecisionReporters.Platform.Domain.Dtos;
+using PrecisionReporters.Platform.Domain.Mappers;
 using PrecisionReporters.Platform.Data.Entities;
 using Xunit;
 
-namespace PrecisionReporters.Platform.UnitTests.Api.Mappers
+namespace PrecisionReporters.Platform.UnitTests.Domain.Mappers
 {
     public class UserMapperTest
     {
