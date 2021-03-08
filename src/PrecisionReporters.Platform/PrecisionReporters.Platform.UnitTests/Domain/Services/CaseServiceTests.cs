@@ -68,6 +68,74 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             // Tear down
         }
 
+
+        [Fact]
+        public async Task GetCases_ShouldNotFilterList_WithAdminUser()
+        {
+            // Arrange
+            var user1Id = Guid.NewGuid();
+            var user2Id = Guid.NewGuid();
+            var user1 = new User
+            {
+                Id = user1Id,
+                IsAdmin = true,
+                EmailAddress = "user1@email.com"
+            };
+            var user2 = new User
+            {
+                Id = user2Id,
+                IsAdmin = false,
+                EmailAddress = "user2@email.com"
+            };
+            var existingCases = new List<Case>
+            {
+                new Case
+                {
+                    Id = Guid.NewGuid(),
+                    Name = "TestCase1",
+                    CreationDate = DateTime.UtcNow,
+                    AddedBy = user1,
+                    AddedById = user1Id
+                },
+                new Case
+                {
+                    Id = Guid.NewGuid(),
+                    Name = "TestCase2",
+                    CreationDate = DateTime.UtcNow,
+                    AddedBy = user1,
+                    AddedById = user1Id
+                },
+                new Case
+                {
+                    Id = Guid.NewGuid(),
+                    Name = "TestCase3",
+                    CreationDate = DateTime.UtcNow,
+                    AddedBy = user2,
+                    AddedById = user2Id
+                },
+            };
+
+            //get user by email ok
+            _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(user1));
+
+            //get all list
+            _caseRepositoryMock.Setup(x => x.GetByFilterOrderByThen(It.IsAny<Expression<Func<Case, object>>>(),
+                    It.IsAny<SortDirection>(), It.IsAny<Expression<Func<Case, bool>>>(), It.IsAny<string[]>(), It.IsAny<Expression<Func<Case, object>>>()))
+                .ReturnsAsync(existingCases);
+
+            // Act
+            var result = await _service.GetCasesForUser(user1.EmailAddress);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            var cases = result.Value;
+            Assert.NotNull(cases);
+            Assert.Equal(cases.Count(), existingCases.Count());
+            _userServiceMock.Verify(mock => mock.GetUserByEmail(It.Is<string>(a => a == user1.EmailAddress)), Times.Once);
+            _caseRepositoryMock.Verify(x => x.GetByFilterOrderByThen(It.IsAny<Expression<Func<Case, object>>>(),
+                    It.IsAny<SortDirection>(), It.Is<Expression<Func<Case, bool>>>(x => x == null), It.IsAny<string[]>(), It.IsAny<Expression<Func<Case, object>>>()));
+        }
+
         [Fact]
         public async Task GetCases_ShouldReturn_ListOfAllCases()
         {
@@ -197,7 +265,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 x => x.GetByFilterOrderByThen(It.IsAny<Expression<Func<Case, object>>>(),
                     It.Is<SortDirection>(
                         a => a == sortDirection || (a == SortDirection.Ascend && sortDirection == null)),
-                    It.IsAny<Expression<Func<Case, bool>>>(), It.IsAny<string[]>(), It.IsAny<Expression<Func<Case, object>>>()), Times.Once);
+                    It.IsNotNull<Expression<Func<Case, bool>>>(), It.IsAny<string[]>(), It.IsAny<Expression<Func<Case, object>>>()), Times.Once);
         }
 
         [Fact]

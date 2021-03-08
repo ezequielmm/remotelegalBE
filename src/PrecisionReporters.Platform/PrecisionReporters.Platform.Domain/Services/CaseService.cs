@@ -98,12 +98,17 @@ namespace PrecisionReporters.Platform.Domain.Services
                 _ => x => x.Name,
             };
 
+            // if not is admin get cases filter by user id
+            Expression<Func<Case, bool>> filter = null;
+            if (!userResult.Value.IsAdmin)
+                filter = x => x.Members.Any(m => m.UserId == userResult.Value.Id);
+
             Expression<Func<Case, object>> orderByThen = x => x.AddedBy.LastName;
-            
+
             var foundCases = await _caseRepository.GetByFilterOrderByThen(
                 orderBy,
                 sortDirection ?? SortDirection.Ascend,
-                x => x.Members.Any(m => m.UserId == userResult.Value.Id),
+                filter,
                 includes,
                 sortedField == CaseSortField.AddedBy ? orderByThen : null);
 
@@ -128,7 +133,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             try
             {
-                var transactionResult = await _transactionHandler.RunAsync<Case>(async ()=>
+                var transactionResult = await _transactionHandler.RunAsync<Case>(async () =>
                 {
                     // Upload only files related to a caption
                     var filesToUpload = files.Where(f => depositions.Select(d => d.FileKey).ToList().Contains(f.Key));

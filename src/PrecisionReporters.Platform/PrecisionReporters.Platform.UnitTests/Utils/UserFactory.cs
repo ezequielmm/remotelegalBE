@@ -29,7 +29,8 @@ namespace PrecisionReporters.Platform.UnitTests.Utils
                 LastName = "LastNameUser1",
                 EmailAddress = email,
                 Password = "123456",
-                PhoneNumber = "1234567890"
+                PhoneNumber = "1234567890",
+                IsAdmin = false
             };
         }
 
