@@ -1,10 +1,13 @@
 ﻿using FluentResults;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 using PrecisionReporters.Platform.Api.Dtos;
 using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Data.Enums;
+using PrecisionReporters.Platform.Data.Handlers.Interfaces;
 using PrecisionReporters.Platform.Data.Repositories.Interfaces;
+using PrecisionReporters.Platform.Domain.Commons;
 using PrecisionReporters.Platform.Domain.Configurations;
 using PrecisionReporters.Platform.Domain.Dtos;
 using PrecisionReporters.Platform.Domain.Errors;
@@ -36,6 +39,9 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         private readonly Mock<IAwsStorageService> _awsStorageServiceMock;
         private readonly Mock<IBackgroundTaskQueue> _backgroundTaskQueueMock;
         private readonly Mock<IOptions<DocumentConfiguration>> _depositionDocumentConfigurationMock;
+        private readonly Mock<ITransactionHandler> _transactionHandlerMock;
+        private readonly Mock<IDocumentService> _documentServiceMock;
+        private readonly Mock<ILogger<DepositionService>> _loggerMock;
 
         private readonly List<Deposition> _depositions = new List<Deposition>();
 
@@ -47,6 +53,12 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _depositionRepositoryMock = new Mock<IDepositionRepository>();
 
             _participantRepositoryMock = new Mock<IParticipantRepository>();
+
+            _transactionHandlerMock = new Mock<ITransactionHandler>();
+
+            _documentServiceMock = new Mock<IDocumentService>();
+
+            _loggerMock = new Mock<ILogger<DepositionService>>();
 
             _depositionRepositoryMock.Setup(x => x.GetByFilter(It.IsAny<Expression<Func<Deposition, bool>>>(), It.IsAny<string[]>())).ReturnsAsync(_depositions);
 
@@ -77,9 +89,19 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 _roomServiceMock.Object,
                 _breakRoomServiceMock.Object,
                 _permissionServiceMock.Object,
-                _awsStorageServiceMock.Object,                
+                _awsStorageServiceMock.Object,
                 _depositionDocumentConfigurationMock.Object,
-                _backgroundTaskQueueMock.Object);
+                _backgroundTaskQueueMock.Object,
+                _transactionHandlerMock.Object,
+                _loggerMock.Object,
+                _documentServiceMock.Object);
+
+            _transactionHandlerMock.Setup(x => x.RunAsync(It.IsAny<Func<Task<Result<Deposition>>>>()))
+                .Returns(async (Func<Task<Result<Deposition>>> action) =>
+                {
+                    return await action();
+                });
+
         }
 
         public void Dispose()
@@ -610,7 +632,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(() => _depositions.FirstOrDefault());
 
             _roomServiceMock.Setup(x => x.EndRoom(It.IsAny<Room>(), It.IsAny<string>())).ReturnsAsync(() => Result.Ok(new Room()));
-            _backgroundTaskQueueMock.Setup(x => x.QueueBackgroundWorkItem(It.IsAny<DraftTranscriptDto>()));            
+            _backgroundTaskQueueMock.Setup(x => x.QueueBackgroundWorkItem(It.IsAny<DraftTranscriptDto>()));
 
             // Act
             var result = await _depositionService.EndDeposition(depositionId, userEmail);
@@ -1662,6 +1684,168 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _permissionServiceMock.Verify(x => x.RemoveParticipantPermissions(It.IsAny<Guid>(), It.IsAny<Participant>()), Times.Once);
             _participantRepositoryMock.Verify(x => x.Remove(It.IsAny<Participant>()));
             Assert.NotNull(result);
+            Assert.True(result.IsSuccess);
+        }
+
+        [Fact]
+        public async Task EditDepositionDetails_ShouldFail_UserNotFound()
+        {
+            //Arrange
+            var testEmail = "test@test.com";
+            var expectedError = $"User with email {testEmail} not found.";
+            _userServiceMock.Setup(u => u.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Fail<User>(new ResourceNotFoundError($"User with email {testEmail} not found.")));
+
+            //Act
+            var result = await _depositionService.EditDepositionDetails(testEmail, new Deposition(), new FileTransferInfo(), false);
+
+            //Assert
+            _userServiceMock.Verify(u => u.GetUserByEmail(It.Is<string>(u => u == testEmail)), Times.Once);
+            Assert.NotNull(result);
+            Assert.True(result.IsFailed);
+            Assert.Contains(expectedError, result.Errors.Select(e => e.Message));
+        }
+
+        [Fact]
+        public async Task EditDepositionDetails_ShouldFail_DepositionNotFound()
+        {
+            //Arrange
+            var testEmail = "test@test.com";
+            var depositionMock = new Deposition() { Id = Guid.NewGuid() };
+            var expectedError = $"Deposition not found with ID {depositionMock.Id}";
+            _userServiceMock.Setup(u => u.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(new User()));
+            _depositionRepositoryMock.Setup(d => d.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync((Deposition)null);
+            //Act
+            var result = await _depositionService.EditDepositionDetails(testEmail, depositionMock, new FileTransferInfo(), false);
+
+            //Assert
+            _userServiceMock.Verify(u => u.GetUserByEmail(It.Is<string>(u => u == testEmail)), Times.Once);
+            _depositionRepositoryMock.Verify(d => d.GetById(It.Is<Guid>(i => i == depositionMock.Id), It.Is<string[]>(i => i.SequenceEqual(new[] { $"{nameof(Deposition.Caption)}" }))));
+            Assert.NotNull(result);
+            Assert.True(result.IsFailed);
+            Assert.Contains(expectedError, result.Errors.Select(e => e.Message));
+        }
+
+        [Fact]
+        public async Task EditDepositionDetails_ShouldFail_DocumentUpload()
+        {
+            //Arrange
+            var depositionMock = new Deposition() { Id = Guid.NewGuid(), CaseId = Guid.NewGuid() };
+            var testPath = $"{depositionMock.CaseId}/caption";
+            var testEmail = "test@test.com";
+            var expectedError = $"Unable to edit the deposition";
+            var fileName = "testFile.pdf";
+            var keyName = $"/{testPath}/{fileName}";
+            var userMock = new User() { EmailAddress = testEmail };
+            var fileMock = new FileTransferInfo() { Name = fileName };
+
+            _userServiceMock.Setup(u => u.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(userMock));
+            _depositionRepositoryMock.Setup(d => d.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(depositionMock);
+            _documentServiceMock.Setup(dc => dc.UploadDocumentFile(It.IsAny<FileTransferInfo>(), It.IsAny<User>(), It.IsAny<string>(), It.IsAny<DocumentType>())).ReturnsAsync(Result.Fail($"Error loading file {keyName}"));
+            //Act
+            var result = await _depositionService.EditDepositionDetails(testEmail, depositionMock, fileMock, false);
+
+            //Assert
+            _userServiceMock.Verify(u => u.GetUserByEmail(It.Is<string>(u => u == testEmail)), Times.Once);
+            _depositionRepositoryMock.Verify(d => d.GetById(It.Is<Guid>(i => i == depositionMock.Id), It.Is<string[]>(i => i.SequenceEqual(new[] { $"{nameof(Deposition.Caption)}" }))));
+            _documentServiceMock.Verify(dc => dc.UploadDocumentFile(
+                It.IsAny<FileTransferInfo>(),
+                It.Is<User>(u => u == userMock),
+                It.Is<string>(p => p.Contains(depositionMock.CaseId.ToString())),
+                It.IsAny<DocumentType>()), Times.Once);
+            Assert.NotNull(result);
+            Assert.True(result.IsFailed);
+            Assert.Contains(expectedError, result.Errors.Select(e => e.Message));
+        }
+
+        [Fact]
+        public async Task EditDepositionDetails_ShouldOk_ChangeFieldsAndCaption()
+        {
+            //Arrange
+            var depositionMock = new Deposition() { Id = Guid.NewGuid(), CaseId = Guid.NewGuid(), Caption = new Document() };
+            var testPath = $"{depositionMock.CaseId}/caption";
+            var testEmail = "test@test.com";
+            var expectedError = $"Unable to edit the deposition";
+            var fileName = "testFile.pdf";
+            var keyName = $"/{testPath}/{fileName}";
+            var userMock = new User() { EmailAddress = testEmail };
+            var fileMock = new FileTransferInfo() { Name = fileName };
+
+            _userServiceMock.Setup(u => u.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(userMock));
+            _depositionRepositoryMock.Setup(d => d.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(depositionMock);
+            _documentServiceMock.Setup(dc => dc.UploadDocumentFile(It.IsAny<FileTransferInfo>(), It.IsAny<User>(), It.IsAny<string>(), It.IsAny<DocumentType>())).ReturnsAsync(Result.Ok(new Document()));
+            _depositionRepositoryMock.Setup(d => d.Update(It.IsAny<Deposition>())).ReturnsAsync(depositionMock);
+            //Act
+            var result = await _depositionService.EditDepositionDetails(testEmail, depositionMock, fileMock, true);
+
+            //Assert
+            _userServiceMock.Verify(u => u.GetUserByEmail(It.Is<string>(u => u == testEmail)), Times.Once);
+            _depositionRepositoryMock.Verify(d => d.GetById(It.Is<Guid>(i => i == depositionMock.Id), It.Is<string[]>(i => i.SequenceEqual(new[] { $"{nameof(Deposition.Caption)}" }))));
+            _documentServiceMock.Verify(dc => dc.UploadDocumentFile(
+                It.IsAny<FileTransferInfo>(),
+                It.Is<User>(u => u == userMock),
+                It.Is<string>(p => p.Contains(depositionMock.CaseId.ToString())),
+                It.IsAny<DocumentType>()), Times.Once);
+            _documentServiceMock.Verify(dc => dc.DeleteUploadedFiles(It.IsAny<List<Document>>()), Times.AtLeastOnce);
+            _depositionRepositoryMock.Verify(d => d.Update(It.IsAny<Deposition>()), Times.Once);
+            Assert.NotNull(result);
+            Assert.IsType<Result<Deposition>>(result);
+            Assert.True(result.IsSuccess);
+        }
+
+        [Fact]
+        public async Task EditDepositionDetails_ShouldOk_ChangeFieldsAndDeleteCaption()
+        {
+            //Arrange
+            var depositionMock = new Deposition() { Id = Guid.NewGuid(), CaseId = Guid.NewGuid(), Caption = new Document() };
+            var testPath = $"{depositionMock.CaseId}/caption";
+            var testEmail = "test@test.com";
+            var expectedError = $"Unable to edit the deposition";
+            var fileName = "testFile.pdf";
+            var keyName = $"/{testPath}/{fileName}";
+            var userMock = new User() { EmailAddress = testEmail };
+            var fileMock = new FileTransferInfo() { Name = fileName };
+
+            _userServiceMock.Setup(u => u.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(userMock));
+            _depositionRepositoryMock.Setup(d => d.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(depositionMock);
+            _depositionRepositoryMock.Setup(d => d.Update(It.IsAny<Deposition>())).ReturnsAsync(depositionMock);
+            //Act
+            var result = await _depositionService.EditDepositionDetails(testEmail, depositionMock, null, true);
+
+            //Assert
+            _userServiceMock.Verify(u => u.GetUserByEmail(It.Is<string>(u => u == testEmail)), Times.Once);
+            _depositionRepositoryMock.Verify(d => d.GetById(It.Is<Guid>(i => i == depositionMock.Id), It.Is<string[]>(i => i.SequenceEqual(new[] { $"{nameof(Deposition.Caption)}" }))));
+            _documentServiceMock.Verify(dc => dc.DeleteUploadedFiles(It.IsAny<List<Document>>()), Times.AtLeastOnce);
+            _depositionRepositoryMock.Verify(d => d.Update(It.IsAny<Deposition>()), Times.Once);
+            Assert.NotNull(result);
+            Assert.IsType<Result<Deposition>>(result);
+            Assert.True(result.IsSuccess);
+        }
+
+        [Fact]
+        public async Task EditDepositionDetails_ShouldOk_ChangeFieldsWithOutDeleteCaption()
+        {
+            //Arrange
+            var depositionMock = new Deposition() { Id = Guid.NewGuid(), CaseId = Guid.NewGuid(), Caption = new Document() };
+            var testPath = $"{depositionMock.CaseId}/caption";
+            var testEmail = "test@test.com";
+            var expectedError = $"Unable to edit the deposition";
+            var fileName = "testFile.pdf";
+            var keyName = $"/{testPath}/{fileName}";
+            var userMock = new User() { EmailAddress = testEmail };
+            var fileMock = new FileTransferInfo() { Name = fileName };
+
+            _userServiceMock.Setup(u => u.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(userMock));
+            _depositionRepositoryMock.Setup(d => d.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(depositionMock);
+            _depositionRepositoryMock.Setup(d => d.Update(It.IsAny<Deposition>())).ReturnsAsync(depositionMock);
+            //Act
+            var result = await _depositionService.EditDepositionDetails(testEmail, depositionMock, null, false);
+
+            //Assert
+            _userServiceMock.Verify(u => u.GetUserByEmail(It.Is<string>(u => u == testEmail)), Times.Once);
+            _depositionRepositoryMock.Verify(d => d.GetById(It.Is<Guid>(i => i == depositionMock.Id), It.Is<string[]>(i => i.SequenceEqual(new[] { $"{nameof(Deposition.Caption)}" }))));
+            _depositionRepositoryMock.Verify(d => d.Update(It.IsAny<Deposition>()), Times.Once);
+            Assert.NotNull(result);
+            Assert.IsType<Result<Deposition>>(result);
             Assert.True(result.IsSuccess);
         }
     }

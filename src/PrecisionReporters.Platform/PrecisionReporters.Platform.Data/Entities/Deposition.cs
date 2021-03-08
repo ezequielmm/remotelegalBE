@@ -74,6 +74,7 @@ namespace PrecisionReporters.Platform.Data.Entities
             BreakRooms = entity.BreakRooms;
             Job = entity.Job;
             RequesterNotes = entity.RequesterNotes;
+            IsVideoRecordingNeeded = entity.IsVideoRecordingNeeded;
         }
     }
 }

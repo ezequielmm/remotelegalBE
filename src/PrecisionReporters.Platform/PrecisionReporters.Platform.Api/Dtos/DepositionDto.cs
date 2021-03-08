@@ -5,7 +5,7 @@ using Newtonsoft.Json.Converters;
 using PrecisionReporters.Platform.Data.Entities;
 
 namespace PrecisionReporters.Platform.Api.Dtos
-{
+{    
     public class DepositionDto
     {
         public Guid Id { get; set; }

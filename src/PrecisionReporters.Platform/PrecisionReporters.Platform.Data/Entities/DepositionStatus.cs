@@ -6,6 +6,7 @@
         Approved, 
         Ready, 
         Canceled,
-        Completed
+        Completed,
+        Confirmed
     }
 }

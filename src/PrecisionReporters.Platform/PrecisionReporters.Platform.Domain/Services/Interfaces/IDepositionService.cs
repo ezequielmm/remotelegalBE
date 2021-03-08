@@ -1,6 +1,7 @@
 ﻿using FluentResults;
 using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Data.Enums;
+using PrecisionReporters.Platform.Domain.Commons;
 using PrecisionReporters.Platform.Domain.Dtos;
 using System;
 using System.Collections.Generic;
@@ -40,5 +41,6 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
         Task<Result<Document>> GetDepositionCaption(Guid id);
         Task<Result<Participant>> AddParticipantToExistingDeposition(Guid id, Participant participant);
         Task<Result> RemoveParticipantFromDeposition(Guid id, Guid participantId);
+        Task<Result<Deposition>> EditDepositionDetails(string userEmail, Deposition deposition, FileTransferInfo file, bool deleteCaption);
     }
 }

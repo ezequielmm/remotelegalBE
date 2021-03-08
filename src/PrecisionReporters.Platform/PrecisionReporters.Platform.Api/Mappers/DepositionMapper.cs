@@ -38,13 +38,15 @@ namespace PrecisionReporters.Platform.Api.Mappers
                 EndDate = dto.EndDate?.UtcDateTime,
                 CompleteDate = dto.CompleteDate?.UtcDateTime,
                 Participants = dto.Participants?.Select(p => _participantMapper.ToModel(p)).Append(witness).ToList(),
-                RequesterId = dto.Requester.Id,
+                RequesterId = dto.Requester != null ? dto.Requester.Id : Guid.Empty,
                 Details = dto.Details,
-                Room = _rooMapper.ToModel(dto.Room),
+                Room = dto.Room != null ? _rooMapper.ToModel(dto.Room) : null,
                 Caption = dto.Caption != null ? _documentMapper.ToModel(dto.Caption) : null,
                 Documents = dto.Documents?.Select(d => _depositionDocumentMapper.ToModel(d)).ToList(),
                 Job = dto.Job,
-                RequesterNotes = dto.RequesterNotes
+                RequesterNotes = dto.RequesterNotes,
+                Status = dto.Status,
+                IsVideoRecordingNeeded = dto.IsVideoRecordingNeeded,
             };
         }
 
@@ -94,7 +96,8 @@ namespace PrecisionReporters.Platform.Api.Mappers
                 Job = model.Job,
                 RequesterNotes = model.RequesterNotes,
                 AddedBy = model.AddedBy != null ? _userMapper.ToDto(model.AddedBy) : null,
-                EndedBy = model.EndedBy != null ? _userMapper.ToDto(model.EndedBy) : null
+                EndedBy = model.EndedBy != null ? _userMapper.ToDto(model.EndedBy) : null,
+                IsVideoRecordingNeeded = model.IsVideoRecordingNeeded
             };
         }
     }

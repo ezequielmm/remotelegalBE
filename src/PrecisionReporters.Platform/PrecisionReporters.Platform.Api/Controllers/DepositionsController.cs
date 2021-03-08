@@ -358,5 +358,27 @@ namespace PrecisionReporters.Platform.Api.Controllers
             var result = await _depositionService.RemoveParticipantFromDeposition(id, participantId);
             return Ok(result);
         }
+
+        /// <summary>
+        /// Edit deposition details
+        /// </summary>
+        /// <param name="id">Deposition identifier</param>
+        /// <param name="Details">Participant identifier</param>
+        /// <returns>Ok if succeeded</returns>
+        [HttpPatch("{id}")]
+        [UserAuthorize(ResourceType.Deposition, ResourceAction.Update)]
+        [AllowAnonymous]
+        public async Task<ActionResult<DepositionDto>> EditDepositionDetails([ResourceId(ResourceType.Deposition)] Guid id, EditDepositionDto editDepositionDto)
+        {
+            var userEmail = HttpContext.User.FindFirstValue(ClaimTypes.Email);
+            var file = FileHandlerHelper.GetFilesFromRequest(Request.Form.Files).FirstOrDefault().Value;
+            editDepositionDto.Deposition.Id = id;
+            var deposition = _depositionMapper.ToModel(editDepositionDto.Deposition);
+            var result = await _depositionService.EditDepositionDetails(userEmail, deposition, file, editDepositionDto.DeleteCaption);
+            if (result.IsFailed)
+                return WebApiResponses.GetErrorResponse(result);
+
+            return Ok(_depositionMapper.ToDto(result.Value));
+        }
     }
 }

@@ -1,8 +1,11 @@
 ﻿using FluentResults;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Data.Enums;
+using PrecisionReporters.Platform.Data.Handlers.Interfaces;
 using PrecisionReporters.Platform.Data.Repositories.Interfaces;
+using PrecisionReporters.Platform.Domain.Commons;
 using PrecisionReporters.Platform.Domain.Configurations;
 using PrecisionReporters.Platform.Domain.Dtos;
 using PrecisionReporters.Platform.Domain.Errors;
@@ -12,7 +15,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace PrecisionReporters.Platform.Domain.Services
@@ -31,6 +33,9 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly DocumentConfiguration _documentsConfiguration;
         private readonly IAwsStorageService _awsStorageService;
         private readonly IBackgroundTaskQueue _backgroundTaskQueue;
+        private readonly ITransactionHandler _transactionHandler;
+        private readonly ILogger<DepositionService> _logger;
+        private readonly IDocumentService _documentService;
 
         public DepositionService(IDepositionRepository depositionRepository,
             IParticipantRepository participantRepository,
@@ -41,7 +46,10 @@ namespace PrecisionReporters.Platform.Domain.Services
             IPermissionService permissionService,
             IAwsStorageService awsStorageService,
             IOptions<DocumentConfiguration> documentConfigurations,
-            IBackgroundTaskQueue backgroundTaskQueue)
+            IBackgroundTaskQueue backgroundTaskQueue,
+            ITransactionHandler transactionHandler,
+            ILogger<DepositionService> logger,
+            IDocumentService documentService)
         {
             _awsStorageService = awsStorageService;
             _documentsConfiguration = documentConfigurations.Value ?? throw new ArgumentException(nameof(documentConfigurations));
@@ -53,6 +61,9 @@ namespace PrecisionReporters.Platform.Domain.Services
             _breakRoomService = breakRoomService;
             _permissionService = permissionService;
             _backgroundTaskQueue = backgroundTaskQueue;
+            _transactionHandler = transactionHandler;
+            _logger = logger;
+            _documentService = documentService;
         }
 
         public async Task<List<Deposition>> GetDepositions(Expression<Func<Deposition, bool>> filter = null,
@@ -469,8 +480,8 @@ namespace PrecisionReporters.Platform.Domain.Services
                 shouldAddPermissions = true;
 
                 if (guest.Role == ParticipantType.Witness)
-                    deposition.Participants[deposition.Participants.FindIndex(x => x.Role == ParticipantType.Witness)] =  guest;
-                else 
+                    deposition.Participants[deposition.Participants.FindIndex(x => x.Role == ParticipantType.Witness)] = guest;
+                else
                 {
                     guest.User = userResult.Value;
                     deposition.Participants.Add(guest);
@@ -514,7 +525,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 return Result.Fail(new InvalidInputError("The deposition already has a participant as witness"));
 
             if (participant.Role == ParticipantType.Witness)
-                deposition.Participants[deposition.Participants.FindIndex(x => x.Role == ParticipantType.Witness)] =  participant;
+                deposition.Participants[deposition.Participants.FindIndex(x => x.Role == ParticipantType.Witness)] = participant;
             else
                 deposition.Participants.Add(participant);
 
@@ -666,6 +677,67 @@ namespace PrecisionReporters.Platform.Domain.Services
             await _permissionService.RemoveParticipantPermissions(id, participant);
             await _participantRepository.Remove(participant);
             return Result.Ok();
+        }
+
+        public async Task<Result<Deposition>> EditDepositionDetails(string userEmail, Deposition deposition, FileTransferInfo file, bool deleteCaption)
+        {
+            var userResult = await _userService.GetUserByEmail(userEmail);
+            if (userResult.IsFailed)
+                return userResult.ToResult<Deposition>();
+
+            var oldDeposition = await _depositionRepository.GetById(deposition.Id, new[] { $"{nameof(Deposition.Caption)}" });
+            if (oldDeposition == null)
+                return Result.Fail(new ResourceNotFoundError($"Deposition not found with ID {deposition.Id}"));
+            var uploadedDocs = new List<Document>();
+            try
+            {
+                var transactionResult = await _transactionHandler.RunAsync<Deposition>(async () =>
+                {
+                    Result<Document> documentResult = null;
+                    if (file != null)
+                    {
+                        documentResult = await _documentService.UploadDocumentFile(file, userResult.Value, $"{oldDeposition.CaseId}/caption", DocumentType.Caption);
+                        uploadedDocs.Add(documentResult.Value);
+                        if (documentResult.IsFailed)
+                        {
+                            _logger.LogError(new Exception(documentResult.Errors.First().Message), "Unable to load one or more documents to storage");
+                            _logger.LogInformation("Removing uploaded documents");
+                            await _documentService.DeleteUploadedFiles(uploadedDocs);
+                            return Result.Fail(new Error("Unable to upload one or more documents to deposition"));
+                        }
+                    }
+                    if (oldDeposition.Caption != null && deleteCaption)
+                    {
+                        await _documentService.DeleteUploadedFiles(new List<Document>() { oldDeposition.Caption });
+                        oldDeposition.Caption = null;
+                    }
+                    var depoToUpdate = new Deposition();
+                    depoToUpdate.CopyFrom(oldDeposition);
+                    depoToUpdate.Id = deposition.Id;
+                    if (!string.IsNullOrWhiteSpace(deposition.RequesterNotes))
+                    {
+                        depoToUpdate.RequesterNotes = deposition.RequesterNotes;
+                    }
+                    else
+                    {
+                        depoToUpdate.Job = deposition.Job;
+                        depoToUpdate.Details = deposition.Details;
+                        depoToUpdate.IsVideoRecordingNeeded = deposition.IsVideoRecordingNeeded;
+                        depoToUpdate.Status = deposition.Status;
+                    }
+                    depoToUpdate.Caption = documentResult != null ? documentResult.Value : oldDeposition.Caption;
+                    await _depositionRepository.Update(depoToUpdate);
+                    return Result.Ok(depoToUpdate);
+                });
+
+                return transactionResult;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unable to edit depositions");
+                await _documentService.DeleteUploadedFiles(uploadedDocs);
+                return Result.Fail(new ExceptionalError("Unable to edit the deposition", ex));
+            }
         }
     }
 }
