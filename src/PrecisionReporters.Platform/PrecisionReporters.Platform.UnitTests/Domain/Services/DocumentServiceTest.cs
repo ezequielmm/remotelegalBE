@@ -1176,5 +1176,310 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             Assert.NotNull(result);
             Assert.True(result.IsSuccess);
         }
+
+        [Fact]
+        public async Task RemoveDepositionDocument_ShouldReturnOk()
+        {
+            // Arrange
+            var documentId = Guid.NewGuid();
+            var depositionId = Guid.NewGuid();
+            var deposition = new Deposition
+            {
+                Id = depositionId,
+                SharingDocumentId = Guid.NewGuid()
+            };
+            var document = new Document
+            {
+                Id = documentId,
+                FilePath = "testFilePath1",
+                Name = "testFileName1",
+                DocumentUserDepositions = new List<DocumentUserDeposition>
+                {
+                    new DocumentUserDeposition
+                    {
+                            DocumentId = documentId
+                    }
+                }
+            };
+            
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), null)).ReturnsAsync(deposition);
+            _documentRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Document, bool>>>(), It.IsAny<string[]>())).ReturnsAsync(document);
+            _transactionHandlerMock
+                .Setup(x => x.RunAsync(It.IsAny<Func<Task>>()))
+                .Returns(async (Func<Task> action) =>
+                {
+                    await action();
+                    return Result.Ok();
+                });
+
+            // Act
+            var result = await _service.RemoveDepositionDocument(depositionId, documentId);
+
+            // Assert
+            _depositionRepositoryMock.Verify(x => x.GetById(It.IsAny<Guid>(), null), Times.Once());
+            _awsStorageServiceMock.Verify(x => x.DeleteObjectAsync(It.Is<string>(a => a == _documentConfiguration.BucketName), It.IsAny<string>()), Times.Once());
+            _documentRepositoryMock.Verify(x => x.Remove(It.Is<Document>(a => a.Id == documentId)), Times.Once);
+            _documentUserDepositionRepositoryMock.Verify(x => x.Remove(It.Is<DocumentUserDeposition>(a => a.DocumentId == documentId)), Times.Once);
+        }
+
+        [Fact]
+        public async Task RemoveDepositionDocument_ShouldReturnFail_WhenDocumentNotExist()
+        {
+            // Arrange
+            var documentId = Guid.NewGuid();
+            var error = $"Could not find any document with Id { documentId}";
+            var depositionId = Guid.NewGuid();
+            var deposition = new Deposition
+            {
+                Id = depositionId,
+                SharingDocumentId = Guid.NewGuid()
+            };
+            var document = new Document
+            {
+                Id = documentId,
+                FilePath = "testFilePath1",
+                Name = "testFileName1",
+                DocumentUserDepositions = new List<DocumentUserDeposition>
+                {
+                    new DocumentUserDeposition
+                    {
+                            DocumentId = documentId
+                    }
+                }
+            };
+
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), null)).ReturnsAsync(deposition);
+            _documentRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Document, bool>>>(), It.IsAny<string[]>())).ReturnsAsync((Document)null);
+            _transactionHandlerMock
+                .Setup(x => x.RunAsync(It.IsAny<Func<Task>>()))
+                .Returns(async (Func<Task> action) =>
+                {
+                    await action();
+                    return Result.Ok();
+                });
+
+            // Act
+            var result = await _service.RemoveDepositionDocument(depositionId, documentId);
+
+            // Assert
+            _depositionRepositoryMock.Verify(x => x.GetById(It.IsAny<Guid>(), null), Times.Never());
+            _awsStorageServiceMock.Verify(x => x.DeleteObjectAsync(It.Is<string>(a => a == _documentConfiguration.BucketName), It.IsAny<string>()), Times.Never());
+            _documentRepositoryMock.Verify(x => x.Remove(It.Is<Document>(a => a.Id == documentId)), Times.Never);
+            _documentUserDepositionRepositoryMock.Verify(x => x.Remove(It.Is<DocumentUserDeposition>(a => a.DocumentId == documentId)), Times.Never);
+
+            Assert.Equal(error, result.Errors[0].Message);
+            Assert.True(result.IsFailed);
+            Assert.True(result.Errors.Count > 0);
+        }
+
+        [Fact]
+        public async Task RemoveDepositionDocument_ShouldReturnFail_WhenDepositionNotExist()
+        {
+            // Arrange
+            var documentId = Guid.NewGuid();
+            var depositionId = Guid.NewGuid();
+            var error = $"Could not find any deposition with Id {depositionId}";      
+            var deposition = new Deposition
+            {
+                Id = depositionId,
+                SharingDocumentId = Guid.NewGuid()
+            };
+            var document = new Document
+            {
+                Id = documentId,
+                FilePath = "testFilePath1",
+                Name = "testFileName1",
+                DocumentUserDepositions = new List<DocumentUserDeposition>
+                {
+                    new DocumentUserDeposition
+                    {
+                            DocumentId = documentId
+                    }
+                }
+            };
+
+            _documentRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Document, bool>>>(), It.IsAny<string[]>())).ReturnsAsync(document);
+            _depositionRepositoryMock.Setup(x => x.GetById(depositionId, null)).ReturnsAsync((Deposition)null);            
+            _transactionHandlerMock
+                .Setup(x => x.RunAsync(It.IsAny<Func<Task>>()))
+                .Returns(async (Func<Task> action) =>
+                {
+                    await action();
+                    return Result.Ok();
+                });
+
+            // Act
+            var result = await _service.RemoveDepositionDocument(depositionId, documentId);
+
+            // Assert
+            _depositionRepositoryMock.Verify(x => x.GetById(It.IsAny<Guid>(), null), Times.Once());
+            _awsStorageServiceMock.Verify(x => x.DeleteObjectAsync(It.Is<string>(a => a == _documentConfiguration.BucketName), It.IsAny<string>()), Times.Never());
+            _documentRepositoryMock.Verify(x => x.Remove(It.Is<Document>(a => a.Id == documentId)), Times.Never);
+            _documentUserDepositionRepositoryMock.Verify(x => x.Remove(It.Is<DocumentUserDeposition>(a => a.DocumentId == documentId)), Times.Never);
+
+            Assert.Equal(error, result.Errors[0].Message);
+            Assert.True(result.IsFailed);
+            Assert.True(result.Errors.Count > 0);
+        }
+
+        [Fact]
+        public async Task RemoveDepositionDocument_ShouldReturnFail_WhenUserDocumentNotExist()
+        {
+            // Arrange
+            var documentId = Guid.NewGuid();
+            var depositionId = Guid.NewGuid();
+            var deposition = new Deposition
+            {
+                Id = depositionId,
+                SharingDocumentId = Guid.NewGuid()
+            };
+            var error = $"Could not find any user document with Id {documentId}";
+            var document = new Document
+            {
+                Id = documentId,
+                FilePath = "testFilePath1",
+                Name = "testFileName1",
+                DocumentUserDepositions = new List<DocumentUserDeposition>
+                {
+                    new DocumentUserDeposition
+                    {
+                            DocumentId = Guid.NewGuid()
+                    }
+                }
+            };
+
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), null)).ReturnsAsync(deposition);
+            _documentRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Document, bool>>>(), It.IsAny<string[]>())).ReturnsAsync(document);
+            _transactionHandlerMock
+                .Setup(x => x.RunAsync(It.IsAny<Func<Task>>()))
+                .Returns(async (Func<Task> action) =>
+                {
+                    await action();
+                    return Result.Ok();
+                });
+
+            // Act
+            var result = await _service.RemoveDepositionDocument(depositionId, documentId);
+
+            // Assert
+            _documentRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Document, bool>>>(), It.IsAny<string[]>()), Times.Once());
+            _depositionRepositoryMock.Verify(x => x.GetById(It.IsAny<Guid>(), null), Times.Once());
+            _awsStorageServiceMock.Verify(x => x.DeleteObjectAsync(It.Is<string>(a => a == _documentConfiguration.BucketName), It.IsAny<string>()), Times.Never());
+            _documentRepositoryMock.Verify(x => x.Remove(It.Is<Document>(a => a.Id == documentId)), Times.Never);
+            _documentUserDepositionRepositoryMock.Verify(x => x.Remove(It.Is<DocumentUserDeposition>(a => a.DocumentId == documentId)), Times.Never);
+
+            Assert.Equal(error, result.Errors[0].Message);
+            Assert.True(result.IsFailed);
+            Assert.True(result.Errors.Count > 0);
+        }
+
+        [Fact]
+        public async Task RemoveDepositionDocument_ShouldReturnFail_WhenUserDocumentIsBeingShared()
+        {
+            // Arrange
+            var documentId = Guid.NewGuid();
+            var depositionId = Guid.NewGuid();
+            var error = $"Could not delete and Exhibits while is being shared. Exhibit id {documentId}";
+            var deposition = new Deposition
+            {
+                Id = depositionId,
+                SharingDocumentId = documentId
+            };
+
+            var document = new Document
+            {
+                Id = documentId,
+                FilePath = "testFilePath1",
+                Name = "testFileName1",
+                DocumentUserDepositions = new List<DocumentUserDeposition>
+                {
+                    new DocumentUserDeposition
+                    {
+                            DocumentId = Guid.NewGuid()
+                    }
+                }
+            };
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), null)).ReturnsAsync(deposition);
+            _documentRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Document, bool>>>(), It.IsAny<string[]>())).ReturnsAsync(document);
+            _transactionHandlerMock
+                .Setup(x => x.RunAsync(It.IsAny<Func<Task>>()))
+                .Returns(async (Func<Task> action) =>
+                {
+                    await action();
+                    return Result.Ok();
+                });
+
+            // Act
+            var result = await _service.RemoveDepositionDocument(depositionId, documentId);
+
+            // Assert
+            _documentRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Document, bool>>>(), It.IsAny<string[]>()), Times.Once());
+            _depositionRepositoryMock.Verify(x => x.GetById(It.IsAny<Guid>(), null), Times.Once());
+            _awsStorageServiceMock.Verify(x => x.DeleteObjectAsync(It.Is<string>(a => a == _documentConfiguration.BucketName), It.IsAny<string>()), Times.Never());
+            _documentRepositoryMock.Verify(x => x.Remove(It.Is<Document>(a => a.Id == documentId)), Times.Never);
+            _documentUserDepositionRepositoryMock.Verify(x => x.Remove(It.Is<DocumentUserDeposition>(a => a.DocumentId == documentId)), Times.Never);
+
+            Assert.Equal(error, result.Errors[0].Message);
+            Assert.True(result.IsFailed);
+            Assert.True(result.Errors.Count > 0);
+        }
+
+        [Fact]
+        public async Task RemoveDepositionDocument_ShouldReturnTransactionError()
+        {
+            // Arrange
+            var documentId = Guid.NewGuid();
+            var depositionId = Guid.NewGuid();
+            var deposition = new Deposition
+            {
+                Id = depositionId
+            };
+            var error = "Unable to delete documents";
+            var document = new Document
+            {
+                Id = documentId,
+                FilePath = "testFilePath1",
+                Name = "testFileName1",
+                DocumentUserDepositions = new List<DocumentUserDeposition>
+                {
+                    new DocumentUserDeposition
+                    {
+                            DocumentId = documentId
+                    }
+                }
+            };
+
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), null)).ReturnsAsync(deposition);
+            _documentRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Document, bool>>>(), It.IsAny<string[]>())).ReturnsAsync(document);
+            _transactionHandlerMock
+                .Setup(x => x.RunAsync(It.IsAny<Func<Task>>()))
+                .Returns(async (Func<Task> action) =>
+                {
+                    await action();
+                    return Result.Fail(new ExceptionalError(error, new Exception(error)));
+                });
+
+            _awsStorageServiceMock.Setup(x => x.DeleteObjectAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(Result.Fail(error));
+            _loggerMock.Setup(x => x.Log(
+               It.IsAny<LogLevel>(),
+               It.IsAny<EventId>(),
+               It.IsAny<object>(),
+               It.IsAny<Exception>(),
+               It.IsAny<Func<object, Exception, string>>()));
+
+            // Act
+            var result = await _service.RemoveDepositionDocument(depositionId, documentId);
+
+            // Assert
+            _documentRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Document, bool>>>(), It.IsAny<string[]>()), Times.Once());
+            _documentRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Document, bool>>>(), It.IsAny<string[]>()), Times.Once());
+            _awsStorageServiceMock.Verify(x => x.DeleteObjectAsync(It.Is<string>(a => a == _documentConfiguration.BucketName), It.IsAny<string>()), Times.Once());
+            _documentRepositoryMock.Verify(x => x.Remove(It.Is<Document>(a => a.Id == documentId)), Times.Once);
+            _documentUserDepositionRepositoryMock.Verify(x => x.Remove(It.Is<DocumentUserDeposition>(a => a.DocumentId == documentId)), Times.Once);
+
+            Assert.Equal(error, result.Errors[0].Message);
+            Assert.True(result.IsFailed);
+            Assert.True(result.Errors.Count > 0);
+        }
     }
 }

@@ -1,4 +1,5 @@
-﻿using FluentResults;
+﻿using Amazon.S3.Model;
+using FluentResults;
 using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -437,7 +438,6 @@ namespace PrecisionReporters.Platform.Domain.Services
             var depositionResult = await _depositionRepository.GetById(depositionId, includes);
             if (depositionResult == null)
                 return Result.Fail(new ResourceNotFoundError($"Deposition with id {depositionId} not found."));
-
             if (depositionResult.SharingDocumentId.HasValue)
                 return Result.Fail(new ResourceConflictError("Can't share document while another document is being shared."));
 
@@ -450,6 +450,47 @@ namespace PrecisionReporters.Platform.Domain.Services
             await _documentRepository.Update(document);
 
             return Result.Ok(await _depositionRepository.Update(depositionResult));
+        }
+
+        public async Task<Result> RemoveDepositionDocument(Guid depositionId, Guid documentId)
+        {
+            var include = new[] { nameof(Document.DocumentUserDepositions) };
+            var document = await _documentRepository.GetFirstOrDefaultByFilter(x => x.Id == documentId, include);            
+            if (document == null)
+                return Result.Fail(new Error($"Could not find any document with Id {documentId}"));
+            
+            var deposition = await _depositionRepository.GetById(depositionId);
+            if (deposition == null) 
+                return Result.Fail(new Error($"Could not find any deposition with Id {depositionId}"));
+
+            if (deposition.SharingDocumentId.Equals(documentId))
+                return Result.Fail(new Error($"Could not delete and Exhibits while is being shared. Exhibit id {documentId}"));
+
+            var documentUser = document.DocumentUserDepositions.FirstOrDefault(x => x.DocumentId == documentId);
+            if (documentUser == null)
+                return Result.Fail(new Error($"Could not find any user document with Id {documentId}"));
+
+            var transactionResult = await _transactionHandler.RunAsync(async () =>
+            {
+                try
+                {                    
+                    await _documentRepository.Remove(document);
+                    await _documentUserDepositionRepository.Remove(documentUser);
+                    await _awsStorageService.DeleteObjectAsync(_documentsConfiguration.BucketName, document.FilePath);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Unable to delete documents");
+                    Result.Fail(new ExceptionalError("Unable to delete documents", ex));
+                }
+            });
+
+            if (transactionResult.IsFailed)
+            {
+                return transactionResult;
+            }
+            
+            return Result.Ok();
         }
     }
 }

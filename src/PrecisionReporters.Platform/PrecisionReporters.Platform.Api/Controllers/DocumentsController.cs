@@ -131,5 +131,21 @@ namespace PrecisionReporters.Platform.Api.Controllers
 
             return Ok(_documentMapper.ToDto(documentResult.Value));
         }
+
+        /// <summary>
+        /// Delete My Exhibit document from a deposition.
+        /// </summary>
+        /// <param name="documentId"></param>
+        /// <returns>List of documents information</returns>
+        [HttpDelete("Depositions/{depositionId}/documents/{documentId}")]
+        [UserAuthorize(ResourceType.Document, ResourceAction.Delete)]
+        public async Task<ActionResult<List<DocumentDto>>> DeleteMyExhibits([ResourceId(ResourceType.Document)] Guid depositionId, Guid documentId)
+        {
+            var documentsResult = await _documentService.RemoveDepositionDocument(depositionId, documentId);
+            if (documentsResult.IsFailed)
+                return WebApiResponses.GetErrorResponse(documentsResult);
+            
+            return Ok();
+        }
     }
 }
