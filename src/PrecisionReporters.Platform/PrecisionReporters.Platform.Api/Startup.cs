@@ -107,6 +107,7 @@ namespace PrecisionReporters.Platform.Api
             {
                 x.FrontendBaseUrl = appConfiguration.UrlPathConfiguration.FrontendBaseUrl;
                 x.VerifyUserUrl = appConfiguration.UrlPathConfiguration.VerifyUserUrl;
+                x.ForgotPasswordUrl = appConfiguration.UrlPathConfiguration.ForgotPasswordUrl;
             });
             services.Configure<KestrelServerOptions>(options =>
             {

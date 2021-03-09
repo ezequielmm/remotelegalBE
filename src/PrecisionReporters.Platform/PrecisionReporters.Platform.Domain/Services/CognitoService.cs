@@ -147,6 +147,21 @@ namespace PrecisionReporters.Platform.Domain.Services
             return Result.Ok();
         }
 
+        public async Task<Result<bool>> IsEnabled(string emailAddress)
+        {
+            var request = new AdminGetUserRequest
+            {
+                Username = emailAddress,
+                UserPoolId = _cognitoConfiguration.UserPoolId
+            };
+
+            var registeredUserResult = await _cognitoClient.AdminGetUserAsync(request);
+            if (registeredUserResult == null)
+                return Result.Fail(new ResourceNotFoundError($"User {emailAddress} not found"));
+
+            return Result.Ok(registeredUserResult.Enabled);
+        }
+
         public async Task<Result> DeleteUserAsync(User user)
         {
             var userExistsResult = await CheckUserExists(user.EmailAddress);

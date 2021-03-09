@@ -77,5 +77,16 @@ namespace PrecisionReporters.Platform.Api.Controllers
                 return NotFound();
             return Ok(_userMapper.ToDto(user));
         }
+
+        [HttpPost]
+        [Route("forgotPassword")]
+        public async Task<ActionResult> ForgotPassword(ForgotPasswordDto forgotPasswordDto)
+        {
+            var forgotPasswordResult = await _userService.ForgotPassword(forgotPasswordDto.EmailAddress);
+            if (forgotPasswordResult.IsFailed)
+                return WebApiResponses.GetErrorResponse(forgotPasswordResult);
+
+            return Ok();
+        }
     }
 }

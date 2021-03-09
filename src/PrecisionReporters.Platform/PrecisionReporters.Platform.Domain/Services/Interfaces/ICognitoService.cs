@@ -12,5 +12,6 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
         Task<Result<GuestToken>> LoginGuestAsync(User user);
         Task<Result> CheckUserExists(string emailAddress);
         Task<Result> DeleteUserAsync(User user);
+        Task<Result<bool>> IsEnabled(string emailAddress);
     }
 }

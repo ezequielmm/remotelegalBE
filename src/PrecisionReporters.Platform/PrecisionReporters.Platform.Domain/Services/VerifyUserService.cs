@@ -1,7 +1,9 @@
 ﻿using PrecisionReporters.Platform.Data.Entities;
+using PrecisionReporters.Platform.Data.Enums;
 using PrecisionReporters.Platform.Data.Repositories.Interfaces;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using System;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 
 namespace PrecisionReporters.Platform.Domain.Services
@@ -20,9 +22,22 @@ namespace PrecisionReporters.Platform.Domain.Services
             return await _verifyUserRepository.GetById(id, new []{ nameof(VerifyUser.User) });
         }
 
-        public async Task<VerifyUser> GetVerifyUserByUserId(Guid userId)
+        public async Task<VerifyUser> GetVerifyUserByUserId(Guid userId, VerificationType? verificationType = null)
         {
-            return await _verifyUserRepository.GetFirstOrDefaultByFilter(x => x.User.Id.Equals(userId), new[] { nameof(VerifyUser.User) });
+            Expression<Func<VerifyUser, bool>> filter = x => x.User.Id.Equals(userId) && x.VerificationType == VerificationType.VerifyUser;
+            if (verificationType.HasValue)
+                filter = x => x.User.Id.Equals(userId) && x.VerificationType == verificationType;
+
+            return await _verifyUserRepository.GetFirstOrDefaultByFilter(filter, new[] { nameof(VerifyUser.User) });
+        }
+
+        public async Task<VerifyUser> GetVerifyUserByEmail(string emailAddress, VerificationType? verificationType = null)
+        {
+            Expression<Func<VerifyUser, bool>> filter = x => x.User.EmailAddress.Equals(emailAddress) && x.VerificationType == VerificationType.VerifyUser;
+            if (verificationType.HasValue)
+                filter = x => x.User.EmailAddress.Equals(emailAddress) && x.VerificationType == verificationType;
+
+            return await _verifyUserRepository.GetFirstOrDefaultByFilter(filter, new[] { nameof(VerifyUser.User) });
         }
 
         public async Task<VerifyUser> CreateVerifyUser(VerifyUser newVerifyUser)

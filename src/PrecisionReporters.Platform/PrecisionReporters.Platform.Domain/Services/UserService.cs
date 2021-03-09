@@ -2,11 +2,13 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using PrecisionReporters.Platform.Data.Entities;
+using PrecisionReporters.Platform.Data.Enums;
 using PrecisionReporters.Platform.Data.Handlers.Interfaces;
 using PrecisionReporters.Platform.Data.Repositories.Interfaces;
 using PrecisionReporters.Platform.Domain.Commons;
 using PrecisionReporters.Platform.Domain.Configurations;
 using PrecisionReporters.Platform.Domain.Errors;
+using PrecisionReporters.Platform.Domain.Extensions;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -35,7 +37,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             _log = log;
             _userRepository = userRepository;
             _cognitoService = cognitoService;
-            _awsEmailService = awsEmailService;
+            _awsEmailService = awsEmailService; 
             _verifyUserService = verifyUserService;
             _transactionHandler = transactionHandler;
             _urlPathConfiguration = urlPathConfiguration.Value;
@@ -64,8 +66,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (user.IsGuest)
                 return;
 
-            var verificationLink = $"{_urlPathConfiguration.FrontendBaseUrl}{_urlPathConfiguration.VerifyUserUrl}{verifyUser.Id}";
-            var emailData = await SetVerifyEmailTemplate(user.EmailAddress, user.FirstName, verificationLink);
+            var emailData = GetTemplate(user, verifyUser);
             await _awsEmailService.SetTemplateEmailRequest(emailData);
         }
 
@@ -94,9 +95,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         {
             var user = await _userRepository.GetFirstOrDefaultByFilter(x => x.EmailAddress.Equals(email));
             var verifyUser = await _verifyUserService.GetVerifyUserByUserId(user.Id);
-
-            var verificationLink = $"{_urlPathConfiguration.FrontendBaseUrl}{_urlPathConfiguration.VerifyUserUrl}{verifyUser.Id}";
-            var emailData = await SetVerifyEmailTemplate(email, user.FirstName, verificationLink);
+            var emailData = GetTemplate(user, verifyUser);
             await _awsEmailService.SetTemplateEmailRequest(emailData);
         }
 
@@ -120,7 +119,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             {
                 newUser = await _userRepository.Create(user);
                 await _cognitoService.CreateAsync(user);
-                verifyUser = await SaveVerifyUser(newUser);
+                verifyUser = await SaveVerifyUser(newUser, VerificationType.VerifyUser);
             });
 
             if (transactionResult.IsFailed)
@@ -130,7 +129,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             return Result.Ok(newUser);
         }
-        private async Task<VerifyUser> SaveVerifyUser(User user)
+        private async Task<VerifyUser> SaveVerifyUser(User user, VerificationType verificationType)
         {
             if (user.IsGuest)
                 return null;
@@ -138,24 +137,36 @@ namespace PrecisionReporters.Platform.Domain.Services
             var verifyUser = new VerifyUser
             {
                 User = user,
-                IsUsed = false
+                IsUsed = false,
+                VerificationType = verificationType
             };
 
             return await _verifyUserService.CreateVerifyUser(verifyUser);
         }
 
-        private async Task<EmailTemplateInfo> SetVerifyEmailTemplate(string emailAddress, string firstName, string verificationLink)
+        private EmailTemplateInfo GetTemplate(User user, VerifyUser verifyUser)
         {
-            return await Task.Run(() => new EmailTemplateInfo
+            var template = new EmailTemplateInfo { EmailTo = new List<string> { user.EmailAddress }, TemplateName = verifyUser.VerificationType.GetDescription() };
+
+            switch (verifyUser.VerificationType)
             {
-                EmailTo = new List<string> { emailAddress },
-                TemplateName = ApplicationConstants.VerificationEmailTemplate,
-                TemplateData = new Dictionary<string, string>
-                {
-                    { "user-name", firstName },
-                    { "verification-link", verificationLink }
-                }
-            });
+                case VerificationType.VerifyUser:
+                    template.TemplateData = new Dictionary<string, string>
+                        {
+                            { "user-name", user.FirstName },
+                            { "verification-link",  $"{_urlPathConfiguration.FrontendBaseUrl}{_urlPathConfiguration.VerifyUserUrl}{verifyUser.Id}" }
+                        };
+                    break;
+                case VerificationType.ForgotPassword:
+                    template.TemplateData = new Dictionary<string, string>
+                        {
+                            { "user-name", user.FirstName },
+                            { "resetpassword-link",  $"{_urlPathConfiguration.FrontendBaseUrl}{_urlPathConfiguration.ForgotPasswordUrl}{verifyUser.Id}" }
+                        };
+                    break;
+            }
+
+            return template;
         }
 
         //This method is only meant to get the logged in User
@@ -209,6 +220,22 @@ namespace PrecisionReporters.Platform.Domain.Services
             }
         }
 
+        public async Task<Result> ForgotPassword(string userEmail)
+        {
+            var cognitoEnabledUserResult = await _cognitoService.IsEnabled(userEmail);
+            if (cognitoEnabledUserResult.IsFailed)
+                return cognitoEnabledUserResult;
+            
+            var verifyUser = await _verifyUserService.GetVerifyUserByEmail(userEmail, VerificationType.VerifyUser);
+            if (!cognitoEnabledUserResult.Value || !verifyUser.IsUsed)
+                return Result.Fail(new InvalidInputError("Invalid user"));
+
+            var verifyForgotPassword = await SaveVerifyUser(verifyUser.User, VerificationType.ForgotPassword);
+            await SendEmailVerification(verifyUser.User, verifyForgotPassword);
+
+            return Result.Ok();
+        }
+
         private async Task<Result<User>> UpdateGuestToUser(User userToUpdate)
         {
             var cognitoUser = await _cognitoService.CheckUserExists(userToUpdate.EmailAddress);
@@ -223,7 +250,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                     await _cognitoService.DeleteUserAsync(updatedUser);
 
                 await _cognitoService.CreateAsync(updatedUser);
-                verifyUser = await SaveVerifyUser(updatedUser);
+                verifyUser = await SaveVerifyUser(updatedUser, VerificationType.VerifyUser);
             });
 
             if (transactionResult.IsFailed)

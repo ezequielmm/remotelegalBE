@@ -6,5 +6,6 @@
 
         public string FrontendBaseUrl { get; set; }
         public string VerifyUserUrl { get; set; }
+        public string ForgotPasswordUrl { get; set; }
     }
 }
