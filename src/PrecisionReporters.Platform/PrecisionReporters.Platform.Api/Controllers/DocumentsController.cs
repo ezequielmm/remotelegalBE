@@ -139,7 +139,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
         /// <returns>List of documents information</returns>
         [HttpDelete("Depositions/{depositionId}/documents/{documentId}")]
         [UserAuthorize(ResourceType.Document, ResourceAction.Delete)]
-        public async Task<ActionResult<List<DocumentDto>>> DeleteMyExhibits([ResourceId(ResourceType.Document)] Guid depositionId, Guid documentId)
+        public async Task<ActionResult<List<DocumentDto>>> DeleteMyExhibits(Guid depositionId, [ResourceId(ResourceType.Document)]  Guid documentId)
         {
             var documentsResult = await _documentService.RemoveDepositionDocument(depositionId, documentId);
             if (documentsResult.IsFailed)
