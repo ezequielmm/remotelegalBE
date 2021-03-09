@@ -1201,7 +1201,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                     }
                 }
             };
-            
+
             _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), null)).ReturnsAsync(deposition);
             _documentRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Document, bool>>>(), It.IsAny<string[]>())).ReturnsAsync(document);
             _transactionHandlerMock
@@ -1278,7 +1278,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             // Arrange
             var documentId = Guid.NewGuid();
             var depositionId = Guid.NewGuid();
-            var error = $"Could not find any deposition with Id {depositionId}";      
+            var error = $"Could not find any deposition with Id {depositionId}";
             var deposition = new Deposition
             {
                 Id = depositionId,
@@ -1299,7 +1299,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             };
 
             _documentRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Document, bool>>>(), It.IsAny<string[]>())).ReturnsAsync(document);
-            _depositionRepositoryMock.Setup(x => x.GetById(depositionId, null)).ReturnsAsync((Deposition)null);            
+            _depositionRepositoryMock.Setup(x => x.GetById(depositionId, null)).ReturnsAsync((Deposition)null);
             _transactionHandlerMock
                 .Setup(x => x.RunAsync(It.IsAny<Func<Task>>()))
                 .Returns(async (Func<Task> action) =>

@@ -18,7 +18,7 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
         Task<Result> UploadDocuments(Guid id, string identity, List<FileTransferInfo> files, string folder, DocumentType documentType);
         Task<Result> UpdateDocument(DepositionDocument depositionDocument, string identity, FileTransferInfo file, string folder, DocumentType documentType);
         Task<Result<List<Document>>> GetExhibitsForUser(Guid depositionId, string identity);
-        Task<Result<string>> GetFileSignedUrl(Guid documentId); 
+        Task<Result<string>> GetFileSignedUrl(Guid documentId);
         Task<Result<string>> GetFileSignedUrl(Guid depositionId, Guid documentId);
         Task<Result<Document>> GetDocumentById(Guid documentId, string[] include = null);
         Task<Result<Document>> AddAnnotation(Guid depositionId, AnnotationEvent annotation);
@@ -29,5 +29,6 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
         Task<Result> RemoveDepositionUserDocuments(Guid documentId);
         Task<Result> UploadTranscriptions(Guid id, List<FileTransferInfo> files);
         Task<Result> RemoveDepositionDocument(Guid depositionId, Guid documentId);
+        
     }
 }

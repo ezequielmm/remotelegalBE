@@ -455,12 +455,12 @@ namespace PrecisionReporters.Platform.Domain.Services
         public async Task<Result> RemoveDepositionDocument(Guid depositionId, Guid documentId)
         {
             var include = new[] { nameof(Document.DocumentUserDepositions) };
-            var document = await _documentRepository.GetFirstOrDefaultByFilter(x => x.Id == documentId, include);            
+            var document = await _documentRepository.GetFirstOrDefaultByFilter(x => x.Id == documentId, include);
             if (document == null)
                 return Result.Fail(new Error($"Could not find any document with Id {documentId}"));
-            
+
             var deposition = await _depositionRepository.GetById(depositionId);
-            if (deposition == null) 
+            if (deposition == null)
                 return Result.Fail(new Error($"Could not find any deposition with Id {depositionId}"));
 
             if (deposition.SharingDocumentId.Equals(documentId))
@@ -473,7 +473,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             var transactionResult = await _transactionHandler.RunAsync(async () =>
             {
                 try
-                {                    
+                {
                     await _documentRepository.Remove(document);
                     await _documentUserDepositionRepository.Remove(documentUser);
                     await _awsStorageService.DeleteObjectAsync(_documentsConfiguration.BucketName, document.FilePath);
@@ -489,8 +489,8 @@ namespace PrecisionReporters.Platform.Domain.Services
             {
                 return transactionResult;
             }
-            
+
             return Result.Ok();
-        }
+        }        
     }
 }

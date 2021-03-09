@@ -215,5 +215,20 @@ namespace PrecisionReporters.Platform.Api.Controllers
 
             return Ok(fileSignedDto);
         }
+
+        /// <summary>
+        /// Delete Transcription document from a deposition.
+        /// </summary>
+        /// <param name="documentId"></param>
+        /// <returns>200 OK</returns>
+        [HttpDelete("{depositionId}/transcripts/{documentId}")]
+        [UserAuthorize(ResourceType.Document, ResourceAction.Delete)]
+        public async Task<ActionResult> DeleteTranscript(Guid depositionId, [ResourceId(ResourceType.Document)] Guid documentId)
+        {
+            var documentsResult = await _depositionDocumentService.RemoveDepositionTranscript(depositionId, documentId);
+            if (documentsResult.IsFailed)
+                return WebApiResponses.GetErrorResponse(documentsResult);
+            return Ok();
+        }
     }
 }
