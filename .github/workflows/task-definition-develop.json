@@ -61,7 +61,7 @@
                     "name": "AppConfiguration__DocumentConfiguration__PostDepoVideoBucket",
                     "value": "output-elastictranscoder-dev"
                 },
-				{
+                {
                     "name": "AppConfiguration__DocumentConfiguration__EnvironmentFilesBucket",
                     "value": "environment-files-dev"
                 },
@@ -156,6 +156,10 @@
                 {
                     "name": "DD_SERVICE",
                     "value": "prp-be-develop"
+                },
+                {
+                    "name": "AppConfiguration__ConnectionStrings__RedisConnectionString",
+                    "value": "host=tf-rep-group-develop.xzj4s3.ng.0001.use1.cache.amazonaws.com;port=6379"
                 }
             ],
             "secrets": [

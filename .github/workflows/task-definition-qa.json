@@ -57,7 +57,7 @@
                     "name": "AppConfiguration__DocumentConfiguration__PostDepoVideoBucket",
                     "value": "output-post-depo-qa"
                 },
-				{
+                {
                     "name": "AppConfiguration__DocumentConfiguration__EnvironmentFilesBucket",
                     "value": "environment-files-qa"
                 },
@@ -152,6 +152,10 @@
                 {
                     "name": "DD_SERVICE",
                     "value": "prp-be-qa"
+                },
+                {
+                    "name": "AppConfiguration__ConnectionStrings__RedisConnectionString",
+                    "value": "host=tf-rep-group-qa.xzj4s3.ng.0001.use1.cache.amazonaws.com;port=6379"
                 }
             ],
             "secrets": [
