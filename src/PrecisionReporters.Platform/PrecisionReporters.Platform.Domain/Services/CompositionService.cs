@@ -138,7 +138,6 @@ namespace PrecisionReporters.Platform.Domain.Services
                     return list;
                 });
 
-
             return result;
         }
 

@@ -41,5 +41,10 @@ namespace PrecisionReporters.Platform.Data.Entities
 			IsAdmin = entity.IsAdmin;
             IsGuest = entity.IsGuest;
         }
+
+        public string GetFullName()
+        {
+            return $"{FirstName} {LastName}";
+        }
     }
 }

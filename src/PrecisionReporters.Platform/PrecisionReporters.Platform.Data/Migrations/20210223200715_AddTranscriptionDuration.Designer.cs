@@ -2,15 +2,17 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PrecisionReporters.Platform.Data;
 
 namespace PrecisionReporters.Platform.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20210223200715_AddTranscriptionDuration")]
+    partial class AddTranscriptionDuration
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -201,9 +203,6 @@ namespace PrecisionReporters.Platform.Data.Migrations
                     b.Property<DateTime?>("EndDate")
                         .HasColumnType("datetime");
 
-                    b.Property<string>("EndedById")
-                        .HasColumnType("char(36)");
-
                     b.Property<bool>("IsOnTheRecord")
                         .HasColumnType("bit");
 
@@ -244,8 +243,6 @@ namespace PrecisionReporters.Platform.Data.Migrations
                     b.HasIndex("CaptionId");
 
                     b.HasIndex("CaseId");
-
-                    b.HasIndex("EndedById");
 
                     b.HasIndex("RequesterId");
 
@@ -334,10 +331,6 @@ namespace PrecisionReporters.Platform.Data.Migrations
                         .HasColumnType("datetime");
 
                     b.Property<string>("DisplayName")
-                        .HasColumnType("text");
-
-                    b.Property<string>("DocumentType")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("FilePath")
@@ -629,12 +622,6 @@ namespace PrecisionReporters.Platform.Data.Migrations
                         .HasColumnType("varchar(255)")
                         .HasMaxLength(255);
 
-                    b.Property<int>("RecordingDuration")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("RecordingEndDate")
-                        .HasColumnType("datetime");
-
                     b.Property<DateTime?>("RecordingStartDate")
                         .HasColumnType("datetime");
 
@@ -643,9 +630,6 @@ namespace PrecisionReporters.Platform.Data.Migrations
 
                     b.Property<DateTime?>("StartDate")
                         .HasColumnType("datetime");
-
-                    b.Property<string>("StartedReference")
-                        .HasColumnType("text");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -788,10 +772,6 @@ namespace PrecisionReporters.Platform.Data.Migrations
                     b.Property<string>("UserId")
                         .HasColumnType("char(36)");
 
-                    b.Property<string>("VerificationType")
-                        .IsRequired()
-                        .HasColumnType("text");
-
                     b.HasKey("Id");
 
                     b.HasIndex("UserId");
@@ -879,10 +859,6 @@ namespace PrecisionReporters.Platform.Data.Migrations
                         .HasForeignKey("CaseId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.HasOne("PrecisionReporters.Platform.Data.Entities.User", "EndedBy")
-                        .WithMany()
-                        .HasForeignKey("EndedById");
 
                     b.HasOne("PrecisionReporters.Platform.Data.Entities.User", "Requester")
                         .WithMany()

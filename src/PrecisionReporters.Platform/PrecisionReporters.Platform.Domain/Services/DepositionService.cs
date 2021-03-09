@@ -352,7 +352,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             return Result.Ok(deposition.SharingDocument);
         }
 
-        private async Task<Result<Deposition>> GetByIdWithIncludes(Guid id, string[] include = null)
+        public async Task<Result<Deposition>> GetByIdWithIncludes(Guid id, string[] include = null)
         {
             var deposition = await _depositionRepository.GetById(id, include);
             if (deposition == null)
@@ -567,7 +567,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             }
 
             var depoTotalTime = (int)(deposition.Room.EndDate.Value - deposition.Room.RecordingStartDate.Value).TotalSeconds;
-            var onTheRecordTime = getOnTheRecordTime(deposition.Events);
+            var onTheRecordTime = GetOnTheRecordTime(deposition.Events);
             var depositionVideo = new DepositionVideoDto
             {
                 PublicUrl = url,
@@ -580,7 +580,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             return Result.Ok(depositionVideo);
         }
 
-        private int getOnTheRecordTime(List<DepositionEvent> events)
+        private int GetOnTheRecordTime(List<DepositionEvent> events)
         {
             int total = 0;
             events

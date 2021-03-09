@@ -8,6 +8,7 @@ using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace PrecisionReporters.Platform.Domain.Services
@@ -20,13 +21,23 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly ISignalRNotificationManager _signalRNotificationManager;
         private readonly IMapper<Transcription, TranscriptionDto, object> _transcriptionMapper;
 
-        public TranscriptionService(ITranscriptionRepository transcriptionRepository, IUserRepository userRepository, IDepositionDocumentRepository depositionDocumentRepository,
-            ISignalRNotificationManager signalRNotificationManager)
+        private readonly IDepositionService _depositionService;
+        private readonly ICompositionService _compositionService;
+
+        public TranscriptionService(
+            ITranscriptionRepository transcriptionRepository,
+            IUserRepository userRepository,
+            IDepositionDocumentRepository depositionDocumentRepository,
+            IDepositionService depositionService,
+            ISignalRNotificationManager signalRNotificationManager,
+            ICompositionService compositionService)
         {
             _transcriptionRepository = transcriptionRepository;
             _userRepository = userRepository;
             _depositionDocumentRepository = depositionDocumentRepository;
+            _depositionService = depositionService;
             _signalRNotificationManager = signalRNotificationManager;
+            _compositionService = compositionService;
         }
 
         public async Task<Result<Transcription>> StoreTranscription(Transcription transcription, string depositionId, string userEmail)
@@ -75,5 +86,76 @@ namespace PrecisionReporters.Platform.Domain.Services
             return Result.Ok(documentsResult);
         }
 
+        public async Task<Result<List<TranscriptionTimeDto>>> GetTranscriptionsWithTimeOffset(Guid depositionId)
+        {
+            var include = new[] { nameof(Deposition.Room), nameof(Deposition.Events) };
+            var depositionResult = await _depositionService.GetByIdWithIncludes(depositionId, include);
+
+            if (depositionResult.IsFailed)
+                return depositionResult.ToResult<List<TranscriptionTimeDto>>();
+
+            var transcriptionsResult = await GetTranscriptionsByDepositionId(depositionId);
+            if (transcriptionsResult.IsFailed)
+                return transcriptionsResult.ToResult<List<TranscriptionTimeDto>>();
+
+            var deposition = depositionResult.Value;
+            var startedAt =  GetDateTimestamp(deposition.Room.RecordingStartDate.Value);
+            var compositionIntervals = _compositionService.GetDepositionRecordingIntervals(deposition.Events, startedAt);
+
+            var resultList = transcriptionsResult.Value
+                .OrderBy(x => x.CreationDate)
+                .Select(x =>
+                    new TranscriptionTimeDto
+                    {
+                        Text = x.Text,
+                        Id = x.Id.ToString(),
+                        Confidence = x.Confidence,
+                        TranscriptDateTime = x.CreationDate,
+                        TranscriptionVideoTime = CalculateSpeechTime(
+                            CalculateSeconds(startedAt, GetDateTimestamp(x.TranscriptDateTime)),
+                            compositionIntervals),
+                        UserName = x.User.GetFullName(),
+                        Duration = x.Duration
+                    }
+
+                ).ToList();
+
+            return Result.Ok(resultList);
+        }
+
+        private long VideoStartDate(List<DepositionEvent> events)
+        {
+            var result = events
+                .OrderBy(x => x.CreationDate)
+                .Where(x => x.EventType == EventType.OnTheRecord)
+                .FirstOrDefault();
+
+            if (result == null)
+                return 0;
+
+            return GetDateTimestamp(result.CreationDate);
+        }
+
+        private int CalculateSeconds(long startTime, long splitTime)
+        {
+            return (int)(splitTime - startTime);
+        }
+
+        private long GetDateTimestamp(DateTime date)
+        {
+            return new DateTimeOffset(date).ToUnixTimeSeconds();
+        }
+
+        private int CalculateSpeechTime(int offset, List<CompositionInterval> intervals)
+        {
+            var t = 0;
+            intervals?.ForEach(x => {
+                if (x.Stop < offset)
+                {
+                    t += (x.Stop = x.Start);
+                }
+            });
+            return offset - t;
+        }
     }
 }

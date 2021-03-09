@@ -6,6 +6,8 @@ using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Domain.Configurations;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using System;
+using System.Diagnostics;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -55,8 +57,8 @@ namespace PrecisionReporters.Platform.Domain.Services
                 // If recognition was getting closed, cancel the process once new audio arrives, which means the recognition should be resumed
                 _shouldClose = false;
             }
-            _shouldCloseSemaphore.Release();
 
+            _shouldCloseSemaphore.Release();
             _audioInputStream.Write(audioChunk, audioChunk.Length);
         }
 
@@ -106,10 +108,17 @@ namespace PrecisionReporters.Platform.Domain.Services
         {
             try
             {
+                var bestTranscription = e.Result.Best().FirstOrDefault();
+                var durationInMilliseconds = e.Result.Duration.Milliseconds;
+                var offset = TimeSpan.FromTicks(e.Result.OffsetInTicks).TotalSeconds;
+               
+                //OffSet
                 var transcription = new Transcription
                 {
-                    TranscriptDateTime = DateTime.UtcNow, // TODO: adjust based on duration and offset
-                    Text = e.Result.Text
+                    TranscriptDateTime = DateTime.UtcNow.AddMilliseconds(-durationInMilliseconds),
+                    Text = e.Result.Text,
+                    Duration = durationInMilliseconds,
+                    Confidence = bestTranscription != null ? bestTranscription.Confidence : 0.0
                 };
 
                 var transcriptionResult = await _transcriptionService.StoreTranscription(transcription, _depositionId, _userEmail);

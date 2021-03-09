@@ -28,7 +28,7 @@ namespace PrecisionReporters.Platform.Domain.Mappers
                 Text = model.Text,
                 DepositionId = model.DepositionId,
                 UserId = model.User.Id,
-                UserName = $"{model.User.FirstName} {model.User.LastName}",
+                UserName = model.User?.GetFullName(),
                 TranscriptDateTime = new DateTimeOffset(model.TranscriptDateTime, TimeSpan.Zero),
                 UserEmail = model.User  .EmailAddress
             };

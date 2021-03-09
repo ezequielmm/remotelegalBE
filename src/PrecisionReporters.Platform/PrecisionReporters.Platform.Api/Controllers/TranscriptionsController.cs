@@ -5,6 +5,7 @@ using PrecisionReporters.Platform.Api.Helpers;
 using PrecisionReporters.Platform.Domain.Mappers;
 using PrecisionReporters.Platform.Api.WebSockets;
 using PrecisionReporters.Platform.Data.Entities;
+using PrecisionReporters.Platform.Domain.Dtos;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -87,6 +88,16 @@ namespace PrecisionReporters.Platform.Api.Controllers
                 return WebApiResponses.GetErrorResponse(uploadTranscriptionsFilesResult);
 
             return Ok();
+        }
+
+        [HttpGet("{depositionId}/offsets")]
+        public async Task<ActionResult<List<TranscriptionTimeDto>>> GetTranscrpitionsTime(Guid depositionId)
+        {
+            var transcriptionsResult = await _transcriptionService.GetTranscriptionsWithTimeOffset(depositionId);
+            if (transcriptionsResult.IsFailed)
+                return WebApiResponses.GetErrorResponse(transcriptionsResult);
+
+            return Ok(transcriptionsResult.Value);
         }
     }
 }

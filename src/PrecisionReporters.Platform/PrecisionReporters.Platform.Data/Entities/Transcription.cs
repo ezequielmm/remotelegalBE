@@ -15,10 +15,14 @@ namespace PrecisionReporters.Platform.Data.Entities
         public Guid DepositionId { get; set; }
         public DateTime TranscriptDateTime { get; set; }
         public User User { get; set; }
+        public int Duration { get; set; }
+        public double Confidence { get; set; }
 
         public override void CopyFrom(Transcription entity)
         {            
             CreationDate = entity.CreationDate;
+            Duration = entity.Duration;
+            Confidence = entity.Confidence;
         }
     }
 }
