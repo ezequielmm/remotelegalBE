@@ -628,7 +628,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             var lstParticipant = await _participantRepository.GetByFilter(orderBy,
                 sortDirection,
                 x => x.DepositionId == depositionId,
-                new string[] {nameof(Participant.User)});
+                new string[] { nameof(Participant.User) });
             return Result.Ok(lstParticipant);
         }
 
@@ -704,7 +704,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                         await _documentService.DeleteUploadedFiles(new List<Document>() { currentDeposition.Caption });
                         currentDeposition.Caption = null;
                     }
-                    if (!string.IsNullOrWhiteSpace(deposition.RequesterNotes))
+                    if (deposition.RequesterNotes != null)
                     {
                         currentDeposition.RequesterNotes = deposition.RequesterNotes;
                     }
