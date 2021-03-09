@@ -19,6 +19,7 @@ using PrecisionReporters.Platform.Api.Authorization;
 using PrecisionReporters.Platform.Api.Authorization.Handlers;
 using PrecisionReporters.Platform.Domain.Dtos;
 using PrecisionReporters.Platform.Api.Filters;
+using PrecisionReporters.Platform.Api.Hubs;
 using PrecisionReporters.Platform.Domain.Mappers;
 using PrecisionReporters.Platform.Api.Middlewares;
 using PrecisionReporters.Platform.Api.WebSockets;
@@ -213,7 +214,7 @@ namespace PrecisionReporters.Platform.Api
             services.AddScoped<IDraftTranscriptGeneratorService, DraftTranscriptGeneratorService>();
             services.AddHostedService<GenerateTranscriptHostedService>();
             services.AddSingleton<IBackgroundTaskQueue, BackgroundTaskQueue>();
-
+            services.AddScoped<ISignalRNotificationManager, SignalRNotificationManager>();
             services.Configure<GcpConfiguration>(x =>
             {
                 x.type = appConfiguration.GcpConfiguration.type;
@@ -307,6 +308,7 @@ namespace PrecisionReporters.Platform.Api
 
             services.AddMvc()
                 .AddJsonOptions(opts => opts.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+            services.AddSignalR();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -354,10 +356,11 @@ namespace PrecisionReporters.Platform.Api
 
             app.UseEndpoints(endpoints =>
             {
-                endpoints.MapControllers();                
+                endpoints.MapControllers();
+                endpoints.MapHub<DepositionHub>("/depositionHub");
             });
 
             db.Database.Migrate();
-        }
+        }        
     }
 }

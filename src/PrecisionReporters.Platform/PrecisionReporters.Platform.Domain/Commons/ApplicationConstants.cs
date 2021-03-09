@@ -8,5 +8,6 @@
         public const string DraftTranscriptTemplateName = "rough-draft-transcript-template.pdf";
         public const string DraftTranscriptFileName = "RoughTranscript.pdf";
         public const string TranscriptFolderName = "transcripts";
+        public const string DepositionGroupName = "Deposition:";
     }
 }

@@ -3,6 +3,7 @@ using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Data.Enums;
 using PrecisionReporters.Platform.Data.Repositories.Interfaces;
 using PrecisionReporters.Platform.Domain.Services;
+using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
@@ -17,13 +18,15 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         private readonly Mock<IDepositionDocumentRepository> _depositionDocumentRepositoryMock;
         private readonly Mock<ITranscriptionRepository> _transcriptionRepository;
         private readonly Mock<IUserRepository> _userRepository;
+        private readonly Mock<ISignalRNotificationManager> _signalRNotificationManagerMock;
 
         public TranscriptionsServiceTests()
         {
             _transcriptionRepository = new Mock<ITranscriptionRepository>();
             _depositionDocumentRepositoryMock = new Mock<IDepositionDocumentRepository>();
             _userRepository = new Mock<IUserRepository>();
-            _transcriptionService = new TranscriptionService(_transcriptionRepository.Object, _userRepository.Object,_depositionDocumentRepositoryMock.Object);
+            _signalRNotificationManagerMock = new Mock<ISignalRNotificationManager>();
+            _transcriptionService = new TranscriptionService(_transcriptionRepository.Object, _userRepository.Object,_depositionDocumentRepositoryMock.Object, _signalRNotificationManagerMock.Object);
         }
 
         [Fact]
