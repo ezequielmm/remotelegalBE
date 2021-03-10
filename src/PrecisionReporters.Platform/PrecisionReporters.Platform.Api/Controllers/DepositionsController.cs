@@ -7,7 +7,6 @@ using PrecisionReporters.Platform.Api.Helpers;
 using PrecisionReporters.Platform.Domain.Mappers;
 using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Data.Enums;
-using PrecisionReporters.Platform.Domain.Dtos;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -51,13 +50,10 @@ namespace PrecisionReporters.Platform.Api.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<List<DepositionDto>>> GetDepositions(DepositionStatus? status, DepositionSortField? sortedField,
-            SortDirection? sortDirection)
+        public async Task<ActionResult<DepositionFilterResponseDto>> GetDepositions([FromQuery] DepositionFilterDto filter)
         {
-            var userEmail = HttpContext.User.FindFirstValue(ClaimTypes.Email);
-            var depositions = await _depositionService.GetDepositionsByStatus(status, sortedField, sortDirection, userEmail);
-
-            return Ok(depositions.Select(c => _depositionMapper.ToDto(c)));
+            var depositionResponse = await _depositionService.GetDepositionsByFilter(filter);
+            return Ok(depositionResponse);
         }
 
         /// <summary>

@@ -9,7 +9,6 @@ using PrecisionReporters.Platform.Data.Handlers.Interfaces;
 using PrecisionReporters.Platform.Data.Repositories.Interfaces;
 using PrecisionReporters.Platform.Domain.Commons;
 using PrecisionReporters.Platform.Domain.Configurations;
-using PrecisionReporters.Platform.Domain.Dtos;
 using PrecisionReporters.Platform.Domain.Errors;
 using PrecisionReporters.Platform.Domain.QueuedBackgroundTasks.Interfaces;
 using PrecisionReporters.Platform.Domain.Services;
@@ -21,6 +20,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Xunit;
+using PrecisionReporters.Platform.Domain.Mappers;
 
 namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 {
@@ -42,6 +42,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         private readonly Mock<ITransactionHandler> _transactionHandlerMock;
         private readonly Mock<IDocumentService> _documentServiceMock;
         private readonly Mock<ILogger<DepositionService>> _loggerMock;
+        private readonly IMapper<Deposition, DepositionDto, CreateDepositionDto> _depositionMapper;
 
         private readonly List<Deposition> _depositions = new List<Deposition>();
 
@@ -94,7 +95,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 _backgroundTaskQueueMock.Object,
                 _transactionHandlerMock.Object,
                 _loggerMock.Object,
-                _documentServiceMock.Object);
+                _documentServiceMock.Object,
+                _depositionMapper);
 
             _transactionHandlerMock.Setup(x => x.RunAsync(It.IsAny<Func<Task<Result<Deposition>>>>()))
                 .Returns(async (Func<Task<Result<Deposition>>> action) =>
@@ -315,10 +317,10 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 It.IsAny<Expression<Func<Deposition, object>>>()))
                 .ReturnsAsync(_depositions.FindAll(x => x.Status == DepositionStatus.Pending));
 
-            _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(new User { IsAdmin = true }));
+            _userServiceMock.Setup(x => x.GetCurrentUserAsync()).ReturnsAsync(new User { IsAdmin = true });
 
             // Act
-            var result = await _depositionService.GetDepositionsByStatus(null, null, null, "fake_user@mail.com");
+            var result = await _depositionService.GetDepositionsByStatus(null, null, null);
 
             Assert.NotEmpty(result);
             _depositionRepositoryMock.Verify(r => r.GetByStatus(It.IsAny<Expression<Func<Deposition, object>>>(),
@@ -340,10 +342,10 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 It.IsAny<Expression<Func<Deposition, object>>>()))
                 .ReturnsAsync(_depositions.FindAll(x => x.Status == DepositionStatus.Pending));
 
-            _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(new User { IsAdmin = true }));
+            _userServiceMock.Setup(x => x.GetCurrentUserAsync()).ReturnsAsync(new User { IsAdmin = true });
 
             // Act
-            var result = await _depositionService.GetDepositionsByStatus(DepositionStatus.Pending, null, null, "fake_user@mail.com");
+            var result = await _depositionService.GetDepositionsByStatus(DepositionStatus.Pending, null, null);
 
             _depositionRepositoryMock.Verify(r => r.GetByStatus(It.IsAny<Expression<Func<Deposition, object>>>(),
                 It.IsAny<SortDirection>(),
@@ -366,10 +368,10 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 It.IsAny<Expression<Func<Deposition, object>>>()))
                 .ReturnsAsync(_depositions.OrderBy(x => x.Requester.FirstName).ThenBy(x => x.Requester.LastName).ToList());
 
-            _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(new User { IsAdmin = true }));
+            _userServiceMock.Setup(x => x.GetCurrentUserAsync()).ReturnsAsync(new User { IsAdmin = true });
 
             // Act
-            var result = await _depositionService.GetDepositionsByStatus(null, DepositionSortField.Requester, SortDirection.Ascend, "fake_user@mail.com");
+            var result = await _depositionService.GetDepositionsByStatus(null, DepositionSortField.Requester, SortDirection.Ascend);
 
             //Assert
             Assert.Equal(sortedList, result);
@@ -389,10 +391,10 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 It.IsAny<Expression<Func<Deposition, object>>>()))
                 .ReturnsAsync(_depositions.OrderBy(x => x.Requester.FirstName).ThenBy(x => x.Requester.LastName).ToList());
 
-            _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(new User { IsAdmin = true }));
+            _userServiceMock.Setup(x => x.GetCurrentUserAsync()).ReturnsAsync(new User { IsAdmin = true });
 
             // Act
-            var result = await _depositionService.GetDepositionsByStatus(null, DepositionSortField.Requester, SortDirection.Ascend, "fake_user@mail.com");
+            var result = await _depositionService.GetDepositionsByStatus(null, DepositionSortField.Requester, SortDirection.Ascend);
 
             //Assert
             _depositionRepositoryMock.Verify(r => r.GetByStatus(It.IsAny<Expression<Func<Deposition, object>>>(),

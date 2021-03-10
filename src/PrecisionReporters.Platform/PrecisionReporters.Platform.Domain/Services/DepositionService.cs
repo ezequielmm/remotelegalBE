@@ -9,6 +9,7 @@ using PrecisionReporters.Platform.Domain.Commons;
 using PrecisionReporters.Platform.Domain.Configurations;
 using PrecisionReporters.Platform.Domain.Dtos;
 using PrecisionReporters.Platform.Domain.Errors;
+using PrecisionReporters.Platform.Domain.Mappers;
 using PrecisionReporters.Platform.Domain.QueuedBackgroundTasks.Interfaces;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using System;
@@ -36,6 +37,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly ITransactionHandler _transactionHandler;
         private readonly ILogger<DepositionService> _logger;
         private readonly IDocumentService _documentService;
+        private readonly IMapper<Deposition, DepositionDto, CreateDepositionDto> _depositionMapper;
 
         public DepositionService(IDepositionRepository depositionRepository,
             IParticipantRepository participantRepository,
@@ -49,7 +51,8 @@ namespace PrecisionReporters.Platform.Domain.Services
             IBackgroundTaskQueue backgroundTaskQueue,
             ITransactionHandler transactionHandler,
             ILogger<DepositionService> logger,
-            IDocumentService documentService)
+            IDocumentService documentService,
+            IMapper<Deposition, DepositionDto, CreateDepositionDto> depositionMapper)
         {
             _awsStorageService = awsStorageService;
             _documentsConfiguration = documentConfigurations.Value ?? throw new ArgumentException(nameof(documentConfigurations));
@@ -64,6 +67,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             _transactionHandler = transactionHandler;
             _logger = logger;
             _documentService = documentService;
+            _depositionMapper = depositionMapper;
         }
 
         public async Task<List<Deposition>> GetDepositions(Expression<Func<Deposition, bool>> filter = null,
@@ -149,20 +153,20 @@ namespace PrecisionReporters.Platform.Domain.Services
         }
 
         public async Task<List<Deposition>> GetDepositionsByStatus(DepositionStatus? status, DepositionSortField? sortedField,
-            SortDirection? sortDirection, string userEmail)
+            SortDirection? sortDirection)
         {
-            var userResult = await _userService.GetUserByEmail(userEmail);
+            var user = await _userService.GetCurrentUserAsync();
 
             var includes = new[] { nameof(Deposition.Requester), nameof(Deposition.Participants), nameof(Deposition.Case) };
 
             Expression<Func<Deposition, bool>> filter = x => status == null || x.Status == status;
 
-            if (userResult.IsFailed || !userResult.Value.IsAdmin)
+            if (!user.IsAdmin)
             {
                 filter = x => (status == null || x.Status == status) &&
-                    (x.Participants.Any(p => p.Email == userEmail)
-                        || x.Requester.EmailAddress == userEmail
-                        || x.AddedBy.EmailAddress == userEmail);
+                    (x.Participants.Any(p => p.Email == user.EmailAddress)
+                        || x.Requester.EmailAddress == user.EmailAddress
+                        || x.AddedBy.EmailAddress == user.EmailAddress);
             }
 
             Expression<Func<Deposition, object>> orderBy = sortedField switch
@@ -728,6 +732,55 @@ namespace PrecisionReporters.Platform.Domain.Services
                 await _documentService.DeleteUploadedFiles(uploadedDocs);
                 return Result.Fail(new ExceptionalError("Unable to edit the deposition", ex));
             }
+        }
+
+        public async Task<DepositionFilterResponseDto> GetDepositionsByFilter(DepositionFilterDto filterDto) 
+        {
+            var user = await _userService.GetCurrentUserAsync();
+            var includes = new[] { nameof(Deposition.Requester), nameof(Deposition.Participants), nameof(Deposition.Case) };
+
+            Expression<Func<Deposition, bool>> filter = x => (filterDto.Status == null || x.Status == filterDto.Status);
+
+            if (!user.IsAdmin)
+            {
+                filter = x => (filterDto.Status == null || x.Status == filterDto.Status) &&
+                    (x.Participants.Any(p => p.Email == user.EmailAddress)
+                        || x.Requester.EmailAddress == user.EmailAddress
+                        || x.AddedBy.EmailAddress == user.EmailAddress);
+            }
+
+            Expression<Func<Deposition, object>> orderBy = filterDto.SortedField switch
+            {
+                DepositionSortField.Details => x => x.Details,
+                DepositionSortField.Status => x => x.Status,
+                DepositionSortField.CaseNumber => x => x.Case.CaseNumber,
+                DepositionSortField.CaseName => x => x.Case.Name,
+                DepositionSortField.Company => x => x.Requester.CompanyName,
+                DepositionSortField.Requester => x => x.Requester.FirstName,
+                _ => x => x.StartDate,
+            };
+
+            Expression<Func<Deposition, object>> orderByThen = x => x.Requester.LastName;
+
+            var totalDepositions = await _depositionRepository.GetByStatus(
+                orderBy,
+                filterDto.SortDirection ?? SortDirection.Ascend,
+                filter,
+                includes,
+                filterDto.SortedField == DepositionSortField.Requester ? orderByThen : null
+                );
+
+            var filteredDepositions = totalDepositions.Where(x => 
+                (filterDto.MaxDate.HasValue ? x.StartDate < filterDto.MaxDate.Value.UtcDateTime : x.StartDate > DateTime.UtcNow) &&
+                (!filterDto.MinDate.HasValue || x.StartDate > filterDto.MinDate.Value.UtcDateTime));
+
+            var totalUpcoming = totalDepositions.Count(x => x.StartDate > DateTime.UtcNow);
+
+            return new DepositionFilterResponseDto {
+                TotalUpcoming = totalUpcoming,
+                TotalPast = totalDepositions.Count - totalUpcoming,
+                Depositions = filteredDepositions.Select(c => _depositionMapper.ToDto(c)).ToList()
+            };
         }
 
         private async Task<Result<Document>> UploadFile(FileTransferInfo file, User user, Deposition deposition)
