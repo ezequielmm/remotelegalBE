@@ -30,7 +30,8 @@ namespace PrecisionReporters.Platform.Domain.Services
             IDepositionDocumentRepository depositionDocumentRepository,
             IDepositionService depositionService,
             ISignalRNotificationManager signalRNotificationManager,
-            ICompositionService compositionService)
+            ICompositionService compositionService,
+            IMapper<Transcription, TranscriptionDto, object> transcriptionMapper)
         {
             _transcriptionRepository = transcriptionRepository;
             _userRepository = userRepository;
@@ -38,6 +39,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             _depositionService = depositionService;
             _signalRNotificationManager = signalRNotificationManager;
             _compositionService = compositionService;
+            _transcriptionMapper = transcriptionMapper;
         }
 
         public async Task<Result<Transcription>> StoreTranscription(Transcription transcription, string depositionId, string userEmail)

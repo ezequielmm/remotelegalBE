@@ -87,7 +87,8 @@ namespace PrecisionReporters.Platform.Api
                         builder.SetIsOriginAllowedToAllowWildcardSubdomains()
                         .WithOrigins(allowedDomains)
                         .AllowAnyHeader()
-                        .WithMethods(allowedMethods);
+                        .WithMethods(allowedMethods)
+                        .AllowCredentials();
                     });
             });
 
@@ -308,7 +309,7 @@ namespace PrecisionReporters.Platform.Api
 
             services.AddMvc()
                 .AddJsonOptions(opts => opts.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
-            services.AddSignalR();
+            services.AddSignalR().AddNewtonsoftJsonProtocol();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

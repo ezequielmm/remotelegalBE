@@ -11,6 +11,8 @@ using System.Threading.Tasks;
 using Xunit;
 using PrecisionReporters.Platform.UnitTests.Utils;
 using FluentResults;
+using PrecisionReporters.Platform.Domain.Mappers;
+using PrecisionReporters.Platform.Domain.Dtos;
 
 namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 {
@@ -23,6 +25,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         private readonly Mock<IDepositionService> _depositionServiceMock;
         private readonly Mock<ISignalRNotificationManager> _signalRNotificationManagerMock;
         private readonly Mock<ICompositionService> _compositionServiceMock;
+        private readonly Mock<IMapper<Transcription, TranscriptionDto, object>> _transcriptionMapperMock;
 
         public TranscriptionsServiceTests()
         {
@@ -32,12 +35,14 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _depositionServiceMock = new Mock<IDepositionService>();
             _signalRNotificationManagerMock = new Mock<ISignalRNotificationManager>();
             _compositionServiceMock = new Mock<ICompositionService>();
+            _transcriptionMapperMock = new Mock<IMapper<Transcription, TranscriptionDto, object>>();
             _transcriptionService = new TranscriptionService(_transcriptionRepositoryMock.Object, 
                 _userRepository.Object,
                 _depositionDocumentRepositoryMock.Object, 
                 _depositionServiceMock.Object,
                 _signalRNotificationManagerMock.Object,
-                _compositionServiceMock.Object);
+                _compositionServiceMock.Object,
+                _transcriptionMapperMock.Object);
         }
 
         [Fact]
