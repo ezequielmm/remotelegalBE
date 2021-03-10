@@ -9,6 +9,7 @@ namespace PrecisionReporters.Platform.Domain.Dtos
         public string LastName { get; set; }
         public string EmailAddress { get; set; }     
         public string PhoneNumber { get; set; }
+        // TODO: this should be a DateTimeOffset
         public DateTime CreationDate { get; set; }
         public string CompanyName { get; set; }
         public string CompanyAddress { get; set; }

@@ -9,6 +9,7 @@ namespace PrecisionReporters.Platform.Domain.Dtos
         public string Name { get; set; }
         public string Email { get; set; }
         public string Phone { get; set; }
+        // TODO: use enum
         public string Role { get; set; }
         public UserOutputDto User { get; set; }
     }

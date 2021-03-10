@@ -13,7 +13,7 @@ namespace PrecisionReporters.Platform.Domain.Mappers
             {
                 Id = dto.Id,
                 CreationDate = dto.CreationDate.UtcDateTime,
-                Email = dto.Email,
+                Email = dto.Email.ToLower(),
                 Name = dto.Name,
                 Phone = dto.Phone,
                 Role = Enum.Parse<ParticipantType>(dto.Role, true),
@@ -25,7 +25,7 @@ namespace PrecisionReporters.Platform.Domain.Mappers
         {
             return new Participant
             {
-                Email = dto.Email,
+                Email = dto.Email.ToLower(),
                 Name = dto.Name,
                 Phone = dto.Phone,
                 Role = dto.Role

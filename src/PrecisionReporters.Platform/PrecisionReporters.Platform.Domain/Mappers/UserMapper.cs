@@ -29,7 +29,7 @@ namespace PrecisionReporters.Platform.Domain.Mappers
                 Id = dto.Id,
                 FirstName = dto.FirstName,
                 LastName = dto.LastName,
-                EmailAddress = dto.EmailAddress,
+                EmailAddress = dto.EmailAddress.ToLower(),
                 PhoneNumber = dto.PhoneNumber,
                 CreationDate = dto.CreationDate,
                 CompanyName = dto.CompanyName,
@@ -43,7 +43,7 @@ namespace PrecisionReporters.Platform.Domain.Mappers
             {
                 FirstName = dto.FirstName,
                 LastName = dto.LastName,
-                EmailAddress = dto.EmailAddress,
+                EmailAddress = dto.EmailAddress.ToLower(),
                 PhoneNumber = dto.PhoneNumber,
                 Password = dto.Password,
                 CompanyName = dto.CompanyName,
