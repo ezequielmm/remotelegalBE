@@ -83,7 +83,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
         [Route("forgotPassword")]
         public async Task<ActionResult<bool>> ForgotPassword(ForgotPasswordDto forgotPasswordDto)
         {
-            var forgotPasswordResult = await _userService.ForgotPassword(forgotPasswordDto.Email);
+            var forgotPasswordResult = await _userService.ForgotPassword(forgotPasswordDto);
             if (forgotPasswordResult.IsFailed)
                 return WebApiResponses.GetErrorResponse(forgotPasswordResult);
 
@@ -94,7 +94,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
         [Route("verifyPasswordToken")]
         public async Task<ActionResult<VerifyForgotPasswordOutputDto>> VerifyForgotPassword(VerifyForgotPasswordDto verifyUseRequestDto)
         {
-            var verifyForgotPasswordResult = await _userService.VerifyForgotPassword(verifyUseRequestDto.VerificationHash);
+            var verifyForgotPasswordResult = await _userService.VerifyForgotPassword(verifyUseRequestDto);
             if (verifyForgotPasswordResult.IsFailed)
                 return WebApiResponses.GetErrorResponse(verifyForgotPasswordResult);
 
@@ -103,13 +103,13 @@ namespace PrecisionReporters.Platform.Api.Controllers
 
         [HttpPut]
         [Route("changePassword")]
-        public async Task<ActionResult> ResetPassword(ResetPasswordDto resetPasswordDto)
+        public async Task<ActionResult<bool>> ResetPassword(ResetPasswordDto resetPasswordDto)
         {
-            var resetPasswordResult = await _userService.ResetPassword(resetPasswordDto.VerificationHash, resetPasswordDto.Password); ;
+            var resetPasswordResult = await _userService.ResetPassword(resetPasswordDto); ;
             if (resetPasswordResult.IsFailed)
                 return WebApiResponses.GetErrorResponse(resetPasswordResult);
 
-            return Ok();
+            return Ok(true);
         }
     }
 }

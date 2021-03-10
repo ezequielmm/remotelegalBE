@@ -7,6 +7,7 @@ using PrecisionReporters.Platform.Data.Handlers.Interfaces;
 using PrecisionReporters.Platform.Data.Repositories.Interfaces;
 using PrecisionReporters.Platform.Domain.Commons;
 using PrecisionReporters.Platform.Domain.Configurations;
+using PrecisionReporters.Platform.Domain.Dtos;
 using PrecisionReporters.Platform.Domain.Errors;
 using PrecisionReporters.Platform.Domain.Extensions;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
@@ -228,25 +229,40 @@ namespace PrecisionReporters.Platform.Domain.Services
             }
         }
 
-        public async Task<Result> ForgotPassword(string userEmail)
+        public async Task<Result> ForgotPassword(ForgotPasswordDto forgotPasswordDto)
         {
-            var cognitoEnabledUserResult = await _cognitoService.IsEnabled(userEmail);
+            var cognitoEnabledUserResult = await _cognitoService.IsEnabled(forgotPasswordDto.Email);
             if (cognitoEnabledUserResult.IsFailed)
                 return cognitoEnabledUserResult;
             
-            var verifyUser = await _verifyUserService.GetVerifyUserByEmail(userEmail, VerificationType.VerifyUser);
-            if (!cognitoEnabledUserResult.Value || !verifyUser.IsUsed)
-                return Result.Fail(new InvalidInputError("Invalid user"));
+            if (!cognitoEnabledUserResult.Value)
+            {
+                _log.LogError("Invalid user");
+                return Result.Ok();
+            }
 
-            var verifyForgotPassword = await SaveVerifyUser(verifyUser.User, VerificationType.ForgotPassword);
-            await SendEmailVerification(verifyUser.User, verifyForgotPassword);
+            var transactionResult = await _transactionHandler.RunAsync(async () =>
+            {
+                var verifyUser = await _verifyUserService.GetVerifyUserByEmail(forgotPasswordDto.Email, VerificationType.VerifyUser);
+                if (!verifyUser.IsUsed)
+                {
+                    verifyUser.IsUsed = true;
+                    await _verifyUserService.UpdateVerifyUser(verifyUser);
+                }
+
+                var verifyForgotPassword = await SaveVerifyUser(verifyUser.User, VerificationType.ForgotPassword);
+                await SendEmailVerification(verifyUser.User, verifyForgotPassword);
+            });
+
+            if (transactionResult.IsFailed)
+                return transactionResult;
 
             return Result.Ok();
         }
 
-        public async Task<Result<string>> VerifyForgotPassword(Guid verifyUserId)
+        public async Task<Result<string>> VerifyForgotPassword(VerifyForgotPasswordDto verifyUseRequestDto)
         {
-            var verifyUser = await _verifyUserService.GetVerifyUserById(verifyUserId);
+            var verifyUser = await _verifyUserService.GetVerifyUserById(verifyUseRequestDto.VerificationHash);
             if (verifyUser == null)
                 return Result.Fail(new InvalidInputError("Invalid Verification Code"));
 
@@ -257,13 +273,13 @@ namespace PrecisionReporters.Platform.Domain.Services
             return Result.Ok(verifyUser.User.EmailAddress);
         }
 
-        public async Task<Result> ResetPassword(Guid verifyUserId, string password)
+        public async Task<Result> ResetPassword(ResetPasswordDto resetPasswordDto)
         {
-            var verifyUser = await _verifyUserService.GetVerifyUserById(verifyUserId);
+            var verifyUser = await _verifyUserService.GetVerifyUserById(resetPasswordDto.VerificationHash);
             
             var transactionResult = await _transactionHandler.RunAsync(async () =>
             {
-                verifyUser.User.Password = password;
+                verifyUser.User.Password = resetPasswordDto.Password;
                 verifyUser.IsUsed = true;
 
                 await _cognitoService.ResetPassword(verifyUser.User);

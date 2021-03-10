@@ -4,6 +4,7 @@ using System;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Linq.Expressions;
+using PrecisionReporters.Platform.Domain.Dtos;
 
 namespace PrecisionReporters.Platform.Domain.Services.Interfaces
 {
@@ -18,8 +19,8 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
         Task<Result<GuestToken>> LoginGuestAsync(string emailAddress);
         Task<Result<User>> AddGuestUser(User user);
         Task RemoveGuestParticipants(List<Participant> participants);
-        Task<Result> ForgotPassword(string userEmail);
-        Task<Result> ResetPassword(Guid verifyuserId, string password);
-        Task<Result<string>> VerifyForgotPassword(Guid verifyUserId);
+        Task<Result> ForgotPassword(ForgotPasswordDto forgotPasswordDto);
+        Task<Result> ResetPassword(ResetPasswordDto resetPasswordDto);
+        Task<Result<string>> VerifyForgotPassword(VerifyForgotPasswordDto verifyUseRequestDto);
     }
 }
