@@ -82,10 +82,15 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             await _cognitoClient.AdminCreateUserAsync(adminCreateUser);
 
+            await SetPassword(user.EmailAddress, _cognitoConfiguration.GuestUsersPass);
+        }
+
+        private async Task SetPassword(string email, string password)
+        {
             var setPasswordRequest = new AdminSetUserPasswordRequest
             {
-                Username = user.EmailAddress,
-                Password = _cognitoConfiguration.GuestUsersPass,
+                Username = email,
+                Password = password,
                 Permanent = true,
                 UserPoolId = _cognitoConfiguration.UserPoolId
             };
@@ -160,6 +165,20 @@ namespace PrecisionReporters.Platform.Domain.Services
                 return Result.Fail(new ResourceNotFoundError($"User {emailAddress} not found"));
 
             return Result.Ok(registeredUserResult.Enabled);
+        }
+
+        public async Task<Result> ResetPassword(User user)
+        {
+            try
+            {
+                await SetPassword(user.EmailAddress, user.Password);
+            }
+            catch (Exception ex)
+            {
+                throw new AmazonCognitoIdentityProviderException(new Exception("Failed to Reset Password on Aws Cognito", ex));
+            }
+
+            return Result.Ok();
         }
 
         public async Task<Result> DeleteUserAsync(User user)

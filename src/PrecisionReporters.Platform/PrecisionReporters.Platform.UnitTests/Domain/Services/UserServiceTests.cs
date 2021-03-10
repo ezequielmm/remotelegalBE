@@ -179,7 +179,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             // Assert
             Assert.NotNull(result);
-            Assert.IsType<VerifyUser>(result);
+            Assert.IsType<Result<VerifyUser>>(result);
 
         }
 
@@ -187,7 +187,6 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         public async Task VerifyUser_Should_LogWarning_WhenOlderThan24hours()
         {
             // Arrange
-            var expectedErrorMessage = ApplicationConstants.VerificationCodeException;
             var id = Guid.NewGuid();
             var user = UserFactory.GetUserByGivenId(id);
 
@@ -201,19 +200,18 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var service = InitializeService(verifyUserService: verifyUserServiceMock, log: logMock);
 
             // Act
-            var ex = await Assert.ThrowsAsync<HashExpiredOrAlreadyUsedException>(async () => await service.VerifyUser(verifyUser.Id));
+            var result = await service.VerifyUser(verifyUser.Id);
 
             // Assert
             verifyUserServiceMock.Verify(x => x.GetVerifyUserById(It.IsAny<Guid>()), Times.Once);
             Assert.Single(logMock.Invocations);
-            Assert.Equal(expectedErrorMessage, ex.Message);
+            Assert.True(result.IsFailed);
         }
 
         [Fact]
         public async Task VerifyUser_Should_LogWarning_WhenIsUsedIsTrue()
         {
             // Arrange
-            var expectedErrorMessage = ApplicationConstants.VerificationCodeException;
             var id = Guid.NewGuid();
             var user = UserFactory.GetUserByGivenId(id);
 
@@ -226,12 +224,12 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var service = InitializeService(verifyUserService: verifyUserServiceMock, log: logMock);
 
             // Act
-            var ex = await Assert.ThrowsAsync<HashExpiredOrAlreadyUsedException>(async () => await service.VerifyUser(verifyUser.Id));
+            var result = await service.VerifyUser(verifyUser.Id);
 
             // Assert
             verifyUserServiceMock.Verify(x => x.GetVerifyUserById(It.IsAny<Guid>()), Times.Once);
             Assert.Single(logMock.Invocations);
-            Assert.Equal(expectedErrorMessage, ex.Message);
+            Assert.True(result.IsFailed);
         }
 
         [Fact]

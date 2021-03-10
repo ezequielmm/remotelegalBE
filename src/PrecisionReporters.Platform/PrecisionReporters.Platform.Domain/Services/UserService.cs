@@ -70,27 +70,22 @@ namespace PrecisionReporters.Platform.Domain.Services
             await _awsEmailService.SetTemplateEmailRequest(emailData);
         }
 
-        public async Task<VerifyUser> VerifyUser(Guid verifyuserId)
+        public async Task<Result<VerifyUser>> VerifyUser(Guid verifyuserId)
         {
             var verifyUser = await _verifyUserService.GetVerifyUserById(verifyuserId);
-            var expirationTime = int.Parse(_verificationLinkConfiguration.ExpirationTime);
-
-            if (verifyUser.CreationDate < DateTime.UtcNow.AddHours(-expirationTime) || verifyUser.IsUsed)
-            {
-                _log.LogWarning(ApplicationConstants.VerificationCodeException);
-
-                // TODO: return a result and remove this exception from the project
-                throw new HashExpiredOrAlreadyUsedException(ApplicationConstants.VerificationCodeException);
-            }
+            
+            var checkVerficationResult = CheckVerification(verifyUser);
+            if (checkVerficationResult.IsFailed)
+                return checkVerficationResult;
 
             await _cognitoService.ConfirmUserAsync(verifyUser.User.EmailAddress);
 
             verifyUser.IsUsed = true;
             var result = await _verifyUserService.UpdateVerifyUser(verifyUser);
 
-            return result;
+            return Result.Ok(result);
         }
-
+        
         public async Task ResendVerificationEmailAsync(string email)
         {
             var user = await _userRepository.GetFirstOrDefaultByFilter(x => x.EmailAddress.Equals(email));
@@ -109,6 +104,19 @@ namespace PrecisionReporters.Platform.Domain.Services
         public async Task<List<User>> GetUsersByFilter(Expression<Func<User, bool>> filter = null, string[] include = null)
         {
             return await _userRepository.GetByFilter(filter, include);
+        }
+
+        private Result CheckVerification(VerifyUser verifyUser)
+        {
+            var expirationTime = int.Parse(_verificationLinkConfiguration.ExpirationTime);
+
+            if (verifyUser.CreationDate < DateTime.UtcNow.AddHours(-expirationTime) || verifyUser.IsUsed)
+            {
+                _log.LogWarning(ApplicationConstants.VerificationCodeException);
+                 return Result.Fail(new Error(ApplicationConstants.VerificationCodeException));
+            }
+
+            return Result.Ok();
         }
 
         private async Task<Result<User>> CreateUser(User user)
@@ -232,6 +240,38 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             var verifyForgotPassword = await SaveVerifyUser(verifyUser.User, VerificationType.ForgotPassword);
             await SendEmailVerification(verifyUser.User, verifyForgotPassword);
+
+            return Result.Ok();
+        }
+
+        public async Task<Result<string>> VerifyForgotPassword(Guid verifyUserId)
+        {
+            var verifyUser = await _verifyUserService.GetVerifyUserById(verifyUserId);
+            if (verifyUser == null)
+                return Result.Fail(new InvalidInputError("Invalid Verification Code"));
+
+            var checkVerficationResult = CheckVerification(verifyUser);
+            if (checkVerficationResult.IsFailed)
+                return checkVerficationResult;
+
+            return Result.Ok(verifyUser.User.EmailAddress);
+        }
+
+        public async Task<Result> ResetPassword(Guid verifyUserId, string password)
+        {
+            var verifyUser = await _verifyUserService.GetVerifyUserById(verifyUserId);
+            
+            var transactionResult = await _transactionHandler.RunAsync(async () =>
+            {
+                verifyUser.User.Password = password;
+                verifyUser.IsUsed = true;
+
+                await _cognitoService.ResetPassword(verifyUser.User);
+                await _verifyUserService.UpdateVerifyUser(verifyUser);
+            });
+
+            if (transactionResult.IsFailed)
+                return transactionResult;
 
             return Result.Ok();
         }

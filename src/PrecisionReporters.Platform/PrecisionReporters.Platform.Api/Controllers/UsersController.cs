@@ -5,6 +5,7 @@ using PrecisionReporters.Platform.Domain.Mappers;
 using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using System.Threading.Tasks;
+using System;
 
 namespace PrecisionReporters.Platform.Api.Controllers
 {
@@ -80,11 +81,33 @@ namespace PrecisionReporters.Platform.Api.Controllers
 
         [HttpPost]
         [Route("forgotPassword")]
-        public async Task<ActionResult> ForgotPassword(ForgotPasswordDto forgotPasswordDto)
+        public async Task<ActionResult<bool>> ForgotPassword(ForgotPasswordDto forgotPasswordDto)
         {
-            var forgotPasswordResult = await _userService.ForgotPassword(forgotPasswordDto.EmailAddress);
+            var forgotPasswordResult = await _userService.ForgotPassword(forgotPasswordDto.Email);
             if (forgotPasswordResult.IsFailed)
                 return WebApiResponses.GetErrorResponse(forgotPasswordResult);
+
+            return Ok(true);
+        }
+
+        [HttpPost]
+        [Route("verifyPasswordToken")]
+        public async Task<ActionResult<VerifyForgotPasswordOutputDto>> VerifyForgotPassword(VerifyForgotPasswordDto verifyUseRequestDto)
+        {
+            var verifyForgotPasswordResult = await _userService.VerifyForgotPassword(verifyUseRequestDto.VerificationHash);
+            if (verifyForgotPasswordResult.IsFailed)
+                return WebApiResponses.GetErrorResponse(verifyForgotPasswordResult);
+
+            return Ok(new VerifyForgotPasswordOutputDto { Email = verifyForgotPasswordResult.Value });
+        }
+
+        [HttpPut]
+        [Route("changePassword")]
+        public async Task<ActionResult> ResetPassword(ResetPasswordDto resetPasswordDto)
+        {
+            var resetPasswordResult = await _userService.ResetPassword(resetPasswordDto.VerificationHash, resetPasswordDto.Password); ;
+            if (resetPasswordResult.IsFailed)
+                return WebApiResponses.GetErrorResponse(resetPasswordResult);
 
             return Ok();
         }

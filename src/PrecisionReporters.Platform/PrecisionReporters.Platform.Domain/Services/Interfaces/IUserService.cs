@@ -10,7 +10,7 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
     public interface IUserService
     {
         Task<Result<User>> SignUpAsync(User user);
-        Task<VerifyUser> VerifyUser(Guid verifyuserId);
+        Task<Result<VerifyUser>> VerifyUser(Guid verifyuserId);
         Task ResendVerificationEmailAsync(string email);
         Task<Result<User>> GetUserByEmail(string email);
         Task<List<User>> GetUsersByFilter(Expression<Func<User, bool>> filter = null, string[] include = null);
@@ -19,5 +19,7 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
         Task<Result<User>> AddGuestUser(User user);
         Task RemoveGuestParticipants(List<Participant> participants);
         Task<Result> ForgotPassword(string userEmail);
+        Task<Result> ResetPassword(Guid verifyuserId, string password);
+        Task<Result<string>> VerifyForgotPassword(Guid verifyUserId);
     }
 }
