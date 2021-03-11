@@ -467,7 +467,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var verifyUser = VerifyUserFactory.GetVerifyForgotPassword(user);
             verifyUser.IsUsed = true;
             var cognitoServiceMock = new Mock<ICognitoService>();
-            cognitoServiceMock.Setup(x => x.IsEnabled(It.IsAny<string>())).ReturnsAsync(Result.Ok(true));
+            cognitoServiceMock.Setup(x => x.IsEnabled(It.IsAny<string>())).ReturnsAsync(true);
             var verifyUserServiceMock = new Mock<IVerifyUserService>();
             verifyUserServiceMock.Setup(x => x.GetVerifyUserByEmail(It.IsAny<string>(), It.IsAny<VerificationType>())).ReturnsAsync(verifyUser);
             verifyUserServiceMock.Setup(x => x.CreateVerifyUser(It.IsAny<VerifyUser>())).ReturnsAsync(verifyUser);
@@ -502,7 +502,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var verifyUser = VerifyUserFactory.GetVerifyForgotPassword(user);
             verifyUser.IsUsed = false;
             var cognitoServiceMock = new Mock<ICognitoService>();
-            cognitoServiceMock.Setup(x => x.IsEnabled(It.IsAny<string>())).ReturnsAsync(Result.Ok(true));
+            cognitoServiceMock.Setup(x => x.IsEnabled(It.IsAny<string>())).ReturnsAsync(true);
             var verifyUserServiceMock = new Mock<IVerifyUserService>();
             verifyUserServiceMock.Setup(x => x.GetVerifyUserByEmail(It.IsAny<string>(), It.IsAny<VerificationType>())).ReturnsAsync(verifyUser);
             verifyUserServiceMock.Setup(x => x.CreateVerifyUser(It.IsAny<VerifyUser>())).ReturnsAsync(verifyUser);
@@ -537,7 +537,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var user = UserFactory.GetUserByGivenEmail(dto.Email);
             var verifyUser = VerifyUserFactory.GetVerifyForgotPassword(user);
             var cognitoServiceMock = new Mock<ICognitoService>();
-            cognitoServiceMock.Setup(x => x.IsEnabled(It.IsAny<string>())).ReturnsAsync(Result.Ok(false));
+            cognitoServiceMock.Setup(x => x.IsEnabled(It.IsAny<string>())).ReturnsAsync(false);
             var verifyUserServiceMock = new Mock<IVerifyUserService>();
             verifyUserServiceMock.Setup(x => x.GetVerifyUserByEmail(It.IsAny<string>(), It.IsAny<VerificationType>())).ReturnsAsync(verifyUser);
             verifyUserServiceMock.Setup(x => x.CreateVerifyUser(It.IsAny<VerifyUser>())).ReturnsAsync(verifyUser);
