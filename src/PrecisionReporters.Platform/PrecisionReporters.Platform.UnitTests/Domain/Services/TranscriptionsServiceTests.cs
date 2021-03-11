@@ -95,6 +95,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var depositionId = Guid.NewGuid();
             var deposition = DepositionFactory.GetDeposition(depositionId, Guid.NewGuid());
             deposition.Room.RecordingStartDate = DateTime.UtcNow;
+            deposition.Events = DepositionFactory.GetDepositionEvents();
 
             _depositionServiceMock.Setup(x => x.GetByIdWithIncludes(
                 It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(Result.Ok(deposition));
@@ -119,6 +120,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var depositionId = Guid.NewGuid();
             var deposition = DepositionFactory.GetDeposition(depositionId, Guid.NewGuid());
             deposition.Room.RecordingStartDate = DateTime.UtcNow;
+
+            deposition.Events = DepositionFactory.GetDepositionEvents();
 
             _depositionServiceMock.Setup(x => x.GetByIdWithIncludes(
                 It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(Result.Ok(deposition));

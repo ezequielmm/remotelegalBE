@@ -100,7 +100,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 return transcriptionsResult.ToResult<List<TranscriptionTimeDto>>();
 
             var deposition = depositionResult.Value;
-            var startedAt =  GetDateTimestamp(deposition.Room.RecordingStartDate.Value);
+            var startedAt =  VideoStartDate(deposition.Events);
             var compositionIntervals = _compositionService.GetDepositionRecordingIntervals(deposition.Events, startedAt);
 
             var resultList = transcriptionsResult.Value

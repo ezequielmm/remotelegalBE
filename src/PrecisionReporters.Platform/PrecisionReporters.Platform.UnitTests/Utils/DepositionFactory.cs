@@ -149,6 +149,22 @@ namespace PrecisionReporters.Platform.UnitTests.Utils
             };
         }
 
+        public static List<DepositionEvent> GetDepositionEvents() {
+            return new List<DepositionEvent> 
+            {
+                new DepositionEvent 
+                {
+                    EventType = EventType.OnTheRecord,
+                    CreationDate = DateTime.UtcNow
+                },
+                new DepositionEvent 
+                {
+                    EventType = EventType.OffTheRecord,
+                    CreationDate = DateTime.UtcNow.AddMinutes(5)
+                }
+            };
+        }
+
         public static Deposition GetDepositionWithoutRequester(Guid depositionId, Guid caseId)
         {
             return new Deposition
