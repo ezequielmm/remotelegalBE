@@ -125,6 +125,7 @@ namespace PrecisionReporters.Platform.Api
             // Authorization
             services.AddScoped<IAuthorizationHandler, UserAuthorizeHandler>();
             services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
+            services.AddTransient<IAuthorizationHandler, HubAuthorizeHandler>();
 
             // Mappers
             services.AddSingleton<IMapper<Case, CaseDto, CreateCaseDto>, CaseMapper>();

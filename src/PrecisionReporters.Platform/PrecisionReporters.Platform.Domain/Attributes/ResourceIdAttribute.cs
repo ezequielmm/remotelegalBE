@@ -1,9 +1,9 @@
 ﻿using PrecisionReporters.Platform.Data.Enums;
 using System;
 
-namespace PrecisionReporters.Platform.Api.Authorization.Attributes
+namespace PrecisionReporters.Platform.Domain.Attributes
 {
-    [AttributeUsage(AttributeTargets.Parameter)]
+    [AttributeUsage(AttributeTargets.Parameter | AttributeTargets.Property)]
     public class ResourceIdAttribute : Attribute
     {
         public ResourceIdAttribute(ResourceType resourceType)

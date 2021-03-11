@@ -1,8 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Controllers;
-using PrecisionReporters.Platform.Api.Authorization.Attributes;
 using PrecisionReporters.Platform.Data.Enums;
+using PrecisionReporters.Platform.Domain.Attributes;
 using System.Linq;
 using System.Reflection;
 

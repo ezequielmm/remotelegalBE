@@ -15,6 +15,7 @@ using PrecisionReporters.Platform.Data.Enums;
 using PrecisionReporters.Platform.Domain.Commons;
 using PrecisionReporters.Platform.Domain.Extensions;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
+using PrecisionReporters.Platform.Domain.Attributes;
 
 namespace PrecisionReporters.Platform.Api.Controllers
 {

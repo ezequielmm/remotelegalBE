@@ -20,7 +20,6 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly IDepositionDocumentRepository _depositionDocumentRepository;
         private readonly ISignalRNotificationManager _signalRNotificationManager;
         private readonly IMapper<Transcription, TranscriptionDto, object> _transcriptionMapper;
-
         private readonly IDepositionService _depositionService;
         private readonly ICompositionService _compositionService;
 
@@ -56,7 +55,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 Action = NotificationAction.Create,
                 EntityType = NotificationEntity.Transcript,
                 Content = transcriptionDto
-            };
+            };           
 
             await _signalRNotificationManager.SendNotificationToGroupMembers(transcriptionDto.DepositionId, notificationtDto);
 

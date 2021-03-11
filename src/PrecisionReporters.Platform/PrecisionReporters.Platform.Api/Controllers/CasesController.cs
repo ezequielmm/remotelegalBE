@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using PrecisionReporters.Platform.Data.Enums;
 using PrecisionReporters.Platform.Api.Helpers;
 using PrecisionReporters.Platform.Api.Authorization.Attributes;
+using PrecisionReporters.Platform.Domain.Attributes;
 
 namespace PrecisionReporters.Platform.Api.Controllers
 {
