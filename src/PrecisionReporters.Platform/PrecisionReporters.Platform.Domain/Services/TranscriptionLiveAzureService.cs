@@ -6,7 +6,6 @@ using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Domain.Configurations;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using System;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -36,8 +35,6 @@ namespace PrecisionReporters.Platform.Domain.Services
             _transcriptionService = transcriptionService;
             _logger = logger;
         }
-
-        public event TranscriptionAvailableEventHandler OnTranscriptionAvailable;
 
         public async Task RecognizeAsync(byte[] audioChunk)
         {
@@ -121,9 +118,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                     Confidence = bestTranscription != null ? bestTranscription.Confidence : 0.0
                 };
 
-                var transcriptionResult = await _transcriptionService.StoreTranscription(transcription, _depositionId, _userEmail);
-
-                OnTranscriptionAvailable?.Invoke(this, new TranscriptionEventArgs { Transcription = transcriptionResult.Value });
+                await _transcriptionService.StoreTranscription(transcription, _depositionId, _userEmail);
             }
             catch (ObjectDisposedException ex)
             {
@@ -131,6 +126,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 _logger.LogError(ex, "Trying to process transcription when the websocket was already closed");
             }
         }
+
         public void StopTranscriptStream()
         {
             _shouldClose = true;

@@ -38,9 +38,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         private bool _shouldClose = false;
         private static readonly SemaphoreSlim _shouldCloseSemaphore = new SemaphoreSlim(1);
         private bool _isClosed = true;
-        private static readonly SemaphoreSlim _isClosedSemaphore = new SemaphoreSlim(1);
-
-        public event TranscriptionAvailableEventHandler OnTranscriptionAvailable;
+        private static readonly SemaphoreSlim _isClosedSemaphore = new SemaphoreSlim(1);       
 
         public TranscriptionLiveGCPService(IOptions<GcpConfiguration> gcpConfiguration, ITranscriptionService transcriptionService)
         {
@@ -109,8 +107,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 }
                 _shouldCloseSemaphore.Release();
 
-                var transcriptionResult = await _transcriptionService.StoreTranscription(transcription, depositionId, userEmail);
-                OnTranscriptionAvailable?.Invoke(this, new TranscriptionEventArgs { Transcription = transcriptionResult.Value });
+                await _transcriptionService.StoreTranscription(transcription, depositionId, userEmail);
             }
 
             await _isClosedSemaphore.WaitAsync();

@@ -197,7 +197,7 @@ namespace PrecisionReporters.Platform.Api
             });
 
             services.AddSingleton(typeof(IAmazonCognitoIdentityProvider),
-                _ => new AmazonCognitoIdentityProviderClient(RegionEndpoint.GetBySystemName(appConfiguration.AwsStorageConfiguration.S3BucketRegion) ));
+                _ => new AmazonCognitoIdentityProviderClient(RegionEndpoint.GetBySystemName(appConfiguration.AwsStorageConfiguration.S3BucketRegion)));
             services.AddSingleton(typeof(IAmazonSimpleEmailService),
                 _ => new AmazonSimpleEmailServiceClient(RegionEndpoint.GetBySystemName(appConfiguration.AwsStorageConfiguration.S3BucketRegion)));
 
@@ -255,14 +255,14 @@ namespace PrecisionReporters.Platform.Api
             services.AddScoped<IBreakRoomRepository, BreakRoomRepository>();
             services.AddScoped<IDepositionDocumentRepository, DepositionDocumentRepository>();
 
-            services.AddDbContext<ApplicationDbContext>(options => 
+            services.AddDbContext<ApplicationDbContext>(options =>
             {
                 options.UseMySQL(appConfiguration.ConnectionStrings.MySqlConnection);
             });
 
             services.Configure<ConnectionStrings>(x =>
             {
-                x.RedisConnectionString = appConfiguration.ConnectionStrings.RedisConnectionString;                
+                x.RedisConnectionString = appConfiguration.ConnectionStrings.RedisConnectionString;
             });
 
             services.AddScoped<IDatabaseTransactionProvider, ApplicationDbContextTransactionProvider>();
@@ -278,18 +278,10 @@ namespace PrecisionReporters.Platform.Api
             {
                 options.Audience = appConfiguration.CognitoConfiguration.ClientId;
                 options.Authority = appConfiguration.CognitoConfiguration.Authority;
-                
+
                 options.Events = new JwtBearerEvents
                 {
-                    OnMessageReceived = context =>
-                    {
-                        var accessToken = context.Request.Query["token"];
-                        if (!string.IsNullOrEmpty(accessToken))
-                        {
-                            context.Token = accessToken;
-                        }
-                        return Task.CompletedTask;
-                    }
+                    OnMessageReceived = GetTokenFromWebSocket
                 };
             })
             .AddJwtBearer("GuestAuthenticationScheme", options =>
@@ -302,15 +294,7 @@ namespace PrecisionReporters.Platform.Api
                     };
                     options.Events = new JwtBearerEvents
                     {
-                        OnMessageReceived = context =>
-                        {
-                            var accessToken = context.Request.Query["token"];
-                            if (!string.IsNullOrEmpty(accessToken))
-                            {
-                                context.Token = accessToken;
-                            }
-                            return Task.CompletedTask;
-                        }
+                        OnMessageReceived = GetTokenFromWebSocket
                     };
                 }
             );
@@ -320,6 +304,25 @@ namespace PrecisionReporters.Platform.Api
             services.AddSignalR()
                 .AddNewtonsoftJsonProtocol()
                 .AddStackExchangeRedis(appConfiguration.ConnectionStrings.RedisConnectionString);
+        }
+
+        private Task GetTokenFromWebSocket(MessageReceivedContext context)
+        {
+            // Trasncriptions WS sends it like this
+            var accessToken = context.Request.Query["token"];
+            if (!string.IsNullOrEmpty(accessToken))
+            {
+                context.Token = accessToken;
+                return Task.CompletedTask;
+            }
+
+            // SignalR WS sends it like this
+            accessToken = context.Request.Query["access_token"];
+            if (!string.IsNullOrEmpty(accessToken))
+            {
+                context.Token = accessToken;
+            }
+            return Task.CompletedTask;
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -372,6 +375,6 @@ namespace PrecisionReporters.Platform.Api
             });
 
             db.Database.Migrate();
-        }        
+        }
     }
 }

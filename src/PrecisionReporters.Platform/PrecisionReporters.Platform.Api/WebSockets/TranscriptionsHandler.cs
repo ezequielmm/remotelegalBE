@@ -18,13 +18,11 @@ namespace PrecisionReporters.Platform.Api.WebSockets
     public class TranscriptionsHandler : ITranscriptionsHandler
     {
         private readonly ITranscriptionLiveService _transcriptionLiveService;
-        private readonly IMapper<Transcription, TranscriptionDto, object> _transcriptionMapper;
         private readonly Regex _jsonRegex = new Regex("(?:(?<b>{))(?<v>.*?)(?(p)%|})");
 
-        public TranscriptionsHandler(ITranscriptionLiveService transcriptionLiveService, IMapper<Transcription, TranscriptionDto, object> transcriptionMapper)
+        public TranscriptionsHandler(ITranscriptionLiveService transcriptionLiveService)
         {
             _transcriptionLiveService = transcriptionLiveService;
-            _transcriptionMapper = transcriptionMapper;
         }
 
         public async Task HandleConnection(HttpContext context, WebSocket webSocket)
@@ -35,14 +33,7 @@ namespace PrecisionReporters.Platform.Api.WebSockets
             var sampleRate = int.Parse(context.Request.Query["sampleRate"]);
             var incomingMessage = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
 
-            await _transcriptionLiveService.InitializeRecognition(userEmail, depositionId, sampleRate);
-            _transcriptionLiveService.OnTranscriptionAvailable += async (s, e) => {
-                var transcriptionDto = _transcriptionMapper.ToDto(e.Transcription);
-                var message = JsonConvert.SerializeObject(transcriptionDto, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore, ContractResolver = new CamelCasePropertyNamesContractResolver() });
-                var bytes = Encoding.UTF8.GetBytes(message);
-
-                await webSocket.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, CancellationToken.None);
-            };
+            await _transcriptionLiveService.InitializeRecognition(userEmail, depositionId, sampleRate);            
 
             while (!incomingMessage.CloseStatus.HasValue)
             {
