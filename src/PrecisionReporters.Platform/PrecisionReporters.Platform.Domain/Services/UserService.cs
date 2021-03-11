@@ -232,10 +232,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         public async Task<Result> ForgotPassword(ForgotPasswordDto forgotPasswordDto)
         {
             var cognitoEnabledUserResult = await _cognitoService.IsEnabled(forgotPasswordDto.Email);
-            if (cognitoEnabledUserResult.IsFailed)
-                return cognitoEnabledUserResult;
-            
-            if (!cognitoEnabledUserResult.Value)
+            if (!cognitoEnabledUserResult)
             {
                 _log.LogError("Invalid user");
                 return Result.Ok();

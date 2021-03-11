@@ -1,6 +1,7 @@
 ﻿using Amazon.CognitoIdentityProvider;
 using Amazon.CognitoIdentityProvider.Model;
 using FluentResults;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Domain.Configurations;
@@ -16,11 +17,13 @@ namespace PrecisionReporters.Platform.Domain.Services
     {
         private readonly CognitoConfiguration _cognitoConfiguration;
         private readonly IAmazonCognitoIdentityProvider _cognitoClient;
+        private readonly ILogger<CognitoService> _log;
 
-        public CognitoService(IOptions<CognitoConfiguration> cognitoConfiguration, IAmazonCognitoIdentityProvider cognitoClient)
+        public CognitoService(IOptions<CognitoConfiguration> cognitoConfiguration, IAmazonCognitoIdentityProvider cognitoClient, ILogger<CognitoService> log)
         {
             _cognitoConfiguration = cognitoConfiguration.Value;
             _cognitoClient = cognitoClient;
+            _log = log;
         }
 
         public async Task CreateAsync(User user)
@@ -152,19 +155,27 @@ namespace PrecisionReporters.Platform.Domain.Services
             return Result.Ok();
         }
 
-        public async Task<Result<bool>> IsEnabled(string emailAddress)
+        public async Task<bool> IsEnabled(string emailAddress)
         {
-            var request = new AdminGetUserRequest
+            try
             {
-                Username = emailAddress,
-                UserPoolId = _cognitoConfiguration.UserPoolId
-            };
+                var request = new AdminGetUserRequest
+                {
+                    Username = emailAddress,
+                    UserPoolId = _cognitoConfiguration.UserPoolId
+                };
 
-            var registeredUserResult = await _cognitoClient.AdminGetUserAsync(request);
-            if (registeredUserResult == null)
-                return Result.Fail(new ResourceNotFoundError($"User {emailAddress} not found"));
+                var registeredUserResult = await _cognitoClient.AdminGetUserAsync(request);
+                if (registeredUserResult == null)
+                    return false;
 
-            return Result.Ok(registeredUserResult.Enabled);
+                return registeredUserResult.Enabled;
+            }
+            catch (Exception ex)
+            {
+                _log.LogError(ex, ex.Message);
+                return false;
+            }
         }
 
         public async Task<Result> ResetPassword(User user)
