@@ -159,7 +159,7 @@
                 },
                 {
                     "name": "AppConfiguration__ConnectionStrings__RedisConnectionString",
-                    "value": "host=tf-rep-group-develop.xzj4s3.ng.0001.use1.cache.amazonaws.com;port=6379"
+                    "value": "tf-rep-group-develop.xzj4s3.ng.0001.use1.cache.amazonaws.com:6379"
                 }
             ],
             "secrets": [
