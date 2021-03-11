@@ -43,7 +43,8 @@ namespace PrecisionReporters.Platform.Domain.Mappers
                     FirstName = model.AddedBy.FirstName,
                     LastName = model.AddedBy.LastName
                 },
-                SharedAt = model.SharedAt.HasValue ? new DateTimeOffset(model.SharedAt.Value, TimeSpan.Zero) : (DateTimeOffset?)null
+                SharedAt = model.SharedAt.HasValue ? new DateTimeOffset(model.SharedAt.Value, TimeSpan.Zero) : (DateTimeOffset?)null,
+                DocumentType = model.DocumentType
             };
         }
     }

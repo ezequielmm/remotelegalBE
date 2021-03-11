@@ -1,4 +1,7 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+using PrecisionReporters.Platform.Data.Enums;
+using System;
 
 namespace PrecisionReporters.Platform.Domain.Dtos
 {
@@ -12,5 +15,7 @@ namespace PrecisionReporters.Platform.Domain.Dtos
         public UserOutputDto AddedBy { get; set; }
         public DateTimeOffset? SharedAt { get; set; }
         public string StampLabel { get; set; }
+        [JsonConverter(typeof(StringEnumConverter))]
+        public DocumentType DocumentType { get; set; }
     }
 }
