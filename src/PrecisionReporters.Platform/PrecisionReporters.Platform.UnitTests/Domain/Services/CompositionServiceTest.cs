@@ -47,7 +47,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             events.Add(new DepositionEvent { CreationDate = DateTime.UtcNow.AddSeconds(56), EventType = EventType.OnTheRecord });
             events.Add(new DepositionEvent { CreationDate = DateTime.UtcNow, EventType = EventType.StartDeposition }); 
             events.Add(new DepositionEvent { CreationDate = DateTime.UtcNow.AddSeconds(125), EventType = EventType.OffTheRecord });
-            var result = _service.GetDepositionRecordingIntervals(events, new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds());
+            var result = await Task.Run(() => _service.GetDepositionRecordingIntervals(events, new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds()));
 
             Assert.Equal(2, result.Count);
         }

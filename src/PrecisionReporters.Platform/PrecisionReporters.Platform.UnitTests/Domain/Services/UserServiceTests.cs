@@ -423,7 +423,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var service = InitializeService(cognitoService: cognitoServiceMock);
 
             // Act
-            var result = service.RemoveGuestParticipants(participants);
+            await service.RemoveGuestParticipants(participants);
 
             // Assert
             cognitoServiceMock.Verify(x => x.DeleteUserAsync(It.IsAny<User>()), Times.Once);
@@ -450,7 +450,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var service = InitializeService(cognitoService: cognitoServiceMock);
 
             // Act
-            var result = service.RemoveGuestParticipants(participants);
+            await service.RemoveGuestParticipants(participants);
 
             // Assert
             cognitoServiceMock.Verify(x => x.DeleteUserAsync(It.IsAny<User>()), Times.Never);

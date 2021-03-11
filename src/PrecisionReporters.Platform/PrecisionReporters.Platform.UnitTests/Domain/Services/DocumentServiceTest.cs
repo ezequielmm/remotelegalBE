@@ -751,7 +751,6 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         public async Task GetGetFileSignedUrl_ShouldReturnFail_IfDocumentNotFound()
         {
             // Arrange
-            var userEmail = "notExisitingUser@mail.com";
             var documentId = Guid.NewGuid();
             var depositionId = Guid.NewGuid();
             var expectedError = $"Could not find any document with Id {documentId}";
@@ -776,7 +775,6 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         public async Task GetGetFileSignedUrl_ShouldReturn_SignedUrl()
         {
             // Arrange
-            var userEmail = "notExisitingUser@mail.com";
             var documentId = Guid.NewGuid();
             var depositionId = Guid.NewGuid();
             var signedUrl = "signedUrl";

@@ -5,12 +5,10 @@ using PrecisionReporters.Platform.Api.Helpers;
 using PrecisionReporters.Platform.Domain.Mappers;
 using PrecisionReporters.Platform.Api.WebSockets;
 using PrecisionReporters.Platform.Data.Entities;
-using PrecisionReporters.Platform.Domain.Dtos;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Claims;
 using System.Threading.Tasks;
 
 namespace PrecisionReporters.Platform.Api.Controllers

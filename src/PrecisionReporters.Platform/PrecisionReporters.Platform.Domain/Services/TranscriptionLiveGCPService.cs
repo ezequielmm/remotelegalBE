@@ -51,9 +51,11 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task InitializeRecognition(string userEmail, string depositionId, int sampleRate)
         {
-            _userEmail = userEmail;
-            _depositionId = depositionId;
-            _sampleRate = sampleRate;
+             await Task.Run(() => {
+                _userEmail = userEmail;
+                _depositionId = depositionId;
+                _sampleRate = sampleRate;
+            });
         }
 
         public async Task RecognizeAsync(byte[] audioChunk)
