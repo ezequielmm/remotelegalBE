@@ -266,7 +266,7 @@
                 }
             },
             "memoryReservation": 256,
-            "cpu": 10
+            "cpu": 300
         }
     ],
     "family": "prp-be-task-uat",
@@ -278,6 +278,6 @@
     "requiresCompatibilities": [
         "FARGATE"
     ],
-    "cpu": "512",
-    "memory": "1024"
+    "cpu": "1024",
+    "memory": "2048"
 }

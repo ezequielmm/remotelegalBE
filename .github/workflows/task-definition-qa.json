@@ -215,6 +215,58 @@
                     "awslogs-stream-prefix": "ecs"
                 }
             }
+        },
+        {
+            "name": "datadog-agent",
+            "image": "datadog/agent:latest",
+            "portMappings": [
+                {
+                    "containerPort": 8126,
+                    "hostPort": 8126,
+                    "protocol": "tcp"
+                }
+            ],
+            "essential": true,
+            "environment": [
+                {
+                    "name": "ECS_FARGATE",
+                    "value": "true"
+                },
+                {
+                    "name": "DD_LOGS_ENABLED",
+                    "value": "true"
+                },
+                {
+                    "name": "DD_PROCESS_AGENT_ENABLED",
+                    "value": "true"
+                },
+                {
+                    "name": "DD_APM_ENABLED",
+                    "value": "false"
+                },
+                {
+                    "name": "DD_APM_NON_LOCAL_TRAFFIC",
+                    "value": "false"
+                }
+            ],
+            "secrets": [
+                {
+                    "name": "DD_API_KEY",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:DATADOG_API_KEY-9EoxaV"
+                }
+            ],
+            "mountPoints": [],
+            "volumesFrom": [],
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-group": "/ecs/datadog-agent-qa",
+                    "awslogs-region": "us-east-1",
+                    "awslogs-stream-prefix": "ecs"
+                }
+            },
+            "memoryReservation": 256,
+            "cpu": 300
         }
     ],
     "family": "prp-be-task-qa",
@@ -226,6 +278,6 @@
     "requiresCompatibilities": [
         "FARGATE"
     ],
-    "cpu": "512",
-    "memory": "1024"
+    "cpu": "1024",
+    "memory": "2048"
 }
