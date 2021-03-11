@@ -177,6 +177,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 DepositionSortField.CaseName => x => x.Case.Name,
                 DepositionSortField.Company => x => x.Requester.CompanyName,
                 DepositionSortField.Requester => x => x.Requester.FirstName,
+                DepositionSortField.Job => x => x.Job,
                 _ => x => x.StartDate,
             };
 
@@ -757,6 +758,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 DepositionSortField.CaseName => x => x.Case.Name,
                 DepositionSortField.Company => x => x.Requester.CompanyName,
                 DepositionSortField.Requester => x => x.Requester.FirstName,
+                DepositionSortField.Job => x => x.Job,
                 _ => x => x.StartDate,
             };
 

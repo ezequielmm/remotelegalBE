@@ -8,6 +8,7 @@
         CaseNumber,
         CaseName,
         Company,
-        Requester
+        Requester,
+        Job
     }
 }
