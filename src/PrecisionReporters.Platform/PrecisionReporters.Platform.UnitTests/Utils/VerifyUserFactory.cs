@@ -1,4 +1,5 @@
 ﻿using PrecisionReporters.Platform.Data.Entities;
+using PrecisionReporters.Platform.Data.Enums;
 using System;
 
 namespace PrecisionReporters.Platform.UnitTests.Utils
@@ -13,6 +14,18 @@ namespace PrecisionReporters.Platform.UnitTests.Utils
                 Id = Guid.NewGuid(),
                 IsUsed = false,
                 User = user
+            };
+        }
+
+        public static VerifyUser GetVerifyForgotPassword(User user)
+        {
+            return new VerifyUser
+            {
+                CreationDate = DateTime.Now,
+                Id = Guid.NewGuid(),
+                IsUsed = false,
+                User = user,
+                VerificationType = VerificationType.ForgotPassword
             };
         }
 

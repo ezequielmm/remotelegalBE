@@ -4,10 +4,12 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 using PrecisionReporters.Platform.Data.Entities;
+using PrecisionReporters.Platform.Data.Enums;
 using PrecisionReporters.Platform.Data.Handlers.Interfaces;
 using PrecisionReporters.Platform.Data.Repositories.Interfaces;
 using PrecisionReporters.Platform.Domain.Commons;
 using PrecisionReporters.Platform.Domain.Configurations;
+using PrecisionReporters.Platform.Domain.Dtos;
 using PrecisionReporters.Platform.Domain.Errors;
 using PrecisionReporters.Platform.Domain.Services;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
@@ -454,6 +456,243 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             // Assert
             cognitoServiceMock.Verify(x => x.DeleteUserAsync(It.IsAny<User>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task ForgotPassword_ShouldReturnOk_WhenTheUserIsValid()
+        {
+            // Arrange
+            var dto = new ForgotPasswordDto { Email = "User1@TestMail.com" };
+            var user = UserFactory.GetUserByGivenEmail(dto.Email);
+            var verifyUser = VerifyUserFactory.GetVerifyForgotPassword(user);
+            verifyUser.IsUsed = true;
+            var cognitoServiceMock = new Mock<ICognitoService>();
+            cognitoServiceMock.Setup(x => x.IsEnabled(It.IsAny<string>())).ReturnsAsync(Result.Ok(true));
+            var verifyUserServiceMock = new Mock<IVerifyUserService>();
+            verifyUserServiceMock.Setup(x => x.GetVerifyUserByEmail(It.IsAny<string>(), It.IsAny<VerificationType>())).ReturnsAsync(verifyUser);
+            verifyUserServiceMock.Setup(x => x.CreateVerifyUser(It.IsAny<VerifyUser>())).ReturnsAsync(verifyUser);
+            var awsEmailServiceMock = new Mock<IAwsEmailService>();
+            awsEmailServiceMock.Setup(x => x.SetTemplateEmailRequest(It.IsAny<EmailTemplateInfo>())).Verifiable();
+            var transactionHandlerMock = new Mock<ITransactionHandler>();
+            transactionHandlerMock
+                .Setup(x => x.RunAsync(It.IsAny<Func<Task>>()))
+                .Returns(async (Func<Task> action) =>
+                {
+                    await action();
+                    return Result.Ok();
+                });
+            var service = InitializeService(cognitoService: cognitoServiceMock, verifyUserService: verifyUserServiceMock, awsEmailService: awsEmailServiceMock, transactionHandler: transactionHandlerMock);
+
+            // Act
+            var result = await service.ForgotPassword(dto);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            cognitoServiceMock.Verify(x => x.IsEnabled(It.IsAny<string>()), Times.Once);
+            verifyUserServiceMock.Verify(x => x.GetVerifyUserByEmail(It.IsAny<string>(), It.IsAny<VerificationType>()), Times.Once);
+            verifyUserServiceMock.Verify(x => x.CreateVerifyUser(It.IsAny<VerifyUser>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task ForgotPassword_ShouldReturnOk_WhenTheVerifyUserIsNotUsed()
+        {
+            // Arrange
+            var dto = new ForgotPasswordDto { Email = "User1@TestMail.com" };
+            var user = UserFactory.GetUserByGivenEmail(dto.Email);
+            var verifyUser = VerifyUserFactory.GetVerifyForgotPassword(user);
+            verifyUser.IsUsed = false;
+            var cognitoServiceMock = new Mock<ICognitoService>();
+            cognitoServiceMock.Setup(x => x.IsEnabled(It.IsAny<string>())).ReturnsAsync(Result.Ok(true));
+            var verifyUserServiceMock = new Mock<IVerifyUserService>();
+            verifyUserServiceMock.Setup(x => x.GetVerifyUserByEmail(It.IsAny<string>(), It.IsAny<VerificationType>())).ReturnsAsync(verifyUser);
+            verifyUserServiceMock.Setup(x => x.CreateVerifyUser(It.IsAny<VerifyUser>())).ReturnsAsync(verifyUser);
+            var awsEmailServiceMock = new Mock<IAwsEmailService>();
+            awsEmailServiceMock.Setup(x => x.SetTemplateEmailRequest(It.IsAny<EmailTemplateInfo>())).Verifiable();
+            var transactionHandlerMock = new Mock<ITransactionHandler>();
+            transactionHandlerMock
+                .Setup(x => x.RunAsync(It.IsAny<Func<Task>>()))
+                .Returns(async (Func<Task> action) =>
+                {
+                    await action();
+                    return Result.Ok();
+                });
+            var service = InitializeService(cognitoService: cognitoServiceMock, verifyUserService: verifyUserServiceMock, awsEmailService: awsEmailServiceMock, transactionHandler: transactionHandlerMock);
+
+            // Act
+            var result = await service.ForgotPassword(dto);
+
+            // Assert
+            cognitoServiceMock.Verify(x => x.IsEnabled(It.IsAny<string>()), Times.Once);
+            verifyUserServiceMock.Verify(x => x.GetVerifyUserByEmail(It.IsAny<string>(), It.IsAny<VerificationType>()), Times.Once);
+            verifyUserServiceMock.Verify(x => x.CreateVerifyUser(It.IsAny<VerifyUser>()), Times.Once);
+            awsEmailServiceMock.Verify(x => x.SetTemplateEmailRequest(It.IsAny<EmailTemplateInfo>()), Times.Once);
+            Assert.True(result.IsSuccess);
+        }
+
+        [Fact]
+        public async Task ForgotPassword_ShouldReturnFail_WhenTheUserIsNotEnabled()
+        {
+            // Arrange
+            var dto = new ForgotPasswordDto { Email = "User1@TestMail.com" };
+            var user = UserFactory.GetUserByGivenEmail(dto.Email);
+            var verifyUser = VerifyUserFactory.GetVerifyForgotPassword(user);
+            var cognitoServiceMock = new Mock<ICognitoService>();
+            cognitoServiceMock.Setup(x => x.IsEnabled(It.IsAny<string>())).ReturnsAsync(Result.Ok(false));
+            var verifyUserServiceMock = new Mock<IVerifyUserService>();
+            verifyUserServiceMock.Setup(x => x.GetVerifyUserByEmail(It.IsAny<string>(), It.IsAny<VerificationType>())).ReturnsAsync(verifyUser);
+            verifyUserServiceMock.Setup(x => x.CreateVerifyUser(It.IsAny<VerifyUser>())).ReturnsAsync(verifyUser);
+            var awsEmailServiceMock = new Mock<IAwsEmailService>();
+            awsEmailServiceMock.Setup(x => x.SetTemplateEmailRequest(It.IsAny<EmailTemplateInfo>())).Verifiable();
+            var logMock = new Mock<ILogger<UserService>>();
+            var service = InitializeService(cognitoService: cognitoServiceMock, verifyUserService: verifyUserServiceMock, awsEmailService: awsEmailServiceMock, log: logMock);
+
+            // Act
+            var result = await service.ForgotPassword(dto);
+
+            // Assert
+            cognitoServiceMock.Verify(x => x.IsEnabled(It.IsAny<string>()), Times.Once);
+            verifyUserServiceMock.Verify(x => x.GetVerifyUserByEmail(It.IsAny<string>(), It.IsAny<VerificationType>()), Times.Never);
+            verifyUserServiceMock.Verify(x => x.CreateVerifyUser(It.IsAny<VerifyUser>()), Times.Never);
+            awsEmailServiceMock.Verify(x => x.SetTemplateEmailRequest(It.IsAny<EmailTemplateInfo>()), Times.Never);
+            Assert.Single(logMock.Invocations);
+            Assert.True(result.IsSuccess);
+        }
+
+        [Fact]
+        public async Task VerifyForgotPassword_ShouldReturnOk_IfTheVerificationCodeIsValid()
+        {
+            // Arrange
+            var email = "User1@TestMail.com";
+            var user = UserFactory.GetUserByGivenEmail(email);
+            var verifyUser = VerifyUserFactory.GetVerifyForgotPassword(user);
+            var dto = new VerifyForgotPasswordDto { VerificationHash = verifyUser.Id };
+            var verifyUserServiceMock = new Mock<IVerifyUserService>();
+            verifyUserServiceMock.Setup(x => x.GetVerifyUserById(It.IsAny<Guid>())).ReturnsAsync(verifyUser);
+            var service = InitializeService(verifyUserService: verifyUserServiceMock);
+
+            // Act
+            var result = await service.VerifyForgotPassword(dto);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            verifyUserServiceMock.Verify(x => x.GetVerifyUserById(It.Is<Guid>((x) => x == verifyUser.Id)), Times.Once);
+        }
+
+        [Fact]
+        public async Task VerifyForgotPassword_ShouldReturnFail_IfTheVerificationCodeIsNotValid()
+        {
+            // Arrange
+            var verifyUserId = Guid.NewGuid();
+            var dto = new VerifyForgotPasswordDto { VerificationHash = verifyUserId };
+            var verifyUserServiceMock = new Mock<IVerifyUserService>();
+            verifyUserServiceMock.Setup(x => x.GetVerifyUserById(It.IsAny<Guid>())).ReturnsAsync((VerifyUser)null);
+            var service = InitializeService(verifyUserService: verifyUserServiceMock);
+
+            // Act
+            var result = await service.VerifyForgotPassword(dto);
+
+            // Assert
+            Assert.True(result.IsFailed);
+            verifyUserServiceMock.Verify(x => x.GetVerifyUserById(It.Is<Guid>((x) => x == verifyUserId)), Times.Once);
+        }
+
+        [Fact]
+        public async Task VerifyForgotPassword_ShouldReturnFail_WhenTheHashIsExpired()
+        {
+            // Arrange
+            var id = Guid.NewGuid();
+            var user = UserFactory.GetUserByGivenId(id);
+            var expirationTime = int.Parse(_verificationLinkConfiguration.ExpirationTime);
+            var dateNow = DateTime.UtcNow.AddHours(-expirationTime);
+            var verifyUser = VerifyUserFactory.GetVerifyUserByGivenId(id, dateNow, user);
+            var dto = new VerifyForgotPasswordDto { VerificationHash = verifyUser.Id };
+
+            var verifyUserServiceMock = new Mock<IVerifyUserService>();
+            verifyUserServiceMock.Setup(x => x.GetVerifyUserById(It.IsAny<Guid>())).ReturnsAsync(verifyUser);
+            var logMock = new Mock<ILogger<UserService>>();
+            var service = InitializeService(verifyUserService: verifyUserServiceMock, log: logMock);
+
+            // Act
+            var result = await service.VerifyForgotPassword(dto);
+
+            // Assert
+            verifyUserServiceMock.Verify(x => x.GetVerifyUserById(It.IsAny<Guid>()), Times.Once);
+            Assert.Single(logMock.Invocations);
+            Assert.True(result.IsFailed);
+        }
+
+        [Fact]
+        public async Task ResetPassword_ShouldUpdatePassword_WhenTransactionResultOk()
+        {
+            // Arrange
+            var email = "User1@TestMail.com";
+            var user = UserFactory.GetUserByGivenEmail(email);
+            var verifyUser = VerifyUserFactory.GetVerifyForgotPassword(user);
+            var dto = new ResetPasswordDto { VerificationHash = verifyUser.Id, Password = "Test123" };
+
+            var verifyUserServiceMock = new Mock<IVerifyUserService>();
+            verifyUserServiceMock.Setup(x => x.GetVerifyUserById(It.IsAny<Guid>())).ReturnsAsync(verifyUser);
+            verifyUserServiceMock.Setup(x => x.UpdateVerifyUser(It.IsAny<VerifyUser>())).ReturnsAsync(verifyUser);
+
+            var cognitoServiceMock = new Mock<ICognitoService>();
+            cognitoServiceMock.Setup(x => x.ResetPassword(It.IsAny<User>())).ReturnsAsync(Result.Ok());
+
+            var transactionHandlerMock = new Mock<ITransactionHandler>();
+            transactionHandlerMock
+                .Setup(x => x.RunAsync(It.IsAny<Func<Task>>()))
+                .Returns(async (Func<Task> action) =>
+                {
+                    await action();
+                    return Result.Ok();
+                });
+
+            var service = InitializeService(cognitoService: cognitoServiceMock
+                , transactionHandler: transactionHandlerMock, verifyUserService: verifyUserServiceMock);
+
+            // Act
+            var result = await service.ResetPassword(dto);
+
+            // Assert
+            cognitoServiceMock.Verify(x => x.ResetPassword(It.IsAny<User>()), Times.Once);
+            verifyUserServiceMock.Verify(x => x.UpdateVerifyUser(It.IsAny<VerifyUser>()), Times.Once);
+            Assert.True(result.IsSuccess);
+        }
+
+        [Fact]
+        public async Task ResetPassword_ShouldReturnFail_WhenTransactionFails()
+        {
+            // Arrange
+            var email = "User1@TestMail.com";
+            var user = UserFactory.GetUserByGivenEmail(email);
+            var verifyUser = VerifyUserFactory.GetVerifyForgotPassword(user);
+            var dto = new ResetPasswordDto { VerificationHash = verifyUser.Id, Password = "Test123" };
+
+            var verifyUserServiceMock = new Mock<IVerifyUserService>();
+            verifyUserServiceMock.Setup(x => x.GetVerifyUserById(It.IsAny<Guid>())).ReturnsAsync(verifyUser);
+            verifyUserServiceMock.Setup(x => x.UpdateVerifyUser(It.IsAny<VerifyUser>())).ReturnsAsync(verifyUser);
+
+            var cognitoServiceMock = new Mock<ICognitoService>();
+            cognitoServiceMock.Setup(x => x.ResetPassword(It.IsAny<User>())).ReturnsAsync(Result.Fail(new Error()));
+
+            var transactionHandlerMock = new Mock<ITransactionHandler>();
+            transactionHandlerMock
+                .Setup(x => x.RunAsync(It.IsAny<Func<Task>>()))
+                .Returns(async (Func<Task> action) =>
+                {
+                    await action();
+                    return Result.Fail(new Error());
+                });
+
+            var service = InitializeService(cognitoService: cognitoServiceMock
+                , transactionHandler: transactionHandlerMock, verifyUserService: verifyUserServiceMock);
+
+            // Act
+            var result = await service.ResetPassword(dto);
+
+            // Assert
+            cognitoServiceMock.Verify(x => x.ResetPassword(It.IsAny<User>()), Times.Once);
+            verifyUserServiceMock.Verify(x => x.UpdateVerifyUser(It.IsAny<VerifyUser>()), Times.Once);
+            Assert.True(result.IsFailed);
         }
 
         private UserService InitializeService(
