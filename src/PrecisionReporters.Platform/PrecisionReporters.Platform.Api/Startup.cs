@@ -255,8 +255,15 @@ namespace PrecisionReporters.Platform.Api
             services.AddScoped<IBreakRoomRepository, BreakRoomRepository>();
             services.AddScoped<IDepositionDocumentRepository, DepositionDocumentRepository>();
 
-            services.AddDbContext<ApplicationDbContext>(options =>
-                options.UseMySQL(appConfiguration.ConnectionStrings.MySqlConnection));
+            services.AddDbContext<ApplicationDbContext>(options => 
+            {
+                options.UseMySQL(appConfiguration.ConnectionStrings.MySqlConnection);
+            });
+
+            services.Configure<ConnectionStrings>(x =>
+            {
+                x.RedisConnectionString = appConfiguration.ConnectionStrings.RedisConnectionString;                
+            });
 
             services.AddScoped<IDatabaseTransactionProvider, ApplicationDbContextTransactionProvider>();
             services.AddScoped<ITransactionHandler, TransactionHandler>();
@@ -310,7 +317,9 @@ namespace PrecisionReporters.Platform.Api
 
             services.AddMvc()
                 .AddJsonOptions(opts => opts.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
-            services.AddSignalR().AddNewtonsoftJsonProtocol();
+            services.AddSignalR()
+                .AddNewtonsoftJsonProtocol()
+                .AddStackExchangeRedis(appConfiguration.ConnectionStrings.RedisConnectionString);
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
