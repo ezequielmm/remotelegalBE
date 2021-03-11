@@ -735,54 +735,22 @@ namespace PrecisionReporters.Platform.Domain.Services
             }
         }
 
-        public async Task<DepositionFilterResponseDto> GetDepositionsByFilter(DepositionFilterDto filterDto) 
+        public async Task<Result<DepositionFilterResponseDto>> GetDepositionsByFilter(DepositionFilterDto filterDto) 
         {
-            var user = await _userService.GetCurrentUserAsync();
-            var includes = new[] { nameof(Deposition.Requester), nameof(Deposition.Participants), nameof(Deposition.Case) };
-
-            Expression<Func<Deposition, bool>> filter = x => (filterDto.Status == null || x.Status == filterDto.Status);
-
-            if (!user.IsAdmin)
-            {
-                filter = x => (filterDto.Status == null || x.Status == filterDto.Status) &&
-                    (x.Participants.Any(p => p.Email == user.EmailAddress)
-                        || x.Requester.EmailAddress == user.EmailAddress
-                        || x.AddedBy.EmailAddress == user.EmailAddress);
-            }
-
-            Expression<Func<Deposition, object>> orderBy = filterDto.SortedField switch
-            {
-                DepositionSortField.Details => x => x.Details,
-                DepositionSortField.Status => x => x.Status,
-                DepositionSortField.CaseNumber => x => x.Case.CaseNumber,
-                DepositionSortField.CaseName => x => x.Case.Name,
-                DepositionSortField.Company => x => x.Requester.CompanyName,
-                DepositionSortField.Requester => x => x.Requester.FirstName,
-                DepositionSortField.Job => x => x.Job,
-                _ => x => x.StartDate,
-            };
-
-            Expression<Func<Deposition, object>> orderByThen = x => x.Requester.LastName;
-
-            var totalDepositions = await _depositionRepository.GetByStatus(
-                orderBy,
-                filterDto.SortDirection ?? SortDirection.Ascend,
-                filter,
-                includes,
-                filterDto.SortedField == DepositionSortField.Requester ? orderByThen : null
-                );
-
-            var filteredDepositions = totalDepositions.Where(x => 
+            var totalDepositions = await GetDepositionsByStatus(filterDto.Status, filterDto.SortedField, filterDto.SortDirection);
+            
+            var filteredDepositions = totalDepositions?.Where(x => 
                 (filterDto.MaxDate.HasValue ? x.StartDate < filterDto.MaxDate.Value.UtcDateTime : x.StartDate > DateTime.UtcNow) &&
                 (!filterDto.MinDate.HasValue || x.StartDate > filterDto.MinDate.Value.UtcDateTime));
 
             var totalUpcoming = totalDepositions.Count(x => x.StartDate > DateTime.UtcNow);
 
-            return new DepositionFilterResponseDto {
+            var response = new DepositionFilterResponseDto {
                 TotalUpcoming = totalUpcoming,
                 TotalPast = totalDepositions.Count - totalUpcoming,
-                Depositions = filteredDepositions.Select(c => _depositionMapper.ToDto(c)).ToList()
+                Depositions = filteredDepositions?.Select(c => _depositionMapper.ToDto(c)).ToList()
             };
+            return Result.Ok(response);
         }
 
         private async Task<Result<Document>> UploadFile(FileTransferInfo file, User user, Deposition deposition)

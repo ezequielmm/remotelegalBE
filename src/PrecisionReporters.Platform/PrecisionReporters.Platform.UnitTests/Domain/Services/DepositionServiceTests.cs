@@ -42,7 +42,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         private readonly Mock<ITransactionHandler> _transactionHandlerMock;
         private readonly Mock<IDocumentService> _documentServiceMock;
         private readonly Mock<ILogger<DepositionService>> _loggerMock;
-        private readonly IMapper<Deposition, DepositionDto, CreateDepositionDto> _depositionMapper;
+        private readonly Mock<IMapper<Deposition, DepositionDto, CreateDepositionDto>> _depositionMapperMock;
 
         private readonly List<Deposition> _depositions = new List<Deposition>();
 
@@ -81,6 +81,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             _depositionDocumentConfigurationMock = new Mock<IOptions<DocumentConfiguration>>();
             _depositionDocumentConfigurationMock.Setup(x => x.Value).Returns(_documentConfiguration);
+            _depositionMapperMock = new Mock<IMapper<Deposition, DepositionDto, CreateDepositionDto>>();
 
             _depositionService = new DepositionService(
                 _depositionRepositoryMock.Object,
@@ -96,7 +97,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 _transactionHandlerMock.Object,
                 _loggerMock.Object,
                 _documentServiceMock.Object,
-                _depositionMapper);
+                _depositionMapperMock.Object);
 
             _transactionHandlerMock.Setup(x => x.RunAsync(It.IsAny<Func<Task<Result<Deposition>>>>()))
                 .Returns(async (Func<Task<Result<Deposition>>> action) =>
@@ -1830,6 +1831,108 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             Assert.NotNull(result);
             Assert.IsType<Result<Deposition>>(result);
             Assert.True(result.IsSuccess);
+        }
+
+        [Fact]
+        public async Task GetDepositionsByFilter_ShouldReturnUpcomingDepositions_ForEmptyFilters()
+        {
+            var filter = new DepositionFilterDto();
+
+            var depositions = new List<Deposition> {
+                new Deposition
+                {
+                    Id = Guid.NewGuid(),
+                    StartDate = DateTime.Now.AddHours(30),
+                    EndDate = DateTime.Now.AddHours(35),
+                    Participants = new List<Participant>{ new Participant { Role = ParticipantType.Witness } },
+                    CreationDate = DateTime.UtcNow
+                },
+                new Deposition
+                {
+                    Id = Guid.NewGuid(),
+                    StartDate = DateTime.Now.AddHours(30),
+                    EndDate = DateTime.Now.AddHours(35),
+                    Participants = new List<Participant>{ new Participant { Role = ParticipantType.Witness } },
+                    CreationDate = DateTime.UtcNow
+                },
+                new Deposition
+                {
+                    Id = Guid.NewGuid(),
+                    StartDate = DateTime.Now.AddHours(-35),
+                    EndDate = DateTime.Now.AddHours(-30),
+                    Participants = new List<Participant>{ new Participant { Role = ParticipantType.Witness } },
+                    CreationDate = DateTime.UtcNow
+                }
+            };
+
+            _userServiceMock.Setup(x => x.GetCurrentUserAsync()).ReturnsAsync(new User { IsAdmin = true });
+
+            _depositionRepositoryMock.Setup(x => x.GetByStatus(
+                It.IsAny<Expression<Func<Deposition, object>>>(),
+                It.IsAny<SortDirection>(),
+                It.IsAny<Expression<Func<Deposition, bool>>>(),
+                It.IsAny<string[]>(),
+                It.IsAny<Expression<Func<Deposition, object>>>()))
+                .ReturnsAsync(depositions);
+
+            var result = await _depositionService.GetDepositionsByFilter(filter);
+
+            Assert.True(result.IsSuccess);
+            Assert.True(result.Value.TotalUpcoming == 2);
+            Assert.True(result.Value.TotalPast == 1);
+            Assert.True(result.Value.Depositions.Count == 2);
+        }
+
+        [Fact]
+        public async Task GetDepositionsByFilter_ShouldReturnPassedDepositions_ForMaxDateValueNow()
+        {
+            var filter = new DepositionFilterDto{
+                MaxDate = DateTime.UtcNow
+            };
+
+            var depositions = new List<Deposition> {
+                new Deposition
+                {
+                    Id = Guid.NewGuid(),
+                    StartDate = DateTime.Now.AddHours(30),
+                    EndDate = DateTime.Now.AddHours(35),
+                    Participants = new List<Participant>{ new Participant { Role = ParticipantType.Witness } },
+                    CreationDate = DateTime.UtcNow
+                },
+                new Deposition
+                {
+                    Id = Guid.NewGuid(),
+                    StartDate = DateTime.Now.AddHours(60),
+                    EndDate = DateTime.Now.AddHours(65),
+                    Participants = new List<Participant>{ new Participant { Role = ParticipantType.Witness } },
+                    CreationDate = DateTime.UtcNow
+                },
+                new Deposition
+                {
+                    Id = Guid.NewGuid(),
+                    StartDate = DateTime.Now.AddHours(-35),
+                    EndDate = DateTime.Now.AddHours(-30),
+                    Participants = new List<Participant>{ new Participant { Role = ParticipantType.Witness } },
+                    CreationDate = DateTime.UtcNow
+                }
+            };
+
+            _userServiceMock.Setup(x => x.GetCurrentUserAsync()).ReturnsAsync(new User { IsAdmin = true });
+
+            _depositionRepositoryMock.Setup(x => x.GetByStatus(
+                It.IsAny<Expression<Func<Deposition, object>>>(),
+                It.IsAny<SortDirection>(),
+                It.IsAny<Expression<Func<Deposition, bool>>>(),
+                It.IsAny<string[]>(),
+                It.IsAny<Expression<Func<Deposition, object>>>()))
+                .ReturnsAsync(depositions);
+
+            var result = await _depositionService.GetDepositionsByFilter(filter);
+
+            Assert.True(result.IsSuccess);
+            Assert.True(result.Value.TotalUpcoming == 2);
+            Assert.True(result.Value.TotalPast == 1);
+            Assert.True(result.Value.Depositions.Count == 1);
         }
     }
 }

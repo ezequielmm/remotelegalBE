@@ -43,6 +43,6 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
         Task<Result> RemoveParticipantFromDeposition(Guid id, Guid participantId);
         Task<Result<Deposition>> EditDepositionDetails(Deposition deposition, FileTransferInfo file, bool deleteCaption);
         Task<Result<Deposition>> GetByIdWithIncludes(Guid id, string[] include = null);
-        Task<DepositionFilterResponseDto> GetDepositionsByFilter(DepositionFilterDto filterDto);
+        Task<Result<DepositionFilterResponseDto>> GetDepositionsByFilter(DepositionFilterDto filterDto);
     }
 }

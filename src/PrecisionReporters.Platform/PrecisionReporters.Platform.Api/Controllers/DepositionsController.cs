@@ -52,8 +52,12 @@ namespace PrecisionReporters.Platform.Api.Controllers
         [HttpGet]
         public async Task<ActionResult<DepositionFilterResponseDto>> GetDepositions([FromQuery] DepositionFilterDto filter)
         {
-            var depositionResponse = await _depositionService.GetDepositionsByFilter(filter);
-            return Ok(depositionResponse);
+            var depositionResponseResult = await _depositionService.GetDepositionsByFilter(filter);
+
+            if (depositionResponseResult.IsFailed)
+                return WebApiResponses.GetErrorResponse(depositionResponseResult);
+                
+            return Ok(depositionResponseResult.Value);
         }
 
         /// <summary>
