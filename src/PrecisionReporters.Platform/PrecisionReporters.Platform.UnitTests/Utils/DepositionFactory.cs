@@ -158,7 +158,7 @@ namespace PrecisionReporters.Platform.UnitTests.Utils
                 new DepositionEvent 
                 {
                     EventType = EventType.OnTheRecord,
-                    CreationDate = DateTime.UtcNow
+                    CreationDate = DateTime.UtcNow.AddSeconds(5)
                 },
                 new DepositionEvent 
                 {

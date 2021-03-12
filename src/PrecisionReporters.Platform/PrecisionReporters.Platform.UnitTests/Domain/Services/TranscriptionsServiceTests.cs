@@ -92,6 +92,14 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         [Fact]
         public async Task GetTranscriptionsWithTimeOffset_Test_WithoutOffTheRecord()
         {
+            var interval = new List<CompositionInterval>
+            {
+                new CompositionInterval
+                {
+                    Start = 5,
+                    Stop = 90
+                }
+            };
             var depositionId = Guid.NewGuid();
             var deposition = DepositionFactory.GetDeposition(depositionId, Guid.NewGuid());
             deposition.Room.RecordingStartDate = DateTime.UtcNow;
@@ -106,13 +114,17 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 It.IsAny<Expression<Func<Transcription, bool>>>(),
                 It.IsAny<string[]>())).ReturnsAsync(GetTranscriptions(depositionId));
 
+            _compositionServiceMock.Setup(x => x.GetDepositionRecordingIntervals(
+                It.IsAny<List<DepositionEvent>>(),
+                It.IsAny<long>())).Returns(interval);
+
             var result = await _transcriptionService.GetTranscriptionsWithTimeOffset(depositionId);
 
             Assert.True(result.IsSuccess);
             Assert.True(result.Value[0].TranscriptionVideoTime == 1);
-            Assert.True(result.Value[1].TranscriptionVideoTime == 15);
-            Assert.True(result.Value[2].TranscriptionVideoTime == 35);
-            Assert.True(result.Value[3].TranscriptionVideoTime == 50);
+            Assert.True(result.Value[1].TranscriptionVideoTime == 10);
+            Assert.True(result.Value[2].TranscriptionVideoTime == 60);
+            Assert.True(result.Value[3].TranscriptionVideoTime == 65);
         }
 
         [Fact]
@@ -153,12 +165,12 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 new CompositionInterval
                 {
                     Start = 5,
-                    Stop = 10
+                    Stop = 30
                 },
                 new CompositionInterval
                 {
-                    Start = 30,
-                    Stop = 40
+                    Start = 60,
+                    Stop = 80
                 }
             };
         }
@@ -173,7 +185,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                     CreationDate = DateTime.UtcNow,
                     Text = "Test n1",
                     DepositionId = depositionId,
-                    TranscriptDateTime = DateTime.UtcNow.AddSeconds(1),
+                    TranscriptDateTime = DateTime.UtcNow.AddSeconds(6),
                     User = new User
                     {
                         FirstName = "Foo1",
@@ -200,10 +212,10 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 new Transcription
                 {
                     Id = Guid.NewGuid(),
-                    CreationDate = DateTime.UtcNow.AddSeconds(35),
+                    CreationDate = DateTime.UtcNow.AddSeconds(65),
                     Text = "Text n3",
                     DepositionId = depositionId,
-                    TranscriptDateTime = DateTime.UtcNow.AddSeconds(35),
+                    TranscriptDateTime = DateTime.UtcNow.AddSeconds(65),
                     User = new User
                     {
                         FirstName = "Foo3",
@@ -215,10 +227,10 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 new Transcription
                 {
                     Id = Guid.NewGuid(),
-                    CreationDate = DateTime.UtcNow.AddSeconds(50),
+                    CreationDate = DateTime.UtcNow.AddSeconds(70),
                     Text = "Text n3",
                     DepositionId = depositionId,
-                    TranscriptDateTime = DateTime.UtcNow.AddSeconds(50),
+                    TranscriptDateTime = DateTime.UtcNow.AddSeconds(70),
                     User = new User
                     {
                         FirstName = "Foo3",

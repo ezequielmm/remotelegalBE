@@ -126,7 +126,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         private long VideoStartDate(List<DepositionEvent> events)
         {
-            var result = events
+            var result = events?
                 .OrderBy(x => x.CreationDate)
                 .Where(x => x.EventType == EventType.OnTheRecord)
                 .FirstOrDefault();
@@ -150,12 +150,13 @@ namespace PrecisionReporters.Platform.Domain.Services
         private int CalculateSpeechTime(int offset, List<CompositionInterval> intervals)
         {
             var t = 0;
-            intervals?.ForEach(x => {
-                if (x.Stop < offset)
+            for (var i = 0; i < intervals.Count; i++) 
+            {
+                if (intervals[i].Stop < offset)
                 {
-                    t += (x.Stop - x.Start);
+                    t += (intervals[i + 1].Start - intervals[i].Stop);
                 }
-            });
+            }
             return offset - t;
         }
     }
