@@ -300,7 +300,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var userCases = CaseFactory.GetCases();
             var sortedUserCasesList = userCases.OrderBy(x => x.AddedBy.FirstName).ThenBy(x => x.AddedBy.LastName).ToList();
             _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(user));
-            
+
             _caseRepositoryMock.Setup(x => x.GetByFilterOrderByThen(It.IsAny<Expression<Func<Case, object>>>(),
                     It.IsAny<SortDirection>(), It.IsAny<Expression<Func<Case, bool>>>(), It.IsAny<string[]>(),
                     It.IsAny<Expression<Func<Case, object>>>()))
@@ -317,15 +317,13 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         public async Task ScheduleDepositions_ShouldReturnFail_IfUserNotFound()
         {
             // Arrange
-            var userEmail = "testUser@mail.com";
-
-            _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Fail(new Error()));
+            _userServiceMock.Setup(x => x.GetCurrentUserAsync()).ReturnsAsync((User)null);
 
             // Act
-            var result = await _service.ScheduleDepositions(userEmail, Guid.NewGuid(), null, null);
+            var result = await _service.ScheduleDepositions(Guid.NewGuid(), null, null);
 
             // Assert
-            _userServiceMock.Verify(x => x.GetUserByEmail(It.Is<string>(a => a == userEmail)), Times.Once);
+            _userServiceMock.Verify(x => x.GetCurrentUserAsync(), Times.Once);
             Assert.NotNull(result);
             Assert.IsType<Result<Case>>(result);
             Assert.True(result.IsFailed);
@@ -337,19 +335,20 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             // Arrange
             var userEmail = "testUser@mail.com";
             var user = UserFactory.GetUserByGivenEmail(userEmail);
+            user.IsAdmin = true;
             var caseId = Guid.NewGuid();
             var errorMessage = $"Case with id {caseId} not found.";
 
-            _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(user));
+            _userServiceMock.Setup(x => x.GetCurrentUserAsync()).ReturnsAsync(user);
             _caseRepositoryMock
                 .Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Case, bool>>>(), It.IsAny<string[]>()))
                 .ReturnsAsync((Case)null);
 
             // Act
-            var result = await _service.ScheduleDepositions(userEmail, caseId, null, null);
+            var result = await _service.ScheduleDepositions(caseId, new List<Deposition>(), null);
 
             // Assert
-            _userServiceMock.Verify(x => x.GetUserByEmail(It.Is<string>(a => a == userEmail)), Times.Once);
+            _userServiceMock.Verify(x => x.GetCurrentUserAsync(), Times.Once);
             _caseRepositoryMock.Verify(
                 x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Case, bool>>>(), It.IsAny<string[]>()),
                 Times.Once);
@@ -365,6 +364,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             // Arrange
             var userEmail = "testUser@mail.com";
             var user = UserFactory.GetUserByGivenEmail(userEmail);
+            user.IsAdmin = true;
             var caseId = Guid.NewGuid();
             var depositions = DepositionFactory.GetDepositionList();
             var files = new Dictionary<string, FileTransferInfo>();
@@ -384,6 +384,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var logInformationMessage = "Removing uploaded documents";
             var errorMessage = "Unable to upload one or more documents to deposition";
 
+            _userServiceMock.Setup(x => x.GetCurrentUserAsync()).ReturnsAsync(user);
             _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(user));
             _caseRepositoryMock
                 .Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Case, bool>>>(), It.IsAny<string[]>()))
@@ -394,7 +395,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 .ReturnsAsync(Result.Fail("Unable to upload document"));
 
             // Act
-            var result = await _service.ScheduleDepositions(userEmail, caseId, depositions, files);
+            var result = await _service.ScheduleDepositions(caseId, depositions, files);
 
             // Assert
             _caseRepositoryMock.Verify(
@@ -448,6 +449,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             var errorMessage = "TestErrorMessageResult";
 
+            _userServiceMock.Setup(x => x.GetCurrentUserAsync()).ReturnsAsync(user);
             _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(user));
             _caseRepositoryMock
                 .Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Case, bool>>>(), It.IsAny<string[]>()))
@@ -461,7 +463,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 .ReturnsAsync(Result.Fail(errorMessage));
 
             // Act
-            var result = await _service.ScheduleDepositions(userEmail, caseId, depositions, files);
+            var result = await _service.ScheduleDepositions(caseId, depositions, files);
 
             // Assert
             _documentServiceMock.Verify(x => x.UploadDocumentFile(
@@ -486,6 +488,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             // Arrange
             var userEmail = "testUser@mail.com";
             var user = UserFactory.GetUserByGivenEmail(userEmail);
+            user.IsAdmin = true;
             var caseId = Guid.NewGuid();
             var depositions = DepositionFactory.GetDepositionList();
             var files = new Dictionary<string, FileTransferInfo>();
@@ -503,11 +506,11 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             var logErrorMessage = "Unable to schedule depositions";
             var errorMessage = "Unable to schedule depositions";
-
+            _userServiceMock.Setup(x => x.GetCurrentUserAsync()).ReturnsAsync(user);
             _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(user));
             _caseRepositoryMock
                 .Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Case, bool>>>(), It.IsAny<string[]>()))
-                .ReturnsAsync(new Case { Id = caseId, Depositions = new List<Deposition>() });
+                .ReturnsAsync(new Case { Id = caseId, Depositions = new List<Deposition>(), Members = new List<Member>() });
             _documentServiceMock
                 .Setup(x => x.UploadDocumentFile(It.IsAny<KeyValuePair<string, FileTransferInfo>>(), It.IsAny<User>(),
                     It.IsAny<string>(), It.IsAny<DocumentType>()))
@@ -520,7 +523,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _caseRepositoryMock.Setup(x => x.Update(It.IsAny<Case>())).ThrowsAsync(new Exception("TestException"));
 
             // Act
-            var result = await _service.ScheduleDepositions(userEmail, caseId, depositions, files);
+            var result = await _service.ScheduleDepositions(caseId, depositions, files);
 
             // Assert
             _documentServiceMock.Verify(x => x.UploadDocumentFile(
@@ -547,11 +550,75 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         }
 
         [Fact]
+        public async Task ScheduleDepositions_ShouldReturnFail_IfUserIsAdmin_RequesterIsMissing()
+        {
+            // Arrange
+            var userEmail = "testUser@mail.com";
+            var user = UserFactory.GetUserByGivenEmail(userEmail);
+            user.IsAdmin = true;
+            var depositions = new List<Deposition>()
+            {
+                new Deposition(){Requester=new User() }
+            };
+            var caseId = Guid.NewGuid();
+            var errorMessage = $"Requester information missing";
+
+            _userServiceMock.Setup(x => x.GetCurrentUserAsync()).ReturnsAsync(user);
+
+            // Act
+            var result = await _service.ScheduleDepositions(caseId, depositions, null);
+
+            // Assert
+            _userServiceMock.Verify(x => x.GetCurrentUserAsync(), Times.Once);
+            Assert.NotNull(result);
+            Assert.IsType<Result<Case>>(result);
+            Assert.True(result.IsFailed);
+            Assert.Contains(errorMessage, result.Errors[0].Message);
+        }
+
+        [Fact]
+        public async Task ScheduleDepositions_ShouldReturnFail_IfUserIsNotAdmin_InvalidParticipantRole()
+        {
+            // Arrange
+            var userEmail = "testUser@mail.com";
+            var user = UserFactory.GetUserByGivenEmail(userEmail);
+            var participants = new List<Participant>()
+            {
+                new Participant()
+                {
+                    Role = ParticipantType.CourtReporter
+                }
+            };
+            var depositions = new List<Deposition>()
+            {
+                new Deposition()
+                {
+                    Participants = participants
+                }
+            };
+            var caseId = Guid.NewGuid();
+            var errorMessage = $"Can not assign this role to the participants";
+
+            _userServiceMock.Setup(x => x.GetCurrentUserAsync()).ReturnsAsync(user);
+
+            // Act
+            var result = await _service.ScheduleDepositions(caseId, depositions, null);
+
+            // Assert
+            _userServiceMock.Verify(x => x.GetCurrentUserAsync(), Times.Once);
+            Assert.NotNull(result);
+            Assert.IsType<Result<Case>>(result);
+            Assert.True(result.IsFailed);
+            Assert.Contains(errorMessage, result.Errors[0].Message);
+        }
+
+        [Fact]
         public async Task ScheduleDepositions_ShouldReturn_UpdatedCase()
         {
             // Arrange
             var userEmail = "testUser@mail.com";
             var user = UserFactory.GetUserByGivenEmail(userEmail);
+            user.IsAdmin = true;
             var caseId = Guid.NewGuid();
             var depositions = DepositionFactory.GetDepositionList();
             var files = new Dictionary<string, FileTransferInfo>();
@@ -568,9 +635,10 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             }
 
             _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(user));
+            _userServiceMock.Setup(x => x.GetCurrentUserAsync()).ReturnsAsync(user);
             _caseRepositoryMock
                 .Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Case, bool>>>(), It.IsAny<string[]>()))
-                .ReturnsAsync(new Case { Id = caseId, Depositions = new List<Deposition>() });
+                .ReturnsAsync(new Case { Id = caseId, Depositions = new List<Deposition>(), Members = new List<Member>() });
             _documentServiceMock
                 .Setup(x => x.UploadDocumentFile(It.IsAny<KeyValuePair<string, FileTransferInfo>>(), It.IsAny<User>(),
                     It.IsAny<string>(), It.IsAny<DocumentType>()))
@@ -583,7 +651,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _caseRepositoryMock.Setup(x => x.Update(It.IsAny<Case>())).ReturnsAsync(new Case { Id = caseId });
 
             // Act
-            var result = await _service.ScheduleDepositions(userEmail, caseId, depositions, files);
+            var result = await _service.ScheduleDepositions(caseId, depositions, files);
 
             // Assert
             Assert.NotNull(result);

@@ -15,6 +15,6 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
         Task<Result<Case>> GetCaseById(Guid id, string[] include = null);
         Task<Result<Case>> CreateCase(string userEmail, Case newCase);
         Task<Result<List<Case>>> GetCasesForUser(string userEmail, CaseSortField? sortedField = null, SortDirection? sortDirection = null);
-        Task<Result<Case>> ScheduleDepositions(string userEmail, Guid caseId, IEnumerable<Deposition> depositions, Dictionary<string, FileTransferInfo> files);
+        Task<Result<Case>> ScheduleDepositions(Guid caseId, IEnumerable<Deposition> depositions, Dictionary<string, FileTransferInfo> files);
     }
 }

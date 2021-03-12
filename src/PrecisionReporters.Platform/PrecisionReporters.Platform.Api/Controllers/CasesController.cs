@@ -92,14 +92,12 @@ namespace PrecisionReporters.Platform.Api.Controllers
         [HttpPatch("{id}")]
         public async Task<ActionResult<CaseWithDepositionsDto>> ScheduleDepositions(Guid id, CasePatchDto casePatchDto)
         {
-            var userEmail = HttpContext.User.FindFirstValue(ClaimTypes.Email);
-
             if (casePatchDto.Depositions == null)
                 return BadRequest("Depositions missing");
 
             var files = FileHandlerHelper.GetFilesFromRequest(Request.Form.Files);
 
-            var getCasesResult = await _caseService.ScheduleDepositions(userEmail, id, casePatchDto.Depositions.Select(d => _depositionMapper.ToModel(d)), files);
+            var getCasesResult = await _caseService.ScheduleDepositions(id, casePatchDto.Depositions.Select(d => _depositionMapper.ToModel(d)), files);
 
             if (getCasesResult.IsFailed)
                 return WebApiResponses.GetErrorResponse(getCasesResult);

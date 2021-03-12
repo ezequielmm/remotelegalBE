@@ -25,7 +25,7 @@ namespace PrecisionReporters.Platform.Domain.Mappers
         {
             return new Participant
             {
-                Email = dto.Email.ToLower(),
+                Email = dto.Email?.ToLower(),
                 Name = dto.Name,
                 Phone = dto.Phone,
                 Role = dto.Role

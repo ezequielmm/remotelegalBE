@@ -7,7 +7,7 @@ namespace PrecisionReporters.Platform.Domain.Dtos
     public class CreateDepositionDto
     {
         [Required]
-        public  DateTimeOffset StartDate { get; set; }
+        public DateTimeOffset StartDate { get; set; }
         public DateTimeOffset? EndDate { get; set; }
         [Required]
         public string TimeZone { get; set; }
@@ -15,7 +15,6 @@ namespace PrecisionReporters.Platform.Domain.Dtos
         public CreateParticipantDto Witness { get; set; }
         [Required]
         public bool IsVideoRecordingNeeded { get; set; }
-        [Required]
         public string RequesterEmail { get; set; }
         [MaxLength(500)]
         public string Details { get; set; }

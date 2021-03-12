@@ -119,18 +119,19 @@ namespace PrecisionReporters.Platform.Domain.Services
             return Result.Ok(foundCases);
         }
 
-        public async Task<Result<Case>> ScheduleDepositions(string userEmail, Guid caseId, IEnumerable<Deposition> depositions, Dictionary<string, FileTransferInfo> files)
+        public async Task<Result<Case>> ScheduleDepositions(Guid caseId, IEnumerable<Deposition> depositions, Dictionary<string, FileTransferInfo> files)
         {
-            var userResult = await _userService.GetUserByEmail(userEmail);
-            if (userResult.IsFailed)
-                return userResult.ToResult<Case>();
+            var userResult = await _userService.GetCurrentUserAsync();
+
+            var userValidation = ValidateDepositionData(userResult, depositions);
+            if (userValidation.IsFailed)
+                return userValidation;
 
             var caseToUpdate = await _caseRepository.GetFirstOrDefaultByFilter(x => x.Id == caseId, new[] { nameof(Case.Depositions), nameof(Case.Members) });
             if (caseToUpdate == null)
                 return Result.Fail(new ResourceNotFoundError($"Case with id {caseId} not found."));
 
             var uploadedDocuments = new List<Document>();
-
             try
             {
                 var transactionResult = await _transactionHandler.RunAsync<Case>(async () =>
@@ -140,7 +141,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
                     foreach (var file in filesToUpload)
                     {
-                        var documentResult = await _documentService.UploadDocumentFile(file, userResult.Value, $"{caseId}/caption", DocumentType.Caption);
+                        var documentResult = await _documentService.UploadDocumentFile(file, userResult, $"{caseId}/caption", DocumentType.Caption);
                         if (documentResult.IsFailed)
                         {
                             _logger.LogError(new Exception(documentResult.Errors.First().Message), "Unable to load one or more documents to storage");
@@ -153,7 +154,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
                     foreach (var deposition in depositions)
                     {
-                        var depositionResult = await _depositionService.GenerateScheduledDeposition(caseToUpdate.Id, deposition, uploadedDocuments, userResult.Value);
+                        var depositionResult = await _depositionService.GenerateScheduledDeposition(caseToUpdate.Id, deposition, uploadedDocuments, userResult);
                         if (depositionResult.IsFailed)
                         {
                             await _documentService.DeleteUploadedFiles(uploadedDocuments);
@@ -191,6 +192,24 @@ namespace PrecisionReporters.Platform.Domain.Services
         {
             if (userToAdd != null && caseToUpdate.Members.All(m => m.UserId != userToAdd.Id))
                 caseToUpdate.Members.Add(new Member { User = userToAdd });
+        }
+
+        private Result ValidateDepositionData(User user, IEnumerable<Deposition> depositions)
+        {
+            if (user == null)
+                return Result.Fail(new ResourceNotFoundError($"User with not found."));
+
+            if (user.IsAdmin && depositions.Any(d => string.IsNullOrWhiteSpace(d.Requester.EmailAddress)))
+            {
+                return Result.Fail(new InvalidInputError("Requester information missing"));
+            }
+
+            if (!user.IsAdmin && depositions.Any(d => d.Participants.Any(p => p.Role == ParticipantType.CourtReporter ||
+            p.Role == ParticipantType.TechExpert || p.Role == ParticipantType.Interpreter)))
+            {
+                return Result.Fail(new InvalidInputError("Can not assign this role to the participants"));
+            }
+            return Result.Ok();
         }
     }
 }

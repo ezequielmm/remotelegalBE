@@ -92,12 +92,18 @@ namespace PrecisionReporters.Platform.Domain.Services
         public async Task<Result<Deposition>> GenerateScheduledDeposition(Guid caseId, Deposition deposition, List<Document> uploadedDocuments, User addedBy)
         {
             deposition.Id = Guid.NewGuid();
-            var requesterResult = await _userService.GetUserByEmail(deposition.Requester.EmailAddress);
-            if (requesterResult.IsFailed)
+            if (!addedBy.IsAdmin)
+                deposition.Requester = addedBy;
+            else
             {
-                return Result.Fail(new ResourceNotFoundError($"Requester with email {deposition.Requester.EmailAddress} not found"));
+                var requesterResult = await _userService.GetUserByEmail(deposition.Requester.EmailAddress);
+                if (requesterResult.IsFailed)
+                {
+                    return Result.Fail(new ResourceNotFoundError($"Requester with email {deposition.Requester.EmailAddress} not found"));
+                }
+                deposition.Requester = requesterResult.Value;
             }
-            deposition.Requester = requesterResult.Value;
+
             //Adding Requester as a Participant
             if (deposition.Participants == null)
                 deposition.Participants = new List<Participant>();

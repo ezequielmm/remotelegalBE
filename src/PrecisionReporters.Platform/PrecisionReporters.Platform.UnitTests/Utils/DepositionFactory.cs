@@ -11,14 +11,14 @@ namespace PrecisionReporters.Platform.UnitTests.Utils
         {
             var deposition = GetDepositionWithoutWitness(depositionId, caseId);
             deposition.Events = new List<DepositionEvent>();
-            deposition.Participants = new List<Participant>{ 
+            deposition.Participants = new List<Participant>{
                 new Participant
                 {
                     Id = Guid.NewGuid(),
                     Name = "witness1",
                     Email = "witness@email.com",
                     Role = ParticipantType.Witness
-                } 
+                }
             };
             deposition.IsOnTheRecord = true;
             return deposition;
@@ -38,7 +38,8 @@ namespace PrecisionReporters.Platform.UnitTests.Utils
                     Id = Guid.NewGuid(),
                     EmailAddress = "jbrown@email.com",
                     FirstName = "John",
-                    LastName = "Brown"
+                    LastName = "Brown",
+                    IsAdmin = true
                 },
                 Room = new Room
                 {
@@ -53,7 +54,7 @@ namespace PrecisionReporters.Platform.UnitTests.Utils
                     FileKey = "fileKey"
                 },
                 TimeZone = "EST",
-                Participants = new List<Participant>{ new Participant { Role = ParticipantType.Witness } }
+                Participants = new List<Participant> { new Participant { Role = ParticipantType.Witness } }
             };
         }
 
@@ -66,7 +67,8 @@ namespace PrecisionReporters.Platform.UnitTests.Utils
                     StartDate = DateTime.Now,
                     EndDate = DateTime.Now.AddHours(5),
                     Participants = new List<Participant>{ new Participant { Role = ParticipantType.Witness } },
-                    CreationDate = DateTime.UtcNow
+                    CreationDate = DateTime.UtcNow,
+                    Requester=new User(){ EmailAddress = "testUser@mail.com" },
                 },
                 new Deposition
                 {
@@ -74,7 +76,8 @@ namespace PrecisionReporters.Platform.UnitTests.Utils
                     StartDate = DateTime.Now,
                     EndDate = DateTime.Now.AddHours(5),
                     Participants = new List<Participant>{ new Participant { Role = ParticipantType.Witness } },
-                    CreationDate = DateTime.UtcNow
+                    CreationDate = DateTime.UtcNow,
+                    Requester=new User(){ EmailAddress = "testUser@mail.com" },
                 }
             };
         }

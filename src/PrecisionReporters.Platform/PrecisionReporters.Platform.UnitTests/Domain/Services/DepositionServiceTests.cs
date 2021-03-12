@@ -198,13 +198,14 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             // Arrange
             var depositionId = Guid.NewGuid();
             var caseId = Guid.NewGuid();
+            var user = new User() { IsAdmin = true };
             var deposition = DepositionFactory.GetDeposition(depositionId, caseId);
             var depositionDocuments = DepositionFactory.GetDocumentList();
             var errorMessage = $"Requester with email {deposition.Requester.EmailAddress} not found";
             _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Fail(new Error("Mocked error")));
 
             // Act
-            var result = await _depositionService.GenerateScheduledDeposition(caseId, deposition, depositionDocuments, null);
+            var result = await _depositionService.GenerateScheduledDeposition(caseId, deposition, depositionDocuments, user);
 
             // Assert
             _userServiceMock.Verify(mock => mock.GetUserByEmail(It.Is<string>(a => a == deposition.Requester.EmailAddress)), Times.Once());
@@ -219,6 +220,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             // Arrange
             var caseId = Guid.NewGuid();
             var witnessEmail = "testWitness@mail.com";
+            var user = new User() { IsAdmin = true };
             var deposition = new Deposition
             {
                 Participants = new List<Participant> {
@@ -233,7 +235,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(new User()));
 
             // Act
-            var result = await _depositionService.GenerateScheduledDeposition(caseId, deposition, null, null);
+            var result = await _depositionService.GenerateScheduledDeposition(caseId, deposition, null, user);
 
             // Assert
             Assert.NotNull(result);
@@ -246,6 +248,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             // Arrange
             var caseId = Guid.NewGuid();
             var witnessEmail = "testWitness@mail.com";
+            var user = new User() { IsAdmin = true };
             var deposition = new Deposition
             {
                 Participants = new List<Participant> {
@@ -260,7 +263,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(new User()));
 
             // Act
-            var result = await _depositionService.GenerateScheduledDeposition(caseId, deposition, null, null);
+            var result = await _depositionService.GenerateScheduledDeposition(caseId, deposition, null, user);
 
             // Assert
             _userServiceMock.Verify(mock => mock.GetUserByEmail(It.Is<string>(a => a == witnessEmail)), Times.Once());
@@ -274,6 +277,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             // Arrange
             var caseId = Guid.NewGuid();
             var fileKey = "TestFileKey";
+            var user = new User() { IsAdmin = true };
             var deposition = new Deposition
             {
                 Participants = new List<Participant> {
@@ -297,7 +301,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(new User()));
 
             // Act
-            var result = await _depositionService.GenerateScheduledDeposition(caseId, deposition, documents, null);
+            var result = await _depositionService.GenerateScheduledDeposition(caseId, deposition, documents, user);
 
             //Assert
             Assert.NotNull(result);
@@ -1688,7 +1692,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _participantRepositoryMock.Verify(x => x.Remove(It.IsAny<Participant>()));
             Assert.NotNull(result);
             Assert.True(result.IsSuccess);
-        }        
+        }
 
         [Fact]
         public async Task EditDepositionDetails_ShouldFail_DepositionNotFound()
