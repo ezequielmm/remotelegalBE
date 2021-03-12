@@ -589,15 +589,59 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             // Arrange
             var depositionId = Guid.NewGuid();
             var breakRoomId = Guid.NewGuid();
-            var deposition = new Deposition { Id = Guid.NewGuid(), IsOnTheRecord = false };
+            var token = "token";
+            var user = new User()
+            {
+                Id = Guid.NewGuid(),
+                EmailAddress = "tesmail@test.com"
+            };
+            var deposition = new Deposition
+            {
+                Id = Guid.NewGuid(),
+                IsOnTheRecord = false,
+                Participants = new List<Participant>()
+                {
+                    new Participant()
+                    {
+                        User = user,
+                        UserId = user.Id
+                    }
+                }
+            };
 
             _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
-            _breakRoomServiceMock.Setup(x => x.JoinBreakRoom(breakRoomId)).ReturnsAsync(Result.Ok("token"));
+            _breakRoomServiceMock.Setup(x => x.JoinBreakRoom(breakRoomId, It.IsAny<Participant>())).ReturnsAsync(Result.Ok(token));
+            _userServiceMock.Setup(x => x.GetCurrentUserAsync()).ReturnsAsync(user);
+            // Act
+            var result = await _depositionService.JoinBreakRoom(depositionId, breakRoomId);
+            Assert.NotNull(result);
+            Assert.True(result.IsSuccess);
+            Assert.Equal(result.Value, token);
+        }
 
+        [Fact]
+        public async Task JoinBreakRoom_ShouldFailIfParticipantDoesntExist()
+        {
+            // Arrange
+            var expectedError = "User is neither a Participant for this Deposition nor an Admin";
+            var depositionId = Guid.NewGuid();
+            var breakRoomId = Guid.NewGuid();
+
+            var deposition = new Deposition()
+            {
+                Participants = new List<Participant>()
+            };
+            _userServiceMock.Setup(x => x.GetCurrentUserAsync()).ReturnsAsync(new User());
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
             // Act
             var result = await _depositionService.JoinBreakRoom(depositionId, breakRoomId);
 
-            Assert.Equal(result.Value, "token");
+            // Assert
+            _userServiceMock.Verify(x => x.GetCurrentUserAsync(), Times.Once);
+            _depositionRepositoryMock.Verify(d => d.GetById(It.Is<Guid>(i => i == depositionId), It.IsAny<string[]>()), Times.Once);
+            Assert.NotNull(result);
+            Assert.True(result.IsFailed);
+            Assert.Contains(expectedError, result.Errors.Select(e => e.Message));
         }
 
         [Fact]
@@ -1890,7 +1934,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         [Fact]
         public async Task GetDepositionsByFilter_ShouldReturnPassedDepositions_ForMaxDateValueNow()
         {
-            var filter = new DepositionFilterDto{
+            var filter = new DepositionFilterDto
+            {
                 MaxDate = DateTime.UtcNow
             };
 

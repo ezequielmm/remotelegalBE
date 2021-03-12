@@ -380,7 +380,12 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (depositionResult.Value.IsOnTheRecord)
                 return Result.Fail(new InvalidInputError("Deposition is on the record"));
 
-            return await _breakRoomService.JoinBreakRoom(breakRoomId);
+            var currentUser = await _userService.GetCurrentUserAsync();
+            var currentParticipant = depositionResult.Value.Participants.FirstOrDefault(p => p.UserId == currentUser.Id);
+            if (currentParticipant == null && !currentUser.IsAdmin)
+                return Result.Fail(new InvalidInputError($"User is neither a Participant for this Deposition nor an Admin"));
+
+            return await _breakRoomService.JoinBreakRoom(breakRoomId, currentParticipant);
         }
 
         public Task<Result> LeaveBreakRoom(Guid depositionId, Guid breakRoomId)
@@ -741,17 +746,18 @@ namespace PrecisionReporters.Platform.Domain.Services
             }
         }
 
-        public async Task<Result<DepositionFilterResponseDto>> GetDepositionsByFilter(DepositionFilterDto filterDto) 
+        public async Task<Result<DepositionFilterResponseDto>> GetDepositionsByFilter(DepositionFilterDto filterDto)
         {
             var totalDepositions = await GetDepositionsByStatus(filterDto.Status, filterDto.SortedField, filterDto.SortDirection);
-            
-            var filteredDepositions = totalDepositions?.Where(x => 
+
+            var filteredDepositions = totalDepositions?.Where(x =>
                 (filterDto.MaxDate.HasValue ? x.StartDate < filterDto.MaxDate.Value.UtcDateTime : x.StartDate > DateTime.UtcNow) &&
                 (!filterDto.MinDate.HasValue || x.StartDate > filterDto.MinDate.Value.UtcDateTime));
 
             var totalUpcoming = totalDepositions.Count(x => x.StartDate > DateTime.UtcNow);
 
-            var response = new DepositionFilterResponseDto {
+            var response = new DepositionFilterResponseDto
+            {
                 TotalUpcoming = totalUpcoming,
                 TotalPast = totalDepositions.Count - totalUpcoming,
                 Depositions = filteredDepositions?.Select(c => _depositionMapper.ToDto(c)).ToList()

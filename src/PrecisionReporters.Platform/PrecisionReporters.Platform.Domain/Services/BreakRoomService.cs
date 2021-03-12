@@ -32,9 +32,9 @@ namespace PrecisionReporters.Platform.Domain.Services
             return Result.Ok(breakRoom);
         }
 
-        public async Task<Result<string>> JoinBreakRoom(Guid id)
+        public async Task<Result<string>> JoinBreakRoom(Guid id, Participant currentParticipant)
         {
-            var breakRoomResult = await GetBreakRoomById(id, new[] { nameof(BreakRoom.Room), $"{nameof(BreakRoom.Attendees)}.{nameof(BreakRoomAttendee.User)}"});
+            var breakRoomResult = await GetBreakRoomById(id, new[] { nameof(BreakRoom.Room), $"{nameof(BreakRoom.Attendees)}.{nameof(BreakRoomAttendee.User)}" });
             if (breakRoomResult.IsFailed)
                 return breakRoomResult.ToResult<string>();
 
@@ -42,19 +42,19 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             if (breakRoom.IsLocked)
                 return Result.Fail(new InvalidInputError($"The Break Room [{breakRoom.Name}] is currently locked."));
-            
-            var currentUser = await _userService.GetCurrentUserAsync();
+
+            var role = currentParticipant?.Role ?? ParticipantType.Observer;
 
             // TODO: Add distributed lock when our infra allows it
             if (breakRoom.Room.Status == RoomStatus.Created)
             {
                 await _roomService.StartRoom(breakRoom.Room);
             }
-            var token = await _roomService.GenerateRoomToken(breakRoom.Room.Name, currentUser, ParticipantType.Observer, currentUser.EmailAddress);
+            var token = await _roomService.GenerateRoomToken(breakRoom.Room.Name, currentParticipant.User, role, currentParticipant.User.EmailAddress);
             if (token.IsFailed)
                 return token.ToResult<string>();
 
-            await AddAttendeeToBreakRoom(breakRoom, currentUser);
+            await AddAttendeeToBreakRoom(breakRoom, currentParticipant.User);
 
             return token;
         }
