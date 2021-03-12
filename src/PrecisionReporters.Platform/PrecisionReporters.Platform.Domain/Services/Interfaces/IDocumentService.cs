@@ -2,6 +2,7 @@
 using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Data.Enums;
 using PrecisionReporters.Platform.Domain.Commons;
+using PrecisionReporters.Platform.Domain.Dtos;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -29,6 +30,6 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
         Task<Result> RemoveDepositionUserDocuments(Guid documentId);
         Task<Result> UploadTranscriptions(Guid id, List<FileTransferInfo> files);
         Task<Result> RemoveDepositionDocument(Guid depositionId, Guid documentId);
-        
+        Task<Result<List<string>>> GetFileSignedUrl(Guid depositionId, DocumentIdListDto documentIdListDto);
     }
 }

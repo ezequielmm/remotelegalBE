@@ -9,6 +9,7 @@ using PrecisionReporters.Platform.Data.Handlers.Interfaces;
 using PrecisionReporters.Platform.Data.Repositories.Interfaces;
 using PrecisionReporters.Platform.Domain.Commons;
 using PrecisionReporters.Platform.Domain.Configurations;
+using PrecisionReporters.Platform.Domain.Dtos;
 using PrecisionReporters.Platform.Domain.Errors;
 using PrecisionReporters.Platform.Domain.Extensions;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
@@ -16,6 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 
 namespace PrecisionReporters.Platform.Domain.Services
@@ -248,6 +250,24 @@ namespace PrecisionReporters.Platform.Domain.Services
             var signedUrl = GetFileSignedUrl(document);
 
             return Result.Ok(signedUrl.Value);
+        }
+
+        public async Task<Result<List<string>>> GetFileSignedUrl(Guid depositionId, DocumentIdListDto documentIdListDto)
+        {
+            var signedUrlList = new List<string>();
+            Expression<Func<DepositionDocument, bool>> filter = x => x.DepositionId == depositionId && documentIdListDto.DocumentsId.Contains(x.DocumentId);
+
+            var depositionDocument = await _depositionDocumentRepository.GetByFilter(filter, new[] { nameof(DepositionDocument.Document) });
+            if (depositionDocument == null)
+                return Result.Fail(new ResourceNotFoundError($"Could not find any document for deposition {depositionId}"));
+
+            foreach (var dd in depositionDocument)
+            {
+                var signedUrl = GetFileSignedUrl(dd.Document);
+                signedUrlList.Add(signedUrl.Value);
+            }
+            
+            return Result.Ok(signedUrlList);
         }
 
         public async Task<Result<string>> GetFileSignedUrl(Guid depositionId, Guid documentId)

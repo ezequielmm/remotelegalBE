@@ -218,6 +218,22 @@ namespace PrecisionReporters.Platform.Api.Controllers
         }
 
         /// <summary>
+        /// Gets a list of the public files URLs. 
+        /// </summary>
+        /// <param name="id">Document identifier</param>
+        /// <returns></returns>
+        [HttpGet("{depositionId}/documents/PreSignedUrl")]
+        [UserAuthorize(ResourceType.Deposition, ResourceAction.ViewSharedDocument)]
+        public async Task<ActionResult> GetFileSignedUrlList([ResourceId(ResourceType.Deposition)] Guid depositionId, DocumentIdListDto documentIdListDto)
+        {
+            var fileSignedUrlListResult = await _documentService.GetFileSignedUrl(depositionId, documentIdListDto);
+            if (fileSignedUrlListResult.IsFailed)
+                return WebApiResponses.GetErrorResponse(fileSignedUrlListResult);
+
+            return Ok(new FileSignedListDto { URLs = fileSignedUrlListResult.Value});
+        }
+
+        /// <summary>
         /// Delete Transcription document from a deposition.
         /// </summary>
         /// <param name="documentId"></param>
