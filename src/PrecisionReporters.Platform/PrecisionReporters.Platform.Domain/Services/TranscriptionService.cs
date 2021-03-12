@@ -153,7 +153,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             intervals?.ForEach(x => {
                 if (x.Stop < offset)
                 {
-                    t += (x.Stop = x.Start);
+                    t += (x.Stop - x.Start);
                 }
             });
             return offset - t;

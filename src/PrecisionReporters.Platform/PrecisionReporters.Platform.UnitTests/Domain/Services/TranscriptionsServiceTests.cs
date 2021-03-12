@@ -112,6 +112,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             Assert.True(result.Value[0].TranscriptionVideoTime == 1);
             Assert.True(result.Value[1].TranscriptionVideoTime == 15);
             Assert.True(result.Value[2].TranscriptionVideoTime == 35);
+            Assert.True(result.Value[3].TranscriptionVideoTime == 50);
         }
 
         [Fact]
@@ -142,6 +143,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             Assert.True(result.Value[0].TranscriptionVideoTime == 1);
             Assert.True(result.Value[1].TranscriptionVideoTime == 10);
             Assert.True(result.Value[2].TranscriptionVideoTime == 30);
+            Assert.True(result.Value[3].TranscriptionVideoTime == 35);
         }
 
         private List<CompositionInterval> GetCompositionIntervals()
@@ -152,6 +154,11 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 {
                     Start = 5,
                     Stop = 10
+                },
+                new CompositionInterval
+                {
+                    Start = 30,
+                    Stop = 40
                 }
             };
         }
@@ -197,6 +204,21 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                     Text = "Text n3",
                     DepositionId = depositionId,
                     TranscriptDateTime = DateTime.UtcNow.AddSeconds(35),
+                    User = new User
+                    {
+                        FirstName = "Foo3",
+                        LastName = "Bar3"
+                    },
+                    Duration = 10,
+                    Confidence = 0.7
+                },
+                new Transcription
+                {
+                    Id = Guid.NewGuid(),
+                    CreationDate = DateTime.UtcNow.AddSeconds(50),
+                    Text = "Text n3",
+                    DepositionId = depositionId,
+                    TranscriptDateTime = DateTime.UtcNow.AddSeconds(50),
                     User = new User
                     {
                         FirstName = "Foo3",
