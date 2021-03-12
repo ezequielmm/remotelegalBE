@@ -182,6 +182,12 @@ namespace PrecisionReporters.Platform.Domain.Services
         {
             try
             {
+                if (!await IsEnabled(user.EmailAddress))
+                {
+                    // If user wasn't confirmed we need to confirm it at this point
+                    await ConfirmUserAsync(user.EmailAddress); 
+                }
+
                 await SetPassword(user.EmailAddress, user.Password);
             }
             catch (Exception ex)

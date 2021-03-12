@@ -231,8 +231,9 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result> ForgotPassword(ForgotPasswordDto forgotPasswordDto)
         {
-            var cognitoEnabledUserResult = await _cognitoService.IsEnabled(forgotPasswordDto.Email);
-            if (!cognitoEnabledUserResult)
+            var userResult = await GetUserByEmail(forgotPasswordDto.Email);
+
+            if (userResult.IsFailed)
             {
                 _log.LogError("Invalid user");
                 return Result.Ok();
@@ -240,15 +241,8 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             var transactionResult = await _transactionHandler.RunAsync(async () =>
             {
-                var verifyUser = await _verifyUserService.GetVerifyUserByEmail(forgotPasswordDto.Email, VerificationType.VerifyUser);
-                if (!verifyUser.IsUsed)
-                {
-                    verifyUser.IsUsed = true;
-                    await _verifyUserService.UpdateVerifyUser(verifyUser);
-                }
-
-                var verifyForgotPassword = await SaveVerifyUser(verifyUser.User, VerificationType.ForgotPassword);
-                await SendEmailVerification(verifyUser.User, verifyForgotPassword);
+                var verifyForgotPassword = await SaveVerifyUser(userResult.Value, VerificationType.ForgotPassword);
+                await SendEmailVerification(userResult.Value, verifyForgotPassword);
             });
 
             if (transactionResult.IsFailed)
