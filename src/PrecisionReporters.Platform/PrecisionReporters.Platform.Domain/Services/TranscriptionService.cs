@@ -152,7 +152,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             var t = 0;
             for (var i = 0; i < intervals.Count; i++) 
             {
-                if (intervals[i].Stop < offset)
+                if (intervals[i].Stop < offset && i != intervals.Count)
                 {
                     t += (intervals[i + 1].Start - intervals[i].Stop);
                 }
