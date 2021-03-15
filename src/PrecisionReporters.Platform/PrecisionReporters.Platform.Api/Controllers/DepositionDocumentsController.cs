@@ -223,8 +223,8 @@ namespace PrecisionReporters.Platform.Api.Controllers
         /// <param name="id">Document identifier</param>
         /// <returns></returns>
         [HttpGet("{depositionId}/documents/PreSignedUrl")]
-        [UserAuthorize(ResourceType.Deposition, ResourceAction.ViewSharedDocument)]
-        public async Task<ActionResult> GetFileSignedUrlList([ResourceId(ResourceType.Deposition)] Guid depositionId, List<Guid> documentIds)
+        [UserAuthorize(ResourceType.Deposition, ResourceAction.View)]
+        public async Task<ActionResult> GetFileSignedUrlList([ResourceId(ResourceType.Deposition)] Guid depositionId, [FromQuery] List<Guid> documentIds)
         {
             var fileSignedUrlListResult = await _documentService.GetFileSignedUrl(depositionId, documentIds);
             if (fileSignedUrlListResult.IsFailed)

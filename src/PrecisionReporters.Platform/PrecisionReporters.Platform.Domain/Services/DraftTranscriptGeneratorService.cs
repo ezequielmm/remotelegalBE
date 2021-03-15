@@ -53,7 +53,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result> GenerateDraftTranscriptionPDF(DraftTranscriptDto draftTranscriptDto)
         {
-            var include = new[] { nameof(Deposition.Case), nameof(Deposition.Participants) };
+            var include = new[] { nameof(Deposition.Case), nameof(Deposition.Participants), nameof(Deposition.Requester) };
             var result = await _transcriptionService.GetTranscriptionsByDepositionId(draftTranscriptDto.DepositionId);
             var deposition = await _depositionRepository.GetFirstOrDefaultByFilter(x => x.Id == draftTranscriptDto.DepositionId, include);
             try
