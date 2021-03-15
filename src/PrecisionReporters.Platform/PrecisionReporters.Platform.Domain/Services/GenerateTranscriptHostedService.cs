@@ -40,7 +40,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             {
                 var draftTranscriptDto = await TaskQueue.DequeueAsync(stoppingToken);
 
-                using (var scope = _serviceProvider.CreateScope())
+                using (var scope = _serviceProvider.CreateScope())  
                 {
                     try
                     {

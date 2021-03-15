@@ -252,10 +252,10 @@ namespace PrecisionReporters.Platform.Domain.Services
             return Result.Ok(signedUrl.Value);
         }
 
-        public async Task<Result<List<string>>> GetFileSignedUrl(Guid depositionId, DocumentIdListDto documentIdListDto)
+        public async Task<Result<List<string>>> GetFileSignedUrl(Guid depositionId, List<Guid> documentIds)
         {
             var signedUrlList = new List<string>();
-            Expression<Func<DepositionDocument, bool>> filter = x => x.DepositionId == depositionId && documentIdListDto.DocumentsId.Contains(x.DocumentId);
+            Expression<Func<DepositionDocument, bool>> filter = x => x.DepositionId == depositionId && documentIds.Contains(x.DocumentId);
 
             var depositionDocument = await _depositionDocumentRepository.GetByFilter(filter, new[] { nameof(DepositionDocument.Document) });
             if (depositionDocument == null)

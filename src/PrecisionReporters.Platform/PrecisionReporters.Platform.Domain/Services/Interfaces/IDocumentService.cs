@@ -30,6 +30,6 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
         Task<Result> RemoveDepositionUserDocuments(Guid documentId);
         Task<Result> UploadTranscriptions(Guid id, List<FileTransferInfo> files);
         Task<Result> RemoveDepositionDocument(Guid depositionId, Guid documentId);
-        Task<Result<List<string>>> GetFileSignedUrl(Guid depositionId, DocumentIdListDto documentIdListDto);
+        Task<Result<List<string>>> GetFileSignedUrl(Guid depositionId, List<Guid> documentIds);
     }
 }
