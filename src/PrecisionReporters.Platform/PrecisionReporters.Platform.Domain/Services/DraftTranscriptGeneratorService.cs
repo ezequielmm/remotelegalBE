@@ -1,4 +1,5 @@
 ﻿using FluentResults;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using pdftron.PDF;
 using PrecisionReporters.Platform.Data.Entities;
@@ -28,6 +29,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly IDocumentRepository _documentRepository;
         private readonly ITransactionHandler _transactionHandler;
         private readonly DocumentConfiguration _documentsConfigurations;
+        private readonly ILogger<DraftTranscriptGeneratorService> _logger;
         private const int MAX_LENGHT = 56;
 
         public DraftTranscriptGeneratorService(ITranscriptionService transcriptionService,
@@ -36,7 +38,8 @@ namespace PrecisionReporters.Platform.Domain.Services
             IOptions<DocumentConfiguration> documentConfigurations,
             IDepositionDocumentRepository depositionDocumentRepository,
             IDocumentRepository documentRepository,
-            ITransactionHandler transactionHandler)
+            ITransactionHandler transactionHandler,
+            ILogger<DraftTranscriptGeneratorService> logger)
         {
             _transcriptionService = transcriptionService;
             _awsStorageService = awsStorageService;
@@ -45,6 +48,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             _depositionDocumentRepository = depositionDocumentRepository;
             _documentRepository = documentRepository;
             _transactionHandler = transactionHandler;
+            _logger = logger;
         }
 
         public async Task<Result> GenerateDraftTranscriptionPDF(DraftTranscriptDto draftTranscriptDto)
@@ -81,6 +85,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex.Message);
                 return Result.Fail(new ExceptionalError("Error generating file form stream.", ex));
             }
 
@@ -169,7 +174,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             replacer.AddString("dd_tmp", deposition.StartDate.Day.ToString());
             replacer.AddString("yyyy_tmp", deposition.StartDate.Year.ToString());
             replacer.AddString("time_tmp", ConvertTimeZone(deposition.StartDate, deposition.TimeZone));
-            replacer.AddString("witness_tmp", deposition.Participants?.FirstOrDefault(x => x.Role == ParticipantType.Witness).Name);
+            replacer.AddString("witness_tmp", deposition.Participants?.FirstOrDefault(x => x.Role == ParticipantType.Witness)?.Name);
             replacer.AddString("reportedBy_tmp", $"{deposition.Requester.FirstName} {deposition.Requester.LastName}");
             replacer.AddString("job_n_tmp", deposition.Job ?? string.Empty);
             replacer.Process(page1);

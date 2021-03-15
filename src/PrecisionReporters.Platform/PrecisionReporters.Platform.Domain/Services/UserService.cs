@@ -1,4 +1,5 @@
 ﻿using FluentResults;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using PrecisionReporters.Platform.Data.Entities;
@@ -30,10 +31,17 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly ITransactionHandler _transactionHandler;
         private readonly UrlPathConfiguration _urlPathConfiguration;
         private readonly VerificationLinkConfiguration _verificationLinkConfiguration;
-        private readonly ClaimsPrincipal _principal;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public UserService(ILogger<UserService> log, IUserRepository userRepository, ICognitoService cognitoService, IAwsEmailService awsEmailService,
-            IVerifyUserService verifyUserService, ITransactionHandler transactionHandler, IOptions<UrlPathConfiguration> urlPathConfiguration, IOptions<VerificationLinkConfiguration> verificationLinkConfiguration, ClaimsPrincipal principal)
+        public UserService(ILogger<UserService> log, 
+            IUserRepository userRepository, 
+            ICognitoService cognitoService, 
+            IAwsEmailService awsEmailService,
+            IVerifyUserService verifyUserService, 
+            ITransactionHandler transactionHandler, 
+            IOptions<UrlPathConfiguration> urlPathConfiguration, 
+            IOptions<VerificationLinkConfiguration> verificationLinkConfiguration, 
+            IHttpContextAccessor httpContextAccessor)
         {
             _log = log;
             _userRepository = userRepository;
@@ -43,7 +51,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             _transactionHandler = transactionHandler;
             _urlPathConfiguration = urlPathConfiguration.Value;
             _verificationLinkConfiguration = verificationLinkConfiguration.Value;
-            _principal = principal;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task<Result<User>> SignUpAsync(User user)
@@ -182,7 +190,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         //TODO for future increments add User value into a cache service
         public async Task<User> GetCurrentUserAsync()
         {
-            var email = _principal.FindFirstValue(ClaimTypes.Email);
+            var email = _httpContextAccessor?.HttpContext?.User?.FindFirstValue(ClaimTypes.Email);
             var user = await _userRepository.GetFirstOrDefaultByFilter(x => x.EmailAddress == email);
 
             return user;
