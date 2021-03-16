@@ -22,6 +22,7 @@ using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
+using PrecisionReporters.Platform.Domain.Dtos;
 
 namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 {
@@ -798,6 +799,71 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             Assert.IsType<Result<string>>(result);
             Assert.True(result.IsSuccess);
             Assert.Equal(signedUrl, result.Value);
+        }
+
+        [Fact]
+        public async Task GetGetFileSignedUrl_ShouldReturnFail_IfThereAreNoDocuments()
+        {
+            // Arrange
+            var documentsId = new List<Guid> { Guid.NewGuid(), Guid.NewGuid() };
+            var depositionId = Guid.NewGuid();
+            var documentIdListDto = new DocumentIdListDto { DocumentsId = documentsId };
+
+            _depositionDocumentRepositoryMock
+                .Setup(x => x.GetByFilter(It.IsAny<Expression<Func<DepositionDocument, bool>>>(), It.IsAny<string[]>()))
+                .ReturnsAsync((List<DepositionDocument>)null);
+
+            // Act
+            var result = await _service.GetFileSignedUrl(depositionId, documentIdListDto);
+
+            // Assert
+            _depositionDocumentRepositoryMock.Verify(x => x.GetByFilter(It.IsAny<Expression<Func<DepositionDocument, bool>>>(), It.IsAny<string[]>()), Times.Once);
+            Assert.NotNull(result);
+            Assert.True(result.IsFailed);
+        }
+
+        [Fact]
+        public async Task GetGetFileSignedUrl_ShouldReturn_SignedUrlList()
+        {
+            // Arrange
+            var documentsId = new List<Guid> { Guid.NewGuid(), Guid.NewGuid() };
+            var documentIdListDto = new DocumentIdListDto { DocumentsId = documentsId };
+            var signedUrlList = new List<string>{"signedUrl1", "signedUrl1"};
+            var deposition = new Deposition {Id = Guid.NewGuid(), EndDate = DateTime.Now };
+            var depositionDocumentList = new List<DepositionDocument> {
+                new DepositionDocument {
+                    Id = Guid.NewGuid(),
+                    DepositionId = deposition.Id,
+                    Document = new Document {
+                        Id = documentsId[0],
+                        DisplayName = "testName.pdf"
+                    }
+                },
+                new DepositionDocument {
+                    Id = Guid.NewGuid(),
+                    DepositionId = deposition.Id,
+                    Document = new Document {
+                        Id = documentsId[1],
+                        DisplayName = "testName2.pdf"
+                    }
+                }
+            };
+            _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(new User()));
+
+            _depositionDocumentRepositoryMock
+                .Setup(x => x.GetByFilter(It.IsAny<Expression<Func<DepositionDocument, bool>>>(), It.IsAny<string[]>()))
+                .ReturnsAsync(depositionDocumentList);
+
+            _awsStorageServiceMock.Setup(x => x.GetFilePublicUri(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<string>())).Returns(It.IsAny<string>());
+
+            // Act
+            var result = await _service.GetFileSignedUrl(deposition.Id, documentIdListDto);
+
+            // Assert
+            _depositionDocumentRepositoryMock.Verify(x => x.GetByFilter(It.IsAny<Expression<Func<DepositionDocument, bool>>>(), It.IsAny<string[]>()), Times.Once);
+            _awsStorageServiceMock.Verify(x => x.GetFilePublicUri(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<string>()), Times.Exactly(documentsId.Count));
+            Assert.NotNull(result);
+            Assert.True(result.IsSuccess);
         }
 
         [Fact]
