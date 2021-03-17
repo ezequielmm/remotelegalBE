@@ -29,10 +29,23 @@
     <PackageReference Include="Microsoft.CognitiveServices.Speech" Version="1.15.0" />
     <PackageReference Include="PDFTron.NETCore.Windows.x64" Version="8.1.0.76931" />
     <PackageReference Include="Twilio" Version="5.48.0" />
+    <PackageReference Include="TimeZoneConverter" Version="3.4.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\PrecisionReporters.Platform.Data\PrecisionReporters.Platform.Data.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+  <Content Include="libPDFNetC.so">
+    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+  </Content>
+</ItemGroup>
+
+<ItemGroup>
+  <Reference Include="PDFNetDotNetCore">
+    <HintPath>PDFNetDotNetCore.dll</HintPath>
+  </Reference>
+</ItemGroup>
 
 </Project>

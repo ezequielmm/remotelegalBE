@@ -17,6 +17,7 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using TimeZoneConverter;
 
 namespace PrecisionReporters.Platform.Domain.Services
 {
@@ -282,7 +283,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         private string ConvertTimeZone(DateTime time, string timeZone)
         {
             var timeZoneFullName = EnumExtensions.GetDescription((USTimeZone)Enum.Parse(typeof(USTimeZone), timeZone));
-            var timeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById(timeZoneFullName);
+            var timeZoneInfo = TZConvert.GetTimeZoneInfo(timeZoneFullName);
             DateTime convertedTime = TimeZoneInfo.ConvertTimeFromUtc(time, timeZoneInfo);
 
             return $"{convertedTime.ToShortTimeString()} {timeZone}";
