@@ -385,6 +385,15 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (currentParticipant == null && !currentUser.IsAdmin)
                 return Result.Fail(new InvalidInputError($"User is neither a Participant for this Deposition nor an Admin"));
 
+            if (currentParticipant == null && currentUser.IsAdmin)
+            {
+                currentParticipant = new Participant()
+                {
+                    User = currentUser,
+                    Role = ParticipantType.Admin
+                };
+            }
+
             return await _breakRoomService.JoinBreakRoom(breakRoomId, currentParticipant);
         }
 
