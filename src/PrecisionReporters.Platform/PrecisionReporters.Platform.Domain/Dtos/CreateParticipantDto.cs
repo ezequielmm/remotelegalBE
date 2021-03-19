@@ -13,5 +13,6 @@ namespace PrecisionReporters.Platform.Domain.Dtos
         public string Phone { get; set; }
         [Required]
         public ParticipantType Role { get; set; }
+        public bool IsMuted { get; set; }
     }
 }

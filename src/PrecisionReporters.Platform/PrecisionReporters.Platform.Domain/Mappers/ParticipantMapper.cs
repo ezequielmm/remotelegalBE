@@ -17,7 +17,8 @@ namespace PrecisionReporters.Platform.Domain.Mappers
                 Name = dto.Name,
                 Phone = dto.Phone,
                 Role = Enum.Parse<ParticipantType>(dto.Role, true),
-                UserId = dto.User.Id
+                UserId = dto.User.Id,
+                IsMuted = dto.IsMuted
             };
         }
 
@@ -28,7 +29,8 @@ namespace PrecisionReporters.Platform.Domain.Mappers
                 Email = dto.Email?.ToLower(),
                 Name = dto.Name,
                 Phone = dto.Phone,
-                Role = dto.Role
+                Role = dto.Role,
+                IsMuted = dto.IsMuted
             };
         }
 
@@ -50,7 +52,8 @@ namespace PrecisionReporters.Platform.Domain.Mappers
                         LastName = model.User.LastName,
                         EmailAddress = model.User.EmailAddress
                     }
-                    : null
+                    : null,
+                IsMuted = model.IsMuted
             };
         }
     }

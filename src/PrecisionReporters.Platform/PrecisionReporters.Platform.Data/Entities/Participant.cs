@@ -20,6 +20,8 @@ namespace PrecisionReporters.Platform.Data.Entities
         [ForeignKey(nameof(Deposition))]
         public Guid? DepositionId { get; set; }
 
+        public bool IsMuted { get; set; }
+
         public override void CopyFrom(Participant entity)
         {
             Role = entity.Role;
@@ -27,6 +29,7 @@ namespace PrecisionReporters.Platform.Data.Entities
             Email = entity.Email;
             Phone = entity.Phone;
             User = entity.User;
+            IsMuted = entity.IsMuted;
         }
 
         public Participant() {}

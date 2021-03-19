@@ -12,5 +12,6 @@ namespace PrecisionReporters.Platform.Domain.Dtos
         // TODO: use enum
         public string Role { get; set; }
         public UserOutputDto User { get; set; }
+        public bool IsMuted { get; set; }
     }
 }

@@ -2,6 +2,7 @@
 {
     public enum NotificationEntity
     {
-        Transcript
+        Transcript,
+        ParticipantStatus
     }
 }
