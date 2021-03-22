@@ -117,7 +117,7 @@ namespace PrecisionReporters.Platform.Api
                 options.Limits.MaxRequestBodySize = appConfiguration.DocumentConfiguration.MaxRequestBodySize;
             });
             services.Configure<VerificationLinkConfiguration>(x => { x.ExpirationTime = appConfiguration.VerificationLinkConfiguration.ExpirationTime; });
-
+            services.Configure<DepositionConfiguration>(x => { x.CancelAllowedOffsetSeconds = appConfiguration.DepositionConfiguration.CancelAllowedOffsetSeconds; });
             // Filters
             services.AddScoped<ValidateTwilioRequestFilterAttribute>();
 

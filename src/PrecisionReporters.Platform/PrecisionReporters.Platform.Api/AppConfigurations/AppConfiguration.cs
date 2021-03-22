@@ -20,5 +20,6 @@ namespace PrecisionReporters.Platform.Api
         public AzureCognitiveServiceConfiguration AzureCognitiveServiceConfiguration { get; set; }
         public CloudServicesConfiguration CloudServicesConfiguration { get; set; }
         public VerificationLinkConfiguration VerificationLinkConfiguration { get; set; }
+        public DepositionConfiguration DepositionConfiguration { get; set; }
     }
 }

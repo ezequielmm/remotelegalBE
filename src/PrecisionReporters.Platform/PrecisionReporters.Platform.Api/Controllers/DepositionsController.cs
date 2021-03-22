@@ -380,5 +380,16 @@ namespace PrecisionReporters.Platform.Api.Controllers
 
             return Ok(_depositionMapper.ToDto(result.Value));
         }
+
+        [HttpPost("{id}/cancel")]
+        [UserAuthorize(ResourceType.Deposition, ResourceAction.Cancel)]
+        public async Task<ActionResult> CancelDeposition([ResourceId(ResourceType.Deposition)] Guid id)
+        {
+            var cancelDepositionResult = await _depositionService.CancelDeposition(id);
+            if (cancelDepositionResult.IsFailed)
+                return WebApiResponses.GetErrorResponse(cancelDepositionResult);
+
+            return Ok(_depositionMapper.ToDto(cancelDepositionResult.Value));
+        }
     }
 }

@@ -38,6 +38,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly ILogger<DepositionService> _logger;
         private readonly IDocumentService _documentService;
         private readonly IMapper<Deposition, DepositionDto, CreateDepositionDto> _depositionMapper;
+        private readonly DepositionConfiguration _depositionConfiguration;
 
         public DepositionService(IDepositionRepository depositionRepository,
             IParticipantRepository participantRepository,
@@ -52,7 +53,8 @@ namespace PrecisionReporters.Platform.Domain.Services
             ITransactionHandler transactionHandler,
             ILogger<DepositionService> logger,
             IDocumentService documentService,
-            IMapper<Deposition, DepositionDto, CreateDepositionDto> depositionMapper)
+            IMapper<Deposition, DepositionDto, CreateDepositionDto> depositionMapper,
+            IOptions<DepositionConfiguration> depositionConfiguration)
         {
             _awsStorageService = awsStorageService;
             _documentsConfiguration = documentConfigurations.Value ?? throw new ArgumentException(nameof(documentConfigurations));
@@ -68,6 +70,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             _logger = logger;
             _documentService = documentService;
             _depositionMapper = depositionMapper;
+            _depositionConfiguration = depositionConfiguration.Value;
         }
 
         public async Task<List<Deposition>> GetDepositions(Expression<Func<Deposition, bool>> filter = null,
@@ -791,6 +794,22 @@ namespace PrecisionReporters.Platform.Domain.Services
                 return documentResult;
             }
             return Result.Ok((Document)null);
+        }
+
+        public async Task<Result<Deposition>> CancelDeposition(Guid depositionId)
+        {
+            var depositionResult = await GetDepositionById(depositionId);
+            if (depositionResult.IsFailed)
+                return depositionResult;
+
+            var cancelTime = int.Parse(_depositionConfiguration.CancelAllowedOffsetSeconds);
+            if (depositionResult.Value.StartDate < DateTime.UtcNow.AddSeconds(cancelTime))
+                return Result.Fail<Deposition>(new ResourceConflictError($"The depostion with id {depositionId} can not be canceled because is close to start"));
+            
+            depositionResult.Value.Status = DepositionStatus.Canceled;
+            var depositionUpdated = await _depositionRepository.Update(depositionResult.Value);
+
+            return Result.Ok(depositionUpdated);
         }
     }
 }

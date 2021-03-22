@@ -36,9 +36,11 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         private readonly Mock<IBreakRoomService> _breakRoomServiceMock;
         private readonly Mock<IPermissionService> _permissionServiceMock;
         private readonly DocumentConfiguration _documentConfiguration;
+        private readonly DepositionConfiguration _depositionconfiguration;
         private readonly Mock<IAwsStorageService> _awsStorageServiceMock;
         private readonly Mock<IBackgroundTaskQueue> _backgroundTaskQueueMock;
         private readonly Mock<IOptions<DocumentConfiguration>> _depositionDocumentConfigurationMock;
+        private readonly Mock<IOptions<DepositionConfiguration>> _depositionConfigurationMock;
         private readonly Mock<ITransactionHandler> _transactionHandlerMock;
         private readonly Mock<IDocumentService> _documentServiceMock;
         private readonly Mock<ILogger<DepositionService>> _loggerMock;
@@ -78,9 +80,11 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             {
                 PostDepoVideoBucket = "foo"
             };
-
             _depositionDocumentConfigurationMock = new Mock<IOptions<DocumentConfiguration>>();
             _depositionDocumentConfigurationMock.Setup(x => x.Value).Returns(_documentConfiguration);
+            _depositionconfiguration = new DepositionConfiguration { CancelAllowedOffsetSeconds = "60" };
+            _depositionConfigurationMock = new Mock<IOptions<DepositionConfiguration>>();
+            _depositionConfigurationMock.Setup(x => x.Value).Returns(_depositionconfiguration);
             _depositionMapperMock = new Mock<IMapper<Deposition, DepositionDto, CreateDepositionDto>>();
 
             _depositionService = new DepositionService(
@@ -97,7 +101,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 _transactionHandlerMock.Object,
                 _loggerMock.Object,
                 _documentServiceMock.Object,
-                _depositionMapperMock.Object);
+                _depositionMapperMock.Object,
+                _depositionConfigurationMock.Object);
 
             _transactionHandlerMock.Setup(x => x.RunAsync(It.IsAny<Func<Task<Result<Deposition>>>>()))
                 .Returns(async (Func<Task<Result<Deposition>>> action) =>
@@ -1982,6 +1987,36 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             Assert.True(result.Value.TotalUpcoming == 2);
             Assert.True(result.Value.TotalPast == 1);
             Assert.True(result.Value.Depositions.Count == 1);
+        }
+
+        [Fact]
+        public async Task CancelDeposition_ShouldReturnFail_WhenDepositionIsCloseToStart()
+        {
+            var depositionId = Guid.NewGuid();
+            var caseId = Guid.NewGuid();
+            var deposition = DepositionFactory.GetDeposition(depositionId,caseId);
+            deposition.StartDate = DateTime.UtcNow.AddSeconds(59);
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
+
+            var result = await _depositionService.CancelDeposition(depositionId);
+
+            Assert.True(result.IsFailed);
+            _depositionRepositoryMock.Verify(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task CancelDeposition_ShouldReturnOk_WhenDepositionIsNotCloseToStart()
+        {
+            var depositionId = Guid.NewGuid();
+            var caseId = Guid.NewGuid();
+            var deposition = DepositionFactory.GetDeposition(depositionId, caseId);
+            deposition.StartDate = DateTime.UtcNow.AddMinutes(2);
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
+
+            var result = await _depositionService.CancelDeposition(depositionId);
+
+            Assert.True(result.IsSuccess);
+            _depositionRepositoryMock.Verify(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>()), Times.Once);
         }
     }
 }

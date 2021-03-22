@@ -10,6 +10,7 @@
         Recording,
         UploadDocument,
         ViewSharedDocument,
-        StampExhibit
+        StampExhibit,
+        Cancel
     }
 }

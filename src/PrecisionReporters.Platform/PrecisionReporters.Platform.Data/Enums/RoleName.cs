@@ -5,6 +5,7 @@
         CaseAdmin,
         DepositionCourtReporter,
         DepositionAttendee,
-        DocumentOwner
+        DocumentOwner,
+        DepositionAdmin
     }
 }
