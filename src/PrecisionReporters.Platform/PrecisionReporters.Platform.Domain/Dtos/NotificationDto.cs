@@ -1,7 +1,7 @@
-﻿using Newtonsoft.Json.Converters;
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using PrecisionReporters.Platform.Data.Enums;
 using System.ComponentModel.DataAnnotations;
-using System.Text.Json.Serialization;
 
 namespace PrecisionReporters.Platform.Domain.Dtos
 {
