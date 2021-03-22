@@ -112,7 +112,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 //OffSet
                 var transcription = new Transcription
                 {
-                    TranscriptDateTime = DateTime.UtcNow.AddMilliseconds(-durationInMilliseconds),
+                    TranscriptDateTime = DateTime.UtcNow,
                     Text = e.Result.Text,
                     Duration = durationInMilliseconds,
                     Confidence = bestTranscription != null ? bestTranscription.Confidence : 0.0
