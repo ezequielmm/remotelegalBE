@@ -20,6 +20,7 @@ namespace PrecisionReporters.Platform.Data.Seeds
             var depositionAdminRoleId = Guid.Parse("a11c8ce3-0a39-47a5-a276-6a6b90e40ba5");
             modelBuilder.Entity<Role>().HasData(new Role { Id = depositionAdminRoleId, Name = RoleName.DepositionAdmin });
             modelBuilder.Entity<RolePermission>().HasData(new RolePermission { RoleId = depositionAdminRoleId, Action = ResourceAction.Cancel });
+            modelBuilder.Entity<RolePermission>().HasData(new RolePermission { RoleId = depositionAdminRoleId, Action = ResourceAction.Revert });
 
             // Court reporter
             var courtReporterRoleId = Guid.Parse("6c73879b-cce3-47ea-9b80-12e1c4d1285e");

@@ -391,5 +391,25 @@ namespace PrecisionReporters.Platform.Api.Controllers
 
             return Ok(_depositionMapper.ToDto(cancelDepositionResult.Value));
         }
+
+        /// <summary>
+        /// Revert deposition cancel
+        /// </summary>
+        /// <param name="id">Deposition identifier</param>
+        /// <param name="editDepositionDto">Deposition data</param>
+        /// <returns>Ok if succeeded</returns>
+        [HttpPost("{id}/revertCancel")]
+        [UserAuthorize(ResourceType.Deposition, ResourceAction.Revert)]
+        public async Task<ActionResult<DepositionDto>> RevertCancel([ResourceId(ResourceType.Deposition)] Guid id, EditDepositionDto editDepositionDto)
+        {
+            var file = FileHandlerHelper.GetFilesFromRequest(Request.Form.Files).FirstOrDefault().Value;
+            editDepositionDto.Deposition.Id = id;
+            var deposition = _depositionMapper.ToModel(editDepositionDto.Deposition);
+            var result = await _depositionService.RevertCancel(deposition, file, editDepositionDto.DeleteCaption);
+            if (result.IsFailed)
+                return WebApiResponses.GetErrorResponse(result);
+
+            return Ok(_depositionMapper.ToDto(result.Value));
+        }
     }
 }

@@ -11,6 +11,7 @@
         UploadDocument,
         ViewSharedDocument,
         StampExhibit,
-        Cancel
+        Cancel,
+        Revert
     }
 }

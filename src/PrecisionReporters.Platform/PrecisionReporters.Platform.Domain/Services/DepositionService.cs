@@ -713,43 +713,59 @@ namespace PrecisionReporters.Platform.Domain.Services
             return Result.Ok();
         }
 
-        public async Task<Result<Deposition>> EditDepositionDetails(Deposition deposition, FileTransferInfo file, bool deleteCaption)
+        private async Task<Result<Document>> UpdateDepositionFiles(FileTransferInfo file, Deposition currentDeposition, bool deleteCaption)
         {
             var currentUser = await _userService.GetCurrentUserAsync();
+            var uploadDocumentResult = await UploadFile(file, currentUser, currentDeposition);
+            
+            if (uploadDocumentResult.IsFailed)
+                return uploadDocumentResult.ToResult();
 
-            var currentDeposition = await _depositionRepository.GetById(deposition.Id, new[] { $"{nameof(Deposition.Caption)}" });
-            if (currentDeposition == null)
-                return Result.Fail(new ResourceNotFoundError($"Deposition not found with ID {deposition.Id}"));
-            var uploadedDocs = new List<Document>();
+            if (currentDeposition.Caption != null && deleteCaption)
+            {
+                await _documentService.DeleteUploadedFiles(new List<Document>() { currentDeposition.Caption });
+                currentDeposition.Caption = null;
+            }
+
+            return uploadDocumentResult;
+        }
+
+        private Deposition UpdateDepositionDetails(Deposition currentDeposition, Deposition deposition, Document caption)
+        {
+            currentDeposition.Job = deposition.Job;
+            currentDeposition.Details = deposition.Details;
+            currentDeposition.IsVideoRecordingNeeded = deposition.IsVideoRecordingNeeded;
+            currentDeposition.Status = deposition.Status;
+            currentDeposition.Caption = caption ?? currentDeposition.Caption;
+
+            return currentDeposition;
+        }
+
+        public async Task<Result<Deposition>> EditDepositionDetails(Deposition deposition, FileTransferInfo file, bool deleteCaption)
+        {
+            var currentDepositionResult = await GetByIdWithIncludes(deposition.Id, new[] { $"{nameof(Deposition.Caption)}" });
+            if (currentDepositionResult.IsFailed)
+                return currentDepositionResult;
+            
+            var currentDeposition = currentDepositionResult.Value;
+            
             try
             {
                 var transactionResult = await _transactionHandler.RunAsync<Deposition>(async () =>
                 {
-                    var uploadDocumentResult = await UploadFile(file, currentUser, currentDeposition);
-
-                    if (uploadDocumentResult.IsFailed)
-                        return uploadDocumentResult.ToResult();
-
-                    if (uploadDocumentResult.Value != null)
-                        uploadedDocs.Add(uploadDocumentResult.Value);
-
-                    if (currentDeposition.Caption != null && deleteCaption)
-                    {
-                        await _documentService.DeleteUploadedFiles(new List<Document>() { currentDeposition.Caption });
-                        currentDeposition.Caption = null;
-                    }
                     if (deposition.RequesterNotes != null)
                     {
                         currentDeposition.RequesterNotes = deposition.RequesterNotes;
                     }
                     else
                     {
-                        currentDeposition.Job = deposition.Job;
-                        currentDeposition.Details = deposition.Details;
-                        currentDeposition.IsVideoRecordingNeeded = deposition.IsVideoRecordingNeeded;
-                        currentDeposition.Status = deposition.Status;
+                        var uploadDocumentResult = await UpdateDepositionFiles(file, currentDeposition, deleteCaption);
+                        if (uploadDocumentResult.IsFailed)
+                            return uploadDocumentResult.ToResult();
+
+                        currentDeposition = UpdateDepositionDetails(currentDeposition, deposition, uploadDocumentResult.Value);
                     }
-                    currentDeposition.Caption = uploadDocumentResult.Value != null ? uploadDocumentResult.Value : currentDeposition.Caption;
+                    
                     await _depositionRepository.Update(currentDeposition);
                     return Result.Ok(currentDeposition);
                 });
@@ -759,7 +775,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Unable to edit depositions");
-                await _documentService.DeleteUploadedFiles(uploadedDocs);
+                await _documentService.DeleteUploadedFiles(new List<Document> { currentDeposition.Caption });
                 return Result.Fail(new ExceptionalError("Unable to edit the deposition", ex));
             }
         }
@@ -816,6 +832,37 @@ namespace PrecisionReporters.Platform.Domain.Services
             var depositionUpdated = await _depositionRepository.Update(depositionResult.Value);
 
             return Result.Ok(depositionUpdated);
+        }
+
+        public async Task<Result<Deposition>> RevertCancel(Deposition deposition, FileTransferInfo file, bool deleteCaption)
+        {
+            var currentDepositionResult = await GetByIdWithIncludes(deposition.Id, new[] { $"{nameof(Deposition.Caption)}" });
+            if (currentDepositionResult.IsFailed)
+                return currentDepositionResult;
+
+            var currentDeposition = currentDepositionResult.Value;
+            try
+            {
+                var transactionResult = await _transactionHandler.RunAsync<Deposition>(async () =>
+                {
+                    var uploadDocumentResult = await UpdateDepositionFiles(file, currentDeposition, deleteCaption);
+                    if (uploadDocumentResult.IsFailed)
+                        return uploadDocumentResult.ToResult();
+
+                    currentDeposition = UpdateDepositionDetails(currentDeposition, deposition, uploadDocumentResult.Value);
+
+                    await _depositionRepository.Update(currentDeposition);
+                    return Result.Ok(currentDeposition);
+                });
+
+                return transactionResult;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unable to edit depositions");
+                await _documentService.DeleteUploadedFiles(new List<Document> { currentDeposition.Caption });
+                return Result.Fail(new ExceptionalError("Unable to edit the deposition", ex));
+            }
         }
     }
 }
