@@ -23,6 +23,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 using PrecisionReporters.Platform.Domain.Dtos;
+using PrecisionReporters.Platform.Domain.Mappers;
 
 namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 {
@@ -39,6 +40,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         private readonly Mock<ITransactionHandler> _transactionHandlerMock;
         private readonly Mock<IDocumentRepository> _documentRepositoryMock;
         private readonly Mock<IDepositionDocumentRepository> _depositionDocumentRepositoryMock;
+        private readonly Mock<ISignalRNotificationManager> _signalRNotificationManagerMock;
+        private readonly Mock<IMapper<AnnotationEvent, AnnotationEventDto, CreateAnnotationEventDto>> _annotationEventMapperMock;
         private readonly DocumentService _service;
         private readonly string[] includes = new[] { nameof(Deposition.Requester), nameof(Deposition.Participants),
                 nameof(Deposition.Case), nameof(Deposition.AddedBy),nameof(Deposition.Caption)};
@@ -64,7 +67,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _documentRepositoryMock = new Mock<IDocumentRepository>();
             _depositionDocumentRepositoryMock = new Mock<IDepositionDocumentRepository>();
             _depositionRepositoryMock = new Mock<IDepositionRepository>();
-
+            _signalRNotificationManagerMock = new Mock<ISignalRNotificationManager>();
+            _annotationEventMapperMock = new Mock<IMapper<AnnotationEvent, AnnotationEventDto, CreateAnnotationEventDto>>();
 
             _service = new DocumentService(
                     _awsStorageServiceMock.Object,
@@ -76,7 +80,9 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                     _transactionHandlerMock.Object,
                     _documentRepositoryMock.Object,
                     _depositionDocumentRepositoryMock.Object,
-                    _depositionRepositoryMock.Object);
+                    _depositionRepositoryMock.Object,
+                    _signalRNotificationManagerMock.Object,
+                    _annotationEventMapperMock.Object);
         }
 
         [Fact]
@@ -890,8 +896,110 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             // Assert
             _documentRepositoryMock.Verify(x => x.Update(It.Is<Document>(a => a.Id == document.Id)), Times.Once);
+            _signalRNotificationManagerMock.Verify(x => x.SendNotificationToGroupMembers(It.IsAny<Guid>(), It.IsAny<NotificationDto>()), Times.Once);
             Assert.NotNull(result);
             Assert.True(result.IsSuccess);
+        }
+
+        [Fact]
+        public async Task AddAnnotation_ShouldReturnFail_WhenDepositionIsNull()
+        {
+            // Arrange
+            var errorMessage = "Deposition with id";
+            var document = new Document
+            {
+                Id = Guid.NewGuid()
+            };
+
+            var annotation = new AnnotationEvent
+            {
+                Action = AnnotationAction.Create,
+            };
+
+            _userServiceMock.Setup(x => x.GetCurrentUserAsync()).ReturnsAsync(new User());
+
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>()))
+                .ReturnsAsync((Deposition)null);            
+
+            // Act
+            var result = await _service.AddAnnotation(document.Id, annotation);
+
+            // Assert
+            _documentRepositoryMock.Verify(x => x.Update(It.Is<Document>(a => a.Id == document.Id)), Times.Never);
+            _signalRNotificationManagerMock.Verify(x => x.SendNotificationToGroupMembers(It.IsAny<Guid>(), It.IsAny<NotificationDto>()), Times.Never);
+            Assert.True(result.IsFailed);
+            Assert.Contains(errorMessage, result.Errors[0].Message);
+        }
+
+        [Fact]
+        public async Task AddAnnotation_ShouldReturnFail_WhenSharingDocumentIsNull()
+        {
+            // Arrange
+            var errorMessage = "There is no shared document for deposition";
+            var document = new Document
+            {
+                Id = Guid.NewGuid()
+            };
+
+            var annotation = new AnnotationEvent
+            {
+                Action = AnnotationAction.Create,
+            };
+
+            var deposition = new Deposition 
+            {
+                 Id = Guid.NewGuid(),                  
+            };
+
+            _userServiceMock.Setup(x => x.GetCurrentUserAsync()).ReturnsAsync(new User());
+
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>()))
+                .ReturnsAsync(deposition);
+
+            // Act
+            var result = await _service.AddAnnotation(document.Id, annotation);
+
+            // Assert
+            _documentRepositoryMock.Verify(x => x.Update(It.Is<Document>(a => a.Id == document.Id)), Times.Never);
+            _signalRNotificationManagerMock.Verify(x => x.SendNotificationToGroupMembers(It.IsAny<Guid>(), It.IsAny<NotificationDto>()), Times.Never);
+            Assert.True(result.IsFailed);
+            Assert.Contains(errorMessage, result.Errors[0].Message);
+        }
+
+        [Fact]
+        public async Task AddAnnotation_ShouldReturnFail_WhenDocumentIsNull()
+        {
+            // Arrange
+            var errorMessage = "Document with Id";
+            var document = new Document
+            {
+                Id = Guid.NewGuid()
+            };
+
+            var annotation = new AnnotationEvent
+            {
+                Action = AnnotationAction.Create,
+            };
+
+            var deposition = new Deposition
+            {
+                Id = Guid.NewGuid(),
+                SharingDocumentId = Guid.NewGuid()
+            };
+
+            _userServiceMock.Setup(x => x.GetCurrentUserAsync()).ReturnsAsync(new User());
+
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>()))
+                .ReturnsAsync(deposition);
+
+            // Act
+            var result = await _service.AddAnnotation(document.Id, annotation);
+
+            // Assert
+            _documentRepositoryMock.Verify(x => x.Update(It.Is<Document>(a => a.Id == document.Id)), Times.Never);
+            _signalRNotificationManagerMock.Verify(x => x.SendNotificationToGroupMembers(It.IsAny<Guid>(), It.IsAny<NotificationDto>()), Times.Never);
+            Assert.True(result.IsFailed);
+            Assert.Contains(errorMessage, result.Errors[0].Message);
         }
 
         [Fact]

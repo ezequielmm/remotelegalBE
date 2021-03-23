@@ -12,6 +12,7 @@ using PrecisionReporters.Platform.Domain.Configurations;
 using PrecisionReporters.Platform.Domain.Dtos;
 using PrecisionReporters.Platform.Domain.Errors;
 using PrecisionReporters.Platform.Domain.Extensions;
+using PrecisionReporters.Platform.Domain.Mappers;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -34,10 +35,15 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly ILogger<DocumentService> _logger;
         private readonly DocumentConfiguration _documentsConfiguration;
         private readonly IDepositionRepository _depositionRepository;
+        private readonly ISignalRNotificationManager _signalRNotificationManager;
+        private readonly IMapper<AnnotationEvent, AnnotationEventDto, CreateAnnotationEventDto> _annotationEventMapper;
 
         public DocumentService(IAwsStorageService awsStorageService, IOptions<DocumentConfiguration> documentConfigurations, ILogger<DocumentService> logger,
             IUserService userService, IDocumentUserDepositionRepository documentUserDepositionRepository,
-            IPermissionService permissionService, ITransactionHandler transactionHandler, IDocumentRepository documentRepository, IDepositionDocumentRepository depositionDocumentRepository, IDepositionRepository depositionRepository)
+            IPermissionService permissionService, ITransactionHandler transactionHandler, IDocumentRepository documentRepository, 
+            IDepositionDocumentRepository depositionDocumentRepository, IDepositionRepository depositionRepository,
+            ISignalRNotificationManager signalRNotificationManager,
+            IMapper<AnnotationEvent, AnnotationEventDto, CreateAnnotationEventDto> annotationEventMapper)
         {
             _awsStorageService = awsStorageService;
             _documentsConfiguration = documentConfigurations.Value ?? throw new ArgumentException(nameof(documentConfigurations));
@@ -49,6 +55,8 @@ namespace PrecisionReporters.Platform.Domain.Services
             _documentRepository = documentRepository;
             _depositionDocumentRepository = depositionDocumentRepository;
             _depositionRepository = depositionRepository;
+            _signalRNotificationManager = signalRNotificationManager;
+            _annotationEventMapper = annotationEventMapper;
         }
 
         public async Task<Result<Document>> UploadDocumentFile(KeyValuePair<string, FileTransferInfo> file, User user, string parentPath, DocumentType documentType)
@@ -437,6 +445,15 @@ namespace PrecisionReporters.Platform.Domain.Services
             annotation.Author = currentUser;
             document.AnnotationEvents.Add(annotation);
             var updatedDocument = await _documentRepository.Update(document);
+
+            var notificationDto = new NotificationDto
+            {
+                Action = NotificationAction.Create,
+                EntityType = NotificationEntity.Annotation,
+                Content = _annotationEventMapper.ToDto(annotation)
+            };
+
+            await _signalRNotificationManager.SendNotificationToGroupMembers(depositionId, notificationDto);
 
             return Result.Ok(updatedDocument);
         }
