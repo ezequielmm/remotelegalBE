@@ -598,7 +598,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 if (!string.IsNullOrEmpty(witness?.Name))
                     fileName += $"-{witness.Name}";
 
-                url = _awsStorageService.GetFilePublicUri($"{deposition.Room.Composition.SId}.mp4", _documentsConfiguration.PostDepoVideoBucket, expirationDate, fileName);
+                url = _awsStorageService.GetFilePublicUri($"{deposition.Room.Composition.SId}.mp4", _documentsConfiguration.PostDepoVideoBucket, expirationDate, $"{fileName}.mp4");
             }
 
             var depoTotalTime = (int)(deposition.Room.EndDate.Value - deposition.Room.RecordingStartDate.Value).TotalSeconds;
