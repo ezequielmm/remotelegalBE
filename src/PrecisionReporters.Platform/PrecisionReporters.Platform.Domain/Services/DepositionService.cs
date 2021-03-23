@@ -172,10 +172,11 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             if (!user.IsAdmin)
             {
-                filter = x => (status == null || x.Status == status) &&
-                    (x.Participants.Any(p => p.Email == user.EmailAddress)
-                        || x.Requester.EmailAddress == user.EmailAddress
-                        || x.AddedBy.EmailAddress == user.EmailAddress);
+                filter = x => (status == null || x.Status == status) && 
+                         x.Status != DepositionStatus.Canceled &&
+                         (x.Participants.Any(p => p.Email == user.EmailAddress)
+                         || x.Requester.EmailAddress == user.EmailAddress
+                         || x.AddedBy.EmailAddress == user.EmailAddress);
             }
 
             Expression<Func<Deposition, object>> orderBy = sortedField switch
