@@ -576,7 +576,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<DepositionVideoDto>> GetDepositionVideoInformation(Guid depositionId)
         {
-            var include = new[] { $"{nameof(Deposition.Room)}.{nameof(Room.Composition)}", nameof(Deposition.Events) };
+            var include = new[] { $"{nameof(Deposition.Room)}.{nameof(Room.Composition)}", nameof(Deposition.Events), nameof(Deposition.Case), nameof(Deposition.Participants)};
             var depositionResult = await GetByIdWithIncludes(depositionId, include);
 
             if (depositionResult.IsFailed)
@@ -591,7 +591,13 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (deposition.Room.Composition.Status == CompositionStatus.Completed)
             {
                 var expirationDate = DateTime.UtcNow.AddHours(_documentsConfiguration.PreSignedUrlValidHours);
-                url = _awsStorageService.GetFilePublicUri($"{deposition.Room.Composition.SId}.mp4", _documentsConfiguration.PostDepoVideoBucket, expirationDate);
+                
+                var fileName = deposition.Case.Name;
+                var witness = deposition.Participants?.FirstOrDefault(x => x.Role == ParticipantType.Witness);
+                if (!string.IsNullOrEmpty(witness?.Name))
+                    fileName += $"-{witness.Name}";
+
+                url = _awsStorageService.GetFilePublicUri($"{deposition.Room.Composition.SId}.mp4", _documentsConfiguration.PostDepoVideoBucket, expirationDate, fileName);
             }
 
             var depoTotalTime = (int)(deposition.Room.EndDate.Value - deposition.Room.RecordingStartDate.Value).TotalSeconds;

@@ -1309,7 +1309,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         [Fact]
         public async Task GetDepositionVideoInformation_ShouldReturnOk_IfDepositionCompositionIsCompleted()
         {
-
+            var participantEmail = "participant@mail.com";
+            var user = new User { Id = Guid.NewGuid(), EmailAddress = participantEmail, FirstName = "Anne", LastName = "Roxy" };
             var depositionId = Guid.NewGuid();
             var caseId = Guid.NewGuid();
             var deposition = DepositionFactory.GetDeposition(depositionId, caseId);
@@ -1329,8 +1330,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             deposition.Room.Composition = composition;
             deposition.Room.RecordingStartDate = DateTime.UtcNow;
             deposition.Room.EndDate = DateTime.UtcNow.AddSeconds(300);
-
-            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
+            deposition.Case = new Case { Name = "Case123" };
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);_userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(user));
             _awsStorageServiceMock.Setup(x => x.GetFilePublicUri(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>(), null)).Returns("urlMocked");
 
             //Act
