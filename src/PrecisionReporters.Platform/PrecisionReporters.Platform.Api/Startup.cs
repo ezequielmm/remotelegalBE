@@ -201,6 +201,7 @@ namespace PrecisionReporters.Platform.Api
                 _ => new AmazonSimpleEmailServiceClient(RegionEndpoint.GetBySystemName(appConfiguration.AwsStorageConfiguration.S3BucketRegion)));
 
             services.AddScoped<ICompositionService, CompositionService>();
+            services.AddScoped<ITwilioCallbackService, TwilioCallbackService>();
             services.AddScoped<IBreakRoomService, BreakRoomService>();
             services.AddScoped<IDepositionDocumentService, DepositionDocumentService>();
             if (appConfiguration.CloudServicesConfiguration.TranscriptionProvider.Equals("GCP"))

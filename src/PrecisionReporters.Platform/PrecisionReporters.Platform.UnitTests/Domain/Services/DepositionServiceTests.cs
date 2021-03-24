@@ -659,11 +659,10 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _depositions.Add(deposition);
             var errorMessage = $"Deposition with id {depositionId} not found.";
             var identity = Guid.NewGuid().ToString();
-            var userEmail = "currentUser@email.com";
             _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync((Deposition)null);
 
             // Act
-            var result = await _depositionService.EndDeposition(depositionId, userEmail);
+            var result = await _depositionService.EndDeposition(depositionId);
 
             // Assert
             _depositionRepositoryMock.Verify(mock => mock.GetById(It.Is<Guid>(a => a == depositionId), It.IsAny<string[]>()), Times.Once());
@@ -681,7 +680,6 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var depositionId = Guid.NewGuid();
             var caseId = Guid.NewGuid();
             var deposition = DepositionFactory.GetDeposition(depositionId, caseId);
-            var userEmail = "currentUser@email.com";
             _depositions.Add(deposition);
             _userServiceMock.Setup(x => x.GetCurrentUserAsync()).ReturnsAsync(new User());
             _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(new User()));
@@ -691,7 +689,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _backgroundTaskQueueMock.Setup(x => x.QueueBackgroundWorkItem(It.IsAny<DraftTranscriptDto>()));
 
             // Act
-            var result = await _depositionService.EndDeposition(depositionId, userEmail);
+            var result = await _depositionService.EndDeposition(depositionId);
 
             // Assert
             _depositionRepositoryMock.Verify(mock => mock.GetById(It.Is<Guid>(a => a == depositionId), It.IsAny<string[]>()), Times.Exactly(2));

@@ -19,18 +19,19 @@ namespace PrecisionReporters.Platform.Api.Controllers
     public class CompositionsController : ControllerBase
     {
         private readonly ICompositionService _compositionService;
-        private readonly IRoomService _roomService;
         private readonly ILogger<CompositionsController> _logger;
         private readonly IMapper<Composition, CompositionDto, CallbackCompositionDto> _compositionMapper;
+        private readonly ITwilioCallbackService _twilioCallbackService;
 
         public CompositionsController(ICompositionService compositionService,
             IMapper<Composition, CompositionDto, CallbackCompositionDto> compositionMapper,
-            ILogger<CompositionsController> logger, IRoomService roomService)
+            ILogger<CompositionsController> logger, 
+            ITwilioCallbackService twilioCallbackService)
         {
             _compositionService = compositionService;
             _compositionMapper = compositionMapper;
             _logger = logger;
-            _roomService = roomService;
+            _twilioCallbackService = twilioCallbackService;
         }
 
         [ServiceFilter(typeof(ValidateTwilioRequestFilterAttribute))]
@@ -52,9 +53,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
         [Consumes("application/x-www-form-urlencoded")]
         public async Task<IActionResult> RoomStatusCallback([FromForm] RoomCallbackDto roomEvent)
         {
-            var updateRoomStatusResult = await _roomService.UpdateStatusCallback(
-                roomEvent.RoomSid, roomEvent.Timestamp, roomEvent.StatusCallbackEvent,
-                roomEvent.Duration, roomEvent.ParticipantSid);
+            var updateRoomStatusResult = await _twilioCallbackService.UpdateStatusCallback(roomEvent);
             if (updateRoomStatusResult.IsFailed)
                 return WebApiResponses.GetErrorResponse(updateRoomStatusResult);
 

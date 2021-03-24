@@ -132,43 +132,10 @@ namespace PrecisionReporters.Platform.Domain.Services
             return Result.Ok(room);
         }
 
-        public async Task<Result<Room>> UpdateStatusCallback(string roomSid, DateTimeOffset timestamp,
-            string statusCallbackEvent, int duration, string participantSid)
+        public async Task<Result<Room>> Update(Room room) 
         {
-            // TODO: create an Enum or cons for recording status
-            if ("recording-completed" == statusCallbackEvent )
-            {
-                var roomResult = await GetRoomBySId(roomSid);
-                if (roomResult.IsFailed)
-                    return roomResult;
-
-                var room = roomResult.Value;
-
-                if (room.StartedReference == participantSid)
-                {
-                    room.RecordingStartDate = timestamp.UtcDateTime.AddSeconds(-duration);
-                    await _roomRepository.Update(room);
-                }
-            }
-
-            if ("participant-connected" == statusCallbackEvent)
-            {
-                var roomResult = await GetRoomBySId(roomSid);
-                if (roomResult.IsFailed)
-                    return roomResult;
-
-                var room = roomResult.Value;
-                
-                // TODO: add distributed lock
-                if (room.StartedReference == null)
-                {
-                    room.StartedReference = participantSid;
-                    await _roomRepository.Update(room);
-                }
-            }
-
-            return Result.Fail(new InvalidInputError("Invalid recording status."));
-            
+            var updatedRoom = await _roomRepository.Update(room);
+            return Result.Ok(updatedRoom);
         }
     }
 }

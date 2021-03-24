@@ -1,6 +1,7 @@
 ﻿using FluentResults;
 using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Data.Enums;
+using PrecisionReporters.Platform.Domain.Dtos;
 using System;
 using System.Threading.Tasks;
 
@@ -15,6 +16,6 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
         Task<Result<Room>> EndRoom(Room room, string witnessEmail);
         Task<Result<Room>> StartRoom(Room room);
         Task<Result<Room>> GetRoomBySId(string roomSid);
-        Task<Result<Room>> UpdateStatusCallback(string roomSid, DateTimeOffset timestamp, string statusCallbackEvent, int duration, string participantSid);
+        Task<Result<Room>> Update(Room room);
     }
 }

@@ -119,7 +119,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             // If caption has a FileKey, find the matching document. If it doesn't has a FileKey, remove caption
             deposition.Caption = !string.IsNullOrWhiteSpace(deposition.FileKey) ? uploadedDocuments.First(d => d.FileKey == deposition.FileKey) : null;
 
-            deposition.Room = new Room(Guid.NewGuid().ToString(), deposition.IsVideoRecordingNeeded);
+            deposition.Room = new Room(deposition.Id.ToString(), deposition.IsVideoRecordingNeeded);
 
             deposition.CaseId = caseId;
             await AddParticipants(deposition);
@@ -241,13 +241,16 @@ namespace PrecisionReporters.Platform.Domain.Services
             return Result.Ok(joinDepositionInfo);
         }
 
-        public async Task<Result<Deposition>> EndDeposition(Guid id, string userEmail)
+        public async Task<Result<Deposition>> EndDeposition(Guid depositionId) 
         {
-            var currentUser = await _userService.GetUserByEmail(userEmail);
-            var deposition = await _depositionRepository.GetById(id, new[] { nameof(Deposition.Room),
-                $"{nameof(Deposition.Participants)}.{nameof(Participant.User)}" });
+            var include = new[] { nameof(Deposition.Room), $"{nameof(Deposition.Participants)}.{nameof(Participant.User)}",
+                nameof(Deposition.AddedBy) };
+            var deposition = await _depositionRepository.GetById(depositionId, include);
+
             if (deposition == null)
-                return Result.Fail(new ResourceNotFoundError($"Deposition with id {id} not found."));
+                return Result.Fail(new ResourceNotFoundError($"Deposition with id {depositionId} not found."));
+
+            var currentUser = await _userService.GetCurrentUserAsync();
 
             var witness = deposition.Participants.FirstOrDefault(x => x.Role == ParticipantType.Witness);
             var roomResult = await _roomService.EndRoom(deposition.Room, witness.Email);
@@ -256,16 +259,15 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             deposition.CompleteDate = DateTime.UtcNow;
             deposition.Status = DepositionStatus.Completed;
-            deposition.EndedById = currentUser.Value.Id;
+            deposition.EndedById = currentUser?.Id;
 
-            var user = await _userService.GetCurrentUserAsync();
-            await GoOnTheRecord(id, false, user.EmailAddress);
-
-            var updatedDeposition = await _depositionRepository.Update(deposition);
+            var email = currentUser != null ? currentUser.EmailAddress : deposition.AddedBy.EmailAddress;
+            await GoOnTheRecord(deposition.Id, false, email);   
+            var updatedDeposition = await _depositionRepository.Update(deposition); 
 
             await _userService.RemoveGuestParticipants(deposition.Participants);
 
-            var transcriptDto = new DraftTranscriptDto { DepositionId = id, CurrentUserId = currentUser.Value.Id };
+            var transcriptDto = new DraftTranscriptDto { DepositionId = deposition.Id, CurrentUserId = currentUser.Id };
             _backgroundTaskQueue.QueueBackgroundWorkItem(transcriptDto);
 
             return Result.Ok(updatedDeposition);
