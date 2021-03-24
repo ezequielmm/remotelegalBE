@@ -507,12 +507,11 @@ namespace PrecisionReporters.Platform.Domain.Services
             else
             {
                 shouldAddPermissions = true;
-
+                guest.User = userResult.Value;
                 if (guest.Role == ParticipantType.Witness)
                     deposition.Participants[deposition.Participants.FindIndex(x => x.Role == ParticipantType.Witness)] = guest;
                 else
                 {
-                    guest.User = userResult.Value;
                     deposition.Participants.Add(guest);
                 }
                 await _depositionRepository.Update(deposition);
