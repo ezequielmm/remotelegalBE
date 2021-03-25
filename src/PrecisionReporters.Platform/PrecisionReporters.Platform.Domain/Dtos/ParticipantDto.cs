@@ -11,6 +11,8 @@ namespace PrecisionReporters.Platform.Domain.Dtos
         public string Phone { get; set; }
         // TODO: use enum
         public string Role { get; set; }
+        public bool? IsAdmitted { get; set; }
+        public bool HasJoined { get; set; }
         public UserOutputDto User { get; set; }
         public bool IsMuted { get; set; }
     }

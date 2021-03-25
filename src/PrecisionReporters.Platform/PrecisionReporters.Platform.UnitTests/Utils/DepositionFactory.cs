@@ -152,15 +152,16 @@ namespace PrecisionReporters.Platform.UnitTests.Utils
             };
         }
 
-        public static List<DepositionEvent> GetDepositionEvents() {
-            return new List<DepositionEvent> 
+        public static List<DepositionEvent> GetDepositionEvents()
+        {
+            return new List<DepositionEvent>
             {
-                new DepositionEvent 
+                new DepositionEvent
                 {
                     EventType = EventType.OnTheRecord,
                     CreationDate = DateTime.UtcNow.AddSeconds(5)
                 },
-                new DepositionEvent 
+                new DepositionEvent
                 {
                     EventType = EventType.OffTheRecord,
                     CreationDate = DateTime.UtcNow.AddMinutes(5)
@@ -201,7 +202,8 @@ namespace PrecisionReporters.Platform.UnitTests.Utils
                     new Participant
                     {
                         Email = participantEmail,
-                        UserId = isUser ? Guid.NewGuid() : (Guid?)null
+                        UserId = isUser ? Guid.NewGuid() : (Guid?)null,
+                        IsAdmitted = false
                     }
                 },
                 Requester = new User

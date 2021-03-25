@@ -12,6 +12,7 @@
         ViewSharedDocument,
         StampExhibit,
         Cancel,
-        Revert
+        Revert,
+        AdmitParticipants
     }
 }

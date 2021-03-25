@@ -17,9 +17,19 @@ namespace PrecisionReporters.Platform.Api.Hubs
             _depositionHub = depositionHub;
         }
 
-        public async Task SendNotificationToGroupMembers(Guid depositionId, NotificationDto notificationDto)
+        public async Task SendNotificationToDepositionMembers(Guid depositionId, NotificationDto notificationDto)
         {
             await _depositionHub.Clients.Group(depositionId.GetDepositionSignalRGroupName()).SendAsync(nameof(IDepositionClient.ReceiveNotification), notificationDto);
+        }
+
+        public async Task SendNotificationToDepositionAdmins(Guid depositionId, NotificationDto notificationDto)
+        {
+            await _depositionHub.Clients.Group(depositionId.GetDepositionSignalRAdminsGroupName()).SendAsync(nameof(IDepositionClient.ReceiveNotification), notificationDto);
+        }
+
+        public async Task SendDirectMessage(string userId, NotificationDto notificationDto)
+        {
+            await _depositionHub.Clients.User(userId).SendAsync(nameof(IDepositionClient.ReceiveNotification), notificationDto);
         }
     }
 }

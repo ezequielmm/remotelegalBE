@@ -33,20 +33,20 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly VerificationLinkConfiguration _verificationLinkConfiguration;
         private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public UserService(ILogger<UserService> log, 
-            IUserRepository userRepository, 
-            ICognitoService cognitoService, 
+        public UserService(ILogger<UserService> log,
+            IUserRepository userRepository,
+            ICognitoService cognitoService,
             IAwsEmailService awsEmailService,
-            IVerifyUserService verifyUserService, 
-            ITransactionHandler transactionHandler, 
-            IOptions<UrlPathConfiguration> urlPathConfiguration, 
-            IOptions<VerificationLinkConfiguration> verificationLinkConfiguration, 
+            IVerifyUserService verifyUserService,
+            ITransactionHandler transactionHandler,
+            IOptions<UrlPathConfiguration> urlPathConfiguration,
+            IOptions<VerificationLinkConfiguration> verificationLinkConfiguration,
             IHttpContextAccessor httpContextAccessor)
         {
             _log = log;
             _userRepository = userRepository;
             _cognitoService = cognitoService;
-            _awsEmailService = awsEmailService; 
+            _awsEmailService = awsEmailService;
             _verifyUserService = verifyUserService;
             _transactionHandler = transactionHandler;
             _urlPathConfiguration = urlPathConfiguration.Value;
@@ -82,7 +82,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         public async Task<Result<VerifyUser>> VerifyUser(Guid verifyuserId)
         {
             var verifyUser = await _verifyUserService.GetVerifyUserById(verifyuserId);
-            
+
             var checkVerficationResult = CheckVerification(verifyUser);
             if (checkVerficationResult.IsFailed)
                 return checkVerficationResult;
@@ -94,7 +94,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             return Result.Ok(result);
         }
-        
+
         public async Task ResendVerificationEmailAsync(string email)
         {
             var user = await _userRepository.GetFirstOrDefaultByFilter(x => x.EmailAddress.Equals(email));
@@ -122,7 +122,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (verifyUser.CreationDate < DateTime.UtcNow.AddHours(-expirationTime) || verifyUser.IsUsed)
             {
                 _log.LogWarning(ApplicationConstants.VerificationCodeException);
-                 return Result.Fail(new Error(ApplicationConstants.VerificationCodeException));
+                return Result.Fail(new Error(ApplicationConstants.VerificationCodeException));
             }
 
             return Result.Ok();
@@ -275,7 +275,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         public async Task<Result> ResetPassword(ResetPasswordDto resetPasswordDto)
         {
             var verifyUser = await _verifyUserService.GetVerifyUserById(resetPasswordDto.VerificationHash);
-            
+
             var transactionResult = await _transactionHandler.RunAsync(async () =>
             {
                 verifyUser.User.Password = resetPasswordDto.Password;
@@ -315,5 +315,6 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             return Result.Ok(updatedUser);
         }
+
     }
 }

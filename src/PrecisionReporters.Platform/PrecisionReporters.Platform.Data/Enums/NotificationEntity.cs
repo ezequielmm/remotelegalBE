@@ -4,6 +4,8 @@
     {
         Transcript,
         ParticipantStatus,
-        Annotation
+        Annotation,
+        JoinRequest,
+        JoinResponse
     }
 }

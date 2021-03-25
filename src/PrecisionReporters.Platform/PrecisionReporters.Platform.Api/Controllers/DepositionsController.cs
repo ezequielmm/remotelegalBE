@@ -29,6 +29,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
         private readonly IMapper<AnnotationEvent, AnnotationEventDto, CreateAnnotationEventDto> _annotationMapper;
         private readonly IMapper<DepositionEvent, DepositionEventDto, CreateDepositionEventDto> _eventMapper;
         private readonly IAnnotationEventService _annotationEventService;
+        private readonly IParticipantService _partcipantService;
         private readonly IMapper<Participant, ParticipantDto, CreateParticipantDto> _participantMapper;
         private readonly IMapper<Participant, AddParticipantDto, CreateGuestDto> _guestMapper;
 
@@ -36,7 +37,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
             IMapper<Deposition, DepositionDto, CreateDepositionDto> depositionMapper,
             IDocumentService documentService, IMapper<AnnotationEvent, AnnotationEventDto, CreateAnnotationEventDto> annotationMapper,
             IMapper<DepositionEvent, DepositionEventDto, CreateDepositionEventDto> eventMapper,
-            IMapper<BreakRoom, BreakRoomDto, object> breakRoomMapper, IAnnotationEventService annotationEventService,
+            IMapper<BreakRoom, BreakRoomDto, object> breakRoomMapper, IAnnotationEventService annotationEventService, IParticipantService partcipantService,
             IMapper<Participant, ParticipantDto, CreateParticipantDto> participantMapper, IMapper<Participant, AddParticipantDto, CreateGuestDto> guestMapper)
         {
             _depositionService = depositionService;
@@ -46,6 +47,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
             _annotationMapper = annotationMapper;
             _eventMapper = eventMapper;
             _annotationEventService = annotationEventService;
+            _partcipantService = partcipantService;
             _participantMapper = participantMapper;
             _guestMapper = guestMapper;
         }
@@ -57,7 +59,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
 
             if (depositionResponseResult.IsFailed)
                 return WebApiResponses.GetErrorResponse(depositionResponseResult);
-                
+
             return Ok(depositionResponseResult.Value);
         }
 
@@ -378,6 +380,25 @@ namespace PrecisionReporters.Platform.Api.Controllers
                 return WebApiResponses.GetErrorResponse(result);
 
             return Ok(_depositionMapper.ToDto(result.Value));
+        }
+
+        [HttpPost("{id}/joinResponse/{participantId}")]
+        [UserAuthorize(ResourceType.Deposition, ResourceAction.AdmitParticipants)]
+        public async Task<ActionResult> AdmitParticipant([ResourceId(ResourceType.Deposition)] Guid id, Guid participantId, [FromBody] JoinDepositionResponseDto admitParticipant)
+        {
+            var result = await _depositionService.AdmitDenyParticipant(participantId, admitParticipant.IsAdmitted);
+            return Ok(result);
+        }
+
+        [HttpGet("{id}/waitingRoomParticipants")]
+        [UserAuthorize(ResourceType.Deposition, ResourceAction.AdmitParticipants)]
+        public async Task<ActionResult<List<ParticipantDto>>> GetWaitParticipants([ResourceId(ResourceType.Deposition)] Guid id)
+        {
+            var participantResult = await _partcipantService.GetWaitParticipants(id);
+            if (participantResult.Value == null)
+                return new List<ParticipantDto>();
+
+            return Ok(participantResult.Value.Select(p => _participantMapper.ToDto(p)).ToList());
         }
 
         [HttpPost("{id}/cancel")]

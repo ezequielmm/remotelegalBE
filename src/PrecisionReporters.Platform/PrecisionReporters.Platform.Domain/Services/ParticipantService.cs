@@ -6,6 +6,7 @@ using PrecisionReporters.Platform.Domain.Dtos;
 using PrecisionReporters.Platform.Domain.Errors;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace PrecisionReporters.Platform.Domain.Services
@@ -27,7 +28,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         {
             try
             {
-                var user = await _userService.GetCurrentUserAsync();                
+                var user = await _userService.GetCurrentUserAsync();
                 var participant = await _participantRepository.GetFirstOrDefaultByFilter(x => x.UserId == user.Id && x.DepositionId == depositionId);
                 if (participant == null)
                 {
@@ -68,7 +69,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                     Content = participantStatusDto
                 };
 
-                await _signalRNotificationManager.SendNotificationToGroupMembers(depositionId, notificationDto);
+                await _signalRNotificationManager.SendNotificationToDepositionMembers(depositionId, notificationDto);
 
                 return Result.Ok(participantStatusDto);
             }
@@ -76,6 +77,11 @@ namespace PrecisionReporters.Platform.Domain.Services
             {
                 return Result.Fail(new UnexpectedError(ex.Message));
             }
+        }
+        public async Task<Result<List<Participant>>> GetWaitParticipants(Guid depositionId)
+        {
+            var includes = new[] { nameof(Participant.User) };
+            return Result.Ok(await _participantRepository.GetByFilter(x => x.DepositionId == depositionId && x.HasJoined == false && x.IsAdmitted == null, includes));
         }
     }
 }

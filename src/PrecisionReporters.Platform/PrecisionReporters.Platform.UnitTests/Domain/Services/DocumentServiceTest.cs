@@ -896,7 +896,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             // Assert
             _documentRepositoryMock.Verify(x => x.Update(It.Is<Document>(a => a.Id == document.Id)), Times.Once);
-            _signalRNotificationManagerMock.Verify(x => x.SendNotificationToGroupMembers(It.IsAny<Guid>(), It.IsAny<NotificationDto>()), Times.Once);
+            _signalRNotificationManagerMock.Verify(x => x.SendNotificationToDepositionMembers(It.IsAny<Guid>(), It.IsAny<NotificationDto>()), Times.Once);
             Assert.NotNull(result);
             Assert.True(result.IsSuccess);
         }
@@ -926,7 +926,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             // Assert
             _documentRepositoryMock.Verify(x => x.Update(It.Is<Document>(a => a.Id == document.Id)), Times.Never);
-            _signalRNotificationManagerMock.Verify(x => x.SendNotificationToGroupMembers(It.IsAny<Guid>(), It.IsAny<NotificationDto>()), Times.Never);
+            _signalRNotificationManagerMock.Verify(x => x.SendNotificationToDepositionMembers(It.IsAny<Guid>(), It.IsAny<NotificationDto>()), Times.Never);
             Assert.True(result.IsFailed);
             Assert.Contains(errorMessage, result.Errors[0].Message);
         }
@@ -961,7 +961,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             // Assert
             _documentRepositoryMock.Verify(x => x.Update(It.Is<Document>(a => a.Id == document.Id)), Times.Never);
-            _signalRNotificationManagerMock.Verify(x => x.SendNotificationToGroupMembers(It.IsAny<Guid>(), It.IsAny<NotificationDto>()), Times.Never);
+            _signalRNotificationManagerMock.Verify(x => x.SendNotificationToDepositionMembers(It.IsAny<Guid>(), It.IsAny<NotificationDto>()), Times.Never);
             Assert.True(result.IsFailed);
             Assert.Contains(errorMessage, result.Errors[0].Message);
         }
@@ -997,7 +997,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             // Assert
             _documentRepositoryMock.Verify(x => x.Update(It.Is<Document>(a => a.Id == document.Id)), Times.Never);
-            _signalRNotificationManagerMock.Verify(x => x.SendNotificationToGroupMembers(It.IsAny<Guid>(), It.IsAny<NotificationDto>()), Times.Never);
+            _signalRNotificationManagerMock.Verify(x => x.SendNotificationToDepositionMembers(It.IsAny<Guid>(), It.IsAny<NotificationDto>()), Times.Never);
             Assert.True(result.IsFailed);
             Assert.Contains(errorMessage, result.Errors[0].Message);
         }

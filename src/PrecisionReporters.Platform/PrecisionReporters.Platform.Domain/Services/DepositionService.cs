@@ -39,6 +39,8 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly IDocumentService _documentService;
         private readonly IMapper<Deposition, DepositionDto, CreateDepositionDto> _depositionMapper;
         private readonly DepositionConfiguration _depositionConfiguration;
+        private readonly ISignalRNotificationManager _signalRNotificationManager;
+        private readonly IMapper<Participant, ParticipantDto, CreateParticipantDto> _participantMapper;
 
         public DepositionService(IDepositionRepository depositionRepository,
             IParticipantRepository participantRepository,
@@ -54,7 +56,9 @@ namespace PrecisionReporters.Platform.Domain.Services
             ILogger<DepositionService> logger,
             IDocumentService documentService,
             IMapper<Deposition, DepositionDto, CreateDepositionDto> depositionMapper,
-            IOptions<DepositionConfiguration> depositionConfiguration)
+            IOptions<DepositionConfiguration> depositionConfiguration,
+            ISignalRNotificationManager signalRNotificationManager,
+            IMapper<Participant, ParticipantDto, CreateParticipantDto> participantMapper)
         {
             _awsStorageService = awsStorageService;
             _documentsConfiguration = documentConfigurations.Value ?? throw new ArgumentException(nameof(documentConfigurations));
@@ -71,6 +75,8 @@ namespace PrecisionReporters.Platform.Domain.Services
             _documentService = documentService;
             _depositionMapper = depositionMapper;
             _depositionConfiguration = depositionConfiguration.Value;
+            _signalRNotificationManager = signalRNotificationManager;
+            _participantMapper = participantMapper;
         }
 
         public async Task<List<Deposition>> GetDepositions(Expression<Func<Deposition, bool>> filter = null,
@@ -112,7 +118,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 deposition.Participants = new List<Participant>();
 
             if (!deposition.Participants.Any(x => x.Email == deposition.Requester.EmailAddress))
-                deposition.Participants.Add(new Participant(deposition.Requester, ParticipantType.Observer));
+                deposition.Participants.Add(new Participant(deposition.Requester, ParticipantType.Observer, true));
 
             deposition.AddedBy = addedBy;
 
@@ -124,6 +130,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             deposition.CaseId = caseId;
             await AddParticipants(deposition);
             AddBreakRooms(deposition);
+
             await _depositionRepository.Create(deposition);
 
             return Result.Ok(deposition);
@@ -172,7 +179,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             if (!user.IsAdmin)
             {
-                filter = x => (status == null || x.Status == status) && 
+                filter = x => (status == null || x.Status == status) &&
                          x.Status != DepositionStatus.Canceled &&
                          (x.Participants.Any(p => p.Email == user.EmailAddress)
                          || x.Requester.EmailAddress == user.EmailAddress
@@ -224,7 +231,19 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (currentParticipant == null && !userResult.Value.IsAdmin)
                 return Result.Fail(new InvalidInputError($"User is neither a Participant for this Deposition nor an Admin"));
 
+            if (currentParticipant != null && !currentParticipant.IsAdmitted.HasValue && !userResult.Value.IsAdmin)
+                return Result.Fail(new InvalidInputError($"User is in a wating room"));
+
+            if (currentParticipant != null && currentParticipant.IsAdmitted.HasValue && !currentParticipant.IsAdmitted.Value && !userResult.Value.IsAdmin)
+                return Result.Fail(new InvalidInputError($"User has not been admitted to the deposition"));
+
             var role = currentParticipant?.Role ?? ParticipantType.Admin;
+
+            if (currentParticipant != null)
+            {
+                currentParticipant.HasJoined = true;
+                await _participantRepository.Update(currentParticipant);
+            }
 
             var token = await _roomService.GenerateRoomToken(deposition.Room.Name, userResult.Value, role, identity);
             if (token.IsFailed)
@@ -241,7 +260,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             return Result.Ok(joinDepositionInfo);
         }
 
-        public async Task<Result<Deposition>> EndDeposition(Guid depositionId) 
+        public async Task<Result<Deposition>> EndDeposition(Guid depositionId)
         {
             var include = new[] { nameof(Deposition.Room), $"{nameof(Deposition.Participants)}.{nameof(Participant.User)}",
                 nameof(Deposition.AddedBy) };
@@ -262,8 +281,8 @@ namespace PrecisionReporters.Platform.Domain.Services
             deposition.EndedById = currentUser?.Id;
 
             var email = currentUser != null ? currentUser.EmailAddress : deposition.AddedBy.EmailAddress;
-            await GoOnTheRecord(deposition.Id, false, email);   
-            var updatedDeposition = await _depositionRepository.Update(deposition); 
+            await GoOnTheRecord(deposition.Id, false, email);
+            var updatedDeposition = await _depositionRepository.Update(deposition);
 
             await _userService.RemoveGuestParticipants(deposition.Participants);
 
@@ -497,13 +516,18 @@ namespace PrecisionReporters.Platform.Domain.Services
                 return userResult.ToResult<GuestToken>();
 
             bool shouldAddPermissions;
+            bool shouldSendAdminsNotifications = false;
             if (participant != null)
             {
                 shouldAddPermissions = participant.UserId == null;
                 userResult.Value.FirstName = guest.Name;
                 participant.User = userResult.Value;
                 participant.Name = guest.Name;
-
+                if (participant.IsAdmitted.HasValue && !participant.IsAdmitted.Value)
+                {
+                    participant.IsAdmitted = null;
+                    shouldSendAdminsNotifications = true;
+                }
                 guest = await _participantRepository.Update(participant);
             }
             else
@@ -516,12 +540,23 @@ namespace PrecisionReporters.Platform.Domain.Services
                 {
                     deposition.Participants.Add(guest);
                 }
+                shouldSendAdminsNotifications = true;
                 await _depositionRepository.Update(deposition);
             }
 
             if (shouldAddPermissions)
             {
                 await _permissionService.AddParticipantPermissions(guest);
+            }
+            if (shouldSendAdminsNotifications)
+            {
+                var notificationtDto = new NotificationDto
+                {
+                    Action = NotificationAction.Create,
+                    EntityType = NotificationEntity.JoinRequest,
+                    Content = _participantMapper.ToDto(guest)
+                };
+                await _signalRNotificationManager.SendNotificationToDepositionAdmins(depositionId, notificationtDto);
             }
 
             return await _userService.LoginGuestAsync(guest.Email);
@@ -543,9 +578,29 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (userResult.IsFailed)
                 return userResult.ToResult();
 
+            var notificationtDto = new NotificationDto
+            {
+                Action = NotificationAction.Create,
+                EntityType = NotificationEntity.JoinRequest
+            };
+
             var participantResult = deposition.Participants.FirstOrDefault(p => p.Email == userResult.Value.EmailAddress);
             if (participantResult != null)
+            {
+                if (participantResult.IsAdmitted.HasValue && !participantResult.IsAdmitted.Value && !userResult.Value.IsAdmin)
+                {
+                    participantResult.IsAdmitted = null;
+                    notificationtDto.Content = _participantMapper.ToDto(participantResult);
+                    await _signalRNotificationManager.SendNotificationToDepositionAdmins(depositionId, notificationtDto);
+                }
+                if (userResult.Value.IsAdmin)
+                    participantResult.IsAdmitted = true;
+
+                await _participantRepository.Update(participantResult);
                 return participantResult.Id.ToResult();
+            }
+            if (userResult.Value.IsAdmin)
+                participant.IsAdmitted = true;
 
             participant.Name = userResult.Value.FirstName;
             participant.Phone = userResult.Value.PhoneNumber;
@@ -562,7 +617,8 @@ namespace PrecisionReporters.Platform.Domain.Services
             await _depositionRepository.Update(deposition);
 
             await _permissionService.AddParticipantPermissions(participant);
-
+            notificationtDto.Content = _participantMapper.ToDto(participant);
+            await _signalRNotificationManager.SendNotificationToDepositionAdmins(depositionId, notificationtDto);
             return Result.Ok(participant.Id);
         }
 
@@ -578,7 +634,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<DepositionVideoDto>> GetDepositionVideoInformation(Guid depositionId)
         {
-            var include = new[] { $"{nameof(Deposition.Room)}.{nameof(Room.Composition)}", nameof(Deposition.Events), nameof(Deposition.Case), nameof(Deposition.Participants)};
+            var include = new[] { $"{nameof(Deposition.Room)}.{nameof(Room.Composition)}", nameof(Deposition.Events), nameof(Deposition.Case), nameof(Deposition.Participants) };
             var depositionResult = await GetByIdWithIncludes(depositionId, include);
 
             if (depositionResult.IsFailed)
@@ -593,7 +649,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (deposition.Room.Composition.Status == CompositionStatus.Completed)
             {
                 var expirationDate = DateTime.UtcNow.AddHours(_documentsConfiguration.PreSignedUrlValidHours);
-                
+
                 var fileName = deposition.Case.Name;
                 var witness = deposition.Participants?.FirstOrDefault(x => x.Role == ParticipantType.Witness);
                 if (!string.IsNullOrEmpty(witness?.Name))
@@ -719,7 +775,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         {
             var currentUser = await _userService.GetCurrentUserAsync();
             var uploadDocumentResult = await UploadFile(file, currentUser, currentDeposition);
-            
+
             if (uploadDocumentResult.IsFailed)
                 return uploadDocumentResult.ToResult();
 
@@ -748,9 +804,9 @@ namespace PrecisionReporters.Platform.Domain.Services
             var currentDepositionResult = await GetByIdWithIncludes(deposition.Id, new[] { $"{nameof(Deposition.Caption)}" });
             if (currentDepositionResult.IsFailed)
                 return currentDepositionResult;
-            
+
             var currentDeposition = currentDepositionResult.Value;
-            
+
             try
             {
                 var transactionResult = await _transactionHandler.RunAsync<Deposition>(async () =>
@@ -767,7 +823,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
                         currentDeposition = UpdateDepositionDetails(currentDeposition, deposition, uploadDocumentResult.Value);
                     }
-                    
+
                     await _depositionRepository.Update(currentDeposition);
                     return Result.Ok(currentDeposition);
                 });
@@ -829,7 +885,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             var cancelTime = int.Parse(_depositionConfiguration.CancelAllowedOffsetSeconds);
             if (depositionResult.Value.StartDate < DateTime.UtcNow.AddSeconds(cancelTime))
                 return Result.Fail<Deposition>(new ResourceConflictError($"The depostion with id {depositionId} can not be canceled because is close to start"));
-            
+
             depositionResult.Value.Status = DepositionStatus.Canceled;
             var depositionUpdated = await _depositionRepository.Update(depositionResult.Value);
 
@@ -865,6 +921,38 @@ namespace PrecisionReporters.Platform.Domain.Services
                 await _documentService.DeleteUploadedFiles(new List<Document> { currentDeposition.Caption });
                 return Result.Fail(new ExceptionalError("Unable to edit the deposition", ex));
             }
+        }
+
+        public async Task<Result<Participant>> GetUserParticipant(Guid depositionId)
+        {
+            var includes = new[] { nameof(Participant.User) };
+            var currentUser = await _userService.GetCurrentUserAsync();
+            if (currentUser != null)
+            {
+                var participant = await _participantRepository.GetFirstOrDefaultByFilter(x => x.DepositionId == depositionId && x.UserId == currentUser.Id, includes);
+                if (participant == null)
+                    participant = new Participant() { User = currentUser };
+                return Result.Ok(participant);
+            }
+            return Result.Fail(new ResourceNotFoundError("User not found"));
+        }
+
+        public async Task<Result> AdmitDenyParticipant(Guid participantId, bool admited)
+        {
+            var participant = await _participantRepository.GetById(participantId);
+            if (participant == null)
+                return Result.Fail(new ResourceNotFoundError($"Participant not found with Id: {participantId}"));
+            participant.IsAdmitted = admited;
+            var notificationtDto = new NotificationDto
+            {
+                Action = NotificationAction.Update,
+                EntityType = NotificationEntity.JoinResponse,
+                Content = _participantMapper.ToDto(participant)
+            };
+            await _participantRepository.Update(participant);
+            await _signalRNotificationManager.SendDirectMessage(participant.Email, notificationtDto);
+            await _signalRNotificationManager.SendNotificationToDepositionAdmins(participant.DepositionId.Value, notificationtDto);
+            return Result.Ok();
         }
     }
 }

@@ -57,7 +57,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 Content = transcriptionDto
             };           
 
-            await _signalRNotificationManager.SendNotificationToGroupMembers(transcriptionDto.DepositionId, notificationtDto);
+            await _signalRNotificationManager.SendNotificationToDepositionMembers(transcriptionDto.DepositionId, notificationtDto);
 
             return Result.Ok(transcription);
         }

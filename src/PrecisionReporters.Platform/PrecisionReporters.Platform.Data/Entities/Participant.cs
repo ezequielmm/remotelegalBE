@@ -12,6 +12,8 @@ namespace PrecisionReporters.Platform.Data.Entities
         public string Name { get; set; }
         public string Email { get; set; }
         public string Phone { get; set; }
+        public bool? IsAdmitted { get; set; }
+        public bool HasJoined { get; set; }
 
         [ForeignKey(nameof(User))]
         public Guid? UserId { get; set; }
@@ -32,9 +34,9 @@ namespace PrecisionReporters.Platform.Data.Entities
             IsMuted = entity.IsMuted;
         }
 
-        public Participant() {}
+        public Participant() { }
 
-        public Participant(User user, ParticipantType role)
+        public Participant(User user, ParticipantType role, bool? isAdmitted = null)
         {
             Email = user.EmailAddress;
             Name = user.FirstName;
@@ -42,6 +44,7 @@ namespace PrecisionReporters.Platform.Data.Entities
             Role = role;
             UserId = user.Id;
             User = user;
+            IsAdmitted = isAdmitted;
         }
     }
 }

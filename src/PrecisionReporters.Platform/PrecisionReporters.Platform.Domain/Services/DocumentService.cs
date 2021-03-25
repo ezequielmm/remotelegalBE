@@ -453,7 +453,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 Content = _annotationEventMapper.ToDto(annotation)
             };
 
-            await _signalRNotificationManager.SendNotificationToGroupMembers(depositionId, notificationDto);
+            await _signalRNotificationManager.SendNotificationToDepositionMembers(depositionId, notificationDto);
 
             return Result.Ok(updatedDocument);
         }

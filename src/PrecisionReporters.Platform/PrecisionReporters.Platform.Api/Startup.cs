@@ -37,6 +37,8 @@ using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using System;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.SignalR;
+using Newtonsoft.Json.Converters;
 
 namespace PrecisionReporters.Platform.Api
 {
@@ -143,7 +145,7 @@ namespace PrecisionReporters.Platform.Api
             services.AddSingleton<IMapper<BreakRoom, BreakRoomDto, object>, BreakRoomMapper>();
             services.AddSingleton<IMapper<Participant, AddParticipantDto, CreateGuestDto>, GuestParticipantMapper>();
             services.AddSingleton<IMapper<Document, DocumentWithSignedUrlDto, object>, DocumentWithSignedUrlMapper>();
-
+            services.AddSingleton<IUserIdProvider, UserIdProvider>();
             // Websockets
             services.AddTransient<ITranscriptionsHandler, TranscriptionsHandler>();
 
@@ -303,7 +305,7 @@ namespace PrecisionReporters.Platform.Api
             services.AddMvc()
                 .AddJsonOptions(opts => opts.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
             services.AddSignalR()
-                .AddNewtonsoftJsonProtocol()
+                .AddNewtonsoftJsonProtocol(opt=>opt.PayloadSerializerSettings.Converters.Add(new StringEnumConverter()))
                 .AddStackExchangeRedis(appConfiguration.ConnectionStrings.RedisConnectionString);
         }
 

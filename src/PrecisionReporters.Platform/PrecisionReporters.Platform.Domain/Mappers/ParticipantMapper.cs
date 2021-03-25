@@ -30,7 +30,8 @@ namespace PrecisionReporters.Platform.Domain.Mappers
                 Name = dto.Name,
                 Phone = dto.Phone,
                 Role = dto.Role,
-                IsMuted = dto.IsMuted
+                IsMuted = dto.IsMuted,
+                IsAdmitted = true
             };
         }
 
@@ -53,7 +54,9 @@ namespace PrecisionReporters.Platform.Domain.Mappers
                         EmailAddress = model.User.EmailAddress
                     }
                     : null,
-                IsMuted = model.IsMuted
+                IsMuted = model.IsMuted,
+                IsAdmitted = model.IsAdmitted,
+                HasJoined = model.HasJoined
             };
         }
     }

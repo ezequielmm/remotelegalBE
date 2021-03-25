@@ -52,7 +52,7 @@ namespace PrecisionReporters.Platform.Domain.Mappers
 
         public Deposition ToModel(CreateDepositionDto dto)
         {
-            var witness = dto.Witness != null ? _participantMapper.ToModel(dto.Witness) : new Participant { Role = ParticipantType.Witness };
+            var witness = dto.Witness != null ? _participantMapper.ToModel(dto.Witness) : new Participant { Role = ParticipantType.Witness, IsAdmitted = true };
             return new Deposition
             {
                 StartDate = dto.StartDate.UtcDateTime,

@@ -45,6 +45,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         private readonly Mock<IDocumentService> _documentServiceMock;
         private readonly Mock<ILogger<DepositionService>> _loggerMock;
         private readonly Mock<IMapper<Deposition, DepositionDto, CreateDepositionDto>> _depositionMapperMock;
+        private readonly Mock<ISignalRNotificationManager> _signalRNotificationManagerMock;
+        private readonly Mock<IMapper<Participant, ParticipantDto, CreateParticipantDto>> _participantMapperMock;
 
         private readonly List<Deposition> _depositions = new List<Deposition>();
 
@@ -86,6 +88,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _depositionConfigurationMock = new Mock<IOptions<DepositionConfiguration>>();
             _depositionConfigurationMock.Setup(x => x.Value).Returns(_depositionconfiguration);
             _depositionMapperMock = new Mock<IMapper<Deposition, DepositionDto, CreateDepositionDto>>();
+            _signalRNotificationManagerMock = new Mock<ISignalRNotificationManager>();
+            _participantMapperMock = new Mock<IMapper<Participant, ParticipantDto, CreateParticipantDto>>();
 
             _depositionService = new DepositionService(
                 _depositionRepositoryMock.Object,
@@ -102,7 +106,9 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 _loggerMock.Object,
                 _documentServiceMock.Object,
                 _depositionMapperMock.Object,
-                _depositionConfigurationMock.Object);
+                _depositionConfigurationMock.Object,
+                _signalRNotificationManagerMock.Object,
+                _participantMapperMock.Object);
 
             _transactionHandlerMock.Setup(x => x.RunAsync(It.IsAny<Func<Task<Result<Deposition>>>>()))
                 .Returns(async (Func<Task<Result<Deposition>>> action) =>
@@ -466,7 +472,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var token = Guid.NewGuid().ToString();
             var depositionId = Guid.NewGuid();
             var caseId = Guid.NewGuid();
-            var currentParticipant = new Participant { Name = "ParticipantName", Role = ParticipantType.Observer, User = user };
+            var currentParticipant = new Participant { Name = "ParticipantName", Role = ParticipantType.Observer, User = user, IsAdmitted = true };
             var deposition = new Deposition
             {
                 Room = new Room
@@ -527,7 +533,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 Participants = new List<Participant>
                 {
                    new Participant { Name = "ParticipantName", Role = ParticipantType.Observer },
-                   new Participant { Email = userEmail, Role = ParticipantType.Witness, User = user }
+                   new Participant { Email = userEmail, Role = ParticipantType.Witness, User = user,IsAdmitted = true }
                 },
                 TimeZone = "TetingTimeZone",
                 IsOnTheRecord = true
@@ -1090,7 +1096,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             // Assert
             _depositionRepositoryMock.Verify(x => x.Update(It.Is<Deposition>(x => x.Id == depositionId)), Times.Never);
             _permissionServiceMock.Verify(x => x.AddParticipantPermissions(It.Is<Participant>(x => x.Email == guestEmail)), Times.Never);
-
+            _signalRNotificationManagerMock.Verify(x => x.SendNotificationToDepositionAdmins(It.Is<Guid>(s => s == depositionId), It.IsAny<NotificationDto>()), Times.Once);
             Assert.True(result.IsSuccess);
         }
 
@@ -1125,6 +1131,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             // Assert
             _participantRepositoryMock.Verify(x => x.Update(It.Is<Participant>(x => x.Email == guestEmail)), Times.Once);
+            _signalRNotificationManagerMock.Verify(x => x.SendNotificationToDepositionAdmins(It.Is<Guid>(s => s == depositionId), It.IsAny<NotificationDto>()), Times.Once);
             Assert.True(result.IsSuccess);
             _permissionServiceMock.Verify(x => x.AddParticipantPermissions(It.Is<Participant>(x => x.Email == guestEmail)), Times.Once);
         }
@@ -1152,7 +1159,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             // Assert
             _depositionRepositoryMock.Verify(x => x.Update(It.Is<Deposition>(x => x.Id == depositionId)), Times.Once);
             _permissionServiceMock.Verify(x => x.AddParticipantPermissions(It.Is<Participant>(x => x.Email == participantEmail)), Times.Once);
-
+            _signalRNotificationManagerMock.Verify(x => x.SendNotificationToDepositionAdmins(It.Is<Guid>(s => s == depositionId), It.IsAny<NotificationDto>()));
             Assert.True(result.IsSuccess);
         }
 
@@ -1329,7 +1336,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             deposition.Room.RecordingStartDate = DateTime.UtcNow;
             deposition.Room.EndDate = DateTime.UtcNow.AddSeconds(300);
             deposition.Case = new Case { Name = "Case123" };
-            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);_userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(user));
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition); _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(user));
             _awsStorageServiceMock.Setup(x => x.GetFilePublicUri(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>(), null)).Returns("urlMocked");
 
             //Act
@@ -1991,7 +1998,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         {
             var depositionId = Guid.NewGuid();
             var caseId = Guid.NewGuid();
-            var deposition = DepositionFactory.GetDeposition(depositionId,caseId);
+            var deposition = DepositionFactory.GetDeposition(depositionId, caseId);
             deposition.StartDate = DateTime.UtcNow.AddSeconds(59);
             _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
 
@@ -2023,7 +2030,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var depositionMock = new Deposition() { Id = Guid.NewGuid() };
             _userServiceMock.Setup(u => u.GetCurrentUserAsync()).ReturnsAsync(new User { });
             _depositionRepositoryMock.Setup(d => d.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync((Deposition)null);
-            
+
             //Act
             var result = await _depositionService.RevertCancel(depositionMock, new FileTransferInfo(), false);
 
@@ -2050,7 +2057,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _userServiceMock.Setup(u => u.GetCurrentUserAsync()).ReturnsAsync(userMock);
             _depositionRepositoryMock.Setup(d => d.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(depositionMock);
             _documentServiceMock.Setup(dc => dc.UploadDocumentFile(It.IsAny<FileTransferInfo>(), It.IsAny<User>(), It.IsAny<string>(), It.IsAny<DocumentType>())).ReturnsAsync(Result.Fail($"Error loading file {keyName}"));
-            
+
             //Act
             var result = await _depositionService.RevertCancel(depositionMock, fileMock, false);
 
@@ -2100,6 +2107,48 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _depositionRepositoryMock.Verify(d => d.Update(It.IsAny<Deposition>()), Times.Once);
             Assert.NotNull(result);
             Assert.True(result.Value.Status == currentDepositionMock.Status);
+            Assert.True(result.IsSuccess);
+        }
+
+        [Fact]
+        public async Task AdmitDenyParticipant_ShouldFail_ParticipantNoFound()
+        {
+            //Arrange
+            var participantId = Guid.NewGuid();
+            var expectedError = $"Participant not found with Id: {participantId}";
+            _participantRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync((Participant)null);
+
+            //Act
+            var result = await _depositionService.AdmitDenyParticipant(participantId, true);
+
+            //Assert
+            _participantRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(x => x == participantId), It.IsAny<string[]>()), Times.Once);
+            Assert.NotNull(result);
+            Assert.True(result.IsFailed);
+            Assert.Contains(expectedError, result.Errors.Select(e => e.Message));
+        }
+
+        [Fact]
+        public async Task AdmitDenyParticipant_ShouldOk()
+        {
+            //Arrange
+            var participantId = Guid.NewGuid();
+            var participant = new Participant()
+            {
+                Id = participantId,
+                Email = "test@testemail.com",
+                DepositionId = Guid.NewGuid()
+            };
+            _participantRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(participant);
+
+            //Act
+            var result = await _depositionService.AdmitDenyParticipant(participantId, true);
+
+            //Assert
+            _participantRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(x => x == participantId), It.IsAny<string[]>()), Times.Once);
+            _signalRNotificationManagerMock.Verify(x => x.SendDirectMessage(It.Is<string>(t => t == participant.Email), It.IsAny<NotificationDto>()), Times.Once);
+            _signalRNotificationManagerMock.Verify(x => x.SendNotificationToDepositionAdmins(It.Is<Guid>(t => t == participant.DepositionId), It.IsAny<NotificationDto>()), Times.Once);
+            Assert.NotNull(result);
             Assert.True(result.IsSuccess);
         }
     }

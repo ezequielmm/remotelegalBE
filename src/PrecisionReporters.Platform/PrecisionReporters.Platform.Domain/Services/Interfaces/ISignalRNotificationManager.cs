@@ -6,6 +6,8 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
 {
     public interface ISignalRNotificationManager
     {
-        Task SendNotificationToGroupMembers(Guid depositionId, NotificationDto notificationDto);
+        Task SendNotificationToDepositionMembers(Guid depositionId, NotificationDto notificationDto);
+        Task SendNotificationToDepositionAdmins(Guid depositionId, NotificationDto notificationDto);
+        Task SendDirectMessage(string userId, NotificationDto notificationDto);
     }
 }
