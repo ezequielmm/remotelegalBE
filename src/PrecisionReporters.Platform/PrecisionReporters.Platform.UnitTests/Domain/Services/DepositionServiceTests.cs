@@ -45,8 +45,9 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         private readonly Mock<IDocumentService> _documentServiceMock;
         private readonly Mock<ILogger<DepositionService>> _loggerMock;
         private readonly Mock<IMapper<Deposition, DepositionDto, CreateDepositionDto>> _depositionMapperMock;
-        private readonly Mock<ISignalRNotificationManager> _signalRNotificationManagerMock;
         private readonly Mock<IMapper<Participant, ParticipantDto, CreateParticipantDto>> _participantMapperMock;
+        private readonly Mock<ISignalRNotificationManager> _signalRNotificationManagerMock;
+        
 
         private readonly List<Deposition> _depositions = new List<Deposition>();
 
@@ -87,9 +88,10 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _depositionconfiguration = new DepositionConfiguration { CancelAllowedOffsetSeconds = "60" };
             _depositionConfigurationMock = new Mock<IOptions<DepositionConfiguration>>();
             _depositionConfigurationMock.Setup(x => x.Value).Returns(_depositionconfiguration);
-            _depositionMapperMock = new Mock<IMapper<Deposition, DepositionDto, CreateDepositionDto>>();
-            _signalRNotificationManagerMock = new Mock<ISignalRNotificationManager>();
             _participantMapperMock = new Mock<IMapper<Participant, ParticipantDto, CreateParticipantDto>>();
+            _depositionMapperMock = new Mock<IMapper<Deposition, DepositionDto, CreateDepositionDto>>();
+            _participantMapperMock = new Mock<IMapper<Participant, ParticipantDto, CreateParticipantDto>>();
+            _signalRNotificationManagerMock = new Mock<ISignalRNotificationManager>();
 
             _depositionService = new DepositionService(
                 _depositionRepositoryMock.Object,
@@ -106,9 +108,9 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 _loggerMock.Object,
                 _documentServiceMock.Object,
                 _depositionMapperMock.Object,
+                _participantMapperMock.Object,
                 _depositionConfigurationMock.Object,
-                _signalRNotificationManagerMock.Object,
-                _participantMapperMock.Object);
+                _signalRNotificationManagerMock.Object);
 
             _transactionHandlerMock.Setup(x => x.RunAsync(It.IsAny<Func<Task<Result<Deposition>>>>()))
                 .Returns(async (Func<Task<Result<Deposition>>> action) =>

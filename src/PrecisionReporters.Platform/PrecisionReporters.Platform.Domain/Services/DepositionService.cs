@@ -38,9 +38,9 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly ILogger<DepositionService> _logger;
         private readonly IDocumentService _documentService;
         private readonly IMapper<Deposition, DepositionDto, CreateDepositionDto> _depositionMapper;
+        private readonly IMapper<Participant, ParticipantDto, CreateParticipantDto> _participantMapper;
         private readonly DepositionConfiguration _depositionConfiguration;
         private readonly ISignalRNotificationManager _signalRNotificationManager;
-        private readonly IMapper<Participant, ParticipantDto, CreateParticipantDto> _participantMapper;
 
         public DepositionService(IDepositionRepository depositionRepository,
             IParticipantRepository participantRepository,
@@ -56,9 +56,9 @@ namespace PrecisionReporters.Platform.Domain.Services
             ILogger<DepositionService> logger,
             IDocumentService documentService,
             IMapper<Deposition, DepositionDto, CreateDepositionDto> depositionMapper,
+            IMapper<Participant, ParticipantDto, CreateParticipantDto> participantMapper,
             IOptions<DepositionConfiguration> depositionConfiguration,
-            ISignalRNotificationManager signalRNotificationManager,
-            IMapper<Participant, ParticipantDto, CreateParticipantDto> participantMapper)
+            ISignalRNotificationManager signalRNotificationManager)
         {
             _awsStorageService = awsStorageService;
             _documentsConfiguration = documentConfigurations.Value ?? throw new ArgumentException(nameof(documentConfigurations));
@@ -74,9 +74,9 @@ namespace PrecisionReporters.Platform.Domain.Services
             _logger = logger;
             _documentService = documentService;
             _depositionMapper = depositionMapper;
+            _participantMapper = participantMapper;
             _depositionConfiguration = depositionConfiguration.Value;
             _signalRNotificationManager = signalRNotificationManager;
-            _participantMapper = participantMapper;
         }
 
         public async Task<List<Deposition>> GetDepositions(Expression<Func<Deposition, bool>> filter = null,
@@ -254,7 +254,8 @@ namespace PrecisionReporters.Platform.Domain.Services
                 Token = token.Value,
                 TimeZone = deposition.TimeZone,
                 IsOnTheRecord = deposition.IsOnTheRecord,
-                IsSharing = deposition.SharingDocumentId.HasValue
+                IsSharing = deposition.SharingDocumentId.HasValue,
+                Participants = deposition.Participants.Where(x => x.HasJoined == true).Select(p => _participantMapper.ToDto(p)).ToList()
             };
 
             return Result.Ok(joinDepositionInfo);
