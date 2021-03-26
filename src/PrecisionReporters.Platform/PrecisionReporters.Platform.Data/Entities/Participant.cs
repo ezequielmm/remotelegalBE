@@ -39,7 +39,7 @@ namespace PrecisionReporters.Platform.Data.Entities
         public Participant(User user, ParticipantType role, bool? isAdmitted = null)
         {
             Email = user.EmailAddress;
-            Name = user.FirstName;
+            Name = $"{user.FirstName} {user.LastName}";
             Phone = user.PhoneNumber;
             Role = role;
             UserId = user.Id;

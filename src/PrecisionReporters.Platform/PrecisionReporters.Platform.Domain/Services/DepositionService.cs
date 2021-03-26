@@ -147,6 +147,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                     if (user != null)
                     {
                         participant.User = user;
+                        participant.Name = user.IsGuest ? user.FirstName : $"{user.FirstName} {user.LastName}";
                         await _permissionService.AddUserRole(participant.User.Id, deposition.Id, ResourceType.Deposition, ParticipantType.CourtReporter == participant.Role ? RoleName.DepositionCourtReporter : RoleName.DepositionAttendee);
                     }
                 }
@@ -603,7 +604,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (userResult.Value.IsAdmin)
                 participant.IsAdmitted = true;
 
-            participant.Name = userResult.Value.FirstName;
+            participant.Name = userResult.Value.IsGuest ? userResult.Value.FirstName : $"{userResult.Value.FirstName} {userResult.Value.LastName}";
             participant.Phone = userResult.Value.PhoneNumber;
             participant.User = userResult.Value;
 
