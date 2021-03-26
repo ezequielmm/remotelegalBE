@@ -431,5 +431,19 @@ namespace PrecisionReporters.Platform.Api.Controllers
 
             return Ok(_depositionMapper.ToDto(result.Value));
         }
+
+        [HttpPost("{id}/reschedule")]
+        [UserAuthorize(ResourceType.Deposition, ResourceAction.ReSchedule)]
+        public async Task<ActionResult<DepositionDto>> ReScheduleDeposition([ResourceId(ResourceType.Deposition)] Guid id, EditDepositionDto editDepositionDto)
+        {
+            var file = FileHandlerHelper.GetFilesFromRequest(Request.Form.Files).FirstOrDefault().Value;
+            editDepositionDto.Deposition.Id = id;
+            var deposition = _depositionMapper.ToModel(editDepositionDto.Deposition);
+            var result = await _depositionService.ReScheduleDeposition(deposition, file, editDepositionDto.DeleteCaption);
+            if (result.IsFailed)
+                return WebApiResponses.GetErrorResponse(result);
+
+            return Ok(_depositionMapper.ToDto(result.Value));
+        }
     }
 }

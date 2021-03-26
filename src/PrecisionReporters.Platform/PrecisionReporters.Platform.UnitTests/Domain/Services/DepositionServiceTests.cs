@@ -85,7 +85,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             };
             _depositionDocumentConfigurationMock = new Mock<IOptions<DocumentConfiguration>>();
             _depositionDocumentConfigurationMock.Setup(x => x.Value).Returns(_documentConfiguration);
-            _depositionconfiguration = new DepositionConfiguration { CancelAllowedOffsetSeconds = "60" };
+            _depositionconfiguration = new DepositionConfiguration { CancelAllowedOffsetSeconds = "60", MinimumReScheduleSeconds = "300" };
             _depositionConfigurationMock = new Mock<IOptions<DepositionConfiguration>>();
             _depositionConfigurationMock.Setup(x => x.Value).Returns(_depositionconfiguration);
             _participantMapperMock = new Mock<IMapper<Participant, ParticipantDto, CreateParticipantDto>>();
@@ -2152,6 +2152,100 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _signalRNotificationManagerMock.Verify(x => x.SendNotificationToDepositionAdmins(It.Is<Guid>(t => t == participant.DepositionId), It.IsAny<NotificationDto>()), Times.Once);
             Assert.NotNull(result);
             Assert.True(result.IsSuccess);
+        }
+
+        [Fact]
+        public async Task ReScheduleDeposition_ShouldReturnFail_IfStarDateIsLowerThanMinimum()
+        {
+            // Arrange
+            var depositionMock = new Deposition() { Id = Guid.NewGuid(), StartDate = DateTime.UtcNow.AddSeconds(259), EndDate = DateTime.UtcNow.AddSeconds(600), Status = DepositionStatus.Pending, CaseId = Guid.NewGuid(), Caption = new Document() };
+            var currentDepositionMock = new Deposition() { Id = Guid.NewGuid(), Status = DepositionStatus.Canceled, CaseId = Guid.NewGuid(), Caption = new Document() };
+            var testPath = $"{depositionMock.CaseId}/caption";
+            var testEmail = "test@test.com";
+            var expectedError = $"Unable to edit the deposition";
+            var fileName = "testFile.pdf";
+            var keyName = $"/{testPath}/{fileName}";
+            var userMock = new User() { EmailAddress = testEmail };
+            var fileMock = new FileTransferInfo() { Name = fileName };
+            _userServiceMock.Setup(u => u.GetCurrentUserAsync()).ReturnsAsync(userMock);
+            _depositionRepositoryMock.Setup(d => d.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(currentDepositionMock);
+            _documentServiceMock.Setup(dc => dc.UploadDocumentFile(It.IsAny<FileTransferInfo>(), It.IsAny<User>(), It.IsAny<string>(), It.IsAny<DocumentType>())).ReturnsAsync(Result.Ok(new Document()));
+            _depositionRepositoryMock.Setup(d => d.Update(It.IsAny<Deposition>())).ReturnsAsync(depositionMock);
+
+            // Act
+            var result = await _depositionService.ReScheduleDeposition(depositionMock, fileMock, true);
+
+            // Assert
+            Assert.True(result.IsFailed);
+            _userServiceMock.Verify(u => u.GetCurrentUserAsync(), Times.Never);
+            _depositionRepositoryMock.Verify(d => d.GetById(It.Is<Guid>(i => i == depositionMock.Id), It.IsAny<string[]>()), Times.Never);
+            _documentServiceMock.Verify(dc => dc.UploadDocumentFile(
+                It.IsAny<FileTransferInfo>(),
+                It.Is<User>(u => u == userMock),
+                It.IsAny<string>(),
+                It.IsAny<DocumentType>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task ReScheduleDeposition_ShouldReturnFail_IfStarDateIsGreaterThanEndDate()
+        {
+            // Arrange
+            var depositionMock = new Deposition() { Id = Guid.NewGuid(), StartDate = DateTime.UtcNow.AddSeconds(301), EndDate = DateTime.UtcNow.AddSeconds(180), Status = DepositionStatus.Pending, CaseId = Guid.NewGuid(), Caption = new Document() };
+            var currentDepositionMock = new Deposition() { Id = Guid.NewGuid(), Status = DepositionStatus.Canceled, CaseId = Guid.NewGuid(), Caption = new Document() };
+            var testPath = $"{depositionMock.CaseId}/caption";
+            var testEmail = "test@test.com";
+            var fileName = "testFile.pdf";
+            var keyName = $"/{testPath}/{fileName}";
+            var userMock = new User() { EmailAddress = testEmail };
+            var fileMock = new FileTransferInfo() { Name = fileName };
+            _userServiceMock.Setup(u => u.GetCurrentUserAsync()).ReturnsAsync(userMock);
+            _depositionRepositoryMock.Setup(d => d.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(currentDepositionMock);
+            _documentServiceMock.Setup(dc => dc.UploadDocumentFile(It.IsAny<FileTransferInfo>(), It.IsAny<User>(), It.IsAny<string>(), It.IsAny<DocumentType>())).ReturnsAsync(Result.Ok(new Document()));
+            _depositionRepositoryMock.Setup(d => d.Update(It.IsAny<Deposition>())).ReturnsAsync(depositionMock);
+
+            // Act
+            var result = await _depositionService.ReScheduleDeposition(depositionMock, fileMock, true);
+
+            // Assert
+            Assert.True(result.IsFailed);
+            _userServiceMock.Verify(u => u.GetCurrentUserAsync(), Times.Never);
+            _depositionRepositoryMock.Verify(d => d.GetById(It.Is<Guid>(i => i == depositionMock.Id), It.IsAny<string[]>()), Times.Never);
+            _documentServiceMock.Verify(dc => dc.UploadDocumentFile(
+                It.IsAny<FileTransferInfo>(),
+                It.Is<User>(u => u == userMock),
+                It.IsAny<string>(),
+                It.IsAny<DocumentType>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task ReScheduleDeposition_ShouldReturnOk_IfStartDateIsValid()
+        {
+            // Arrange
+            var depositionMock = new Deposition() { Id = Guid.NewGuid(), StartDate = DateTime.UtcNow.AddSeconds(301), EndDate = DateTime.UtcNow.AddSeconds(600), Status = DepositionStatus.Pending, CaseId = Guid.NewGuid(), Caption = new Document() };
+            var currentDepositionMock = new Deposition() { Id = Guid.NewGuid(), Status = DepositionStatus.Canceled, CaseId = Guid.NewGuid(), Caption = new Document() };
+            var testPath = $"{depositionMock.CaseId}/caption";
+            var testEmail = "test@test.com";
+            var fileName = "testFile.pdf";
+            var keyName = $"/{testPath}/{fileName}";
+            var userMock = new User() { EmailAddress = testEmail };
+            var fileMock = new FileTransferInfo() { Name = fileName };
+            _userServiceMock.Setup(u => u.GetCurrentUserAsync()).ReturnsAsync(userMock);
+            _depositionRepositoryMock.Setup(d => d.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(currentDepositionMock);
+            _documentServiceMock.Setup(dc => dc.UploadDocumentFile(It.IsAny<FileTransferInfo>(), It.IsAny<User>(), It.IsAny<string>(), It.IsAny<DocumentType>())).ReturnsAsync(Result.Ok(new Document()));
+            _depositionRepositoryMock.Setup(d => d.Update(It.IsAny<Deposition>())).ReturnsAsync(depositionMock);
+
+            // Act
+            var result = await _depositionService.ReScheduleDeposition(depositionMock, fileMock, true);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            _userServiceMock.Verify(u => u.GetCurrentUserAsync(), Times.Once);
+            _depositionRepositoryMock.Verify(d => d.GetById(It.Is<Guid>(i => i == depositionMock.Id), It.IsAny<string[]>()), Times.Once);
+            _documentServiceMock.Verify(dc => dc.UploadDocumentFile(
+                It.IsAny<FileTransferInfo>(),
+                It.Is<User>(u => u == userMock),
+                It.IsAny<string>(),
+                It.IsAny<DocumentType>()), Times.Once);
         }
     }
 }

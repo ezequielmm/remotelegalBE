@@ -48,5 +48,6 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
         Task<Result<Participant>> GetUserParticipant(Guid depositioId);
         Task<Result> AdmitDenyParticipant(Guid participantId, bool admited);
         Task<Result<Deposition>> EndDeposition(Guid depositionId);
+        Task<Result<Deposition>> ReScheduleDeposition(Deposition deposition, FileTransferInfo file, bool deleteCaption);
     }
 }

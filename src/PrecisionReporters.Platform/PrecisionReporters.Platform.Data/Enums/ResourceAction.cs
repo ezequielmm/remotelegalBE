@@ -13,6 +13,7 @@
         StampExhibit,
         Cancel,
         Revert,
-        AdmitParticipants
+        AdmitParticipants,
+        ReSchedule
     }
 }

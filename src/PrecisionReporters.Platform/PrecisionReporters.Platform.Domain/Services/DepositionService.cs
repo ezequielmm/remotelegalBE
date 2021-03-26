@@ -955,5 +955,47 @@ namespace PrecisionReporters.Platform.Domain.Services
             await _signalRNotificationManager.SendNotificationToDepositionAdmins(participant.DepositionId.Value, notificationtDto);
             return Result.Ok();
         }
+
+        public async Task<Result<Deposition>> ReScheduleDeposition(Deposition deposition, FileTransferInfo file, bool deleteCaption)
+        {
+            var minReScheduleTime = int.Parse(_depositionConfiguration.MinimumReScheduleSeconds);
+            if (deposition.StartDate < DateTime.UtcNow.AddSeconds(minReScheduleTime))
+                return Result.Fail<Deposition>(new ResourceConflictError($"The StartDate is lower than the minimum time to re-schedule"));
+
+            if (deposition.StartDate > deposition.EndDate)
+                return Result.Fail<Deposition>(new ResourceConflictError($"The StartDate must be lower than EndDate"));
+
+            var currentDepositionResult = await GetByIdWithIncludes(deposition.Id, new[] { $"{nameof(Deposition.Caption)}" });
+            if (currentDepositionResult.IsFailed)
+                return currentDepositionResult;
+
+            var currentDeposition = currentDepositionResult.Value;
+            try
+            {
+                var transactionResult = await _transactionHandler.RunAsync<Deposition>(async () =>
+                {
+                    var uploadDocumentResult = await UpdateDepositionFiles(file, currentDeposition, deleteCaption);
+                    if (uploadDocumentResult.IsFailed)
+                        return uploadDocumentResult.ToResult();
+
+                    currentDeposition = UpdateDepositionDetails(currentDeposition, deposition, uploadDocumentResult.Value);
+
+                    currentDeposition.StartDate = deposition.StartDate;
+                    currentDeposition.EndDate = deposition.EndDate;
+                    currentDeposition.TimeZone = deposition.TimeZone;
+
+                    await _depositionRepository.Update(currentDeposition);
+                    return Result.Ok(currentDeposition);
+                });
+
+                return transactionResult;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unable to edit depositions");
+                await _documentService.DeleteUploadedFiles(new List<Document> { currentDeposition.Caption });
+                return Result.Fail(new ExceptionalError("Unable to edit the deposition", ex));
+            }
+        }
     }
 }

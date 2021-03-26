@@ -120,6 +120,7 @@ namespace PrecisionReporters.Platform.Api
             });
             services.Configure<VerificationLinkConfiguration>(x => { x.ExpirationTime = appConfiguration.VerificationLinkConfiguration.ExpirationTime; });
             services.Configure<DepositionConfiguration>(x => { x.CancelAllowedOffsetSeconds = appConfiguration.DepositionConfiguration.CancelAllowedOffsetSeconds; });
+            services.Configure<DepositionConfiguration>(x => { x.MinimumReScheduleSeconds = appConfiguration.DepositionConfiguration.MinimumReScheduleSeconds; });
             // Filters
             services.AddScoped<ValidateTwilioRequestFilterAttribute>();
 
