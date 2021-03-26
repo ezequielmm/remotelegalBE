@@ -176,7 +176,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             replacer.AddString("yyyy_tmp", deposition.StartDate.Year.ToString());
             replacer.AddString("time_tmp", ConvertTimeZone(deposition.StartDate, deposition.TimeZone));
             replacer.AddString("witness_tmp", deposition.Participants?.FirstOrDefault(x => x.Role == ParticipantType.Witness)?.Name ?? "");
-            replacer.AddString("reportedBy_tmp", $"{deposition.Requester.FirstName} {deposition.Requester.LastName}");
+            replacer.AddString("reportedBy_tmp", deposition.Participants?.FirstOrDefault(x => x.Role == ParticipantType.CourtReporter)?.Name ?? "");
             replacer.AddString("job_n_tmp", deposition.Job ?? string.Empty);
             replacer.Process(page1);
         }
