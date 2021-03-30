@@ -47,7 +47,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         private readonly Mock<IMapper<Deposition, DepositionDto, CreateDepositionDto>> _depositionMapperMock;
         private readonly Mock<IMapper<Participant, ParticipantDto, CreateParticipantDto>> _participantMapperMock;
         private readonly Mock<ISignalRNotificationManager> _signalRNotificationManagerMock;
-        
+
 
         private readonly List<Deposition> _depositions = new List<Deposition>();
 
@@ -1463,6 +1463,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             Assert.True(result.IsSuccess);
             Assert.True(!result.Value.Any());
         }
+
         [Fact]
         public async Task AddParticipantToExistingDeposition_ShouldAddNewParticipant_WithExistingUser()
         {

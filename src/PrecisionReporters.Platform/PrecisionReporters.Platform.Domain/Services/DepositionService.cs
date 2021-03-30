@@ -182,7 +182,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             {
                 filter = x => (status == null || x.Status == status) &&
                          x.Status != DepositionStatus.Canceled &&
-                         (x.Participants.Any(p => p.Email == user.EmailAddress)
+                         (x.Participants.Any(p => p.Email == user.EmailAddress && p.IsAdmitted.HasValue && p.IsAdmitted.Value)
                          || x.Requester.EmailAddress == user.EmailAddress
                          || x.AddedBy.EmailAddress == user.EmailAddress);
             }
@@ -721,7 +721,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             };
             var lstParticipant = await _participantRepository.GetByFilter(orderBy,
                 sortDirection,
-                x => x.DepositionId == depositionId,
+                x => x.DepositionId == depositionId && x.IsAdmitted.HasValue && x.IsAdmitted.Value,
                 new string[] { nameof(Participant.User) });
             return Result.Ok(lstParticipant);
         }
@@ -941,7 +941,8 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result> AdmitDenyParticipant(Guid participantId, bool admited)
         {
-            var participant = await _participantRepository.GetById(participantId);
+            var include = new[] { nameof(Participant.User) };
+            var participant = await _participantRepository.GetById(participantId, include);
             if (participant == null)
                 return Result.Fail(new ResourceNotFoundError($"Participant not found with Id: {participantId}"));
             participant.IsAdmitted = admited;
@@ -951,6 +952,10 @@ namespace PrecisionReporters.Platform.Domain.Services
                 EntityType = NotificationEntity.JoinResponse,
                 Content = _participantMapper.ToDto(participant)
             };
+            if (!admited)
+            {
+                await _permissionService.RemoveParticipantPermissions(participant.DepositionId.Value, participant);
+            }
             await _participantRepository.Update(participant);
             await _signalRNotificationManager.SendDirectMessage(participant.Email, notificationtDto);
             await _signalRNotificationManager.SendNotificationToDepositionAdmins(participant.DepositionId.Value, notificationtDto);
