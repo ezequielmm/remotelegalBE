@@ -190,6 +190,43 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         }
 
         [Fact]
+        public async Task ParticipantCanCloseDocument_ReturnFalse_IfParticipantResultFailed()
+        {
+            // Arrange
+            var user = new User
+            {
+                Id = Guid.NewGuid(),
+                EmailAddress = "test@email.com",
+                IsAdmin = false,
+            };
+
+            var participant = new Participant
+            {
+                Id = Guid.NewGuid(),
+                Role = ParticipantType.Observer
+            };
+
+            var document = new Document
+            {
+                Id = Guid.NewGuid(),
+                AddedBy = new User { EmailAddress = "otheruser@email.com"},
+            };
+
+            var depositionId = Guid.NewGuid();
+
+            _userServiceMock.Setup(x => x.GetCurrentUserAsync()).ReturnsAsync(user);
+            _depositionServiceMock.Setup(x => x.GetDepositionParticipantByEmail(It.Is<Guid>(a => a == depositionId), It.IsAny<string>())).ReturnsAsync(Result.Fail("Fail"));
+
+            //  Act
+            var result = await _depositionDocumentService.ParticipantCanCloseDocument(document, depositionId);
+
+            // Assert
+            _userServiceMock.Verify(mock => mock.GetCurrentUserAsync(), Times.Once());
+            _depositionServiceMock.Verify(x => x.GetDepositionParticipantByEmail(It.Is<Guid>(a => a == depositionId), It.IsAny<string>()), Times.Once());
+            Assert.False(result);
+        }
+
+        [Fact]
         public async Task GetEnteredExhibits_ReturnListOfDocumnets()
         {
             // Arrange
@@ -654,6 +691,32 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _depositionDocumentRepositoryMock.Verify(x => x.Remove(It.IsAny<DepositionDocument>()), Times.Once);
 
             Assert.True(result.IsSuccess);
+        }
+
+        [Fact]
+        public async Task IsPublicDocument_ReturnFalse_WhenDepositionDocumentResultIsNull()
+        {
+            // Arrange           
+            _depositionDocumentRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<DepositionDocument, bool>>>(), It.IsAny<string[]>())).ReturnsAsync((DepositionDocument)null);            
+
+            //  Act
+            var result = await _depositionDocumentService.IsPublicDocument(It.IsAny<Guid>(), It.IsAny<Guid>());
+
+            // Assert                      
+            Assert.False(result);
+        }
+
+        [Fact]
+        public async Task IsPublicDocument_ReturnTrue_WhenDepositionDocumentResultIsNotNull()
+        {
+            // Arrange           
+            _depositionDocumentRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<DepositionDocument, bool>>>(), It.IsAny<string[]>())).ReturnsAsync(new DepositionDocument());
+
+            //  Act
+            var result = await _depositionDocumentService.IsPublicDocument(It.IsAny<Guid>(), It.IsAny<Guid>());
+
+            // Assert                      
+            Assert.True(result);
         }
     }
 }
