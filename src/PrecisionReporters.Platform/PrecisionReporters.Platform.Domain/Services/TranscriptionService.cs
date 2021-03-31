@@ -45,10 +45,16 @@ namespace PrecisionReporters.Platform.Domain.Services
         {
             var user = await _userRepository.GetFirstOrDefaultByFilter(x => x.EmailAddress == userEmail);
 
+            if (user == null)
+                return Result.Fail("User with such email address was not found.");
+
             transcription.DepositionId = new Guid(depositionId);
             transcription.UserId = user.Id;
 
             var newTranscription = await _transcriptionRepository.Create(transcription);
+            if (newTranscription == null)
+                return Result.Fail("Fail to create new transcription.");
+
             var transcriptionDto = _transcriptionMapper.ToDto(newTranscription);
             var notificationtDto = new NotificationDto
             {
@@ -128,8 +134,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         {
             var result = events?
                 .OrderBy(x => x.CreationDate)
-                .Where(x => x.EventType == EventType.OnTheRecord)
-                .FirstOrDefault();
+                .FirstOrDefault(x => x.EventType == EventType.OnTheRecord);
 
             if (result == null)
                 return 0;

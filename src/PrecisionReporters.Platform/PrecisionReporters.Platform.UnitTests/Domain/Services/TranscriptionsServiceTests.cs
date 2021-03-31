@@ -36,9 +36,9 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _signalRNotificationManagerMock = new Mock<ISignalRNotificationManager>();
             _compositionServiceMock = new Mock<ICompositionService>();
             _transcriptionMapperMock = new Mock<IMapper<Transcription, TranscriptionDto, object>>();
-            _transcriptionService = new TranscriptionService(_transcriptionRepositoryMock.Object, 
+            _transcriptionService = new TranscriptionService(_transcriptionRepositoryMock.Object,
                 _userRepository.Object,
-                _depositionDocumentRepositoryMock.Object, 
+                _depositionDocumentRepositoryMock.Object,
                 _depositionServiceMock.Object,
                 _signalRNotificationManagerMock.Object,
                 _compositionServiceMock.Object,
@@ -130,6 +130,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         [Fact]
         public async Task GetTranscriptionsWithTimeOffset_Test_WithOffTheRecordIntervals()
         {
+            // Arrange
             var depositionId = Guid.NewGuid();
             var deposition = DepositionFactory.GetDeposition(depositionId, Guid.NewGuid());
             deposition.Room.RecordingStartDate = DateTime.UtcNow;
@@ -149,13 +150,115 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 It.IsAny<List<DepositionEvent>>(),
                 It.IsAny<long>())).Returns(GetCompositionIntervals());
 
+            // Act
             var result = await _transcriptionService.GetTranscriptionsWithTimeOffset(depositionId);
 
+            // Assert
             Assert.True(result.IsSuccess);
             Assert.True(result.Value[0].TranscriptionVideoTime == 1);
             Assert.True(result.Value[1].TranscriptionVideoTime == 10);
             Assert.True(result.Value[2].TranscriptionVideoTime == 30);
             Assert.True(result.Value[3].TranscriptionVideoTime == 35);
+        }
+
+        [Fact]
+        public async Task GetTranscriptionsWithTimeOffset_ReturnFail_WhenDepositionResultIsFailed()
+        {
+            // Arrange
+            var depositionId = Guid.NewGuid();
+
+            _depositionServiceMock.Setup(x => x.GetByIdWithIncludes(
+                It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(Result.Fail("Fail"));
+
+            // Act
+            var result = await _transcriptionService.GetTranscriptionsWithTimeOffset(depositionId);
+
+            // Assert
+            Assert.True(result.IsFailed);
+        }
+
+        [Fact]
+        public async Task StoreTranscription_ReturnFail_WhenUserIsNotValid()
+        {
+            // Arrange
+            var errorMessage = "User with such email address was not found.";
+
+            _userRepository.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<string[]>()))
+                .ReturnsAsync((User)null);
+
+            // Act
+            var result = await _transcriptionService.StoreTranscription(It.IsAny<Transcription>(), It.IsAny<string>(), It.IsAny<string>());
+
+            // Assert
+            Assert.True(result.IsFailed);
+            Assert.Equal(errorMessage, result.Errors[0].Message);
+        }
+
+        [Fact]
+        public async Task StoreTranscription_ReturnFail_WhenTranscriptionCreateIsFailed()
+        {
+            // Arrange
+            var errorMessage = "Fail to create new transcription.";
+            var user = new User
+            {
+                FirstName = "UserName",
+                LastName = "LastName",
+                EmailAddress = "email@email.com"
+            };
+
+            var transcription = new Transcription { Text = "transcript" };
+            var depositionId = Guid.NewGuid().ToString();
+
+            _userRepository.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<string[]>()))
+                .ReturnsAsync(user);
+
+            _transcriptionRepositoryMock.Setup(x => x.Create(transcription)).ReturnsAsync((Transcription)null);
+
+            // Act
+            var result = await _transcriptionService.StoreTranscription(transcription, depositionId, user.EmailAddress);
+
+            // Assert
+            Assert.True(result.IsFailed);
+            Assert.Equal(errorMessage, result.Errors[0].Message);
+        }
+
+        [Fact]
+        public async Task StoreTranscription_ReturnNewTranscription_ResultOk()
+        {
+            // Arrange
+            var user = new User
+            {
+                FirstName = "UserName",
+                LastName = "LastName",
+                EmailAddress = "email@email.com"
+            };
+
+            var transcription = new Transcription { Text = "transcript", DepositionId = Guid.NewGuid() };
+            var depositionId = Guid.NewGuid().ToString();
+            var transcriptionDto = new TranscriptionDto
+            {
+                Text = "transcript",
+                DepositionId = transcription.DepositionId
+            };
+            var notificationDto = new NotificationDto
+            {
+                Action = NotificationAction.Create,
+                EntityType = NotificationEntity.Transcript,
+                Content = transcriptionDto
+            };
+
+            _userRepository.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<string[]>()))
+                .ReturnsAsync(user);
+
+            _transcriptionRepositoryMock.Setup(x => x.Create(transcription)).ReturnsAsync(transcription);
+            _transcriptionMapperMock.Setup(x => x.ToDto(It.IsAny<Transcription>())).Returns(transcriptionDto);
+            _signalRNotificationManagerMock.Setup(x => x.SendNotificationToDepositionMembers(transcription.DepositionId, notificationDto));
+
+            // Act
+            var result = await _transcriptionService.StoreTranscription(transcription, depositionId, user.EmailAddress);
+
+            // Assert
+            Assert.True(result.IsSuccess);
         }
 
         private List<CompositionInterval> GetCompositionIntervals()
