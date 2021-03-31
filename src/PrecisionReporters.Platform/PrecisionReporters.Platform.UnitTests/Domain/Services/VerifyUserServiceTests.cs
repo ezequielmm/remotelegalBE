@@ -1,5 +1,6 @@
 ﻿using Moq;
 using PrecisionReporters.Platform.Data.Entities;
+using PrecisionReporters.Platform.Data.Enums;
 using PrecisionReporters.Platform.Data.Repositories.Interfaces;
 using PrecisionReporters.Platform.Domain.Services;
 using System;
@@ -15,33 +16,54 @@ namespace PrecisionReporters.Platform.UnitTests.Data.Services
         private readonly Mock<IVerifyUserRepository> _verifyUserRepositoryMock = new Mock<IVerifyUserRepository>();
 
         [Fact]
-        public async Task GetVerifyUserById_ShouldCall_GetById()
+        public async Task GetVerifyUserById_ShouldVerifyUser_GetById()
         {
             var id = Guid.NewGuid();
+            var verifyUser = new VerifyUser { Id = id };
             _verifyUserRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>()))
-                .ReturnsAsync((VerifyUser)null);
+                .ReturnsAsync(verifyUser);
             var service = InitializeService(_verifyUserRepositoryMock);
 
             // Act
-            await service.GetVerifyUserById(id);
+            var result = await service.GetVerifyUserById(id);
 
             // Assert
             _verifyUserRepositoryMock.Verify(x => x.GetById(It.Is<Guid>((a) => a == id), It.Is<string[]>(a => a.Contains(nameof(VerifyUser.User)))), Times.Once);
+            Assert.NotNull(result);
         }
 
         [Fact]
-        public async Task GetVerifyUserByUserId_ShouldCall_GetByUserId()
+        public async Task GetVerifyUserByUserId_ShouldVerifyUser_WhenVerificationTypeIsNotIncluded()
         {
             var id = Guid.NewGuid();
+            var verifyUser = new VerifyUser { Id = id };
             _verifyUserRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<VerifyUser, bool>>>(), It.IsAny<string[]>()))
-                .ReturnsAsync((VerifyUser)null);
+                .ReturnsAsync(verifyUser);
             var service = InitializeService(_verifyUserRepositoryMock);
 
             // Act
-            await service.GetVerifyUserByUserId(id);
+            var result = await service.GetVerifyUserByUserId(id);
 
             // Assert
             _verifyUserRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<VerifyUser, bool>>>(), It.Is<string[]>(a => a.Contains(nameof(VerifyUser.User)))), Times.Once);
+            Assert.NotNull(result);
+        }
+
+        [Fact]
+        public async Task GetVerifyUserByUserId_ShouldVerifyUser_WhenVerificationTypeIsIncluded()
+        {
+            var id = Guid.NewGuid();
+            var verifyUser = new VerifyUser { Id = id };
+            _verifyUserRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<VerifyUser, bool>>>(), It.IsAny<string[]>()))
+                .ReturnsAsync(verifyUser);
+            var service = InitializeService(_verifyUserRepositoryMock);
+
+            // Act
+            var result = await service.GetVerifyUserByUserId(id, VerificationType.VerifyUser);
+
+            // Assert
+            _verifyUserRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<VerifyUser, bool>>>(), It.Is<string[]>(a => a.Contains(nameof(VerifyUser.User)))), Times.Once);
+            Assert.NotNull(result);
         }
 
         [Fact]
@@ -74,6 +96,40 @@ namespace PrecisionReporters.Platform.UnitTests.Data.Services
 
             // Assert
             _verifyUserRepositoryMock.Verify(x => x.Update(It.Is<VerifyUser>((a) => a == verifyUser)), Times.Once);
+        }
+
+        [Fact]
+        public async Task GetVerifyUserByEmail_ShouldVerifyUser_WhenVerificationTypeIsNotIncluded()
+        {
+            var email = "User1@TestMail.com";
+            var verifyUser = new VerifyUser { Id = Guid.NewGuid() };
+            _verifyUserRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<VerifyUser, bool>>>(), It.IsAny<string[]>()))
+                .ReturnsAsync(verifyUser);
+            var service = InitializeService(_verifyUserRepositoryMock);
+
+            // Act
+            var result = await service.GetVerifyUserByEmail(email);
+
+            // Assert
+            _verifyUserRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<VerifyUser, bool>>>(), It.Is<string[]>(a => a.Contains(nameof(VerifyUser.User)))), Times.Once);
+            Assert.NotNull(result);
+        }
+
+        [Fact]
+        public async Task GetVerifyUserByEmail_ShouldVerifyUser_WhenVerificationTypeIsIncluded()
+        {
+            var email = "User1@TestMail.com";
+            var verifyUser = new VerifyUser { Id = Guid.NewGuid() };
+            _verifyUserRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<VerifyUser, bool>>>(), It.IsAny<string[]>()))
+                .ReturnsAsync(verifyUser);
+            var service = InitializeService(_verifyUserRepositoryMock);
+
+            // Act
+            var result = await service.GetVerifyUserByEmail(email, VerificationType.VerifyUser);
+
+            // Assert
+            _verifyUserRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<VerifyUser, bool>>>(), It.Is<string[]>(a => a.Contains(nameof(VerifyUser.User)))), Times.Once);
+            Assert.NotNull(result);
         }
 
         private VerifyUserService InitializeService(Mock<IVerifyUserRepository> verifyUserRepository)
