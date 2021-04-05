@@ -79,7 +79,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             }
             catch (Exception e)
             {
-                _logger.LogError("Error handling Twilio's room callback {}", e.Message);
+                _logger.LogDebug($"Error handling Twilio's room callback {e.Message}");
                 return Result.Fail(new Error(e.Message));
             }
         }
