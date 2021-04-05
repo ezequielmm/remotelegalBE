@@ -289,7 +289,8 @@ namespace PrecisionReporters.Platform.Domain.Services
             await _userService.RemoveGuestParticipants(deposition.Participants);
 
             var transcriptDto = new DraftTranscriptDto { DepositionId = deposition.Id, CurrentUserId = currentUser.Id };
-            _backgroundTaskQueue.QueueBackgroundWorkItem(transcriptDto);
+            var backGround = new BackgroundTaskDto() { Content = transcriptDto, TaskType = BackgroundTaskType.DraftTranscription };
+            _backgroundTaskQueue.QueueBackgroundWorkItem(backGround);
 
             return Result.Ok(updatedDeposition);
         }

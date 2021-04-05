@@ -10,6 +10,8 @@ using PrecisionReporters.Platform.Domain.Errors;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using System.Net;
 using Microsoft.Extensions.Logging;
+using PrecisionReporters.Platform.Domain.QueuedBackgroundTasks.Interfaces;
+using PrecisionReporters.Platform.Domain.Dtos;
 
 namespace PrecisionReporters.Platform.Domain.Services
 {
@@ -20,16 +22,19 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly IRoomService _roomService;
         private readonly IDepositionService _depositionService;
         private readonly ILogger<CompositionService> _logger;
+        private readonly IBackgroundTaskQueue _backgroundTaskQueue;
 
         public CompositionService(ICompositionRepository compositionRepository,
-            ITwilioService twilioService, IRoomService roomService, IDepositionService depositionService, 
-            ILogger<CompositionService> logger)
+            ITwilioService twilioService, IRoomService roomService, IDepositionService depositionService,
+            ILogger<CompositionService> logger, IBackgroundTaskQueue backgroundTaskQueue
+            )
         {
             _compositionRepository = compositionRepository;
             _twilioService = twilioService;
             _roomService = roomService;
             _depositionService = depositionService;
             _logger = logger;
+            _backgroundTaskQueue = backgroundTaskQueue;
         }
 
         public async Task<Result> StoreCompositionMediaAsync(Composition composition)
@@ -80,7 +85,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (compositionToUpdate.Status == CompositionStatus.Available)
             {
                 compositionToUpdate.MediaUri = composition.MediaUri;
-                
+
                 var uploadMetadataResult = await UploadCompositionMetadata(depositionResult.Value);
                 if (uploadMetadataResult.IsFailed)
                     return uploadMetadataResult.ToResult<Composition>();
@@ -114,7 +119,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         {
             var metadata = CreateCompositioMetadata(deposition);
             return await _twilioService.UploadCompositionMetadata(metadata);
-            
+
         }
 
         public List<CompositionInterval> GetDepositionRecordingIntervals(List<DepositionEvent> events, long startTime)
@@ -123,7 +128,8 @@ namespace PrecisionReporters.Platform.Domain.Services
                 .OrderBy(x => x.CreationDate)
                 .Where(x => x.EventType == EventType.OnTheRecord || x.EventType == EventType.OffTheRecord)
                 .Aggregate(new List<CompositionInterval>(),
-                (list, x) => {
+                (list, x) =>
+                {
                     if (x.EventType == EventType.OnTheRecord)
                     {
                         var compositionInterval = new CompositionInterval
@@ -134,7 +140,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                     }
                     if (x.EventType == EventType.OffTheRecord)
                         list.Last().Stop = CalculateSeconds(startTime, GetDateTimestamp(x.CreationDate));
-                    
+
                     return list;
                 });
 
@@ -150,10 +156,11 @@ namespace PrecisionReporters.Platform.Domain.Services
         {
             return (int)(splitTime - startTime);
         }
-        
+
         public async Task<Result> PostDepoCompositionCallback(PostDepositionEditionDto message)
         {
-            var composition = await _compositionRepository.GetFirstOrDefaultByFilter(x => x.SId == message.GetCompositionId());
+            var includes = new[] { nameof(Composition.Room) };
+            var composition = await _compositionRepository.GetFirstOrDefaultByFilter(x => x.SId == message.GetCompositionId(), includes);
             if (composition == null)
                 return Result.Fail(new ResourceNotFoundError());
 
@@ -164,7 +171,9 @@ namespace PrecisionReporters.Platform.Domain.Services
             composition.LastUpdated = DateTime.UtcNow;
 
             await _compositionRepository.Update(composition);
-
+            var deleteTwilioRecordings = new DeleteTwilioRecordingsDto() { RoomSid = composition.Room.SId.Trim(), CompositionSid = composition.SId.Trim() };
+            var backGround = new BackgroundTaskDto() { Content = deleteTwilioRecordings, TaskType = BackgroundTaskType.DeleteTwilioComposition };
+            _backgroundTaskQueue.QueueBackgroundWorkItem(backGround);
             return Result.Ok();
         }
 
@@ -182,7 +191,13 @@ namespace PrecisionReporters.Platform.Domain.Services
                 _logger.LogError($"There was an error subscribing URL, {e.Message}");
                 return Result.Fail(new Error("There was an error subscribing URL"));
             }
-            
+
+            return Result.Ok();
+        }
+
+        public async Task<Result> DeleteTwilioCompositionAndRecordings(DeleteTwilioRecordingsDto deleteTwilioRecordings)
+        {
+            await _twilioService.DeleteCompositionAndRecordings(deleteTwilioRecordings);
             return Result.Ok();
         }
     }

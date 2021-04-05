@@ -694,7 +694,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(() => _depositions.FirstOrDefault());
 
             _roomServiceMock.Setup(x => x.EndRoom(It.IsAny<Room>(), It.IsAny<string>())).ReturnsAsync(() => Result.Ok(new Room()));
-            _backgroundTaskQueueMock.Setup(x => x.QueueBackgroundWorkItem(It.IsAny<DraftTranscriptDto>()));
+            _backgroundTaskQueueMock.Setup(x => x.QueueBackgroundWorkItem(It.IsAny<BackgroundTaskDto>()));
 
             // Act
             var result = await _depositionService.EndDeposition(depositionId);

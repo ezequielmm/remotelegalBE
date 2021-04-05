@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using FluentResults;
 using PrecisionReporters.Platform.Data.Entities;
+using PrecisionReporters.Platform.Domain.Dtos;
 
 namespace PrecisionReporters.Platform.Domain.Services.Interfaces
 {
@@ -15,5 +16,6 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
         Task<Result> PostDepoCompositionCallback(PostDepositionEditionDto payload);
         Task<Result> SubscribeEndpoint(string subscribeURL);
         List<CompositionInterval> GetDepositionRecordingIntervals(List<DepositionEvent> events, long startTime);
+        Task<Result> DeleteTwilioCompositionAndRecordings(DeleteTwilioRecordingsDto deleteTwilioRecordings);
     }
 }

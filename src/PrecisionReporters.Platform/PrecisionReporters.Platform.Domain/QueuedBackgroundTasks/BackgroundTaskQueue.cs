@@ -9,29 +9,29 @@ namespace PrecisionReporters.Platform.Domain.QueuedBackgroundTasks
 {
     public class BackgroundTaskQueue : IBackgroundTaskQueue
     {
-        private ConcurrentQueue<DraftTranscriptDto> _draftTranscriptDto =
-        new ConcurrentQueue<DraftTranscriptDto>();
+        private ConcurrentQueue<BackgroundTaskDto> _backgroundTaskDto =
+        new ConcurrentQueue<BackgroundTaskDto>();
         private SemaphoreSlim _signal = new SemaphoreSlim(0);
 
         public void QueueBackgroundWorkItem(
-            DraftTranscriptDto draftTranscriptDto)
+            BackgroundTaskDto backgroundTaskDto)
         {
-            if (draftTranscriptDto == null)
+            if (backgroundTaskDto == null)
             {
-                throw new ArgumentNullException(nameof(draftTranscriptDto));
+                throw new ArgumentNullException(nameof(backgroundTaskDto));
             }
 
-            _draftTranscriptDto.Enqueue(draftTranscriptDto);
+            _backgroundTaskDto.Enqueue(backgroundTaskDto);
             _signal.Release();
         }
 
-        public async Task<DraftTranscriptDto> DequeueAsync(
+        public async Task<BackgroundTaskDto> DequeueAsync(
             CancellationToken cancellationToken)
         {
             await _signal.WaitAsync(cancellationToken);
-            _draftTranscriptDto.TryDequeue(out var draftTranscriptDto);
+            _backgroundTaskDto.TryDequeue(out var backgroundTaskDto);
 
-            return draftTranscriptDto;
+            return backgroundTaskDto;
         }
     }
 }

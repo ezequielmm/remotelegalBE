@@ -7,8 +7,8 @@ namespace PrecisionReporters.Platform.Domain.QueuedBackgroundTasks.Interfaces
 {
     public interface IBackgroundTaskQueue
     {
-        void QueueBackgroundWorkItem(DraftTranscriptDto workItem);
-        Task<DraftTranscriptDto> DequeueAsync(CancellationToken cancellationToken);
+        void QueueBackgroundWorkItem(BackgroundTaskDto workItem);
+        Task<BackgroundTaskDto> DequeueAsync(CancellationToken cancellationToken);
 
     }
 }

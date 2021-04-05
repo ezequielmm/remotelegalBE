@@ -217,7 +217,7 @@ namespace PrecisionReporters.Platform.Api
             }
 
             services.AddScoped<IDraftTranscriptGeneratorService, DraftTranscriptGeneratorService>();
-            services.AddHostedService<GenerateTranscriptHostedService>();
+            services.AddHostedService<BackgroundHostedService>();
             services.AddScoped<IParticipantService, ParticipantService>();
             services.AddSingleton<IBackgroundTaskQueue, BackgroundTaskQueue>();
             services.AddScoped<ISignalRNotificationManager, SignalRNotificationManager>();

@@ -14,12 +14,11 @@ using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using Twilio;
-using Twilio.Base;
 using Twilio.Jwt.AccessToken;
 using Twilio.Rest.Video.V1;
 using Twilio.Rest.Video.V1.Room;
-using static Twilio.Rest.Video.V1.CompositionResource;
 using static Twilio.Rest.Video.V1.RoomResource;
+using PrecisionReporters.Platform.Domain.Dtos;
 
 namespace PrecisionReporters.Platform.Domain.Services
 {
@@ -55,7 +54,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             room.SId = roomResource?.Sid;
             return room;
         }
-        
+
         public async Task<RoomResource> GetRoom(string roomName)
         {
             var roomResource = await RoomResource.FetchAsync(pathSid: roomName);
@@ -106,7 +105,7 @@ namespace PrecisionReporters.Platform.Domain.Services
               audioSources: new List<string> { "*" },
               videoLayout: layout,
               statusCallback: new Uri(_twilioAccountConfiguration.StatusCallbackUrl),
-              format: FormatEnum.Mp4,
+              format: CompositionResource.FormatEnum.Mp4,
               trim: false
             );
 
@@ -219,7 +218,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         {
             return (TwilioIdentity)JsonConvert.DeserializeObject(item, typeof(TwilioIdentity), _serializeOptions);
         }
-        
+
         public async Task<Result> UploadCompositionMetadata(CompositionRecordingMetadata metadata)
         {
             try
@@ -241,6 +240,20 @@ namespace PrecisionReporters.Platform.Domain.Services
                 return Result.Fail(new Error("Error uploading CompositionRecordingMetadata"));
             }
 
+            return Result.Ok();
+        }
+
+        public async Task<Result> DeleteCompositionAndRecordings(DeleteTwilioRecordingsDto deleteTwilioRecordings)
+        {
+            _log.LogDebug($"Start method to Delete composition and recordings - Composition SId: {deleteTwilioRecordings.CompositionSid}");
+            var recordings = await RoomRecordingResource.ReadAsync(deleteTwilioRecordings.RoomSid);
+            foreach (var recording in recordings)
+            {
+                await RecordingResource.DeleteAsync(recording.Sid);
+                _log.LogDebug($"Deleted recording - SId: {recording.Sid}");
+            }
+            await CompositionResource.DeleteAsync(deleteTwilioRecordings.CompositionSid);
+            _log.LogDebug($"Deleted composition - SId: {deleteTwilioRecordings.CompositionSid}");
             return Result.Ok();
         }
     }

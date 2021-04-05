@@ -1,5 +1,6 @@
 ﻿using FluentResults;
 using PrecisionReporters.Platform.Data.Entities;
+using PrecisionReporters.Platform.Domain.Dtos;
 using System.Threading.Tasks;
 using Twilio.Rest.Video.V1;
 
@@ -15,5 +16,6 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
         Task<bool> GetCompositionMediaAsync(Composition composition);
         Task<bool> UploadCompositionMediaAsync(Composition composition);
         Task<Result> UploadCompositionMetadata(CompositionRecordingMetadata metadata);
+        Task<Result> DeleteCompositionAndRecordings(DeleteTwilioRecordingsDto deleteTwilioRecordings);
     }
 }
