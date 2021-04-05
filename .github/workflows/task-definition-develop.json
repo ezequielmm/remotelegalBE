@@ -127,7 +127,7 @@
                 },
                 {
                     "name": "CORECLR_ENABLE_PROFILING",
-                    "value": "1"
+                    "value": "0"
                 },
                 {
                     "name": "CORECLR_PROFILER",
@@ -246,11 +246,11 @@
                 },
                 {
                     "name": "DD_APM_ENABLED",
-                    "value": "true"
+                    "value": "false"
                 },
                 {
                     "name": "DD_APM_NON_LOCAL_TRAFFIC",
-                    "value": "true"
+                    "value": "false"
                 }
             ],
             "secrets": [
