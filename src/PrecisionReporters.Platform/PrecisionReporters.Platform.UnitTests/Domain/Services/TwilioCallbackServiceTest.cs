@@ -181,7 +181,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         }
 
         [Fact]
-        public async Task UpdateStatusCallback_ShouldFail_IdEventDoesNotMatch()
+        public async Task UpdateStatusCallback_ShouldReturnOk_IfEventDoesNotMatch()
         {
             var eventDto = new RoomCallbackDto {
                 Timestamp = DateTime.UtcNow,
@@ -192,7 +192,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var result = await _service.UpdateStatusCallback(eventDto);
 
             // Assert
-            Assert.True(result.IsFailed);
+            Assert.True(result.IsSuccess);
         }
     }
 }
