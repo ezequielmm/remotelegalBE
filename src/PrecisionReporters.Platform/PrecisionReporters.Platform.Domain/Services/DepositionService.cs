@@ -8,10 +8,12 @@ using PrecisionReporters.Platform.Data.Repositories.Interfaces;
 using PrecisionReporters.Platform.Domain.Commons;
 using PrecisionReporters.Platform.Domain.Configurations;
 using PrecisionReporters.Platform.Domain.Dtos;
+using PrecisionReporters.Platform.Domain.Enums;
 using PrecisionReporters.Platform.Domain.Errors;
 using PrecisionReporters.Platform.Domain.Mappers;
 using PrecisionReporters.Platform.Domain.QueuedBackgroundTasks.Interfaces;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
+using PrecisionReporters.Platform.Domain.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -253,7 +255,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             var joinDepositionInfo = new JoinDepositionDto
             {
                 Token = token.Value,
-                TimeZone = deposition.TimeZone,
+                TimeZone = Enum.GetValues(typeof(USTimeZone)).Cast<USTimeZone>().FirstOrDefault(x => x.GetDescription() == deposition.TimeZone).ToString(),
                 IsOnTheRecord = deposition.IsOnTheRecord,
                 IsSharing = deposition.SharingDocumentId.HasValue,
                 Participants = deposition.Participants.Where(x => x.HasJoined == true).Select(p => _participantMapper.ToDto(p)).ToList()

@@ -11,6 +11,7 @@ using PrecisionReporters.Platform.Domain.Configurations;
 using PrecisionReporters.Platform.Domain.Dtos;
 using PrecisionReporters.Platform.Domain.Extensions;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
+using PrecisionReporters.Platform.Domain.Enums;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -282,11 +283,11 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         private string ConvertTimeZone(DateTime time, string timeZone)
         {
-            var timeZoneFullName = EnumExtensions.GetDescription((USTimeZone)Enum.Parse(typeof(USTimeZone), timeZone));
-            var timeZoneInfo = TZConvert.GetTimeZoneInfo(timeZoneFullName);
+            var timeZoneAbbreviation = Enum.GetValues(typeof(USTimeZone)).Cast<USTimeZone>().FirstOrDefault(x => x.GetDescription() == timeZone).ToString();
+            var timeZoneInfo = TZConvert.GetTimeZoneInfo(timeZone);
             DateTime convertedTime = TimeZoneInfo.ConvertTimeFromUtc(time, timeZoneInfo);
 
-            return $"{convertedTime.ToShortTimeString()} {timeZone}";
+            return $"{convertedTime.ToShortTimeString()} {timeZoneAbbreviation}";
         }
 
         private List<string> AddBlankRowsToList(List<string> transcripts)

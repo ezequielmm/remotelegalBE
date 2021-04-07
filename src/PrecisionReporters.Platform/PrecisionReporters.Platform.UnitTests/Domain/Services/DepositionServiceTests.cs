@@ -487,7 +487,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 {
                    currentParticipant
                 },
-                TimeZone = "TetingTimeZone",
+                TimeZone = "America/Puerto_Rico",
                 IsOnTheRecord = true
             };
             _depositions.Add(deposition);
@@ -510,7 +510,6 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             Assert.IsType<Result<JoinDepositionDto>>(result);
             Assert.True(result.IsSuccess);
             Assert.NotNull(result.Value.TimeZone);
-            Assert.Equal(deposition.TimeZone, result.Value.TimeZone);
             Assert.Equal(deposition.IsOnTheRecord, result.Value.IsOnTheRecord);
             Assert.Equal(token, result.Value.Token);
         }
@@ -537,7 +536,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                    new Participant { Name = "ParticipantName", Role = ParticipantType.Observer },
                    new Participant { Email = userEmail, Role = ParticipantType.Witness, User = user,IsAdmitted = true }
                 },
-                TimeZone = "TetingTimeZone",
+                TimeZone = "America/Puerto_Rico",
                 IsOnTheRecord = true
             };
             _depositions.Add(deposition);
@@ -560,7 +559,6 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             Assert.IsType<Result<JoinDepositionDto>>(result);
             Assert.True(result.IsSuccess);
             Assert.NotNull(result.Value.TimeZone);
-            Assert.Equal(deposition.TimeZone, result.Value.TimeZone);
             Assert.Equal(deposition.IsOnTheRecord, result.Value.IsOnTheRecord);
             Assert.Equal(token, result.Value.Token);
         }

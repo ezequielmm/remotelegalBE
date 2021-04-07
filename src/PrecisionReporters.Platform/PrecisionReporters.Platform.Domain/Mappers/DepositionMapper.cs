@@ -1,6 +1,8 @@
 ﻿using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Data.Enums;
 using PrecisionReporters.Platform.Domain.Dtos;
+using PrecisionReporters.Platform.Domain.Extensions;
+using PrecisionReporters.Platform.Domain.Enums;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -34,7 +36,7 @@ namespace PrecisionReporters.Platform.Domain.Mappers
                 Id = dto.Id,
                 CreationDate = dto.CreationDate.UtcDateTime,
                 StartDate = dto.StartDate.UtcDateTime,
-                TimeZone = dto.TimeZone,
+                TimeZone = ((USTimeZone)Enum.Parse(typeof(USTimeZone),dto.TimeZone)).GetDescription(),
                 EndDate = dto.EndDate?.UtcDateTime,
                 CompleteDate = dto.CompleteDate?.UtcDateTime,
                 Participants = dto.Participants?.Select(p => _participantMapper.ToModel(p)).Append(witness).ToList(),
@@ -56,7 +58,7 @@ namespace PrecisionReporters.Platform.Domain.Mappers
             return new Deposition
             {
                 StartDate = dto.StartDate.UtcDateTime,
-                TimeZone = dto.TimeZone,
+                TimeZone = ((USTimeZone)Enum.Parse(typeof(USTimeZone), dto.TimeZone)).GetDescription(),
                 EndDate = dto.EndDate?.UtcDateTime,
                 // TODO: Remove the creation of a new user and instead fulfill RequesterId property
                 Requester = new User { EmailAddress = dto.RequesterEmail },
@@ -75,9 +77,9 @@ namespace PrecisionReporters.Platform.Domain.Mappers
             return new DepositionDto
             {
                 Id = model.Id,
-                CreationDate = model.CreationDate,
+                CreationDate = new DateTimeOffset(model.CreationDate, TimeSpan.Zero),
                 StartDate = new DateTimeOffset(model.StartDate, TimeSpan.Zero),
-                TimeZone = model.TimeZone,
+                TimeZone = Enum.GetValues(typeof(USTimeZone)).Cast<USTimeZone>().FirstOrDefault(x => x.GetDescription() == model.TimeZone).ToString(),
                 EndDate = model.EndDate.HasValue ? new DateTimeOffset(model.EndDate.Value, TimeSpan.Zero) : (DateTimeOffset?)null,
                 Witness = witness != null ? _participantMapper.ToDto(witness) : null,
                 Participants = model.Participants?.Where(x => x.Role != ParticipantType.Witness).Select(p => _participantMapper.ToDto(p)).ToList(),
@@ -90,7 +92,7 @@ namespace PrecisionReporters.Platform.Domain.Mappers
                 CaseId = model.CaseId,
                 CaseName = model.Case?.Name,
                 CaseNumber = model.Case?.CaseNumber,
-                CompleteDate = model.CompleteDate,
+                CompleteDate = model.CompleteDate.HasValue ? new DateTimeOffset(model.CompleteDate.Value, TimeSpan.Zero) : (DateTimeOffset?)null,
                 IsOnTheRecord = model.IsOnTheRecord,
                 SharingDocument = model.SharingDocument != null ? _documentMapper.ToDto(model.SharingDocument) : null,
                 Job = model.Job,
