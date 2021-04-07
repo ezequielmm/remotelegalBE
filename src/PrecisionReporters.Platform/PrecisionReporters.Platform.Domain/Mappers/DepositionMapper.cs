@@ -74,6 +74,7 @@ namespace PrecisionReporters.Platform.Domain.Mappers
         public DepositionDto ToDto(Deposition model)
         {
             var witness = model.Participants?.FirstOrDefault(x => x.Role == ParticipantType.Witness);
+            var actualStartDate = model.GetActualStartDate();
             return new DepositionDto
             {
                 Id = model.Id,
@@ -99,7 +100,8 @@ namespace PrecisionReporters.Platform.Domain.Mappers
                 RequesterNotes = model.RequesterNotes,
                 AddedBy = model.AddedBy != null ? _userMapper.ToDto(model.AddedBy) : null,
                 EndedBy = model.EndedBy != null ? _userMapper.ToDto(model.EndedBy) : null,
-                IsVideoRecordingNeeded = model.IsVideoRecordingNeeded
+                IsVideoRecordingNeeded = model.IsVideoRecordingNeeded,
+                ActualStartDate = actualStartDate.HasValue ? new DateTimeOffset(actualStartDate.Value, TimeSpan.Zero) : (DateTimeOffset?)null
             };
         }
     }

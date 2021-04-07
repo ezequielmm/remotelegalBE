@@ -1,7 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Linq;
+using Microsoft.EntityFrameworkCore.Internal;
 
 namespace PrecisionReporters.Platform.Data.Entities
 {
@@ -75,6 +78,13 @@ namespace PrecisionReporters.Platform.Data.Entities
             Job = entity.Job;
             RequesterNotes = entity.RequesterNotes;
             IsVideoRecordingNeeded = entity.IsVideoRecordingNeeded;
+        }
+
+        public DateTime? GetActualStartDate()
+        {
+            return this.Events != null && this.Events.Any(x => x.EventType == Enums.EventType.OnTheRecord)
+                    ? this.Events.OrderBy(x => x.CreationDate).First(x => x.EventType == Enums.EventType.OnTheRecord).CreationDate
+                    : (DateTime?)null;
         }
     }
 }

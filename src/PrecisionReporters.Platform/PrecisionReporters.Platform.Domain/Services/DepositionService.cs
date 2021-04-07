@@ -90,7 +90,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         public async Task<Result<Deposition>> GetDepositionById(Guid id)
         {
             var includes = new[] { nameof(Deposition.Requester), nameof(Deposition.Participants),
-                nameof(Deposition.Case), nameof(Deposition.AddedBy),nameof(Deposition.Caption)};
+                nameof(Deposition.Case), nameof(Deposition.AddedBy),nameof(Deposition.Caption), nameof(Deposition.Events)};
             return await GetByIdWithIncludes(id, includes);
         }
 
@@ -662,8 +662,8 @@ namespace PrecisionReporters.Platform.Domain.Services
 
                 url = _awsStorageService.GetFilePublicUri($"{deposition.Room.Composition.SId}.{deposition.Room.Composition.FileType}", _documentsConfiguration.PostDepoVideoBucket, expirationDate, $"{fileName}.{deposition.Room.Composition.FileType}");
             }
-
-            var depoTotalTime = (int)(deposition.Room.EndDate.Value - deposition.Room.RecordingStartDate.Value).TotalSeconds;
+            var depoStartDate = deposition.GetActualStartDate() ?? deposition.Room.RecordingStartDate;
+            var depoTotalTime = (int)(deposition.Room.EndDate.Value - depoStartDate.Value).TotalSeconds;
             var onTheRecordTime = GetOnTheRecordTime(deposition.Events);
             var depositionVideo = new DepositionVideoDto
             {

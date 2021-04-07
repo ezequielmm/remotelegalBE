@@ -1344,8 +1344,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             //Assert
             Assert.True(result.IsSuccess);
-            Assert.True(result.Value.OffTheRecordTime == 210);
-            Assert.True(result.Value.TotalTime == 300);
+            Assert.True(result.Value.TotalTime == 290);
+            Assert.True(result.Value.OffTheRecordTime == 200);
             Assert.True(result.Value.OnTheRecordTime == 90);
         }
 

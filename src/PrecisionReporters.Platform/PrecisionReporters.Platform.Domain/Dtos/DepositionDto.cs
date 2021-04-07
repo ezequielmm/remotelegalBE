@@ -33,5 +33,6 @@ namespace PrecisionReporters.Platform.Domain.Dtos
         public string RequesterNotes { get; set; }
         public UserDto AddedBy { get; set; }
         public UserDto EndedBy { get; set; }
+        public DateTimeOffset? ActualStartDate { get; set; }
     }
 }
