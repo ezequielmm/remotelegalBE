@@ -14,6 +14,7 @@ using PrecisionReporters.Platform.Domain.QueuedBackgroundTasks.Interfaces;
 using PrecisionReporters.Platform.Domain.Dtos;
 using PrecisionReporters.Platform.Domain.Enums;
 using PrecisionReporters.Platform.Domain.Extensions;
+using PrecisionReporters.Platform.Domain.Commons;
 
 namespace PrecisionReporters.Platform.Domain.Services
 {
@@ -108,10 +109,11 @@ namespace PrecisionReporters.Platform.Domain.Services
             return new CompositionRecordingMetadata
             {
                 //TODO unified file name generation in one place
-                Video = $"{deposition.Room.Composition.SId}.mp4",
+                Video = $"{deposition.Room.Composition.SId}.{ApplicationConstants.Mp4}",
                 Name = deposition.Room.Composition.SId,
                 TimeZone = Enum.GetValues(typeof(USTimeZone)).Cast<USTimeZone>().FirstOrDefault(x => x.GetDescription() == deposition.TimeZone).ToString(),
                 TimeZoneDescription = deposition.TimeZone,
+                OutputFormat = deposition.Room.Composition.FileType,
                 StartDate = startDateTime,
                 EndDate = GetDateTimestamp(deposition.Room.EndDate.Value),
                 Intervals = GetDepositionRecordingIntervals(deposition.Events, startDateTime)

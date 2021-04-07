@@ -10,5 +10,7 @@
         public const string TranscriptFolderName = "transcripts";
         public const string DepositionGroupName = "Deposition:";
         public const string DepositionAdminsGroupName = "DepositionAdmins:";
+        public const string Mp4 = "mp4";
+        public const string Mp3 = "mp3";
     }
 }

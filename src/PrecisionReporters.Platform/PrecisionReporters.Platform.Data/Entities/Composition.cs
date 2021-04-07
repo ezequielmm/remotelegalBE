@@ -24,6 +24,9 @@ namespace PrecisionReporters.Platform.Data.Entities
 
         public Room Room { get; set; }
 
+        [Column(TypeName = "char(5)")]
+        public string FileType { get; set; }
+
         public Composition() {}
 
         public override void CopyFrom(Composition entity)
@@ -35,6 +38,7 @@ namespace PrecisionReporters.Platform.Data.Entities
             EndDate = entity.EndDate;
             LastUpdated = entity.LastUpdated;
             RoomId = entity.RoomId;
+            FileType = entity.FileType;
         }
     }
 }

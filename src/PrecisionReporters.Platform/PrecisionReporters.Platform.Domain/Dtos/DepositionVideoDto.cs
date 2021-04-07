@@ -7,5 +7,6 @@
         public int OnTheRecordTime { get; set; }
         public int OffTheRecordTime { get; set; }
         public string Status { get; set; }
+        public string OutputFormat { get; set; }
     }
 }

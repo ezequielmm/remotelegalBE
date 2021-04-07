@@ -80,18 +80,16 @@ namespace PrecisionReporters.Platform.Domain.Services
                 room.EndDate = DateTime.UtcNow;
                 room.Status = RoomStatus.Completed;
 
-                if (room.IsRecordingEnabled)
+                var compositionResource = await _twilioService.CreateComposition(room, witnessEmail);
+
+                room.Composition = new Composition
                 {
-                    //TODO Create a compostion for each RoomResource associated with the Room Name (twilio UniqueName)
-                    var composition = await _twilioService.CreateComposition(room.SId, witnessEmail);
-                    room.Composition = new Composition
-                    {
-                        SId = composition.Sid,
-                        Status = CompositionStatus.Queued,
-                        StartDate = DateTime.UtcNow,
-                        Url = composition.Url.AbsoluteUri
-                    };
-                }
+                    SId = compositionResource?.Sid,
+                    Status = CompositionStatus.Queued,
+                    StartDate = DateTime.UtcNow,
+                    Url = compositionResource?.Url.AbsoluteUri,
+                    FileType = room.IsRecordingEnabled ? ApplicationConstants.Mp4 : ApplicationConstants.Mp3
+                };
 
                 await _roomRepository.Update(room);
             }

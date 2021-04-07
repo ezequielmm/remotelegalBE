@@ -660,7 +660,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 if (!string.IsNullOrEmpty(witness?.Name))
                     fileName += $"-{witness.Name}";
 
-                url = _awsStorageService.GetFilePublicUri($"{deposition.Room.Composition.SId}.mp4", _documentsConfiguration.PostDepoVideoBucket, expirationDate, $"{fileName}.mp4");
+                url = _awsStorageService.GetFilePublicUri($"{deposition.Room.Composition.SId}.{deposition.Room.Composition.FileType}", _documentsConfiguration.PostDepoVideoBucket, expirationDate, $"{fileName}.{deposition.Room.Composition.FileType}");
             }
 
             var depoTotalTime = (int)(deposition.Room.EndDate.Value - deposition.Room.RecordingStartDate.Value).TotalSeconds;
@@ -671,7 +671,8 @@ namespace PrecisionReporters.Platform.Domain.Services
                 TotalTime = depoTotalTime,
                 OnTheRecordTime = onTheRecordTime,
                 OffTheRecordTime = depoTotalTime - onTheRecordTime,
-                Status = deposition.Room.Composition.Status.ToString()
+                Status = deposition.Room.Composition.Status.ToString(),
+                OutputFormat = deposition.Room.Composition.FileType
             };
 
             return Result.Ok(depositionVideo);

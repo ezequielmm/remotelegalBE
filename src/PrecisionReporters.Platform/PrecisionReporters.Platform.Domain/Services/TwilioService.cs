@@ -19,6 +19,7 @@ using Twilio.Rest.Video.V1;
 using Twilio.Rest.Video.V1.Room;
 using static Twilio.Rest.Video.V1.RoomResource;
 using PrecisionReporters.Platform.Domain.Dtos;
+using Amazon.SimpleEmail.Model.Internal.MarshallTransformations;
 
 namespace PrecisionReporters.Platform.Domain.Services
 {
@@ -46,7 +47,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         {
             var roomResource = await RoomResource.CreateAsync(
                 uniqueName: room.Name,
-                recordParticipantsOnConnect: room.IsRecordingEnabled,
+                recordParticipantsOnConnect: true,
                 type: RoomResource.RoomTypeEnum.Group,
                 statusCallback: new Uri($"{_twilioAccountConfiguration.StatusCallbackUrl}/recordings/addEvent")
                 );
@@ -89,31 +90,29 @@ namespace PrecisionReporters.Platform.Domain.Services
             }
         }
 
-        public async Task<CompositionResource> CreateComposition(string roomSid, string witnessEmail)
+        public async Task<CompositionResource> CreateComposition(Room room, string witnessEmail)
         {
-            var witnessSid = await GetWitnessSid(roomSid, witnessEmail);
-
-            var layout = new
+            var options = new CreateCompositionOptions(room.SId);
+            options.AudioSources = new List<string> { "*" };
+            options.StatusCallback = new Uri(_twilioAccountConfiguration.StatusCallbackUrl);
+            options.Format = CompositionResource.FormatEnum.Mp4;
+            options.Trim = false;
+       
+            if (room.IsRecordingEnabled)
             {
-                grid = new
-                {
-                    video_sources = new string[] { witnessSid }
-                }
-            };
-            var composition = await CompositionResource.CreateAsync(
-              roomSid: roomSid,
-              audioSources: new List<string> { "*" },
-              videoLayout: layout,
-              statusCallback: new Uri(_twilioAccountConfiguration.StatusCallbackUrl),
-              format: CompositionResource.FormatEnum.Mp4,
-              trim: false
-            );
+                var witnessSid = await GetWitnessSid(room.SId, witnessEmail);
+                options.VideoLayout = new
+                    {
+                        grid = new
+                        {
+                            video_sources = new string[] { witnessSid }
+                        }
+                    };
+            }
 
-            return composition;
+            return await CompositionResource.CreateAsync(options);
         }
 
-        // Returns the Twilio Participant Id (SId), if not returns the first in the list
-        //TODO Validate this approach
         private async Task<string> GetWitnessSid(string roomSid, string witnessEmail)
         {
             var participants = await GetParticipantsByRoom(roomSid);
@@ -163,7 +162,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             var mediaLocation = JsonConvert.DeserializeObject<Dictionary<string, string>>(responseBody)["redirect_to"];
 
-            await new WebClient().DownloadFileTaskAsync(new Uri(mediaLocation), $"{composition.SId}.mp4");
+            await new WebClient().DownloadFileTaskAsync(new Uri(mediaLocation), $"{composition.SId}.{ApplicationConstants.Mp4}");
 
             _log.LogDebug($"Composition downloaded - SId: {composition.SId}");
 
@@ -174,9 +173,9 @@ namespace PrecisionReporters.Platform.Domain.Services
         // TODO: Return Result
         public async Task<bool> UploadCompositionMediaAsync(Composition composition)
         {
-            var filePath = $"{composition.SId}.mp4";
+            var filePath = $"{composition.SId}.{ApplicationConstants.Mp4}";
             var file = new FileInfo(filePath);
-            var keyName = $"videos/{composition.SId}.mp4";
+            var keyName = $"videos/{composition.SId}.{ApplicationConstants.Mp4}";
 
             _log.LogDebug($"Uploading composition - SId: {composition.SId} - keyName: {keyName}");
 

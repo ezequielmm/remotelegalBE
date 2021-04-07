@@ -14,6 +14,7 @@ using System.Linq.Expressions;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Twilio.Exceptions;
+using Twilio.Rest.Video.V1;
 using Xunit;
 
 namespace PrecisionReporters.Platform.UnitTests.Domain.Services
@@ -150,6 +151,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var twilioServiceMock = new Mock<ITwilioService>();
             var roomRepositoryMock = new Mock<IRoomRepository>();
             twilioServiceMock.Setup(x => x.EndRoom(It.IsAny<Room>())).ReturnsAsync(Result.Ok());
+            twilioServiceMock.Setup(x => x.CreateComposition(It.IsAny<Room>(), It.IsAny<string>())).ReturnsAsync((CompositionResource) null);
             var roomService = InitializeService(twilioService: twilioServiceMock, roomRepository: roomRepositoryMock);
 
             // Act

@@ -6,6 +6,7 @@ namespace PrecisionReporters.Platform.Data.Entities
     {
         public string Video { get; set; }
         public string Name { get; set; }
+        public string OutputFormat { get; set; }
         public string TimeZone { get; set; }
         public string TimeZoneDescription { get; set; }
         public long StartDate { get; set; }
