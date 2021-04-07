@@ -1,8 +1,9 @@
-﻿using Amazon.S3.Model;
-using FluentResults;
+﻿using FluentResults;
 using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using pdftron.FDF;
+using pdftron.PDF;
 using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Data.Enums;
 using PrecisionReporters.Platform.Data.Handlers.Interfaces;
@@ -35,13 +36,15 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly ILogger<DocumentService> _logger;
         private readonly DocumentConfiguration _documentsConfiguration;
         private readonly IDepositionRepository _depositionRepository;
+        private readonly IAnnotationEventRepository _annotationEventRepository;
         private readonly ISignalRNotificationManager _signalRNotificationManager;
         private readonly IMapper<AnnotationEvent, AnnotationEventDto, CreateAnnotationEventDto> _annotationEventMapper;
 
         public DocumentService(IAwsStorageService awsStorageService, IOptions<DocumentConfiguration> documentConfigurations, ILogger<DocumentService> logger,
             IUserService userService, IDocumentUserDepositionRepository documentUserDepositionRepository,
-            IPermissionService permissionService, ITransactionHandler transactionHandler, IDocumentRepository documentRepository, 
-            IDepositionDocumentRepository depositionDocumentRepository, IDepositionRepository depositionRepository,
+            IPermissionService permissionService, ITransactionHandler transactionHandler,
+            IDocumentRepository documentRepository, IDepositionDocumentRepository depositionDocumentRepository,
+            IDepositionRepository depositionRepository, IAnnotationEventRepository annotationEventRepository,
             ISignalRNotificationManager signalRNotificationManager,
             IMapper<AnnotationEvent, AnnotationEventDto, CreateAnnotationEventDto> annotationEventMapper)
         {
@@ -55,6 +58,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             _documentRepository = documentRepository;
             _depositionDocumentRepository = depositionDocumentRepository;
             _depositionRepository = depositionRepository;
+            _annotationEventRepository = annotationEventRepository;
             _signalRNotificationManager = signalRNotificationManager;
             _annotationEventMapper = annotationEventMapper;
         }
@@ -274,7 +278,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 var signedUrl = GetFileSignedUrl(dd.Document);
                 signedUrlList.Add(signedUrl.Value);
             }
-            
+
             return Result.Ok(signedUrlList);
         }
 
@@ -336,7 +340,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             return Result.Ok(document);
         }
 
-        public async Task<Result> UpdateDocument(DepositionDocument depositionDocument, string identity, FileTransferInfo file, string folder, DocumentType documentType)
+        public async Task<Result> UpdateDocument(Document document, DepositionDocument depositionDocument, string identity, string temporalPath)
         {
             var userResult = await _userService.GetUserByEmail(identity);
             if (userResult.IsFailed)
@@ -347,20 +351,18 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (depositionResult == null)
                 return Result.Fail(new ResourceNotFoundError($"Deposition with id {depositionDocument.DepositionId} not found."));
 
-            var fileValidationResult = ValidateFile(file);
-            if (fileValidationResult.IsFailed)
-                return fileValidationResult;
-
             var deposition = depositionResult;
-
-            // TODO: when original file was not a pdf we need to make sure we remove it from S3 since in that case it won't get overriden
-            var fileName = $"{Path.GetFileNameWithoutExtension(depositionDocument.Document.Name)}.pdf";
-            var filePath = $"{deposition.CaseId}/{deposition.Id}/{folder}";
-            var documentResult = await UploadFileToStorage(file, userResult.Value, fileName, filePath, documentType);
+            var documentResult = await SaveDocumentWithAnnotationsToS3(document, temporalPath);
             if (documentResult.IsFailed)
             {
                 _logger.LogError(new Exception(documentResult.Errors.First().Message), "Unable to update the document to storage");
                 return documentResult;
+            }
+
+            // When original file is not a pdf we need to make sure we remove it from S3 since in that case it won't get overriden
+            if (document.Type != ApplicationConstants.PDFExtension)
+            {
+                await _awsStorageService.DeleteObjectAsync(_documentsConfiguration.BucketName, document.FilePath);
             }
 
             var transactionResult = await _transactionHandler.RunAsync(async () =>
@@ -369,10 +371,10 @@ namespace PrecisionReporters.Platform.Domain.Services
                 {
                     // Update document file Name and Path with the PDF extension that PDFTron response
                     var updateDocument = await _documentRepository.GetById(depositionDocument.DocumentId);
-                    updateDocument.Name = fileName;
-                    updateDocument.DisplayName = $"{Path.GetFileNameWithoutExtension(depositionDocument.Document.DisplayName)}.pdf";
-                    updateDocument.FilePath = $"/{filePath}/{fileName}";
-                    updateDocument.Type = ".pdf";
+                    updateDocument.Name = $"{Path.GetFileNameWithoutExtension(document.Name)}{ApplicationConstants.PDFExtension}";
+                    updateDocument.DisplayName = $"{Path.GetFileNameWithoutExtension(document.DisplayName)}{ApplicationConstants.PDFExtension}";
+                    updateDocument.FilePath = Path.ChangeExtension(document.FilePath, ApplicationConstants.PDFExtension);
+                    updateDocument.Type = ApplicationConstants.PDFExtension;
                     await _documentRepository.Update(updateDocument);
                 }
                 catch (Exception ex)
@@ -528,6 +530,64 @@ namespace PrecisionReporters.Platform.Domain.Services
             }
 
             return Result.Ok();
-        }        
+        }
+
+        private async Task<Result> SaveDocumentWithAnnotationsToS3(Document document, string temporalPath)
+        {
+            using var pdfDoc = new PDFDoc();
+            using var fdfDoc = new FDFDoc();
+            var filePath = temporalPath + document.Name;
+            var annotations = await _annotationEventRepository.GetByFilter(x => x.DocumentId == document.Id);
+            using var fileStr = await _awsStorageService.GetObjectAsync(document.FilePath, _documentsConfiguration.BucketName);
+
+            using (Stream file = File.Create(filePath))
+            {
+                await CopyStream(fileStr, file);
+            }
+
+            //If is an office file type we will need a special office convert.
+            if (document.Type != null && Enum.IsDefined(typeof(OfficeDocumentExtensions), document.Type.Remove(0, 1)))
+            {
+                pdftron.PDF.Convert.OfficeToPDF(pdfDoc, filePath, null);
+            }
+            else
+            {
+                pdftron.PDF.Convert.ToPdf(pdfDoc, filePath);
+            }
+
+            // Merge annotation into FDFDoc and then save into the new PDF
+            foreach (var annotation in annotations)
+            {
+                fdfDoc.MergeAnnots(annotation.Details);
+            }
+            pdfDoc.FDFMerge(fdfDoc);
+
+            using var streamDoc = new MemoryStream();
+            try
+            {
+                pdfDoc.Save(streamDoc, 0);
+                var s3FilePath = Path.ChangeExtension(document.FilePath, ApplicationConstants.PDFExtension);
+                var result = await _awsStorageService.UploadObjectFromStreamAsync(s3FilePath, streamDoc, _documentsConfiguration.BucketName);
+                File.Delete(filePath);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                return Result.Fail(new UnexpectedError($"Fail to save document file into S3 storage with exception: {ex}"));
+            }
+        }
+
+        /// <summary>
+        /// Copies the contents of input into a new file.
+        /// </summary>
+        private async Task CopyStream(Stream input, Stream output)
+        {
+            byte[] buffer = new byte[8 * 1024];
+            int len;
+            while ((len = await input.ReadAsync(buffer, 0, buffer.Length)) > 0)
+            {
+                await output.WriteAsync(buffer, 0, len);
+            }
+        }
     }
 }

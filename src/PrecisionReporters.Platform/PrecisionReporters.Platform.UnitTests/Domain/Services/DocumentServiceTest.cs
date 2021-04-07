@@ -40,6 +40,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         private readonly Mock<ITransactionHandler> _transactionHandlerMock;
         private readonly Mock<IDocumentRepository> _documentRepositoryMock;
         private readonly Mock<IDepositionDocumentRepository> _depositionDocumentRepositoryMock;
+        private readonly Mock<IAnnotationEventRepository> _annotationEventRepositoryMock;
         private readonly Mock<ISignalRNotificationManager> _signalRNotificationManagerMock;
         private readonly Mock<IMapper<AnnotationEvent, AnnotationEventDto, CreateAnnotationEventDto>> _annotationEventMapperMock;
         private readonly DocumentService _service;
@@ -67,6 +68,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _documentRepositoryMock = new Mock<IDocumentRepository>();
             _depositionDocumentRepositoryMock = new Mock<IDepositionDocumentRepository>();
             _depositionRepositoryMock = new Mock<IDepositionRepository>();
+            _annotationEventRepositoryMock = new Mock<IAnnotationEventRepository>();
             _signalRNotificationManagerMock = new Mock<ISignalRNotificationManager>();
             _annotationEventMapperMock = new Mock<IMapper<AnnotationEvent, AnnotationEventDto, CreateAnnotationEventDto>>();
 
@@ -81,6 +83,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                     _documentRepositoryMock.Object,
                     _depositionDocumentRepositoryMock.Object,
                     _depositionRepositoryMock.Object,
+                    _annotationEventRepositoryMock.Object,
                     _signalRNotificationManagerMock.Object,
                     _annotationEventMapperMock.Object);
         }

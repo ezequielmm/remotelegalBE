@@ -1,20 +1,18 @@
 ﻿using FluentResults;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Data.Enums;
 using PrecisionReporters.Platform.Data.Handlers.Interfaces;
 using PrecisionReporters.Platform.Data.Repositories.Interfaces;
-using PrecisionReporters.Platform.Domain.Commons;
+using PrecisionReporters.Platform.Domain.Configurations;
 using PrecisionReporters.Platform.Domain.Errors;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
-using PrecisionReporters.Platform.Domain.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
-using PrecisionReporters.Platform.Domain.Configurations;
-using Microsoft.Extensions.Options;
-using Microsoft.Extensions.Logging;
 
 namespace PrecisionReporters.Platform.Domain.Services
 {
@@ -56,7 +54,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             _logger = logger;
         }
 
-        public async Task<Result> CloseStampedDepositionDocument(Document document, DepositionDocument depositionDocument, string identity, FileTransferInfo file)
+        public async Task<Result> CloseStampedDepositionDocument(Document document, DepositionDocument depositionDocument, string identity, string temporalPath)
         {
             var canCloseDocument = await ParticipantCanCloseDocument(document, depositionDocument.DepositionId);
             if (!canCloseDocument)
@@ -67,11 +65,10 @@ namespace PrecisionReporters.Platform.Domain.Services
             {
                 newDepositionDocument = await _depositionDocumentRepository.Create(depositionDocument);
                 // Update document in S3 and Delete entry from DocumentUserDepositions table
-                var folder = DocumentType.Exhibit.GetDescription();
-                var uploadResult = await _documentService.UpdateDocument(newDepositionDocument, identity, file, folder, DocumentType.Exhibit);
+                var uploadResult = await _documentService.UpdateDocument(document, newDepositionDocument, identity, temporalPath);
                 if (uploadResult.IsFailed)
                     return uploadResult.ToResult<bool>();
-
+                
                 var removeUserDocumentResult = await _documentService.RemoveDepositionUserDocuments(depositionDocument.DocumentId);
                 if (removeUserDocumentResult.IsFailed)
                     return removeUserDocumentResult.ToResult<bool>();

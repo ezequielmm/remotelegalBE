@@ -12,5 +12,7 @@
         public const string DepositionAdminsGroupName = "DepositionAdmins:";
         public const string Mp4 = "mp4";
         public const string Mp3 = "mp3";
+        public const string TemporalFileFolder = @"\TemporalFiles\";
+        public const string PDFExtension = ".pdf";
     }
 }

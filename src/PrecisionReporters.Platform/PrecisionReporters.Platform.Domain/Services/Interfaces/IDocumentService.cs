@@ -17,7 +17,7 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
         Result ValidateFiles(List<FileTransferInfo> files);
         Result ValidateFile(FileTransferInfo file);
         Task<Result> UploadDocuments(Guid id, string identity, List<FileTransferInfo> files, string folder, DocumentType documentType);
-        Task<Result> UpdateDocument(DepositionDocument depositionDocument, string identity, FileTransferInfo file, string folder, DocumentType documentType);
+        Task<Result> UpdateDocument(Document document, DepositionDocument depositionDocument, string identity, string temproralPath);
         Task<Result<List<Document>>> GetExhibitsForUser(Guid depositionId, string identity);
         Task<Result<string>> GetFileSignedUrl(Guid documentId);
         Task<Result<string>> GetFileSignedUrl(Guid depositionId, Guid documentId);
