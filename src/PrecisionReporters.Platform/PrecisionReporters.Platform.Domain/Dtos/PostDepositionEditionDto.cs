@@ -14,7 +14,7 @@
 
         public bool IsComplete()
         {
-            return _successMessage.Equals(ConfigurationId);
+            return ConfigurationId.Contains(_successMessage);
         }
     }
 }

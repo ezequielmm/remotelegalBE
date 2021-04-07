@@ -91,7 +91,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             };
             var postDepositionEdition = new PostDepositionEditionDto()
             {
-                Video = $"{compositionId}.test"
+                Video = $"{compositionId}.test",
+                ConfigurationId = "foo"
             };
             _compositionRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Composition, bool>>>(), It.IsAny<string[]>())).ReturnsAsync(composition);
             _compositionRepositoryMock.Setup(x => x.Update(It.IsAny<Composition>()));
