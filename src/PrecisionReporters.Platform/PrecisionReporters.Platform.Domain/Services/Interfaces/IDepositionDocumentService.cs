@@ -1,6 +1,8 @@
 ﻿using FluentResults;
 using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Data.Enums;
+using PrecisionReporters.Platform.Domain.Commons;
+using PrecisionReporters.Platform.Domain.Dtos;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -15,5 +17,6 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
         Task<bool> ParticipantCanCloseDocument(Document document, Guid depositionId);
         Task<bool> IsPublicDocument(Guid depositionId, Guid documentId);
         Task<Result> RemoveDepositionTranscript(Guid depositionId, Guid documentId);
+        Task<Result> BringAllToMe(Guid depositionId, BringAllToMeDto bringAllToMeDto);
     }
 }

@@ -14,6 +14,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
+using PrecisionReporters.Platform.Domain.Configurations;
+using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Logging;
+using PrecisionReporters.Platform.Domain.Dtos;
 
 namespace PrecisionReporters.Platform.Domain.Services
 {
@@ -30,6 +34,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly IAwsStorageService _awsStorageService;
         private readonly DocumentConfiguration _documentsConfiguration;
         private readonly ILogger<DepositionDocumentService> _logger;
+        private readonly ISignalRNotificationManager _signalRNotificationManager;
 
         public DepositionDocumentService(IDepositionDocumentRepository depositionDocumentRepository,
             IAnnotationEventService annotationEventService,
@@ -40,7 +45,9 @@ namespace PrecisionReporters.Platform.Domain.Services
             IDepositionRepository depositionRepository,
             IDocumentRepository documentRepository,
             IAwsStorageService awsStorageService,
-            IOptions<DocumentConfiguration> documentConfigurations, ILogger<DepositionDocumentService> logger)
+            IOptions<DocumentConfiguration> documentConfigurations,
+            ILogger<DepositionDocumentService> logger,
+            ISignalRNotificationManager signalRNotificationManager)
         {
             _documentsConfiguration = documentConfigurations.Value ?? throw new ArgumentException(nameof(documentConfigurations));
             _depositionDocumentRepository = depositionDocumentRepository;
@@ -53,6 +60,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             _documentRepository = documentRepository;
             _awsStorageService = awsStorageService;
             _logger = logger;
+            _signalRNotificationManager = signalRNotificationManager;
         }
 
         public async Task<Result> CloseStampedDepositionDocument(Document document, DepositionDocument depositionDocument, string identity, string temporalPath)
@@ -193,6 +201,26 @@ namespace PrecisionReporters.Platform.Domain.Services
                 return transactionResult;
             }
 
+            return Result.Ok();
+        }
+
+        public async Task<Result> BringAllToMe(Guid depositionId, BringAllToMeDto bringAllToMeDto)
+        {
+            var deposition = await _depositionRepository.GetById(depositionId);
+            if (deposition == null)
+                return Result.Fail(new ResourceNotFoundError($"Deposition not found with ID: {depositionId}"));
+
+            var user = await _userService.GetCurrentUserAsync();
+
+            bringAllToMeDto.UserId = user?.Id;
+
+            var notification = new NotificationDto()
+            {
+                Action = NotificationAction.Create,
+                EntityType = NotificationEntity.BringAllTo,
+                Content = bringAllToMeDto
+            };
+            await _signalRNotificationManager.SendNotificationToDepositionMembers(depositionId, notification);
             return Result.Ok();
         }
     }

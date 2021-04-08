@@ -6,6 +6,7 @@
         ParticipantStatus,
         Annotation,
         JoinRequest,
-        JoinResponse
+        JoinResponse,
+        BringAllTo
     }
 }

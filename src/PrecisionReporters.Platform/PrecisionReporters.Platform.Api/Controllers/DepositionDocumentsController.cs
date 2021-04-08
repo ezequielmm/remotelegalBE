@@ -238,6 +238,23 @@ namespace PrecisionReporters.Platform.Api.Controllers
             return Ok();
         }
 
+        /// <summary>
+        /// Bring all deposition participants to the
+        /// same page on the shared exhibit.
+        /// </summary>
+        /// <param name="depositionId"></param>
+        /// <param name="bringAllToMe></param>
+        /// <returns>200 OK</returns>
+        [HttpPost("{depositionId}/BringAllToMe")]
+        [UserAuthorize(ResourceType.Deposition, ResourceAction.View)]
+        public async Task<ActionResult> BringAllToMe([ResourceId(ResourceType.Deposition)] Guid depositionId, BringAllToMeDto bringAllToMe)
+        {
+            var result = await _depositionDocumentService.BringAllToMe(depositionId, bringAllToMe);
+            if (result.IsFailed)
+                return WebApiResponses.GetErrorResponse(result);
+            return Ok();
+        }
+
         private DocumentDto GetDocumentWithStamp(DepositionDocument depositionDocument)
         {
             var documentDto = _documentMapper.ToDto(depositionDocument.Document);

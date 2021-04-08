@@ -8,6 +8,7 @@ using PrecisionReporters.Platform.Data.Handlers.Interfaces;
 using PrecisionReporters.Platform.Data.Repositories.Interfaces;
 using PrecisionReporters.Platform.Domain.Commons;
 using PrecisionReporters.Platform.Domain.Configurations;
+using PrecisionReporters.Platform.Domain.Dtos;
 using PrecisionReporters.Platform.Domain.Services;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using System;
@@ -34,6 +35,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         private readonly Mock<IAwsStorageService> _awsStorageServiceMock;
         private readonly Mock<IOptions<DocumentConfiguration>> _depositionDocumentConfigurationMock;
         private readonly Mock<ILogger<DepositionDocumentService>> _loggerMock;
+        private readonly Mock<ISignalRNotificationManager> _signalRNotificationManagerMock;
 
         private readonly List<DepositionDocument> _depositionDocuments = new List<DepositionDocument>();
 
@@ -60,6 +62,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _depositionDocumentConfigurationMock = new Mock<IOptions<DocumentConfiguration>>();
             _depositionDocumentConfigurationMock.Setup(x => x.Value).Returns(_documentConfiguration);
             _loggerMock = new Mock<ILogger<DepositionDocumentService>>();
+            _signalRNotificationManagerMock = new Mock<ISignalRNotificationManager>();
 
             _depositionDocumentService = new DepositionDocumentService(
                 _depositionDocumentRepositoryMock.Object,
@@ -72,7 +75,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 _documentRepositoryMock.Object,
                 _awsStorageServiceMock.Object,
                 _depositionDocumentConfigurationMock.Object,
-                _loggerMock.Object
+                _loggerMock.Object,
+                _signalRNotificationManagerMock.Object
                 );
         }
 
@@ -209,7 +213,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var document = new Document
             {
                 Id = Guid.NewGuid(),
-                AddedBy = new User { EmailAddress = "otheruser@email.com"},
+                AddedBy = new User { EmailAddress = "otheruser@email.com" },
             };
 
             var depositionId = Guid.NewGuid();
@@ -750,7 +754,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         public async Task IsPublicDocument_ReturnFalse_WhenDepositionDocumentResultIsNull()
         {
             // Arrange           
-            _depositionDocumentRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<DepositionDocument, bool>>>(), It.IsAny<string[]>())).ReturnsAsync((DepositionDocument)null);            
+            _depositionDocumentRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<DepositionDocument, bool>>>(), It.IsAny<string[]>())).ReturnsAsync((DepositionDocument)null);
 
             //  Act
             var result = await _depositionDocumentService.IsPublicDocument(It.IsAny<Guid>(), It.IsAny<Guid>());
@@ -770,6 +774,45 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             // Assert                      
             Assert.True(result);
+        }
+
+        [Fact]
+        public async Task BringAllToMe_ShouldFail_DepositionNotFound()
+        {
+            //Arrange
+            var depositionId = Guid.NewGuid();
+            var expectedError = $"Deposition not found with ID: {depositionId}";
+            _depositionRepositoryMock.Setup(d => d.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync((Deposition)null);
+
+            //Act
+            var result = await _depositionDocumentService.BringAllToMe(depositionId, new BringAllToMeDto());
+
+            //Assert
+            _depositionRepositoryMock.Verify(d => d.GetById(It.Is<Guid>(p => p == depositionId), It.IsAny<string[]>()), Times.Once);
+            Assert.True(result.IsFailed);
+            Assert.Contains(expectedError, result.Errors.Select(e => e.Message));
+        }
+
+        [Fact]
+        public async Task BringAllToMe_ShouldOk()
+        {
+            //Arrange
+            var depositionId = Guid.NewGuid();
+            var deposition = new Deposition()
+            {
+                Id = depositionId
+            };
+            _depositionRepositoryMock.Setup(d => d.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
+            _userServiceMock.Setup(u => u.GetCurrentUserAsync()).ReturnsAsync(new User());
+
+            //Act
+            var result = await _depositionDocumentService.BringAllToMe(depositionId, new BringAllToMeDto());
+
+            //Assert
+            _depositionRepositoryMock.Verify(d => d.GetById(It.Is<Guid>(p => p == depositionId), It.IsAny<string[]>()), Times.Once);
+            _userServiceMock.Verify(u => u.GetCurrentUserAsync(), Times.Once);
+            _signalRNotificationManagerMock.Verify(s => s.SendNotificationToDepositionMembers(It.IsAny<Guid>(), It.IsAny<NotificationDto>()), Times.Once);
+            Assert.True(result.IsSuccess);
         }
     }
 }
