@@ -55,7 +55,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result> GenerateDraftTranscriptionPDF(DraftTranscriptDto draftTranscriptDto)
         {
-            var include = new[] { nameof(Deposition.Case), nameof(Deposition.Participants), nameof(Deposition.Requester) };
+            var include = new[] { nameof(Deposition.Case), nameof(Deposition.Participants), nameof(Deposition.Requester), nameof(Deposition.Events) };
             var result = await _transcriptionService.GetTranscriptionsByDepositionId(draftTranscriptDto.DepositionId);
             var deposition = await _depositionRepository.GetFirstOrDefaultByFilter(x => x.Id == draftTranscriptDto.DepositionId, include);
             try
@@ -171,11 +171,12 @@ namespace PrecisionReporters.Platform.Domain.Services
         private void GeneratePage1(ContentReplacer replacer, PDFDoc doc, Deposition deposition)
         {
             Page page1 = doc.GetPage(1);
+            var startDate = deposition.GetActualStartDate() ?? deposition.StartDate;
             replacer.AddString("case_n_tmp", deposition.Case.CaseNumber);
-            replacer.AddString("mm_tmp", deposition.StartDate.Month.ToString());
-            replacer.AddString("dd_tmp", deposition.StartDate.Day.ToString());
-            replacer.AddString("yyyy_tmp", deposition.StartDate.Year.ToString());
-            replacer.AddString("time_tmp", ConvertTimeZone(deposition.StartDate, deposition.TimeZone));
+            replacer.AddString("mm_tmp", startDate.Month.ToString());
+            replacer.AddString("dd_tmp", startDate.Day.ToString());
+            replacer.AddString("yyyy_tmp", startDate.Year.ToString());
+            replacer.AddString("time_tmp", ConvertTimeZone(startDate, deposition.TimeZone));
             replacer.AddString("witness_tmp", deposition.Participants?.FirstOrDefault(x => x.Role == ParticipantType.Witness)?.Name ?? "");
             replacer.AddString("reportedBy_tmp", deposition.Participants?.FirstOrDefault(x => x.Role == ParticipantType.CourtReporter)?.Name ?? "");
             replacer.AddString("job_n_tmp", deposition.Job ?? string.Empty);
