@@ -67,7 +67,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                         if (depositionResult.IsFailed)
                             return depositionResult.ToResult<Room>();
 
-                        if (depositionResult.Value.Status != DepositionStatus.Completed)
+                        if (depositionResult.Value.Room.Status != RoomStatus.Completed)
                             await _depositionService.EndDeposition(depositionResult.Value.Id);
                             
                         return Result.Ok();

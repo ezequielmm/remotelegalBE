@@ -266,6 +266,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<Deposition>> EndDeposition(Guid depositionId)
         {
+            // TODO: use distributed lock
             var include = new[] { nameof(Deposition.Room), $"{nameof(Deposition.Participants)}.{nameof(Participant.User)}",
                 nameof(Deposition.AddedBy) };
             var deposition = await _depositionRepository.GetById(depositionId, include);

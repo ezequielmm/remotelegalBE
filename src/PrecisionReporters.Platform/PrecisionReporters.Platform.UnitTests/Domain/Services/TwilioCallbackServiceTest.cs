@@ -167,7 +167,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var roomId = Guid.NewGuid();
             var room = RoomFactory.GetRoomById(roomId);
             var depostion = DepositionFactory.GetDeposition(Guid.NewGuid(), Guid.NewGuid());
-            depostion.Status = DepositionStatus.Completed;
+            depostion.Room.Status = RoomStatus.Completed;
 
             _roomServiceMock.Setup(x => x.GetRoomBySId(It.IsAny<string>())).ReturnsAsync(Result.Ok(room));
             _depositionServiceMock.Setup(x => x.GetDepositionByRoomId(It.IsAny<Guid>())).ReturnsAsync(Result.Ok(depostion));
