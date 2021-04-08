@@ -14,5 +14,8 @@
         public const string Mp3 = "mp3";
         public const string TemporalFileFolder = @"\TemporalFiles\";
         public const string PDFExtension = ".pdf";
+        //TODO: unify ".mp4" and "mp4" constants
+        public const string Mp4Extension = ".mp4";
+
     }
 }

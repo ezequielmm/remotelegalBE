@@ -5,6 +5,7 @@ using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Data.Enums;
 using PrecisionReporters.Platform.Data.Handlers.Interfaces;
 using PrecisionReporters.Platform.Data.Repositories.Interfaces;
+using PrecisionReporters.Platform.Domain.Commons;
 using PrecisionReporters.Platform.Domain.Configurations;
 using PrecisionReporters.Platform.Domain.Errors;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
@@ -65,10 +66,12 @@ namespace PrecisionReporters.Platform.Domain.Services
             {
                 newDepositionDocument = await _depositionDocumentRepository.Create(depositionDocument);
                 // Update document in S3 and Delete entry from DocumentUserDepositions table
-                var uploadResult = await _documentService.UpdateDocument(document, newDepositionDocument, identity, temporalPath);
-                if (uploadResult.IsFailed)
-                    return uploadResult.ToResult<bool>();
-                
+                if (document.Type != ApplicationConstants.Mp4Extension)
+                {
+                    var uploadResult = await _documentService.UpdateDocument(document, newDepositionDocument, identity, temporalPath);
+                    if (uploadResult.IsFailed)
+                        return uploadResult.ToResult<bool>();
+                }
                 var removeUserDocumentResult = await _documentService.RemoveDepositionUserDocuments(depositionDocument.DocumentId);
                 if (removeUserDocumentResult.IsFailed)
                     return removeUserDocumentResult.ToResult<bool>();
