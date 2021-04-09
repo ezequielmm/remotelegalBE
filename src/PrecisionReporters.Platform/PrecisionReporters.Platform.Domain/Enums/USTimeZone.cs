@@ -22,6 +22,6 @@ namespace PrecisionReporters.Platform.Domain.Enums
         [Description("America/Anchorage")]
         AKT,
         [Description("Pacific/Honolulu")]
-        HST
+        HT
     }
 }
