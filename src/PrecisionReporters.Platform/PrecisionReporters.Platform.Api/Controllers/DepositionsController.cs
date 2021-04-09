@@ -448,5 +448,16 @@ namespace PrecisionReporters.Platform.Api.Controllers
 
             return Ok(_depositionMapper.ToDto(result.Value));
         }
+
+        [HttpPost("{id}/notifyparties")]
+        [UserAuthorize(ResourceType.Deposition, ResourceAction.Notify)]
+        public async Task<ActionResult<NotifyOutputDto>> NotifyParties([ResourceId(ResourceType.Deposition)] Guid id)
+        {
+            var result = await _depositionService.NotifyParties(id);
+            if (result.IsFailed)
+                return WebApiResponses.GetErrorResponse(result);
+
+            return Ok(new NotifyOutputDto { Notified = result.Value });
+        }
     }
 }

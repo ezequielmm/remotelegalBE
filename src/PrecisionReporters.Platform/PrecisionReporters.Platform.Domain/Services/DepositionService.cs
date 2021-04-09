@@ -26,6 +26,8 @@ namespace PrecisionReporters.Platform.Domain.Services
     {
         private const int DEFAULT_BREAK_ROOMS_AMOUNT = 4;
         private const string BREAK_ROOM_PREFIX = "BREAK_ROOM";
+        private const string DOWNLOAD_TRANSCRIPT_TEMPLATE = "DownloadCertifiedTranscriptEmailTemplate";
+        private const string DOWNLOAD_ASSETS_TEMPLATE = "DownloadAssetsEmailTemplate";
         private readonly IDepositionRepository _depositionRepository;
         private readonly IParticipantRepository _participantRepository;
         private readonly IDepositionEventRepository _depositionEventRepository;
@@ -43,6 +45,9 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly IMapper<Participant, ParticipantDto, CreateParticipantDto> _participantMapper;
         private readonly DepositionConfiguration _depositionConfiguration;
         private readonly ISignalRNotificationManager _signalRNotificationManager;
+        private readonly IAwsEmailService _awsEmailService;
+        private readonly UrlPathConfiguration _urlPathConfiguration;
+        private readonly EmailConfiguration _emailConfiguration;
 
         public DepositionService(IDepositionRepository depositionRepository,
             IParticipantRepository participantRepository,
@@ -60,7 +65,10 @@ namespace PrecisionReporters.Platform.Domain.Services
             IMapper<Deposition, DepositionDto, CreateDepositionDto> depositionMapper,
             IMapper<Participant, ParticipantDto, CreateParticipantDto> participantMapper,
             IOptions<DepositionConfiguration> depositionConfiguration,
-            ISignalRNotificationManager signalRNotificationManager)
+            ISignalRNotificationManager signalRNotificationManager,
+            IAwsEmailService awsEmailService,
+            IOptions<UrlPathConfiguration> urlPathConfiguration, 
+            IOptions<EmailConfiguration> emailConfiguration)
         {
             _awsStorageService = awsStorageService;
             _documentsConfiguration = documentConfigurations.Value ?? throw new ArgumentException(nameof(documentConfigurations));
@@ -79,6 +87,9 @@ namespace PrecisionReporters.Platform.Domain.Services
             _participantMapper = participantMapper;
             _depositionConfiguration = depositionConfiguration.Value;
             _signalRNotificationManager = signalRNotificationManager;
+            _awsEmailService = awsEmailService;
+            _urlPathConfiguration = urlPathConfiguration.Value;
+            _emailConfiguration = emailConfiguration.Value;
         }
 
         public async Task<List<Deposition>> GetDepositions(Expression<Func<Deposition, bool>> filter = null,
@@ -263,6 +274,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             var transcriptDto = new DraftTranscriptDto { DepositionId = deposition.Id, CurrentUserId = currentUser.Id };
             var backGround = new BackgroundTaskDto() { Content = transcriptDto, TaskType = BackgroundTaskType.DraftTranscription };
             _backgroundTaskQueue.QueueBackgroundWorkItem(backGround);
+            await NotifyParties(deposition.Id, true);
 
             return Result.Ok(updatedDeposition);
         }
@@ -975,6 +987,50 @@ namespace PrecisionReporters.Platform.Domain.Services
                 _logger.LogError(ex, "Unable to edit depositions");
                 await _documentService.DeleteUploadedFiles(new List<Document> { currentDeposition.Caption });
                 return Result.Fail(new ExceptionalError("Unable to edit the deposition", ex));
+            }
+        }
+
+        public async Task<Result<bool>> NotifyParties(Guid depositionId, bool isEndDeposition = false)
+        {
+            var depositionResult = await GetDepositionById(depositionId);
+            if (depositionResult.IsFailed)
+                return depositionResult.ToResult();
+            
+            var participants = depositionResult.Value.Participants.Where(x => x.Role != ParticipantType.Witness);
+            if (participants == null)
+                return Result.Fail(new ResourceConflictError($"The deposition {depositionId} must have participants"));
+
+            var witness = depositionResult.Value.Participants.FirstOrDefault(x => x.Role == ParticipantType.Witness);
+            if(witness == null)
+                return Result.Fail(new ResourceConflictError($"The Deposition {depositionId} must have a witness"));
+
+            try
+            {
+                foreach (var participant in participants)
+                {
+                    var template = new EmailTemplateInfo
+                    {
+                        EmailTo = new List<string> { participant.Email },
+                        TemplateData = new Dictionary<string, string>
+                        {
+                            { "user-name", participant.Name },
+                            { "witness-name", witness.Name },
+                            { "case-name", depositionResult.Value.Case.Name },
+                            { "start-date", $"{depositionResult.Value.StartDate.ToString("MMMM dd,yyyy")} {depositionResult.Value.StartDate.ConvertTime(depositionResult.Value.TimeZone)}" },
+                            { "depo-details-link", $"{_urlPathConfiguration.FrontendBaseUrl}/deposition/post-depo-details/{depositionResult.Value.Id}" }
+                        },
+                        TemplateName = isEndDeposition ? DOWNLOAD_ASSETS_TEMPLATE : DOWNLOAD_TRANSCRIPT_TEMPLATE
+                    };
+
+                    await _awsEmailService.SetTemplateEmailRequest(template, _emailConfiguration.EmailNotification);
+                }
+
+                return Result.Ok(true);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unable to notify parties");
+                return Result.Ok(false);
             }
         }
 

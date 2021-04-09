@@ -7,7 +7,7 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
 {
     public interface IAwsEmailService
     {
-        Task<SendBulkTemplatedEmailResponse> SendEmailAsync(List<BulkEmailDestination> destinations, string templateName);
-        Task SetTemplateEmailRequest(EmailTemplateInfo emailData);
+        Task<SendBulkTemplatedEmailResponse> SendEmailAsync(List<BulkEmailDestination> destinations, string templateName, string sender = null);
+        Task SetTemplateEmailRequest(EmailTemplateInfo emailData, string sender = null);
     }
 }

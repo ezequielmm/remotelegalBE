@@ -196,6 +196,7 @@ namespace PrecisionReporters.Platform.Api
             services.AddTransient<IAwsEmailService, AwsEmailService>().Configure<EmailConfiguration>(x =>
             {
                 x.Sender = appConfiguration.EmailConfiguration.Sender;
+                x.EmailNotification = appConfiguration.EmailConfiguration.EmailNotification;
             });
 
             services.AddSingleton(typeof(IAmazonCognitoIdentityProvider),

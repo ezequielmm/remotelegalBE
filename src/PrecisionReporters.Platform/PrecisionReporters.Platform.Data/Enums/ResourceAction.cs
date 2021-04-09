@@ -14,6 +14,7 @@
         Cancel,
         Revert,
         AdmitParticipants,
-        ReSchedule
+        ReSchedule, 
+        Notify
     }
 }

@@ -2,15 +2,17 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PrecisionReporters.Platform.Data;
 
 namespace PrecisionReporters.Platform.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20210409194600_AddNotifyAction")]
+    partial class AddNotifyAction
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -216,9 +218,6 @@ namespace PrecisionReporters.Platform.Data.Migrations
                     b.Property<string>("Job")
                         .HasColumnType("varchar(50)");
 
-                    b.Property<string>("PreRoomId")
-                        .HasColumnType("char(36)");
-
                     b.Property<string>("RequesterId")
                         .IsRequired()
                         .HasColumnType("char(36)");
@@ -252,8 +251,6 @@ namespace PrecisionReporters.Platform.Data.Migrations
                     b.HasIndex("CaseId");
 
                     b.HasIndex("EndedById");
-
-                    b.HasIndex("PreRoomId");
 
                     b.HasIndex("RequesterId");
 
@@ -936,10 +933,6 @@ namespace PrecisionReporters.Platform.Data.Migrations
                     b.HasOne("PrecisionReporters.Platform.Data.Entities.User", "EndedBy")
                         .WithMany()
                         .HasForeignKey("EndedById");
-
-                    b.HasOne("PrecisionReporters.Platform.Data.Entities.Room", "PreRoom")
-                        .WithMany()
-                        .HasForeignKey("PreRoomId");
 
                     b.HasOne("PrecisionReporters.Platform.Data.Entities.User", "Requester")
                         .WithMany()

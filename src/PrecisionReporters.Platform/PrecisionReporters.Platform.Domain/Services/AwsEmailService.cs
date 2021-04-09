@@ -26,11 +26,11 @@ namespace PrecisionReporters.Platform.Domain.Services
             _emailConfiguration = emailConfiguration.Value;
         }
 
-        public async Task<SendBulkTemplatedEmailResponse> SendEmailAsync(List<BulkEmailDestination> destinations, string templateName)
+        public async Task<SendBulkTemplatedEmailResponse> SendEmailAsync(List<BulkEmailDestination> destinations, string templateName, string sender = null)
         {
             var emailRequest = new SendBulkTemplatedEmailRequest
             {
-                Source = _emailConfiguration.Sender,
+                Source = sender == null ?_emailConfiguration.Sender : sender,
                 Template = templateName,
                 DefaultTemplateData = destinations[0].ReplacementTemplateData,
                 Destinations = destinations
@@ -49,7 +49,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             return response;
         }
 
-        public async Task SetTemplateEmailRequest(EmailTemplateInfo emailData)
+        public async Task SetTemplateEmailRequest(EmailTemplateInfo emailData, string sender = null)
         {
             var destinations = new List<BulkEmailDestination>
             {
@@ -60,7 +60,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 }
             };
 
-            await SendEmailAsync(destinations, emailData.TemplateName);
+            await SendEmailAsync(destinations, emailData.TemplateName, sender);
         }
     }
 }

@@ -11,14 +11,12 @@ using PrecisionReporters.Platform.Domain.Configurations;
 using PrecisionReporters.Platform.Domain.Dtos;
 using PrecisionReporters.Platform.Domain.Extensions;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
-using PrecisionReporters.Platform.Domain.Enums;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using TimeZoneConverter;
 
 namespace PrecisionReporters.Platform.Domain.Services
 {
@@ -176,7 +174,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             replacer.AddString("mm_tmp", startDate.Month.ToString());
             replacer.AddString("dd_tmp", startDate.Day.ToString());
             replacer.AddString("yyyy_tmp", startDate.Year.ToString());
-            replacer.AddString("time_tmp", ConvertTimeZone(startDate, deposition.TimeZone));
+            replacer.AddString("time_tmp", startDate.ConvertTimeZone(deposition.TimeZone));
             replacer.AddString("witness_tmp", deposition.Participants?.FirstOrDefault(x => x.Role == ParticipantType.Witness)?.Name ?? "");
             replacer.AddString("reportedBy_tmp", deposition.Participants?.FirstOrDefault(x => x.Role == ParticipantType.CourtReporter)?.Name ?? "");
             replacer.AddString("job_n_tmp", deposition.Job ?? string.Empty);
@@ -280,15 +278,6 @@ namespace PrecisionReporters.Platform.Domain.Services
                 return (int)pages;
 
             return (int)(pages + 1);
-        }
-
-        private string ConvertTimeZone(DateTime time, string timeZone)
-        {
-            var timeZoneAbbreviation = Enum.GetValues(typeof(USTimeZone)).Cast<USTimeZone>().FirstOrDefault(x => x.GetDescription() == timeZone).ToString();
-            var timeZoneInfo = TZConvert.GetTimeZoneInfo(timeZone);
-            DateTime convertedTime = TimeZoneInfo.ConvertTimeFromUtc(time, timeZoneInfo);
-
-            return $"{convertedTime.ToShortTimeString()} {timeZoneAbbreviation}";
         }
 
         private List<string> AddBlankRowsToList(List<string> transcripts)

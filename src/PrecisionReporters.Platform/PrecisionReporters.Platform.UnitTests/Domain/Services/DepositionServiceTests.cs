@@ -37,17 +37,21 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         private readonly Mock<IPermissionService> _permissionServiceMock;
         private readonly DocumentConfiguration _documentConfiguration;
         private readonly DepositionConfiguration _depositionconfiguration;
+        private readonly EmailConfiguration _emailConfiguration;
+        private readonly UrlPathConfiguration _urlPathConfiguration;
         private readonly Mock<IAwsStorageService> _awsStorageServiceMock;
         private readonly Mock<IBackgroundTaskQueue> _backgroundTaskQueueMock;
         private readonly Mock<IOptions<DocumentConfiguration>> _depositionDocumentConfigurationMock;
         private readonly Mock<IOptions<DepositionConfiguration>> _depositionConfigurationMock;
+        private readonly Mock<IOptions<UrlPathConfiguration>> _urlPathConfigurationMock;
+        private readonly Mock<IOptions<EmailConfiguration>> _emailConfigurationMock;
         private readonly Mock<ITransactionHandler> _transactionHandlerMock;
         private readonly Mock<IDocumentService> _documentServiceMock;
         private readonly Mock<ILogger<DepositionService>> _loggerMock;
         private readonly Mock<IMapper<Deposition, DepositionDto, CreateDepositionDto>> _depositionMapperMock;
         private readonly Mock<IMapper<Participant, ParticipantDto, CreateParticipantDto>> _participantMapperMock;
         private readonly Mock<ISignalRNotificationManager> _signalRNotificationManagerMock;
-
+        private readonly Mock<IAwsEmailService> _awsEmailServiceMock;
 
         private readonly List<Deposition> _depositions = new List<Deposition>();
 
@@ -88,10 +92,21 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _depositionconfiguration = new DepositionConfiguration { CancelAllowedOffsetSeconds = "60", MinimumReScheduleSeconds = "300" };
             _depositionConfigurationMock = new Mock<IOptions<DepositionConfiguration>>();
             _depositionConfigurationMock.Setup(x => x.Value).Returns(_depositionconfiguration);
+
+            _emailConfiguration = new EmailConfiguration { EmailNotification = "notifications@remotelegal.com"};
+            _emailConfigurationMock = new Mock<IOptions<EmailConfiguration>>();
+            _emailConfigurationMock.Setup(x => x.Value).Returns(_emailConfiguration);
+
+            _urlPathConfiguration = new UrlPathConfiguration { FrontendBaseUrl = "" };
+            _urlPathConfigurationMock = new Mock<IOptions<UrlPathConfiguration>>();
+            _urlPathConfigurationMock.Setup(x => x.Value).Returns(_urlPathConfiguration);
+
             _participantMapperMock = new Mock<IMapper<Participant, ParticipantDto, CreateParticipantDto>>();
             _depositionMapperMock = new Mock<IMapper<Deposition, DepositionDto, CreateDepositionDto>>();
             _participantMapperMock = new Mock<IMapper<Participant, ParticipantDto, CreateParticipantDto>>();
             _signalRNotificationManagerMock = new Mock<ISignalRNotificationManager>();
+
+            _awsEmailServiceMock = new Mock<IAwsEmailService>();
 
             _depositionService = new DepositionService(
                 _depositionRepositoryMock.Object,
@@ -110,7 +125,10 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 _depositionMapperMock.Object,
                 _participantMapperMock.Object,
                 _depositionConfigurationMock.Object,
-                _signalRNotificationManagerMock.Object);
+                _signalRNotificationManagerMock.Object,
+                _awsEmailServiceMock.Object,
+                _urlPathConfigurationMock.Object,
+                _emailConfigurationMock.Object);
 
             _transactionHandlerMock.Setup(x => x.RunAsync(It.IsAny<Func<Task<Result<Deposition>>>>()))
                 .Returns(async (Func<Task<Result<Deposition>>> action) =>
@@ -904,7 +922,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var result = await _depositionService.EndDeposition(depositionId);
 
             // Assert
-            _depositionRepositoryMock.Verify(mock => mock.GetById(It.Is<Guid>(a => a == depositionId), It.IsAny<string[]>()), Times.Exactly(2));
+            _depositionRepositoryMock.Verify(mock => mock.GetById(It.Is<Guid>(a => a == depositionId), It.IsAny<string[]>()), Times.Exactly(3));
             _depositionRepositoryMock.Verify(mock => mock.Update(It.Is<Deposition>(d => d.Status == DepositionStatus.Completed && d.CompleteDate.HasValue)), Times.Exactly(2));
             _roomServiceMock.Verify(mock => mock.EndRoom(It.IsAny<Room>(), It.IsAny<string>()), Times.Once());
             Assert.NotNull(result);
