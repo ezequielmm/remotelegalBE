@@ -70,6 +70,14 @@
                     "value": "[DEV] Verify your Remote Legal account"
                 },
                 {
+                    "name": "AppConfiguration__EmailConfiguration__ImagesUrl",
+                    "value": "https://prp-dev.prdevelopment.net/email/images/"
+                },
+                {
+                    "name": "AppConfiguration__EmailConfiguration__PreDepositionLink",
+                    "value": "https://prp-dev.prdevelopment.net/deposition/pre-join/"
+                },
+                {
                     "name": "AppConfiguration__ConfigurationFlags__IsDeveloperExceptionPageEnabled",
                     "value": "true"
                 },

@@ -23,6 +23,8 @@ namespace PrecisionReporters.Platform.Api.Controllers
         private readonly IMapper<Composition, CompositionDto, CallbackCompositionDto> _compositionMapper;
         private readonly ITwilioCallbackService _twilioCallbackService;
 
+        private readonly IAwsEmailService _awsEmailService;
+
         public CompositionsController(ICompositionService compositionService,
             IMapper<Composition, CompositionDto, CallbackCompositionDto> compositionMapper,
             ILogger<CompositionsController> logger, 

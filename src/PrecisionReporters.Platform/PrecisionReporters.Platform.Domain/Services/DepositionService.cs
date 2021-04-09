@@ -1,6 +1,11 @@
 ﻿using FluentResults;
+using Ical.Net;
+using Ical.Net.CalendarComponents;
+using Ical.Net.DataTypes;
+using Ical.Net.Serialization;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using MimeKit;
 using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Data.Enums;
 using PrecisionReporters.Platform.Data.Handlers.Interfaces;
@@ -551,7 +556,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<Guid>> AddParticipant(Guid depositionId, Participant participant)
         {
-            var include = new[] { nameof(Deposition.Participants) };
+            var include = new[] { nameof(Deposition.Participants), nameof(Deposition.Case) };
 
             var depositionResult = await GetByIdWithIncludes(depositionId, include);
 
@@ -714,7 +719,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<Participant>> AddParticipantToExistingDeposition(Guid id, Participant participant)
         {
-            var deposition = await _depositionRepository.GetById(id, new[] { $"{nameof(Deposition.Participants)}" });
+            var deposition = await _depositionRepository.GetById(id, new[] { nameof(Deposition.Participants), nameof(Deposition.Case) });
             if (deposition == null)
                 return Result.Fail(new ResourceNotFoundError("Deposition not found"));
 
@@ -739,6 +744,9 @@ namespace PrecisionReporters.Platform.Domain.Services
             deposition.Participants.Add(newParticipant);
             await _depositionRepository.Update(deposition);
             await _permissionService.AddParticipantPermissions(newParticipant);
+
+            if (deposition.Status == DepositionStatus.Confirmed)
+                await SendDepositionEmailNotification(deposition, participant);
 
             return Result.Ok(newParticipant);
         }
@@ -789,11 +797,12 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<Deposition>> EditDepositionDetails(Deposition deposition, FileTransferInfo file, bool deleteCaption)
         {
-            var currentDepositionResult = await GetByIdWithIncludes(deposition.Id, new[] { $"{nameof(Deposition.Caption)}" });
+            var currentDepositionResult = await GetByIdWithIncludes(deposition.Id, new[] { nameof(Deposition.Caption), nameof(Deposition.Participants), nameof(Deposition.Case) });
             if (currentDepositionResult.IsFailed)
                 return currentDepositionResult;
 
             var currentDeposition = currentDepositionResult.Value;
+            var sendEmailNotification = false;
 
             try
             {
@@ -809,10 +818,15 @@ namespace PrecisionReporters.Platform.Domain.Services
                         if (uploadDocumentResult.IsFailed)
                             return uploadDocumentResult.ToResult();
 
+                        if (currentDeposition.Status != DepositionStatus.Confirmed && deposition.Status == DepositionStatus.Confirmed)
+                            sendEmailNotification = true;
+
                         currentDeposition = UpdateDepositionDetails(currentDeposition, deposition, uploadDocumentResult.Value);
                     }
 
                     await _depositionRepository.Update(currentDeposition);
+                    if (sendEmailNotification)
+                        await SendDepositionEmailNotification(currentDeposition);
                     return Result.Ok(currentDeposition);
                 });
 
@@ -1144,6 +1158,16 @@ namespace PrecisionReporters.Platform.Domain.Services
         {
             currentParticipant.HasJoined = true;
             await _participantRepository.Update(currentParticipant);
+        }
+
+        public async Task SendDepositionEmailNotification(Deposition deposition)
+        {
+           await _awsEmailService.SendRawEmailNotification(deposition);
+        }
+
+        private async Task SendDepositionEmailNotification(Deposition deposition, Participant participant)
+        {
+           await _awsEmailService.SendRawEmailNotification(deposition, participant);
         }
     }
 }

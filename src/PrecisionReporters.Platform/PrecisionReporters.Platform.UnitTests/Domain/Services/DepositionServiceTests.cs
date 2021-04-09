@@ -1710,7 +1710,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var result = await _depositionService.AddParticipantToExistingDeposition(depositionId, participant);
 
             // Assert
-            _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(a => a == depositionId), It.Is<string[]>(a => a.SequenceEqual(new[] { $"{nameof(Deposition.Participants)}" }))), Times.Once);
+            _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(a => a == depositionId), It.IsAny<string[]>()), Times.Once);
             _depositionRepositoryMock.Verify(x => x.Update(It.Is<Deposition>(x => x.Id == depositionId)), Times.Once);
             _permissionServiceMock.Verify(x => x.AddParticipantPermissions(It.Is<Participant>(x => x.Email == participantEmail)), Times.Once);
             Assert.NotNull(result);
@@ -1739,7 +1739,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var result = await _depositionService.AddParticipantToExistingDeposition(depositionId, participant);
 
             // Assert
-            _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(a => a == depositionId), It.Is<string[]>(a => a.SequenceEqual(new[] { $"{nameof(Deposition.Participants)}" }))), Times.Once);
+            _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(a => a == depositionId), It.IsAny<string[]>()), Times.Once);
             _depositionRepositoryMock.Verify(x => x.Update(It.Is<Deposition>(x => x.Id == depositionId)), Times.Once);
             _permissionServiceMock.Verify(x => x.AddParticipantPermissions(It.Is<Participant>(x => x.Email == participantEmail)), Times.Once);
             Assert.NotNull(result);
@@ -1777,7 +1777,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var result = await _depositionService.AddParticipantToExistingDeposition(depositionId, participant);
 
             // Assert 
-            _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(a => a == depositionId), It.Is<string[]>(a => a.SequenceEqual(new[] { $"{nameof(Deposition.Participants)}" }))), Times.Once);
+            _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(a => a == depositionId), It.IsAny<string[]>()), Times.Once);
             Assert.NotNull(result);
             Assert.True(result.IsFailed);
             Assert.IsType<Result<Participant>>(result);
@@ -1814,7 +1814,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var result = await _depositionService.AddParticipantToExistingDeposition(depositionId, participant);
 
             // Assert  
-            _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(a => a == depositionId), It.Is<string[]>(a => a.SequenceEqual(new[] { $"{nameof(Deposition.Participants)}" }))), Times.Once);
+            _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(a => a == depositionId), It.IsAny<string[]>()), Times.Once);
             Assert.NotNull(result);
             Assert.True(result.IsFailed);
             Assert.IsType<Result<Participant>>(result);
@@ -1851,7 +1851,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var result = await _depositionService.AddParticipantToExistingDeposition(depositionId, participant);
 
             // Assert  
-            _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(a => a == depositionId), It.Is<string[]>(a => a.SequenceEqual(new[] { $"{nameof(Deposition.Participants)}" }))), Times.Once);
+            _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(a => a == depositionId), It.IsAny<string[]>()), Times.Once);
             Assert.NotNull(result);
             Assert.True(result.IsFailed);
             Assert.IsType<Result<Participant>>(result);
@@ -1888,7 +1888,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var result = await _depositionService.AddParticipantToExistingDeposition(depositionId, participant);
 
             // Assert  
-            _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(a => a == depositionId), It.Is<string[]>(a => a.SequenceEqual(new[] { $"{nameof(Deposition.Participants)}" }))), Times.Once);
+            _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(a => a == depositionId), It.IsAny<string[]>()), Times.Once);
             Assert.NotNull(result);
             Assert.True(result.IsFailed);
             Assert.IsType<Result<Participant>>(result);
@@ -1986,7 +1986,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             //Assert
             _userServiceMock.Verify(u => u.GetCurrentUserAsync(), Times.Never);
-            _depositionRepositoryMock.Verify(d => d.GetById(It.Is<Guid>(i => i == depositionMock.Id), It.Is<string[]>(i => i.SequenceEqual(new[] { $"{nameof(Deposition.Caption)}" }))));
+            _depositionRepositoryMock.Verify(d => d.GetById(It.Is<Guid>(i => i == depositionMock.Id), It.IsAny<string[]>()));
             Assert.NotNull(result);
             Assert.True(result.IsFailed);
         }
@@ -2012,7 +2012,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             //Assert
             _userServiceMock.Verify(u => u.GetCurrentUserAsync(), Times.Once);
-            _depositionRepositoryMock.Verify(d => d.GetById(It.Is<Guid>(i => i == depositionMock.Id), It.Is<string[]>(i => i.SequenceEqual(new[] { $"{nameof(Deposition.Caption)}" }))));
+            _depositionRepositoryMock.Verify(d => d.GetById(It.Is<Guid>(i => i == depositionMock.Id), It.IsAny<string[]>()));
             _documentServiceMock.Verify(dc => dc.UploadDocumentFile(
                 It.IsAny<FileTransferInfo>(),
                 It.Is<User>(u => u == userMock),
@@ -2045,7 +2045,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             //Assert
             _userServiceMock.Verify(u => u.GetCurrentUserAsync(), Times.Once);
-            _depositionRepositoryMock.Verify(d => d.GetById(It.Is<Guid>(i => i == depositionMock.Id), It.Is<string[]>(i => i.SequenceEqual(new[] { $"{nameof(Deposition.Caption)}" }))));
+            _depositionRepositoryMock.Verify(d => d.GetById(It.Is<Guid>(i => i == depositionMock.Id), It.IsAny<string[]>()));
             _documentServiceMock.Verify(dc => dc.UploadDocumentFile(
                 It.IsAny<FileTransferInfo>(),
                 It.Is<User>(u => u == userMock),
@@ -2078,8 +2078,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var result = await _depositionService.EditDepositionDetails(depositionMock, null, true);
 
             //Assert
-            _userServiceMock.Verify(u => u.GetCurrentUserAsync(), Times.Once);
-            _depositionRepositoryMock.Verify(d => d.GetById(It.Is<Guid>(i => i == depositionMock.Id), It.Is<string[]>(i => i.SequenceEqual(new[] { $"{nameof(Deposition.Caption)}" }))));
+            _userServiceMock.Verify(u => u.GetCurrentUserAsync(), Times.Once);_depositionRepositoryMock.Verify(d => d.GetById(It.Is<Guid>(i => i == depositionMock.Id), It.IsAny<string[]>()));
             _documentServiceMock.Verify(dc => dc.DeleteUploadedFiles(It.IsAny<List<Document>>()), Times.AtLeastOnce);
             _depositionRepositoryMock.Verify(d => d.Update(It.IsAny<Deposition>()), Times.Once);
             Assert.NotNull(result);
@@ -2108,7 +2107,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             //Assert
             _userServiceMock.Verify(u => u.GetCurrentUserAsync(), Times.Once);
-            _depositionRepositoryMock.Verify(d => d.GetById(It.Is<Guid>(i => i == depositionMock.Id), It.Is<string[]>(i => i.SequenceEqual(new[] { $"{nameof(Deposition.Caption)}" }))));
+            _depositionRepositoryMock.Verify(d => d.GetById(It.Is<Guid>(i => i == depositionMock.Id), It.IsAny<string[]>()));
             _depositionRepositoryMock.Verify(d => d.Update(It.IsAny<Deposition>()), Times.Once);
             Assert.NotNull(result);
             Assert.IsType<Result<Deposition>>(result);

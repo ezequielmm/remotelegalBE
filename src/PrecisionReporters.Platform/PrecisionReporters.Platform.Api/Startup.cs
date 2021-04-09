@@ -197,6 +197,10 @@ namespace PrecisionReporters.Platform.Api
             {
                 x.Sender = appConfiguration.EmailConfiguration.Sender;
                 x.EmailNotification = appConfiguration.EmailConfiguration.EmailNotification;
+                x.ImagesUrl = appConfiguration.EmailConfiguration.ImagesUrl;
+                x.LogoImageName = appConfiguration.EmailConfiguration.LogoImageName;
+                x.PreDepositionLink = appConfiguration.EmailConfiguration.PreDepositionLink;
+                x.JoinDepositionTemplate = appConfiguration.EmailConfiguration.JoinDepositionTemplate;
             });
 
             services.AddSingleton(typeof(IAmazonCognitoIdentityProvider),
