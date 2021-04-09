@@ -240,12 +240,12 @@ namespace PrecisionReporters.Platform.Domain.Services
             var deposition = await _depositionRepository.GetById(id, new[] { nameof(Deposition.Room), nameof(Deposition.PreRoom), nameof(Deposition.Participants) });
             if (deposition == null)
                 return Result.Fail(new ResourceNotFoundError($"Deposition with id {id} not found."));
-            
+
             var joinDepositionInfo = await GetJoinDepositionInfoDto(userResult.Value, deposition, identity);
 
-            if( joinDepositionInfo.IsFailed)
+            if (joinDepositionInfo.IsFailed)
                 return Result.Fail(new UnexpectedError($"There was an issue trying to Join the deposition."));
-                 
+
             return Result.Ok(joinDepositionInfo.Value);
         }
 
@@ -1055,7 +1055,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             var role = currentParticipant?.Role ?? ParticipantType.Admin;
             var courtReporters = deposition.Participants.Where(x => x.Role == ParticipantType.CourtReporter).ToList();
             var isCourtReporterUser = courtReporters.Any(x => x.User?.Id == user.Id);
-            var isCourtReporterJoined = courtReporters.Any(x => x.HasJoined == true);           
+            var isCourtReporterJoined = courtReporters.Any(x => x.HasJoined == true);
             var joinDepositionInfo = new JoinDepositionDto();
 
             // Check if we need to Start a Deposition. Only start it if current user is a Court Reporter and also any other court reporter hasn't joined yet.
@@ -1063,8 +1063,14 @@ namespace PrecisionReporters.Platform.Domain.Services
             {
                 // Court Reporter Flow
                 await StartDepositionRoom(deposition.Room, true);
-
-                var token = await _roomService.GenerateRoomToken(deposition.Room.Name, user, role, identity);
+                var chatInfo = new ChatDto()
+                {
+                    AddParticipant = true,
+                    ChatName = deposition.Id.ToString(),
+                    SId = deposition.ChatSid,
+                    CreateChat = true
+                };
+                var token = await _roomService.GenerateRoomToken(deposition.Room.Name, user, role, identity, chatInfo);
                 if (token.IsFailed)
                     return token.ToResult<JoinDepositionDto>();
 
@@ -1077,16 +1083,16 @@ namespace PrecisionReporters.Platform.Domain.Services
 
                 await SendNotification(deposition);
             }
-            else 
+            else
             {
                 // Participants Flow
                 if (isCourtReporterJoined)
                 {
-                    if (currentParticipant != null && !currentParticipant.IsAdmitted.HasValue && !user.IsAdmin) 
+                    if (currentParticipant != null && !currentParticipant.IsAdmitted.HasValue && !user.IsAdmin)
                     {
                         joinDepositionInfo = SetJoinDepositionInfo(null, deposition, joinDepositionInfo, false);
-                    } 
-                    else 
+                    }
+                    else
                     {
                         if (currentParticipant != null && currentParticipant.IsAdmitted.HasValue && !currentParticipant.IsAdmitted.Value && !user.IsAdmin)
                             return Result.Fail(new InvalidInputError($"User has not been admitted to the deposition"));
@@ -1095,8 +1101,13 @@ namespace PrecisionReporters.Platform.Domain.Services
                         {
                             await UpdateCurrentParticipant(currentParticipant);
                         }
-
-                        var token = await _roomService.GenerateRoomToken(deposition.Room.Name, user, role, identity);
+                        var chatInfo = new ChatDto()
+                        {
+                            AddParticipant = true,
+                            ChatName = deposition.Id.ToString(),
+                            SId = deposition.ChatSid
+                        };
+                        var token = await _roomService.GenerateRoomToken(deposition.Room.Name, user, role, identity, chatInfo);
                         if (token.IsFailed)
                             return token.ToResult<JoinDepositionDto>();
 
@@ -1114,7 +1125,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                     joinDepositionInfo = SetJoinDepositionInfo(preRoomToken.Value, deposition, joinDepositionInfo, true);
                 }
             }
-           
+
             if (currentParticipant == null && !user.IsAdmin)
                 return Result.Fail(new InvalidInputError($"User is neither a Participant for this Deposition nor an Admin"));
 
@@ -1130,7 +1141,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             }
         }
 
-        private JoinDepositionDto SetJoinDepositionInfo(string token, Deposition deposition, JoinDepositionDto joinDepositionInfo, bool shouldSendToPreDepo) 
+        private JoinDepositionDto SetJoinDepositionInfo(string token, Deposition deposition, JoinDepositionDto joinDepositionInfo, bool shouldSendToPreDepo)
         {
             joinDepositionInfo.Token = token;
             joinDepositionInfo.ShouldSendToPreDepo = shouldSendToPreDepo;
@@ -1143,18 +1154,18 @@ namespace PrecisionReporters.Platform.Domain.Services
             return joinDepositionInfo;
         }
 
-        private async Task SendNotification(Deposition deposition) 
+        private async Task SendNotification(Deposition deposition)
         {
             var notificationDto = new NotificationDto
             {
                 EntityType = NotificationEntity.Deposition,
                 Action = NotificationAction.Start
             };
-            
+
             await _signalRNotificationManager.SendNotificationToDepositionMembers(deposition.Id, notificationDto);
         }
 
-        private async Task UpdateCurrentParticipant(Participant currentParticipant) 
+        private async Task UpdateCurrentParticipant(Participant currentParticipant)
         {
             currentParticipant.HasJoined = true;
             await _participantRepository.Update(currentParticipant);

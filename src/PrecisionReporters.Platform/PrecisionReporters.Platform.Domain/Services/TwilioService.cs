@@ -19,6 +19,8 @@ using Twilio.Rest.Video.V1;
 using Twilio.Rest.Video.V1.Room;
 using static Twilio.Rest.Video.V1.RoomResource;
 using PrecisionReporters.Platform.Domain.Dtos;
+using Twilio.Rest.Conversations.V1;
+using Twilio.Rest.Chat.V2.Service.User;
 using Amazon.SimpleEmail.Model.Internal.MarshallTransformations;
 
 namespace PrecisionReporters.Platform.Domain.Services
@@ -51,10 +53,10 @@ namespace PrecisionReporters.Platform.Domain.Services
                 type: RoomResource.RoomTypeEnum.Group,
                 statusCallback: configureCallbacks ? new Uri($"{_twilioAccountConfiguration.StatusCallbackUrl}/recordings/addEvent") : null
                 );
-            
+
             room.SId = roomResource?.Sid;
             return room;
-        }       
+        }
 
         public async Task<RoomResource> GetRoom(string roomName)
         {
@@ -62,11 +64,14 @@ namespace PrecisionReporters.Platform.Domain.Services
             return roomResource;
         }
 
-        public string GenerateToken(string roomName, TwilioIdentity identity)
+        public string GenerateToken(string roomName, TwilioIdentity identity, bool grantChat)
         {
+            //TODO: Change identity from JSON string to User Email
             var grant = new VideoGrant();
             grant.Room = roomName;
             var grants = new HashSet<IGrant> { grant };
+            if (grantChat)
+                grants.Add(new ChatGrant { ServiceSid = _twilioAccountConfiguration.ConversationServiceId });
 
             var stringIdentity = SerializeObject(identity);
             var token = new Token(_twilioAccountConfiguration.AccountSid, _twilioAccountConfiguration.ApiKeySid,
@@ -255,5 +260,81 @@ namespace PrecisionReporters.Platform.Domain.Services
             _log.LogDebug($"Deleted composition - SId: {deleteTwilioRecordings.CompositionSid}");
             return Result.Ok();
         }
+
+        public async Task<Result<string>> CreateChat(string chatName)
+        {
+            try
+            {
+                var chatRoomResource = await ConversationResource.CreateAsync(
+                friendlyName: chatName,
+                uniqueName: chatName
+                );
+                if (chatRoomResource != null)
+                    return Result.Ok(chatRoomResource.Sid);
+                else
+                    return Result.Fail(new Error($"Error creating chat with name: {chatName}"));
+            }
+            catch (Exception ex)
+            {
+                _log.LogError($"Error creating chat with name: {chatName}", ex);
+                return Result.Fail(new Error($"Error creating chat with name: {chatName}"));
+            }
+        }
+
+        public async Task<Result<string>> CreateChatUser(TwilioIdentity identity)
+        {
+            //TODO: Change identity from JSON string to User Email
+            try
+            {
+                var strIdentity = SerializeObject(identity);
+                var user = await UserResource.CreateAsync(strIdentity);
+                if (user != null)
+                    return Result.Ok(user.Sid);
+                else
+                    return Result.Fail(new Error($"Error creating user with identity: {identity.Email}"));
+            }
+            catch (Exception ex)
+            {
+                _log.LogError($"Error creating user with identity: {identity.Email}", ex);
+                return Result.Fail(new Error($"Error creating user with identity: {identity.Email}"));
+            }
+
+        }
+
+        public async Task<Result> AddUserToChat(string conversationSid, TwilioIdentity identity, string userSid)
+        {
+            var strIdentity = SerializeObject(identity);
+            UserChannelResource userChannel = null;
+            if (!string.IsNullOrWhiteSpace(userSid))
+            {
+                try
+                {
+                    userChannel = await UserChannelResource.FetchAsync(_twilioAccountConfiguration.ConversationServiceId, strIdentity, conversationSid);
+                }
+                catch (Exception ex)
+                {
+                    _log.LogError($"Error getting user info: {identity.Email}", ex);
+                }
+            }
+
+            try
+            {
+                Twilio.Rest.Conversations.V1.Conversation.ParticipantResource chatParticipant = null;
+                if (userChannel == null)
+                {
+                    chatParticipant = await Twilio.Rest.Conversations.V1.Conversation.ParticipantResource.CreateAsync(conversationSid, strIdentity);
+                    return Result.Ok(chatParticipant?.Sid);
+                }
+                else
+                    return Result.Fail(new Error($"Error adding user to chat, user identity: {identity.Email}"));
+            }
+            catch (Exception ex)
+            {
+                _log.LogError($"Error adding user to chat, user identity: {identity.Email}", ex);
+                return Result.Fail(new Error($"Error adding user to chat, user identity: {identity.Email}"));
+            }
+
+        }
+
     }
 }

@@ -208,6 +208,10 @@
                     "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:DEV/AppConfiguration__TwilioAccountConfiguration__ApiKeySecret-Mpzgyk"
                 },
                 {
+                    "name": "AppConfiguration__TwilioAccountConfiguration__ConversationServiceId",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:DEV/AppConfiguration__TwilioAccountConfiguration__ConversationServiceId-PbwHDM"
+                },
+                {
                     "name": "AppConfiguration__AzureCognitiveServiceConfiguration__SubscriptionKey",
                     "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:AppConfiguration__AzureCognitiveServiceConfiguration__SubscriptionKey-6JVtew"
                 }

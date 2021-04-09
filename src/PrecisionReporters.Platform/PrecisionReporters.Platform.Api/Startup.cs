@@ -160,6 +160,7 @@ namespace PrecisionReporters.Platform.Api
                 x.AuthToken = appConfiguration.TwilioAccountConfiguration.AuthToken;
                 x.S3DestinationBucket = appConfiguration.TwilioAccountConfiguration.S3DestinationBucket;
                 x.StatusCallbackUrl = appConfiguration.TwilioAccountConfiguration.StatusCallbackUrl;
+                x.ConversationServiceId = appConfiguration.TwilioAccountConfiguration.ConversationServiceId;
             });
 
             services.AddScoped<IRoomService, RoomService>();
@@ -311,7 +312,7 @@ namespace PrecisionReporters.Platform.Api
             services.AddMvc()
                 .AddJsonOptions(opts => opts.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
             services.AddSignalR()
-                .AddNewtonsoftJsonProtocol(opt=>opt.PayloadSerializerSettings.Converters.Add(new StringEnumConverter()))
+                .AddNewtonsoftJsonProtocol(opt => opt.PayloadSerializerSettings.Converters.Add(new StringEnumConverter()))
                 .AddStackExchangeRedis(appConfiguration.ConnectionStrings.RedisConnectionString);
         }
 

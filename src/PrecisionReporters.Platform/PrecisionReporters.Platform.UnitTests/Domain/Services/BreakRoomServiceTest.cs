@@ -7,6 +7,7 @@ using Moq;
 using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Data.Enums;
 using PrecisionReporters.Platform.Data.Repositories.Interfaces;
+using PrecisionReporters.Platform.Domain.Dtos;
 using PrecisionReporters.Platform.Domain.Services;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using Xunit;
@@ -68,7 +69,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 }
             };
             _userServiceMock.Setup(x => x.GetCurrentUserAsync()).ReturnsAsync(user);
-            _roomServiceMock.Setup(x => x.GenerateRoomToken(It.IsAny<string>(), It.IsAny<User>(), It.IsAny<ParticipantType>(), It.IsAny<string>())).ReturnsAsync(Result.Ok("foo"));
+            _roomServiceMock.Setup(x => x.GenerateRoomToken(It.IsAny<string>(), It.IsAny<User>(), It.IsAny<ParticipantType>(), It.IsAny<string>(),It.IsAny<ChatDto>())).ReturnsAsync(Result.Ok("foo"));
             _breakRoomRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).
                 ReturnsAsync(breakRoom);
 

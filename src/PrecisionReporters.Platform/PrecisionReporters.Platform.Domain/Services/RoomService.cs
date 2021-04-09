@@ -3,6 +3,7 @@ using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Data.Enums;
 using PrecisionReporters.Platform.Data.Repositories.Interfaces;
 using PrecisionReporters.Platform.Domain.Commons;
+using PrecisionReporters.Platform.Domain.Dtos;
 using PrecisionReporters.Platform.Domain.Errors;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using System;
@@ -16,11 +17,19 @@ namespace PrecisionReporters.Platform.Domain.Services
     {
         private readonly ITwilioService _twilioService;
         private readonly IRoomRepository _roomRepository;
+        private readonly IUserRepository _userRepository;
+        private readonly IDepositionRepository _depositionRepository;
 
-        public RoomService(ITwilioService twilioService, IRoomRepository roomRepository)
+        public RoomService(
+            ITwilioService twilioService,
+            IRoomRepository roomRepository,
+            IUserRepository userRepository,
+            IDepositionRepository depositionRepository)
         {
             _twilioService = twilioService;
             _roomRepository = roomRepository;
+            _userRepository = userRepository;
+            _depositionRepository = depositionRepository;
         }
 
         public async Task<Result<Room>> Create(Room room)
@@ -48,9 +57,9 @@ namespace PrecisionReporters.Platform.Domain.Services
             return Result.Ok(matchingRooms.First());
         }
 
-        public async Task<Result<string>> GenerateRoomToken(string roomName, User user, ParticipantType role, string email )
+        public async Task<Result<string>> GenerateRoomToken(string roomName, User user, ParticipantType role, string email, ChatDto chatDto = null)
         {
-            var room = await _roomRepository.GetFirstOrDefaultByFilter(x => x.Name == roomName );
+            var room = await _roomRepository.GetFirstOrDefaultByFilter(x => x.Name == roomName);
             if (room == null)
                 return Result.Fail(new ResourceNotFoundError($"Room {roomName} not found"));
 
@@ -60,11 +69,19 @@ namespace PrecisionReporters.Platform.Domain.Services
             var twilioIdentity = new TwilioIdentity
             {
                 Name = $"{user.FirstName} {user.LastName}",
-                Role = Enum.GetName(typeof(ParticipantType),role),
+                Role = Enum.GetName(typeof(ParticipantType), role),
                 Email = email
             };
-            
-            var twilioToken = _twilioService.GenerateToken(roomName, twilioIdentity);
+
+            var grantChat = false;
+            if (chatDto != null)
+            {
+                var result = await AddChatParticipant(chatDto, twilioIdentity, user);
+                grantChat = result.IsSuccess;
+            }
+
+
+            var twilioToken = _twilioService.GenerateToken(roomName, twilioIdentity, grantChat);
 
             return Result.Ok(twilioToken);
         }
@@ -130,10 +147,39 @@ namespace PrecisionReporters.Platform.Domain.Services
             return Result.Ok(room);
         }
 
-        public async Task<Result<Room>> Update(Room room) 
+        public async Task<Result<Room>> Update(Room room)
         {
             var updatedRoom = await _roomRepository.Update(room);
             return Result.Ok(updatedRoom);
+        }
+
+        private async Task<Result> AddChatParticipant(ChatDto chatDto, TwilioIdentity twilioIdentity, User user)
+        {
+            if (chatDto.CreateChat && string.IsNullOrWhiteSpace(chatDto.SId))
+            {
+                var result = await _twilioService.CreateChat(chatDto.ChatName);
+                chatDto.SId = result.Value;
+                var deposition = await _depositionRepository.GetById(new Guid(chatDto.ChatName));
+                deposition.ChatSid = chatDto.SId;
+                await _depositionRepository.Update(deposition);
+            }
+
+            if (string.IsNullOrWhiteSpace(user.SId))
+            {
+                var result = await _twilioService.CreateChatUser(twilioIdentity);
+                if (result.IsSuccess)
+                {
+                    user.SId = result.Value;
+                    await _userRepository.Update(user);
+                }
+            }
+
+            if (chatDto.AddParticipant)
+            {
+                await _twilioService.AddUserToChat(chatDto.SId, twilioIdentity, user.SId);
+            }
+
+            return Result.Ok();
         }
     }
 }

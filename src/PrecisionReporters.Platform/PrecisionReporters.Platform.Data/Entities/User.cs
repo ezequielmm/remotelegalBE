@@ -27,6 +27,7 @@ namespace PrecisionReporters.Platform.Data.Entities
         public virtual ICollection<Member> MemberOn { get; set; }
 
         public bool IsGuest { get; set; } = false;
+        public string SId { get; set; }
 
         public override void CopyFrom(User entity)
         {

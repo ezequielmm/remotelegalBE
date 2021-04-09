@@ -2,15 +2,17 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PrecisionReporters.Platform.Data;
 
 namespace PrecisionReporters.Platform.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20210409132516_AddChatSid-UserSid")]
+    partial class AddChatSidUserSid
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -139,9 +141,6 @@ namespace PrecisionReporters.Platform.Data.Migrations
 
                     b.Property<DateTime?>("EndDate")
                         .HasColumnType("datetime");
-
-                    b.Property<string>("FileType")
-                        .HasColumnType("char(5)");
 
                     b.Property<DateTime?>("LastUpdated")
                         .HasColumnType("datetime");
@@ -582,12 +581,6 @@ namespace PrecisionReporters.Platform.Data.Migrations
                         {
                             RoleId = "a11c8ce3-0a39-47a5-a276-6a6b90e40ba5",
                             Action = "ReSchedule",
-                            CreationDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
-                        },
-                        new
-                        {
-                            RoleId = "a11c8ce3-0a39-47a5-a276-6a6b90e40ba5",
-                            Action = "Notify",
                             CreationDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
                         },
                         new
