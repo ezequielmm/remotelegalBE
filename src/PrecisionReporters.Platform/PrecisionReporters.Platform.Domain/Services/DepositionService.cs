@@ -128,6 +128,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             deposition.Caption = !string.IsNullOrWhiteSpace(deposition.FileKey) ? uploadedDocuments.First(d => d.FileKey == deposition.FileKey) : null;
 
             deposition.Room = new Room(deposition.Id.ToString(), deposition.IsVideoRecordingNeeded);
+            deposition.PreRoom = new Room($"{ deposition.Id}-pre", false);
 
             deposition.CaseId = caseId;
             await AddParticipants(deposition);
@@ -220,48 +221,16 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (userResult.IsFailed)
                 return userResult.ToResult<JoinDepositionDto>();
 
-            var deposition = await _depositionRepository.GetById(id, new[] { nameof(Deposition.Room), nameof(Deposition.Participants) });
+            var deposition = await _depositionRepository.GetById(id, new[] { nameof(Deposition.Room), nameof(Deposition.PreRoom), nameof(Deposition.Participants) });
             if (deposition == null)
                 return Result.Fail(new ResourceNotFoundError($"Deposition with id {id} not found."));
+            
+            var joinDepositionInfo = await GetJoinDepositionInfoDto(userResult.Value, deposition, identity);
 
-            // TODO: Add distributed lock when our infra allows it
-            if (deposition.Room.Status == RoomStatus.Created)
-            {
-                await _roomService.StartRoom(deposition.Room);
-            }
-
-            var currentParticipant = deposition.Participants.FirstOrDefault(p => p.User == userResult.Value);
-            if (currentParticipant == null && !userResult.Value.IsAdmin)
-                return Result.Fail(new InvalidInputError($"User is neither a Participant for this Deposition nor an Admin"));
-
-            if (currentParticipant != null && !currentParticipant.IsAdmitted.HasValue && !userResult.Value.IsAdmin)
-                return Result.Fail(new InvalidInputError($"User is in a wating room"));
-
-            if (currentParticipant != null && currentParticipant.IsAdmitted.HasValue && !currentParticipant.IsAdmitted.Value && !userResult.Value.IsAdmin)
-                return Result.Fail(new InvalidInputError($"User has not been admitted to the deposition"));
-
-            var role = currentParticipant?.Role ?? ParticipantType.Admin;
-
-            if (currentParticipant != null)
-            {
-                currentParticipant.HasJoined = true;
-                await _participantRepository.Update(currentParticipant);
-            }
-
-            var token = await _roomService.GenerateRoomToken(deposition.Room.Name, userResult.Value, role, identity);
-            if (token.IsFailed)
-                return token.ToResult<JoinDepositionDto>();
-
-            var joinDepositionInfo = new JoinDepositionDto
-            {
-                Token = token.Value,
-                TimeZone = Enum.GetValues(typeof(USTimeZone)).Cast<USTimeZone>().FirstOrDefault(x => x.GetDescription() == deposition.TimeZone).ToString(),
-                IsOnTheRecord = deposition.IsOnTheRecord,
-                IsSharing = deposition.SharingDocumentId.HasValue,
-                Participants = deposition.Participants.Where(x => x.HasJoined == true).Select(p => _participantMapper.ToDto(p)).ToList()
-            };
-
-            return Result.Ok(joinDepositionInfo);
+            if( joinDepositionInfo.IsFailed)
+                return Result.Fail(new UnexpectedError($"There was an issue trying to Join the deposition."));
+                 
+            return Result.Ok(joinDepositionInfo.Value);
         }
 
         public async Task<Result<Deposition>> EndDeposition(Guid depositionId)
@@ -1007,6 +976,118 @@ namespace PrecisionReporters.Platform.Domain.Services
                 await _documentService.DeleteUploadedFiles(new List<Document> { currentDeposition.Caption });
                 return Result.Fail(new ExceptionalError("Unable to edit the deposition", ex));
             }
+        }
+
+        //TODO: Check concurrencies
+        private async Task<Result<JoinDepositionDto>> GetJoinDepositionInfoDto(User user, Deposition deposition, string identity)
+        {
+            var currentParticipant = deposition.Participants.FirstOrDefault(p => p.User == user);
+            var role = currentParticipant?.Role ?? ParticipantType.Admin;
+            var courtReporters = deposition.Participants.Where(x => x.Role == ParticipantType.CourtReporter).ToList();
+            var isCourtReporterUser = courtReporters.Any(x => x.User?.Id == user.Id);
+            var isCourtReporterJoined = courtReporters.Any(x => x.HasJoined == true);           
+            var joinDepositionInfo = new JoinDepositionDto();
+
+            // Check if we need to Start a Deposition. Only start it if current user is a Court Reporter and also any other court reporter hasn't joined yet.
+            if (isCourtReporterUser && !isCourtReporterJoined)
+            {
+                // Court Reporter Flow
+                await StartDepositionRoom(deposition.Room, true);
+
+                var token = await _roomService.GenerateRoomToken(deposition.Room.Name, user, role, identity);
+                if (token.IsFailed)
+                    return token.ToResult<JoinDepositionDto>();
+
+                joinDepositionInfo = SetJoinDepositionInfo(token.Value, deposition, joinDepositionInfo, false);
+
+                if (currentParticipant != null)
+                {
+                    await UpdateCurrentParticipant(currentParticipant);
+                }
+
+                await SendNotification(deposition);
+            }
+            else 
+            {
+                // Participants Flow
+                if (isCourtReporterJoined)
+                {
+                    if (currentParticipant != null && !currentParticipant.IsAdmitted.HasValue && !user.IsAdmin) 
+                    {
+                        joinDepositionInfo = SetJoinDepositionInfo(null, deposition, joinDepositionInfo, false);
+                    } 
+                    else 
+                    {
+                        if (currentParticipant != null && currentParticipant.IsAdmitted.HasValue && !currentParticipant.IsAdmitted.Value && !user.IsAdmin)
+                            return Result.Fail(new InvalidInputError($"User has not been admitted to the deposition"));
+
+                        if (currentParticipant != null)
+                        {
+                            await UpdateCurrentParticipant(currentParticipant);
+                        }
+
+                        var token = await _roomService.GenerateRoomToken(deposition.Room.Name, user, role, identity);
+                        if (token.IsFailed)
+                            return token.ToResult<JoinDepositionDto>();
+
+                        joinDepositionInfo = SetJoinDepositionInfo(token.Value, deposition, joinDepositionInfo, false);
+                    }
+                }
+                else
+                {
+                    await StartDepositionRoom(deposition.PreRoom, false);
+
+                    var preRoomToken = await _roomService.GenerateRoomToken(deposition.PreRoom.Name, user, role, identity);
+                    if (preRoomToken.IsFailed)
+                        return preRoomToken.ToResult<JoinDepositionDto>();
+
+                    joinDepositionInfo = SetJoinDepositionInfo(preRoomToken.Value, deposition, joinDepositionInfo, true);
+                }
+            }
+           
+            if (currentParticipant == null && !user.IsAdmin)
+                return Result.Fail(new InvalidInputError($"User is neither a Participant for this Deposition nor an Admin"));
+
+            return Result.Ok(joinDepositionInfo);
+        }
+
+        private async Task StartDepositionRoom(Room room, bool configureCallBacks)
+        {
+            // TODO: Add distributed lock when our infra allows it
+            if (room.Status == RoomStatus.Created)
+            {
+                await _roomService.StartRoom(room, configureCallBacks);
+            }
+        }
+
+        private JoinDepositionDto SetJoinDepositionInfo(string token, Deposition deposition, JoinDepositionDto joinDepositionInfo, bool shouldSendToPreDepo) 
+        {
+            joinDepositionInfo.Token = token;
+            joinDepositionInfo.ShouldSendToPreDepo = shouldSendToPreDepo;
+            joinDepositionInfo.TimeZone = Enum.GetValues(typeof(USTimeZone)).Cast<USTimeZone>().FirstOrDefault(x => x.GetDescription() == deposition.TimeZone).ToString();
+            joinDepositionInfo.IsOnTheRecord = deposition.IsOnTheRecord;
+            joinDepositionInfo.IsSharing = deposition.SharingDocumentId.HasValue;
+            joinDepositionInfo.Participants = deposition.Participants.Where(x => x.HasJoined == true).Select(p => _participantMapper.ToDto(p)).ToList();
+            joinDepositionInfo.StartDate = deposition.StartDate;
+
+            return joinDepositionInfo;
+        }
+
+        private async Task SendNotification(Deposition deposition) 
+        {
+            var notificationDto = new NotificationDto
+            {
+                EntityType = NotificationEntity.Deposition,
+                Action = NotificationAction.Start
+            };
+            
+            await _signalRNotificationManager.SendNotificationToDepositionMembers(deposition.Id, notificationDto);
+        }
+
+        private async Task UpdateCurrentParticipant(Participant currentParticipant) 
+        {
+            currentParticipant.HasJoined = true;
+            await _participantRepository.Update(currentParticipant);
         }
     }
 }

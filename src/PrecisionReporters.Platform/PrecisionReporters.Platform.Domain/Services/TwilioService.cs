@@ -43,18 +43,18 @@ namespace PrecisionReporters.Platform.Domain.Services
             };
         }
 
-        public async Task<Room> CreateRoom(Room room)
+        public async Task<Room> CreateRoom(Room room, bool configureCallbacks)
         {
             var roomResource = await RoomResource.CreateAsync(
                 uniqueName: room.Name,
                 recordParticipantsOnConnect: true,
                 type: RoomResource.RoomTypeEnum.Group,
-                statusCallback: new Uri($"{_twilioAccountConfiguration.StatusCallbackUrl}/recordings/addEvent")
+                statusCallback: configureCallbacks ? new Uri($"{_twilioAccountConfiguration.StatusCallbackUrl}/recordings/addEvent") : null
                 );
-
+            
             room.SId = roomResource?.Sid;
             return room;
-        }
+        }       
 
         public async Task<RoomResource> GetRoom(string roomName)
         {

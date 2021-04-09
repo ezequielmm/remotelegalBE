@@ -458,7 +458,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             // Assert
             _userServiceMock.Verify(mock => mock.GetUserByEmail(It.Is<string>(a => a == userEmail)), Times.Once());
-            _depositionRepositoryMock.Verify(mock => mock.GetById(It.Is<Guid>(a => a == depositionId), It.Is<string[]>(a => a.SequenceEqual(new[] { nameof(Deposition.Room), nameof(Deposition.Participants) }))), Times.Once());
+            _depositionRepositoryMock.Verify(mock => mock.GetById(It.IsAny<Guid>(), It.Is<string[]>(a => a.SequenceEqual(new[] { nameof(Deposition.Room), nameof(Deposition.PreRoom), nameof(Deposition.Participants) }))), Times.Once());
             Assert.Equal(errorMessage, result.Errors[0].Message);
             Assert.True(result.IsFailed);
             Assert.NotNull(deposition.TimeZone);
@@ -474,6 +474,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var token = Guid.NewGuid().ToString();
             var depositionId = Guid.NewGuid();
             var caseId = Guid.NewGuid();
+            var courtReporterUser = new User { Id = Guid.NewGuid(), EmailAddress = "courtreporter@email.com", FirstName = "userFirstName", LastName = "userLastName" };
             var currentParticipant = new Participant { Name = "ParticipantName", Role = ParticipantType.Observer, User = user, IsAdmitted = true };
             var deposition = new Deposition
             {
@@ -485,6 +486,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 },
                 Participants = new List<Participant>
                 {
+                   new Participant { Name = "ParticipantName", Role = ParticipantType.CourtReporter, User = courtReporterUser, HasJoined = true },
                    currentParticipant
                 },
                 TimeZone = "America/Puerto_Rico",
@@ -500,7 +502,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             // Assert
             _depositionRepositoryMock.Verify(mock => mock.GetById(It.Is<Guid>(a => a == depositionId), It.IsAny<string[]>()), Times.Once());
-            _roomServiceMock.Verify(x => x.StartRoom(It.Is<Room>(a => a == deposition.Room)), Times.Once);
+            _roomServiceMock.Verify(x => x.StartRoom(It.Is<Room>(a => a == deposition.Room), It.IsAny<bool>()), Times.Never);
             _roomServiceMock.Verify(x => x.GenerateRoomToken(
                 It.Is<string>(a => a == deposition.Room.Name),
                 It.Is<User>(a => a == user),
@@ -515,11 +517,11 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         }
 
         [Fact]
-        public async Task JoinDeposition_ShouldJoinAsWitness_WhenParticipantIsWitness()
+        public async Task JoinDeposition_ShouldStartRoom_WhenFirstCourtReporterJoins()
         {
             // Arrange
-            var userEmail = "witness@email.com";
-            var user = new User { Id = Guid.NewGuid(), EmailAddress = userEmail, FirstName = "userFirstName", LastName = "userLastName" };
+            var userEmail = "courtReporter@email.com";
+            var courtReporterUser = new User { Id = Guid.NewGuid(), EmailAddress = userEmail, FirstName = "userFirstName", LastName = "userLastName" };
             var token = Guid.NewGuid().ToString();
             var depositionId = Guid.NewGuid();
             var caseId = Guid.NewGuid();
@@ -534,7 +536,59 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 Participants = new List<Participant>
                 {
                    new Participant { Name = "ParticipantName", Role = ParticipantType.Observer },
-                   new Participant { Email = userEmail, Role = ParticipantType.Witness, User = user,IsAdmitted = true }
+                   new Participant { Email = userEmail, Role = ParticipantType.CourtReporter, User = courtReporterUser }
+                },
+                TimeZone = "America/Puerto_Rico",
+                IsOnTheRecord = true
+            };
+            _depositions.Add(deposition);
+            _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(courtReporterUser));
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(() => _depositions.FirstOrDefault());
+            _roomServiceMock.Setup(x => x.GenerateRoomToken(It.IsAny<string>(), It.IsAny<User>(), It.IsAny<ParticipantType>(), It.IsAny<string>())).ReturnsAsync(Result.Ok(token));
+
+            // Act
+            var result = await _depositionService.JoinDeposition(depositionId, userEmail);
+
+            // Assert
+            _depositionRepositoryMock.Verify(mock => mock.GetById(It.Is<Guid>(a => a == depositionId), It.IsAny<string[]>()), Times.Once());
+            _roomServiceMock.Verify(x => x.StartRoom(It.Is<Room>(a => a == deposition.Room), It.IsAny<bool>()), Times.Once);
+            _roomServiceMock.Verify(x => x.GenerateRoomToken(
+                It.Is<string>(a => a == deposition.Room.Name),
+                It.Is<User>(a => a == courtReporterUser),
+                It.Is<ParticipantType>(a => a == ParticipantType.CourtReporter),
+                It.Is<string>(a => a == userEmail)), Times.Once);
+            _signalRNotificationManagerMock.Verify(s => s.SendNotificationToDepositionMembers(It.IsAny<Guid>(), It.IsAny<NotificationDto>()), Times.Once());
+            Assert.NotNull(result);
+            Assert.IsType<Result<JoinDepositionDto>>(result);
+            Assert.True(result.IsSuccess);
+            Assert.NotNull(result.Value.TimeZone);
+            Assert.Equal(deposition.IsOnTheRecord, result.Value.IsOnTheRecord);
+            Assert.Equal(token, result.Value.Token);
+        }
+
+        [Fact]
+        public async Task JoinDeposition_ShouldJoinAsWitness_WhenParticipantIsWitness_AndCourtReporterHasJoined()
+        {
+            // Arrange
+            var userEmail = "witness@email.com";
+            var user = new User { Id = Guid.NewGuid(), EmailAddress = userEmail, FirstName = "userFirstName", LastName = "userLastName" };
+            var courtReporterUser = new User { Id = Guid.NewGuid(), EmailAddress = "courtreporter@email.com", FirstName = "userFirstName", LastName = "userLastName" };
+            var token = Guid.NewGuid().ToString();
+            var depositionId = Guid.NewGuid();
+            var caseId = Guid.NewGuid();
+            var deposition = new Deposition
+            {
+                Room = new Room
+                {
+                    Id = Guid.NewGuid(),
+                    Status = RoomStatus.Created,
+                    Name = "TestingRoom"
+                },
+                Participants = new List<Participant>
+                {
+                   new Participant { Name = "ParticipantName", Role = ParticipantType.Observer },
+                   new Participant { Name = "ParticipantName", Role = ParticipantType.CourtReporter, User = courtReporterUser, HasJoined = true },
+                   new Participant { Email = userEmail, Role = ParticipantType.Witness, User = user, IsAdmitted = true }
                 },
                 TimeZone = "America/Puerto_Rico",
                 IsOnTheRecord = true
@@ -549,9 +603,161 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             // Assert
             _depositionRepositoryMock.Verify(mock => mock.GetById(It.Is<Guid>(a => a == depositionId), It.IsAny<string[]>()), Times.Once());
-            _roomServiceMock.Verify(x => x.StartRoom(It.Is<Room>(a => a == deposition.Room)), Times.Once);
+            _roomServiceMock.Verify(x => x.StartRoom(It.Is<Room>(a => a == deposition.Room), It.IsAny<bool>()), Times.Never);
             _roomServiceMock.Verify(x => x.GenerateRoomToken(
                 It.Is<string>(a => a == deposition.Room.Name),
+                It.Is<User>(a => a == user),
+                It.Is<ParticipantType>(a => a == ParticipantType.Witness),
+                It.Is<string>(a => a == userEmail)), Times.Once);
+            Assert.NotNull(result);
+            Assert.IsType<Result<JoinDepositionDto>>(result);
+            Assert.True(result.IsSuccess);
+            Assert.NotNull(result.Value.TimeZone);
+            Assert.Equal(deposition.IsOnTheRecord, result.Value.IsOnTheRecord);
+            Assert.Equal(token, result.Value.Token);
+        }
+
+        [Fact]
+        public async Task JoinDeposition_ShouldJoinDepoAsCourtReporter_WhenParticipantIsCourtReporter_AndAnotherCourtReporterHasJoined()
+        {
+            // Arrange
+            var courtReporter1 = new User { Id = Guid.NewGuid(), EmailAddress = "courtreporter1@email.com", FirstName = "userFirstName", LastName = "userLastName" };
+            var courtReporter2 = new User { Id = Guid.NewGuid(), EmailAddress = "courtreporter2@email.com", FirstName = "userFirstName", LastName = "userLastName" };
+            var token = Guid.NewGuid().ToString();
+            var depositionId = Guid.NewGuid();
+            var caseId = Guid.NewGuid();
+            var deposition = new Deposition
+            {
+                Room = new Room
+                {
+                    Id = Guid.NewGuid(),
+                    Status = RoomStatus.Created,
+                    Name = "TestingRoom"
+                },
+                Participants = new List<Participant>
+                {
+                   new Participant { Name = "ParticipantName", Role = ParticipantType.Observer },
+                   new Participant { Name = "ParticipantCRJoined", Role = ParticipantType.CourtReporter, User = courtReporter1, HasJoined = true },
+                   new Participant { Name = "ParticipantCR", Role = ParticipantType.CourtReporter, User = courtReporter2, IsAdmitted = true, HasJoined = false }
+                },
+                TimeZone = "America/Puerto_Rico",
+                IsOnTheRecord = true
+            };
+            _depositions.Add(deposition);
+            _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(courtReporter2));
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(() => _depositions.FirstOrDefault());
+            _roomServiceMock.Setup(x => x.GenerateRoomToken(It.IsAny<string>(), It.IsAny<User>(), It.IsAny<ParticipantType>(), It.IsAny<string>())).ReturnsAsync(Result.Ok(token));
+
+            // Act
+            var result = await _depositionService.JoinDeposition(depositionId, "courtreporter2@email.com");
+
+            // Assert
+            _depositionRepositoryMock.Verify(mock => mock.GetById(It.Is<Guid>(a => a == depositionId), It.IsAny<string[]>()), Times.Once());
+            _roomServiceMock.Verify(x => x.StartRoom(It.Is<Room>(a => a == deposition.Room), It.IsAny<bool>()), Times.Never);
+            _roomServiceMock.Verify(x => x.GenerateRoomToken(
+                It.Is<string>(a => a == deposition.Room.Name),
+                It.Is<User>(a => a == courtReporter2),
+                It.Is<ParticipantType>(a => a == ParticipantType.CourtReporter),
+                It.Is<string>(a => a == "courtreporter2@email.com")), Times.Once);
+            Assert.NotNull(result);
+            Assert.IsType<Result<JoinDepositionDto>>(result);
+            Assert.True(result.IsSuccess);
+            Assert.NotNull(result.Value.TimeZone);
+            Assert.Equal(deposition.IsOnTheRecord, result.Value.IsOnTheRecord);
+            Assert.Equal(token, result.Value.Token);
+        }
+
+        [Fact]
+        public async Task JoinDeposition_ShouldJoinAndStartPreDepoAsWitness_WhenParticipantIsWitnessAndPreDepoIsNotInProgress_AndCourtReporterHasNotJoined()
+        {
+            // Arrange
+            var userEmail = "witness@email.com";
+            var user = new User { Id = Guid.NewGuid(), EmailAddress = userEmail, FirstName = "userFirstName", LastName = "userLastName" };
+            var courtReporterUser = new User { Id = Guid.NewGuid(), EmailAddress = "courtreporter@email.com", FirstName = "userFirstName", LastName = "userLastName" };
+            var token = Guid.NewGuid().ToString();
+            var depositionId = Guid.NewGuid();
+            var caseId = Guid.NewGuid();
+            var deposition = new Deposition
+            {
+                PreRoom = new Room
+                {
+                    Id = Guid.NewGuid(),
+                    Status = RoomStatus.Created,
+                    Name = "TestingRoom"
+                },
+                Participants = new List<Participant>
+                {
+                   new Participant { Name = "ParticipantName", Role = ParticipantType.Observer },
+                   new Participant { Name = "ParticipantName", Role = ParticipantType.CourtReporter, User = courtReporterUser, HasJoined = false },
+                   new Participant { Email = userEmail, Role = ParticipantType.Witness, User = user, IsAdmitted = true }
+                },
+                TimeZone = "America/Puerto_Rico",
+                IsOnTheRecord = true
+            };
+            _depositions.Add(deposition);
+            _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(user));
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(() => _depositions.FirstOrDefault());
+            _roomServiceMock.Setup(x => x.GenerateRoomToken(It.IsAny<string>(), It.IsAny<User>(), It.IsAny<ParticipantType>(), It.IsAny<string>())).ReturnsAsync(Result.Ok(token));
+
+            // Act
+            var result = await _depositionService.JoinDeposition(depositionId, userEmail);
+
+            // Assert
+            _depositionRepositoryMock.Verify(mock => mock.GetById(It.Is<Guid>(a => a == depositionId), It.IsAny<string[]>()), Times.Once());
+            _roomServiceMock.Verify(x => x.StartRoom(It.Is<Room>(a => a == deposition.PreRoom), It.IsAny<bool>()), Times.Once);
+            _roomServiceMock.Verify(x => x.GenerateRoomToken(
+                It.Is<string>(a => a == deposition.PreRoom.Name),
+                It.Is<User>(a => a == user),
+                It.Is<ParticipantType>(a => a == ParticipantType.Witness),
+                It.Is<string>(a => a == userEmail)), Times.Once);
+            Assert.NotNull(result);
+            Assert.IsType<Result<JoinDepositionDto>>(result);
+            Assert.True(result.IsSuccess);
+            Assert.NotNull(result.Value.TimeZone);
+            Assert.Equal(deposition.IsOnTheRecord, result.Value.IsOnTheRecord);
+            Assert.Equal(token, result.Value.Token);
+        }
+
+        [Fact]
+        public async Task JoinDeposition_ShouldJoinPreDepoAsWitness_WhenParticipantIsWitnessAndPreDepoIsInProgress_AndCourtReporterHasNotJoined()
+        {
+            // Arrange
+            var userEmail = "witness@email.com";
+            var user = new User { Id = Guid.NewGuid(), EmailAddress = userEmail, FirstName = "userFirstName", LastName = "userLastName" };
+            var courtReporterUser = new User { Id = Guid.NewGuid(), EmailAddress = "courtreporter@email.com", FirstName = "userFirstName", LastName = "userLastName" };
+            var token = Guid.NewGuid().ToString();
+            var depositionId = Guid.NewGuid();
+            var caseId = Guid.NewGuid();
+            var deposition = new Deposition
+            {
+                PreRoom = new Room
+                {
+                    Id = Guid.NewGuid(),
+                    Status = RoomStatus.InProgress,
+                    Name = "TestingRoom"
+                },
+                Participants = new List<Participant>
+                {
+                   new Participant { Name = "ParticipantName", Role = ParticipantType.Observer },
+                   new Participant { Name = "ParticipantName", Role = ParticipantType.CourtReporter, User = courtReporterUser, HasJoined = false },
+                   new Participant { Email = userEmail, Role = ParticipantType.Witness, User = user, IsAdmitted = true }
+                },
+                TimeZone = "America/Puerto_Rico",
+                IsOnTheRecord = true
+            };
+            _depositions.Add(deposition);
+            _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(user));
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(() => _depositions.FirstOrDefault());
+            _roomServiceMock.Setup(x => x.GenerateRoomToken(It.IsAny<string>(), It.IsAny<User>(), It.IsAny<ParticipantType>(), It.IsAny<string>())).ReturnsAsync(Result.Ok(token));
+
+            // Act
+            var result = await _depositionService.JoinDeposition(depositionId, userEmail);
+
+            // Assert
+            _depositionRepositoryMock.Verify(mock => mock.GetById(It.Is<Guid>(a => a == depositionId), It.IsAny<string[]>()), Times.Once());
+            _roomServiceMock.Verify(x => x.StartRoom(It.Is<Room>(a => a == deposition.PreRoom), It.IsAny<bool>()), Times.Never);
+            _roomServiceMock.Verify(x => x.GenerateRoomToken(
+                It.Is<string>(a => a == deposition.PreRoom.Name),
                 It.Is<User>(a => a == user),
                 It.Is<ParticipantType>(a => a == ParticipantType.Witness),
                 It.Is<string>(a => a == userEmail)), Times.Once);

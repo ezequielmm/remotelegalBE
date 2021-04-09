@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace PrecisionReporters.Platform.Domain.Dtos
 {
@@ -9,5 +10,7 @@ namespace PrecisionReporters.Platform.Domain.Dtos
         public bool IsOnTheRecord { get; set; }
         public bool IsSharing { get; internal set; }
         public List<ParticipantDto> Participants { get; set; }
+        public bool ShouldSendToPreDepo { get; set; }
+        public DateTimeOffset StartDate { get; set; }
     }
 }

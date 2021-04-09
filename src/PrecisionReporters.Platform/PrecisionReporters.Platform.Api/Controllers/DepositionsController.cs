@@ -74,6 +74,9 @@ namespace PrecisionReporters.Platform.Api.Controllers
             var identity = HttpContext.User.FindFirstValue(ClaimTypes.Email);
             var joinDepositionInfoResult = await _depositionService.JoinDeposition(id, identity);
 
+            if (joinDepositionInfoResult.IsFailed)
+                return WebApiResponses.GetErrorResponse(joinDepositionInfoResult);
+
             return Ok(joinDepositionInfoResult.Value);
         }
 

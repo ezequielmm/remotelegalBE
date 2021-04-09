@@ -35,6 +35,9 @@ namespace PrecisionReporters.Platform.Data.Entities
         [ForeignKey(nameof(Room))]
         public Guid? RoomId { get; set; }
         public Room Room { get; set; }
+        [ForeignKey(nameof(PreRoom))]
+        public Guid? PreRoomId { get; set; }
+        public Room PreRoom { get; set; }
         [ForeignKey(nameof(Case))]
         public Guid CaseId { get; set; }
         public Case Case { get; set; }

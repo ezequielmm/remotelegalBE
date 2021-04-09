@@ -11,7 +11,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Text.Json;
 using System.Threading.Tasks;
 using Twilio.Exceptions;
 using Twilio.Rest.Video.V1;
@@ -196,7 +195,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var roomService = InitializeService(twilioService: twilioServiceMock, roomRepository: roomRepositoryMock);
 
             // Act
-            var result = await roomService.StartRoom(room);
+            var result = await roomService.StartRoom(room, true);
 
             // Assert            
             Assert.True(result.IsFailed);
@@ -211,13 +210,13 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _rooms.Add(room);
 
             var twilioServiceMock = new Mock<ITwilioService>();
-            twilioServiceMock.Setup(x => x.CreateRoom(It.IsAny<Room>())).Throws(new ApiException(ApplicationConstants.RoomExistError));
+            twilioServiceMock.Setup(x => x.CreateRoom(It.IsAny<Room>(), It.IsAny<bool>())).Throws(new ApiException(ApplicationConstants.RoomExistError));
             var roomRepositoryMock = new Mock<IRoomRepository>();
 
             var roomService = InitializeService(twilioService: twilioServiceMock, roomRepository: roomRepositoryMock);
 
             // Act
-            var result = await roomService.StartRoom(room);
+            var result = await roomService.StartRoom(room, true);
 
             // Assert
             Assert.NotNull(result);
@@ -232,13 +231,13 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _rooms.Add(room);
 
             var twilioServiceMock = new Mock<ITwilioService>();
-            twilioServiceMock.Setup(x => x.CreateRoom(It.IsAny<Room>())).ReturnsAsync(new Room());
+            twilioServiceMock.Setup(x => x.CreateRoom(It.IsAny<Room>(), It.IsAny<bool>())).ReturnsAsync(new Room());
             var roomRepositoryMock = new Mock<IRoomRepository>();
 
             var roomService = InitializeService(twilioService: twilioServiceMock, roomRepository: roomRepositoryMock);
 
             // Act
-            var result = await roomService.StartRoom(room);
+            var result = await roomService.StartRoom(room, true);
 
             // Assert
             Assert.NotNull(result);

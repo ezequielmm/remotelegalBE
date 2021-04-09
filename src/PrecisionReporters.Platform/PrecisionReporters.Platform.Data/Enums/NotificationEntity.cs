@@ -7,6 +7,7 @@
         Annotation,
         JoinRequest,
         JoinResponse,
-        BringAllTo
+        BringAllTo,
+        Deposition
     }
 }

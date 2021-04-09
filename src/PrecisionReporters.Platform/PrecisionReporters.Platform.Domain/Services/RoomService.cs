@@ -101,14 +101,14 @@ namespace PrecisionReporters.Platform.Domain.Services
             return Result.Ok(room);
         }
 
-        public async Task<Result<Room>> StartRoom(Room room)
+        public async Task<Result<Room>> StartRoom(Room room, bool configureCallbacks)
         {
             if (room.Status != RoomStatus.Created)
                 return Result.Fail(new InvalidStatusError());
 
             try
             {
-                room = await _twilioService.CreateRoom(room);
+                room = await _twilioService.CreateRoom(room, configureCallbacks);
                 room.Status = RoomStatus.InProgress;
                 room.StartDate = DateTime.UtcNow;
 

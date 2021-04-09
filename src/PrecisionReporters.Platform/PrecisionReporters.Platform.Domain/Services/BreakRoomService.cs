@@ -48,7 +48,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             // TODO: Add distributed lock when our infra allows it
             if (breakRoom.Room.Status == RoomStatus.Created)
             {
-                await _roomService.StartRoom(breakRoom.Room);
+                await _roomService.StartRoom(breakRoom.Room, true);
             }
             var token = await _roomService.GenerateRoomToken(breakRoom.Room.Name, currentParticipant.User, role, currentParticipant.User.EmailAddress);
             if (token.IsFailed)

@@ -8,7 +8,7 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
 {
     public interface ITwilioService
     {
-        Task<Room> CreateRoom(Room room);
+        Task<Room> CreateRoom(Room room, bool configureCallbacks);
         Task<RoomResource> GetRoom(string roomName);
         string GenerateToken(string roomName, TwilioIdentity identity);
         Task<Result> EndRoom(Room room);
