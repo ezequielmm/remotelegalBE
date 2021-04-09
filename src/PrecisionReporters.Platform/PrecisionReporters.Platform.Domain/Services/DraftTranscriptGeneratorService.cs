@@ -141,7 +141,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             {
                 if (!string.IsNullOrEmpty(sentence.Text))
                 {
-                    var text = $"\t\t{ sentence.User.FirstName } { sentence.User.LastName }: {sentence.Text}";
+                    var text = $"\t\t{sentence.User.FirstName?.Trim()} {sentence.User.LastName?.Trim()}: {sentence.Text}";
 
                     if (text.Length > MAX_LENGHT)
                         transcriptsLines.AddRange(SplitSentences(text));
