@@ -1011,7 +1011,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 return depositionResult.ToResult();
             
             var participants = depositionResult.Value.Participants.Where(x => x.Role != ParticipantType.Witness);
-            if (participants == null)
+            if (!participants.Any())
                 return Result.Fail(new ResourceConflictError($"The deposition {depositionId} must have participants"));
 
             var witness = depositionResult.Value.Participants.FirstOrDefault(x => x.Role == ParticipantType.Witness);

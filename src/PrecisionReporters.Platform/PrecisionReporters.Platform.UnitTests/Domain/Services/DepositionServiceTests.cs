@@ -93,7 +93,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _depositionConfigurationMock = new Mock<IOptions<DepositionConfiguration>>();
             _depositionConfigurationMock.Setup(x => x.Value).Returns(_depositionconfiguration);
 
-            _emailConfiguration = new EmailConfiguration { EmailNotification = "notifications@remotelegal.com"};
+            _emailConfiguration = new EmailConfiguration { EmailNotification = "notifications@remotelegal.com" };
             _emailConfigurationMock = new Mock<IOptions<EmailConfiguration>>();
             _emailConfigurationMock.Setup(x => x.Value).Returns(_emailConfiguration);
 
@@ -680,7 +680,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 It.Is<string>(a => a == deposition.Room.Name),
                 It.Is<User>(a => a == courtReporter2),
                 It.Is<ParticipantType>(a => a == ParticipantType.CourtReporter),
-                It.Is<string>(a => a == "courtreporter2@email.com"), 
+                It.Is<string>(a => a == "courtreporter2@email.com"),
                 It.IsAny<ChatDto>()), Times.Once);
             Assert.NotNull(result);
             Assert.IsType<Result<JoinDepositionDto>>(result);
@@ -2085,7 +2085,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var result = await _depositionService.EditDepositionDetails(depositionMock, null, true);
 
             //Assert
-            _userServiceMock.Verify(u => u.GetCurrentUserAsync(), Times.Once);_depositionRepositoryMock.Verify(d => d.GetById(It.Is<Guid>(i => i == depositionMock.Id), It.IsAny<string[]>()));
+            _userServiceMock.Verify(u => u.GetCurrentUserAsync(), Times.Once); _depositionRepositoryMock.Verify(d => d.GetById(It.Is<Guid>(i => i == depositionMock.Id), It.IsAny<string[]>()));
             _documentServiceMock.Verify(dc => dc.DeleteUploadedFiles(It.IsAny<List<Document>>()), Times.AtLeastOnce);
             _depositionRepositoryMock.Verify(d => d.Update(It.IsAny<Deposition>()), Times.Once);
             Assert.NotNull(result);
@@ -2475,6 +2475,135 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 It.Is<User>(u => u == userMock),
                 It.IsAny<string>(),
                 It.IsAny<DocumentType>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task NotifyParties_ShouldFail_DepositionNotFound()
+        {
+            //Arrange
+            var depositionId = Guid.NewGuid();
+            var expectedError = $"Deposition with id {depositionId} not found.";
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync((Deposition)null);
+
+            //Act
+            var result = await _depositionService.NotifyParties(depositionId);
+
+            //Assert
+            _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(p => p == depositionId), It.IsAny<string[]>()), Times.Once);
+            Assert.True(result.IsFailed);
+            Assert.Contains(expectedError, result.Errors.Select(e => e.Message));
+
+        }
+
+        [Fact]
+        public async Task NotifyParties_ShouldFail_ParticipantsNotFound()
+        {
+            //Arrange
+            var depositionId = Guid.NewGuid();
+            var deposition = new Deposition()
+            {
+                Id = depositionId,
+                Participants = new List<Participant>()
+            };
+            var expectedError = $"The deposition {depositionId} must have participants";
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
+
+            //Act
+            var result = await _depositionService.NotifyParties(depositionId);
+
+            //Assert
+            _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(p => p == depositionId), It.IsAny<string[]>()), Times.Once);
+            Assert.True(result.IsFailed);
+            Assert.Contains(expectedError, result.Errors.Select(e => e.Message));
+
+        }
+
+        [Fact]
+        public async Task NotifyParties_ShouldFail_WitnessNotFound()
+        {
+            //Arrange
+            var depositionId = Guid.NewGuid();
+            var deposition = new Deposition()
+            {
+                Id = depositionId,
+                Participants = new List<Participant>()
+                {
+                    new Participant(){ Role = ParticipantType.CourtReporter }
+                }
+            };
+            var expectedError = $"The Deposition {depositionId} must have a witness";
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
+
+            //Act
+            var result = await _depositionService.NotifyParties(depositionId);
+
+            //Assert
+            _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(p => p == depositionId), It.IsAny<string[]>()), Times.Once);
+            Assert.True(result.IsFailed);
+            Assert.Contains(expectedError, result.Errors.Select(e => e.Message));
+
+        }
+
+        [Fact]
+        public async Task NotifyParties_ShouldFail_AwsSetTemplateEmailRequest_ThrowException()
+        {
+            //Arrange
+            var depositionId = Guid.NewGuid();
+            var deposition = new Deposition()
+            {
+                Id = depositionId,
+                Case = new Case() { Name = "TestCase" },
+                StartDate = DateTime.UtcNow,
+                TimeZone = "EST",
+                Participants = new List<Participant>()
+                {
+                    new Participant(){ Role = ParticipantType.CourtReporter, Name = "Test Participant", Email = "testemail@test.com" },
+                    new Participant(){ Role = ParticipantType.Witness, Name = "Test Witness" }
+                }
+            };
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
+            _awsEmailServiceMock.Setup(x => x.SetTemplateEmailRequest(It.IsAny<EmailTemplateInfo>(), It.IsAny<string>())).ThrowsAsync(new Exception());
+
+            //Act
+            var result = await _depositionService.NotifyParties(depositionId);
+
+            //Assert
+            _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(p => p == depositionId), It.IsAny<string[]>()), Times.Once);
+            _awsEmailServiceMock.Verify(e => e.SetTemplateEmailRequest(It.IsAny<EmailTemplateInfo>(), It.IsAny<string>()), Times.Once);
+            Assert.True(result.IsSuccess);
+            Assert.IsType<bool>(result.Value);
+            Assert.False(result.Value);
+        }
+
+        [Fact]
+        public async Task NotifyParties_ShouldOk()
+        {
+            //Arrange
+            var depositionId = Guid.NewGuid();
+            var deposition = new Deposition()
+            {
+                Id = depositionId,
+                Case = new Case() { Name = "TestCase" },
+                StartDate = DateTime.UtcNow,
+                TimeZone = "EST",
+                Participants = new List<Participant>()
+                {
+                    new Participant(){ Role = ParticipantType.CourtReporter, Name = "Test Participant", Email = "testemail@test.com" },
+                    new Participant(){ Role = ParticipantType.Witness, Name = "Test Witness" }
+                }
+            };
+            var expectedError = $"The Deposition {depositionId} must have a witness";
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
+
+            //Act
+            var result = await _depositionService.NotifyParties(depositionId);
+
+            //Assert
+            _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(p => p == depositionId), It.IsAny<string[]>()), Times.Once);
+            _awsEmailServiceMock.Verify(e => e.SetTemplateEmailRequest(It.IsAny<EmailTemplateInfo>(), It.IsAny<string>()), Times.Once);
+            Assert.True(result.IsSuccess);
+            Assert.IsType<bool>(result.Value);
+            Assert.True(result.Value);
         }
     }
 }
