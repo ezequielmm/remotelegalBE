@@ -68,7 +68,6 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             var twilioIdentity = new TwilioIdentity
             {
-                Id = user.Id.ToString(),
                 Name = $"{user.FirstName} {user.LastName}",
                 Role = Enum.GetName(typeof(ParticipantType), role),
                 Email = email
