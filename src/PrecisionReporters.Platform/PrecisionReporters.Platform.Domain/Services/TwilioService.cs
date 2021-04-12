@@ -5,6 +5,7 @@ using Newtonsoft.Json.Serialization;
 using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Domain.Commons;
 using PrecisionReporters.Platform.Domain.Configurations;
+using PrecisionReporters.Platform.Domain.Dtos;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -15,13 +16,11 @@ using System.Text;
 using System.Threading.Tasks;
 using Twilio;
 using Twilio.Jwt.AccessToken;
+using Twilio.Rest.Chat.V2.Service.User;
+using Twilio.Rest.Conversations.V1.Service;
 using Twilio.Rest.Video.V1;
 using Twilio.Rest.Video.V1.Room;
 using static Twilio.Rest.Video.V1.RoomResource;
-using PrecisionReporters.Platform.Domain.Dtos;
-using Twilio.Rest.Conversations.V1;
-using Twilio.Rest.Chat.V2.Service.User;
-using Amazon.SimpleEmail.Model.Internal.MarshallTransformations;
 
 namespace PrecisionReporters.Platform.Domain.Services
 {
@@ -102,17 +101,17 @@ namespace PrecisionReporters.Platform.Domain.Services
             options.StatusCallback = new Uri(_twilioAccountConfiguration.StatusCallbackUrl);
             options.Format = CompositionResource.FormatEnum.Mp4;
             options.Trim = false;
-       
+
             if (room.IsRecordingEnabled)
             {
                 var witnessSid = await GetWitnessSid(room.SId, witnessEmail);
                 options.VideoLayout = new
+                {
+                    grid = new
                     {
-                        grid = new
-                        {
-                            video_sources = new string[] { witnessSid }
-                        }
-                    };
+                        video_sources = new string[] { witnessSid }
+                    }
+                };
             }
 
             return await CompositionResource.CreateAsync(options);
@@ -266,8 +265,9 @@ namespace PrecisionReporters.Platform.Domain.Services
             try
             {
                 var chatRoomResource = await ConversationResource.CreateAsync(
-                friendlyName: chatName,
-                uniqueName: chatName
+                    pathChatServiceSid: _twilioAccountConfiguration.ConversationServiceId,
+                    friendlyName: chatName,
+                    uniqueName: chatName
                 );
                 if (chatRoomResource != null)
                     return Result.Ok(chatRoomResource.Sid);
@@ -287,7 +287,9 @@ namespace PrecisionReporters.Platform.Domain.Services
             try
             {
                 var strIdentity = SerializeObject(identity);
-                var user = await UserResource.CreateAsync(strIdentity);
+                var user = await UserResource.CreateAsync(
+                    pathChatServiceSid: _twilioAccountConfiguration.ConversationServiceId,
+                    identity: strIdentity);
                 if (user != null)
                     return Result.Ok(user.Sid);
                 else
@@ -319,10 +321,12 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             try
             {
-                Twilio.Rest.Conversations.V1.Conversation.ParticipantResource chatParticipant = null;
                 if (userChannel == null)
                 {
-                    chatParticipant = await Twilio.Rest.Conversations.V1.Conversation.ParticipantResource.CreateAsync(conversationSid, strIdentity);
+                    var chatParticipant = await Twilio.Rest.Conversations.V1.Service.Conversation.ParticipantResource.CreateAsync(
+                        pathChatServiceSid: _twilioAccountConfiguration.ConversationServiceId, 
+                        pathConversationSid: conversationSid, 
+                        identity: strIdentity);
                     return Result.Ok(chatParticipant?.Sid);
                 }
                 else
