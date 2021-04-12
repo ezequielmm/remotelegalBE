@@ -741,6 +741,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             {
                 newParticipant.User = userResult.Value;
             }
+            newParticipant.IsAdmitted = true;
             deposition.Participants.Add(newParticipant);
             await _depositionRepository.Update(deposition);
             await _permissionService.AddParticipantPermissions(newParticipant);
