@@ -98,9 +98,6 @@ namespace PrecisionReporters.Platform.Api.Controllers
                 StampLabel = stampedDocumentDto.StampLabel
             };
 
-            if (Request.Form.Files.Count == 0)
-                return BadRequest("No files to update.");
-
             var depositionDocument = _depositionDocumentMapper.ToModel(depositionDocumentDto);
             var temporalPath = Path.Combine(_filePath + ApplicationConstants.TemporalFileFolder);
             var depositionDocumentResult = await _depositionDocumentService.CloseStampedDepositionDocument(documentResult.Value, depositionDocument, identity, temporalPath);
