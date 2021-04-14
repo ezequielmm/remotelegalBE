@@ -72,7 +72,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             IOptions<DepositionConfiguration> depositionConfiguration,
             ISignalRNotificationManager signalRNotificationManager,
             IAwsEmailService awsEmailService,
-            IOptions<UrlPathConfiguration> urlPathConfiguration, 
+            IOptions<UrlPathConfiguration> urlPathConfiguration,
             IOptions<EmailConfiguration> emailConfiguration)
         {
             _awsStorageService = awsStorageService;
@@ -1010,34 +1010,37 @@ namespace PrecisionReporters.Platform.Domain.Services
             var depositionResult = await GetDepositionById(depositionId);
             if (depositionResult.IsFailed)
                 return depositionResult.ToResult();
-            
+
             var participants = depositionResult.Value.Participants.Where(x => x.Role != ParticipantType.Witness);
             if (!participants.Any())
                 return Result.Fail(new ResourceConflictError($"The deposition {depositionId} must have participants"));
 
             var witness = depositionResult.Value.Participants.FirstOrDefault(x => x.Role == ParticipantType.Witness);
-            if(witness == null)
+            if (witness == null)
                 return Result.Fail(new ResourceConflictError($"The Deposition {depositionId} must have a witness"));
 
             try
             {
                 foreach (var participant in participants)
                 {
-                    var template = new EmailTemplateInfo
+                    if (participant.Role != ParticipantType.Witness)
                     {
-                        EmailTo = new List<string> { participant.Email },
-                        TemplateData = new Dictionary<string, string>
+                        var template = new EmailTemplateInfo
                         {
-                            { "user-name", participant.Name },
-                            { "witness-name", witness.Name },
-                            { "case-name", depositionResult.Value.Case.Name },
-                            { "start-date", $"{depositionResult.Value.StartDate.ToString("MMMM dd,yyyy")} {depositionResult.Value.StartDate.ConvertTime(depositionResult.Value.TimeZone)}" },
-                            { "depo-details-link", $"{_urlPathConfiguration.FrontendBaseUrl}/deposition/post-depo-details/{depositionResult.Value.Id}" }
-                        },
-                        TemplateName = isEndDeposition ? DOWNLOAD_ASSETS_TEMPLATE : DOWNLOAD_TRANSCRIPT_TEMPLATE
-                    };
+                            EmailTo = new List<string> { participant.Email },
+                            TemplateData = new Dictionary<string, string>
+                            {
+                                { "user-name", participant.Name },
+                                { "witness-name", witness.Name },
+                                { "case-name", depositionResult.Value.Case.Name },
+                                { "start-date", $"{depositionResult.Value.StartDate:MMMM dd,yyyy} {depositionResult.Value.StartDate.ConvertTime(depositionResult.Value.TimeZone)}" },
+                                { "depo-details-link", $"{_urlPathConfiguration.FrontendBaseUrl}deposition/post-depo-details/{depositionResult.Value.Id}" }
+                            },
+                            TemplateName = isEndDeposition ? DOWNLOAD_ASSETS_TEMPLATE : DOWNLOAD_TRANSCRIPT_TEMPLATE
+                        };
 
-                    await _awsEmailService.SetTemplateEmailRequest(template, _emailConfiguration.EmailNotification);
+                        await _awsEmailService.SetTemplateEmailRequest(template, _emailConfiguration.EmailNotification);
+                    }
                 }
 
                 return Result.Ok(true);
@@ -1174,12 +1177,12 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task SendDepositionEmailNotification(Deposition deposition)
         {
-           await _awsEmailService.SendRawEmailNotification(deposition);
+            await _awsEmailService.SendRawEmailNotification(deposition);
         }
 
         private async Task SendDepositionEmailNotification(Deposition deposition, Participant participant)
         {
-           await _awsEmailService.SendRawEmailNotification(deposition, participant);
+            await _awsEmailService.SendRawEmailNotification(deposition, participant);
         }
     }
 }
