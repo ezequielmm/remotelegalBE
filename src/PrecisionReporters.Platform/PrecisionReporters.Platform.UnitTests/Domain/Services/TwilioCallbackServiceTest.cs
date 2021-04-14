@@ -152,7 +152,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             // Assert
             Assert.True(result.IsSuccess);
-            _depositionServiceMock.Verify(x => x.EndDeposition(It.IsAny<Guid>()), Times.Once);
+            _roomServiceMock.Verify(x => x.CreateComposition(It.IsAny<Room>(), It.IsAny<string>()), Times.Once);
         }
 
         [Fact]

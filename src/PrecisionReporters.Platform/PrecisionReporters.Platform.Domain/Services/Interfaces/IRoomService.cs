@@ -17,5 +17,6 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
         Task<Result<Room>> StartRoom(Room room, bool configureCallbacks);
         Task<Result<Room>> GetRoomBySId(string roomSid);
         Task<Result<Room>> Update(Room room);
+        Task<Result<Composition>> CreateComposition(Room room, string witnessEmail);
     }
 }

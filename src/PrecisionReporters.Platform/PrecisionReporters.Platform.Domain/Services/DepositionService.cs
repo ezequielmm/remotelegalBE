@@ -616,7 +616,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<Deposition>> GetDepositionByRoomId(Guid roomId)
         {
-            var include = new[] { nameof(Deposition.Events), nameof(Deposition.Room) };
+            var include = new[] { nameof(Deposition.Events), nameof(Deposition.Room), nameof(Deposition.Participants) };
             var deposition = await _depositionRepository.GetFirstOrDefaultByFilter(x => x.RoomId == roomId, include);
             if (deposition == null)
                 return Result.Fail(new ResourceNotFoundError($"Deposition with RoomId = {roomId} not found"));

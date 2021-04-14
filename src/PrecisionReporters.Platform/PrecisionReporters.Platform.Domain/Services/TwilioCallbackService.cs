@@ -9,6 +9,7 @@ using PrecisionReporters.Platform.Domain.Extensions;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using Microsoft.Extensions.Logging;
 using PrecisionReporters.Platform.Data.Handlers;
+using System.Linq;
 
 namespace PrecisionReporters.Platform.Domain.Services
 {
@@ -66,9 +67,9 @@ namespace PrecisionReporters.Platform.Domain.Services
                         var depositionResult = await _depositionService.GetDepositionByRoomId(room.Id);
                         if (depositionResult.IsFailed)
                             return depositionResult.ToResult<Room>();
-
-                        if (depositionResult.Value.Room.Status != RoomStatus.Completed)
-                            await _depositionService.EndDeposition(depositionResult.Value.Id);
+                        
+                        var witness = depositionResult.Value.Participants.FirstOrDefault(x => x.Role == ParticipantType.Witness);
+                        await _roomService.CreateComposition(room, witness.Email);
                             
                         return Result.Ok();
                     }

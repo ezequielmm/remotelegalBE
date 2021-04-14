@@ -96,18 +96,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
                 room.EndDate = DateTime.UtcNow;
                 room.Status = RoomStatus.Completed;
-
-                var compositionResource = await _twilioService.CreateComposition(room, witnessEmail);
-
-                room.Composition = new Composition
-                {
-                    SId = compositionResource?.Sid,
-                    Status = CompositionStatus.Queued,
-                    StartDate = DateTime.UtcNow,
-                    Url = compositionResource?.Url.AbsoluteUri,
-                    FileType = room.IsRecordingEnabled ? ApplicationConstants.Mp4 : ApplicationConstants.Mp3
-                };
-
+                
                 await _roomRepository.Update(room);
             }
             else
@@ -116,6 +105,25 @@ namespace PrecisionReporters.Platform.Domain.Services
             }
 
             return Result.Ok(room);
+        }
+
+        public async Task<Result<Composition>> CreateComposition(Room room, string witnessEmail)
+        {
+            var compositionResource = await _twilioService.CreateComposition(room, witnessEmail);
+
+            var composition = new Composition
+            {
+                SId = compositionResource?.Sid,
+                Status = CompositionStatus.Queued,
+                StartDate = DateTime.UtcNow,
+                Url = compositionResource?.Url.AbsoluteUri,
+                FileType = room.IsRecordingEnabled? ApplicationConstants.Mp4 : ApplicationConstants.Mp3
+            };
+
+            room.Composition = composition;
+            await _roomRepository.Update(room);
+
+            return Result.Ok(composition);
         }
 
         public async Task<Result<Room>> StartRoom(Room room, bool configureCallbacks)
