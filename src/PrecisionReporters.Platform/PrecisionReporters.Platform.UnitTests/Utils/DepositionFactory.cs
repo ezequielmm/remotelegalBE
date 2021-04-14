@@ -203,7 +203,8 @@ namespace PrecisionReporters.Platform.UnitTests.Utils
                     {
                         Email = participantEmail,
                         UserId = isUser ? Guid.NewGuid() : (Guid?)null,
-                        IsAdmitted = false
+                        IsAdmitted = false,
+                        Role = ParticipantType.Observer
                     }
                 },
                 Requester = new User
