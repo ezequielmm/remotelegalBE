@@ -1034,7 +1034,9 @@ namespace PrecisionReporters.Platform.Domain.Services
                                 { "witness-name", witness.Name },
                                 { "case-name", depositionResult.Value.Case.Name },
                                 { "start-date", $"{depositionResult.Value.StartDate:MMMM dd,yyyy} {depositionResult.Value.StartDate.ConvertTime(depositionResult.Value.TimeZone)}" },
-                                { "depo-details-link", $"{_urlPathConfiguration.FrontendBaseUrl}deposition/post-depo-details/{depositionResult.Value.Id}" }
+                                { "depo-details-link", $"{_urlPathConfiguration.FrontendBaseUrl}deposition/post-depo-details/{depositionResult.Value.Id}" },
+                                { "logo", $"{_emailConfiguration.ImagesUrl}/{_emailConfiguration.LogoImageName}"},
+                                { "calendar", $"{_emailConfiguration.ImagesUrl}/{_emailConfiguration.CalendarImageName}"}
                             },
                             TemplateName = isEndDeposition ? DOWNLOAD_ASSETS_TEMPLATE : DOWNLOAD_TRANSCRIPT_TEMPLATE
                         };
