@@ -200,6 +200,7 @@ namespace PrecisionReporters.Platform.Api
                 x.EmailNotification = appConfiguration.EmailConfiguration.EmailNotification;
                 x.ImagesUrl = appConfiguration.EmailConfiguration.ImagesUrl;
                 x.LogoImageName = appConfiguration.EmailConfiguration.LogoImageName;
+                x.CalendarImageName = appConfiguration.EmailConfiguration.CalendarImageName;
                 x.PreDepositionLink = appConfiguration.EmailConfiguration.PreDepositionLink;
                 x.JoinDepositionTemplate = appConfiguration.EmailConfiguration.JoinDepositionTemplate;
             });
