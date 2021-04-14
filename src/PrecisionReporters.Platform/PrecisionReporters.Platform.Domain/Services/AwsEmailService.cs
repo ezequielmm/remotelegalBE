@@ -43,7 +43,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         {
             var emailRequest = new SendBulkTemplatedEmailRequest
             {
-                Source = sender == null ?_emailConfiguration.Sender : sender,
+                Source = sender == null ? _emailConfiguration.Sender : sender,
                 Template = templateName,
                 DefaultTemplateData = destinations[0].ReplacementTemplateData,
                 Destinations = destinations
@@ -79,7 +79,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         public async Task SendRawEmailNotification(MemoryStream streamMessage)
         {
             var sendRequest = new SendRawEmailRequest { RawMessage = new RawMessage(streamMessage) };
-           try
+            try
             {
                 _logger.LogDebug("Sending email using Amazon SES.");
                 var r = await _emailService.SendRawEmailAsync(sendRequest);
@@ -94,7 +94,8 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task SendRawEmailNotification(Deposition deposition, Participant participant)
         {
-            var templateRequest = new GetTemplateRequest {
+            var templateRequest = new GetTemplateRequest
+            {
                 TemplateName = _emailConfiguration.JoinDepositionTemplate
             };
             var template = await _emailService.GetTemplateAsync(templateRequest);
@@ -105,33 +106,34 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task SendRawEmailNotification(Deposition deposition)
         {
-            var templateRequest = new GetTemplateRequest {
+            var templateRequest = new GetTemplateRequest
+            {
                 TemplateName = _emailConfiguration.JoinDepositionTemplate
             };
             var template = await _emailService.GetTemplateAsync(templateRequest);
             string htmlBody = template.Template.HtmlPart;
 
-            deposition.Participants.ForEach ( async x => { 
+            deposition.Participants.ForEach(async x =>
+            {
                 var participantMail = x.Email ?? x.User?.EmailAddress;
                 if (!string.IsNullOrEmpty(participantMail))
                     await SendRawEmailNotification(CreateMessageStream(deposition, x, htmlBody));
             });
         }
 
-        private string AddCalendar(DateTime startDate, DateTime? endDate, string timeZone) 
+        private string AddCalendar(DateTime startDate, DateTime? endDate, Deposition deposition)
         {
             var calendar = new Calendar();
-
+            calendar.Method = "REQUEST";
             var icalEvent = new CalendarEvent
             {
-                Summary = "Deposition Event",
-                Description = "Description for event",
-                Start = new CalDateTime(GetConvertedTime(startDate, timeZone)),
-                End = endDate.HasValue ? new CalDateTime(GetConvertedTime(endDate.Value, timeZone)) : null,   
+                Uid = deposition.Id.ToString(),
+                Summary = deposition.Case.Name,
+                Description = $"You can join by clicking the link {_emailConfiguration.PreDepositionLink}{deposition.Id}",
+                Start = new CalDateTime(GetConvertedTime(startDate, deposition.TimeZone)),
+                End = endDate.HasValue ? new CalDateTime(GetConvertedTime(endDate.Value, deposition.TimeZone)) : null
             };
-
             calendar.Events.Add(icalEvent);
-
             var iCalSerializer = new CalendarSerializer();
             return iCalSerializer.SerializeToString(calendar);
         }
@@ -141,7 +143,6 @@ namespace PrecisionReporters.Platform.Domain.Services
             var mixed = new Multipart("mixed");
             var caseName = deposition.Case.Name;
             var imageUrl = GetImageUrl(_emailConfiguration.LogoImageName);
-
             var htmlBody = htmlBodyTemplate
                 .Replace("{{dateAndTime}}", $"{GetConvertedTime(deposition.StartDate, deposition.TimeZone):MMMM d, yyyy hh:mm tt}")
                 .Replace("{{name}}", participantName)
@@ -153,17 +154,19 @@ namespace PrecisionReporters.Platform.Domain.Services
             else
                 htmlBody = htmlBody.Replace("{{case}}", $"{witnessName} in {caseName}");
 
-            mixed.Add (new TextPart(TextFormat.Html) {
+            mixed.Add(new TextPart(TextFormat.Html)
+            {
                 ContentTransferEncoding = ContentEncoding.Base64,
                 Text = htmlBody
             });
 
-            var ical = new TextPart ("calendar") {
-                ContentTransferEncoding = ContentEncoding.Base64,
-                Text = AddCalendar(deposition.StartDate, deposition.EndDate, deposition.TimeZone),
+            var ical = new TextPart("calendar")
+            {
+                ContentTransferEncoding = ContentEncoding.SevenBit,
+                Text = AddCalendar(deposition.StartDate, deposition.EndDate, deposition),
             };
 
-            ical.ContentType.Parameters.Add ("method", "REQUEST");
+            ical.ContentType.Parameters.Add("method", "REQUEST");
 
             mixed.Add(ical);
             return mixed;
@@ -173,12 +176,12 @@ namespace PrecisionReporters.Platform.Domain.Services
         {
             var message = new MimeMessage();
             message.From.Add(new MailboxAddress("Remote Legal Team", _emailConfiguration.Sender));
-            
+
             var participantMail = participant.Email ?? participant.User?.EmailAddress;
             var participantName = participant.User?.GetFullName() ?? participant.Name;
-            
+
             message.To.Add(new MailboxAddress(participantName, participantMail));
-            
+
             var witnessName = deposition.Participants.Single(x => x.Role == Data.Enums.ParticipantType.Witness)?.Name;
             message.Subject = $"Invitation: Remote Legal - {witnessName} - {deposition.Case.Name} - {GetConvertedTime(deposition.StartDate, deposition.TimeZone):MMMM d, yyyy hh:mm tt}";
 
@@ -201,24 +204,6 @@ namespace PrecisionReporters.Platform.Domain.Services
         private DateTime GetConvertedTime(DateTime dateTime, string timeZone)
         {
             return TimeZoneInfo.ConvertTime(dateTime, TimeZoneInfo.FindSystemTimeZoneById(timeZone));
-        }
-
-        private string AddCalendar(DateTime startDate, DateTime? endDate = null) 
-        {
-            var calendar = new Calendar();
-
-            var icalEvent = new CalendarEvent
-            {
-                Summary = "Deposition Event",
-                Description = "Description for event",
-                Start = new CalDateTime(startDate),
-                End = endDate.HasValue ? new CalDateTime(endDate.Value) : null
-            };
-
-            calendar.Events.Add(icalEvent);
-
-            var iCalSerializer = new CalendarSerializer();
-            return iCalSerializer.SerializeToString(calendar);
         }
     }
 }
