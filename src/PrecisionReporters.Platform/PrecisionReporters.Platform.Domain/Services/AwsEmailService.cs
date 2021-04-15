@@ -19,10 +19,7 @@ using MimeKit;
 using PrecisionReporters.Platform.Data.Entities;
 using MimeKit.Text;
 using System.Linq;
-using Microsoft.EntityFrameworkCore.ChangeTracking.Internal;
-using System.Net.Http;
-using Microsoft.CodeAnalysis.CSharp;
-using System.Net.Mime;
+using PrecisionReporters.Platform.Domain.Extensions;
 
 namespace PrecisionReporters.Platform.Domain.Services
 {
@@ -130,8 +127,8 @@ namespace PrecisionReporters.Platform.Domain.Services
                 Uid = deposition.Id.ToString(),
                 Summary = deposition.Case.Name,
                 Description = $"You can join by clicking the link {_emailConfiguration.PreDepositionLink}{deposition.Id}",
-                Start = new CalDateTime(GetConvertedTime(startDate, deposition.TimeZone)),
-                End = endDate.HasValue ? new CalDateTime(GetConvertedTime(endDate.Value, deposition.TimeZone)) : null
+                Start = new CalDateTime(startDate.GetConvertedTime(deposition.TimeZone), deposition.TimeZone),
+                End = endDate.HasValue ? new CalDateTime(endDate.Value.GetConvertedTime(deposition.TimeZone), deposition.TimeZone) : null
             };
             calendar.Events.Add(icalEvent);
             var iCalSerializer = new CalendarSerializer();
@@ -144,7 +141,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             var caseName = deposition.Case.Name;
             var imageUrl = GetImageUrl(_emailConfiguration.LogoImageName);
             var htmlBody = htmlBodyTemplate
-                .Replace("{{dateAndTime}}", $"{GetConvertedTime(deposition.StartDate, deposition.TimeZone):MMMM d, yyyy hh:mm tt}")
+                .Replace("{{dateAndTime}}", $"{deposition.StartDate.GetFormattedDateTime(deposition.TimeZone)}")
                 .Replace("{{name}}", participantName)
                 .Replace("{{imageUrl}}", imageUrl)
                 .Replace("{{depositionJoinLink}}", $"{_emailConfiguration.PreDepositionLink}{deposition.Id}");
@@ -175,7 +172,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         private MimeMessage CreateMessage(Deposition deposition, Participant participant, string htmlBodyTemplate)
         {
             var message = new MimeMessage();
-            message.From.Add(new MailboxAddress("Remote Legal Team", _emailConfiguration.Sender));
+            message.From.Add(new MailboxAddress("Remote Legal Team", _emailConfiguration.EmailNotification));
 
             var participantMail = participant.Email ?? participant.User?.EmailAddress;
             var participantName = participant.User?.GetFullName() ?? participant.Name;
@@ -183,7 +180,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             message.To.Add(new MailboxAddress(participantName, participantMail));
 
             var witnessName = deposition.Participants.Single(x => x.Role == Data.Enums.ParticipantType.Witness)?.Name;
-            message.Subject = $"Invitation: Remote Legal - {witnessName} - {deposition.Case.Name} - {GetConvertedTime(deposition.StartDate, deposition.TimeZone):MMMM d, yyyy hh:mm tt}";
+            message.Subject = $"Invitation: Remote Legal - {witnessName} - {deposition.Case.Name} - {deposition.StartDate.GetFormattedDateTime(deposition.TimeZone)}";
 
             message.Body = CreateMessageBody(deposition, participantName ?? "", witnessName, htmlBodyTemplate);
             return message;
@@ -201,9 +198,5 @@ namespace PrecisionReporters.Platform.Domain.Services
             return $"{_emailConfiguration.ImagesUrl}{name}";
         }
 
-        private DateTime GetConvertedTime(DateTime dateTime, string timeZone)
-        {
-            return TimeZoneInfo.ConvertTime(dateTime, TimeZoneInfo.FindSystemTimeZoneById(timeZone));
-        }
     }
 }

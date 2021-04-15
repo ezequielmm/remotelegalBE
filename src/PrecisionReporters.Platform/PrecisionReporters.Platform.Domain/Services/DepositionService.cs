@@ -1019,6 +1019,8 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (witness == null)
                 return Result.Fail(new ResourceConflictError($"The Deposition {depositionId} must have a witness"));
 
+            var startDate = depositionResult.Value.GetActualStartDate() ?? depositionResult.Value.StartDate;
+            
             try
             {
                 foreach (var participant in participants)
@@ -1033,7 +1035,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                                 { "user-name", participant.Name },
                                 { "witness-name", witness.Name },
                                 { "case-name", depositionResult.Value.Case.Name },
-                                { "start-date", $"{depositionResult.Value.StartDate:MMMM dd,yyyy} {depositionResult.Value.StartDate.ConvertTime(depositionResult.Value.TimeZone)}" },
+                                { "start-date",  startDate.GetFormattedDateTime(depositionResult.Value.TimeZone)},
                                 { "depo-details-link", $"{_urlPathConfiguration.FrontendBaseUrl}deposition/post-depo-details/{depositionResult.Value.Id}" },
                                 { "logo", $"{_emailConfiguration.ImagesUrl}{_emailConfiguration.LogoImageName}"},
                                 { "calendar", $"{_emailConfiguration.ImagesUrl}{_emailConfiguration.CalendarImageName}"}

@@ -31,8 +31,10 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             { 
                 JoinDepositionTemplate = "foo",
                 Sender = "sender@mail.com",
+                EmailNotification = "notifications@mail.com",
                 LogoImageName = "fooImage",
                 ImagesUrl = "imageUrl",
+                CalendarImageName = "calendarImageUrl",
                 PreDepositionLink = "someLink"
             };
             _emailConfigurationMock = new Mock<IOptions<EmailConfiguration>>();
@@ -55,7 +57,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 Name = "Case A"
             };
             deposition.StartDate = DateTime.UtcNow;
-            deposition.TimeZone = "EST";
+            deposition.TimeZone = "America/New_York";
 
             deposition.Participants.Add(new Participant
                     {
