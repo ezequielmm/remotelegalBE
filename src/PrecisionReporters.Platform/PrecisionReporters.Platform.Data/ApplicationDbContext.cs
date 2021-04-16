@@ -27,7 +27,7 @@ namespace PrecisionReporters.Platform.Data
         public DbSet<Transcription> Transcriptions { get; set; }
         public DbSet<BreakRoom> BreakRooms { get; set; }
         public DbSet<BreakRoomAttendee> BreakRoomsAttendees { get; set; }
-
+        public DbSet<ActivityHistory> ActivityHistories { get; set; }
         public ApplicationDbContext(DbContextOptions options) : base(options) { }
 
         public ApplicationDbContext() { }
@@ -87,6 +87,10 @@ namespace PrecisionReporters.Platform.Data
             modelBuilder.Entity<VerifyUser>()
                 .Property(x => x.VerificationType)
                 .HasConversion(new EnumToStringConverter<VerificationType>());
+
+            modelBuilder.Entity<ActivityHistory>()
+                .Property(x => x.Action)
+                .HasConversion(new EnumToStringConverter<ActivityHistoryAction>());
 
             modelBuilder.Entity<BreakRoomAttendee>().HasKey(x => new { x.BreakRoomId, x.UserId });
             // Seeds

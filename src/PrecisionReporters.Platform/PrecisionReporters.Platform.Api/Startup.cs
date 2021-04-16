@@ -214,6 +214,7 @@ namespace PrecisionReporters.Platform.Api
             services.AddScoped<ITwilioCallbackService, TwilioCallbackService>();
             services.AddScoped<IBreakRoomService, BreakRoomService>();
             services.AddScoped<IDepositionDocumentService, DepositionDocumentService>();
+            services.AddScoped<IActivityHistoryService, ActivityHistoryService>();
             if (appConfiguration.CloudServicesConfiguration.TranscriptionProvider.Equals("GCP"))
             {
                 services.AddTransient<ITranscriptionLiveService, TranscriptionLiveGCPService>();
@@ -248,6 +249,7 @@ namespace PrecisionReporters.Platform.Api
                 x.RegionCode = appConfiguration.AzureCognitiveServiceConfiguration.RegionCode;
             });
 
+
             // Repositories
             services.AddScoped<ICaseRepository, CaseRepository>();
             services.AddScoped<IRoomRepository, RoomRepository>();
@@ -265,7 +267,7 @@ namespace PrecisionReporters.Platform.Api
             services.AddTransient<ITranscriptionRepository, TranscriptionRepository>();
             services.AddScoped<IBreakRoomRepository, BreakRoomRepository>();
             services.AddScoped<IDepositionDocumentRepository, DepositionDocumentRepository>();
-
+            services.AddScoped<IActivityHistoryRepository, ActivityHistoryRepository>();
             services.AddDbContext<ApplicationDbContext>(options =>
             {
                 options.UseMySQL(appConfiguration.ConnectionStrings.MySqlConnection);
