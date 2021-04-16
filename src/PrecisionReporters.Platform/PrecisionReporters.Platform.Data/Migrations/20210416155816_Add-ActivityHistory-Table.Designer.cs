@@ -9,7 +9,7 @@ using PrecisionReporters.Platform.Data;
 namespace PrecisionReporters.Platform.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20210416143023_Add-ActivityHistory-Table")]
+    [Migration("20210416155816_Add-ActivityHistory-Table")]
     partial class AddActivityHistoryTable
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
