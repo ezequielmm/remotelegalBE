@@ -23,7 +23,6 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         private readonly Mock<ITranscriptionRepository> _transcriptionRepositoryMock;
         private readonly Mock<IUserRepository> _userRepository;
         private readonly Mock<IDepositionService> _depositionServiceMock;
-        private readonly Mock<ISignalRNotificationManager> _signalRNotificationManagerMock;
         private readonly Mock<ICompositionService> _compositionServiceMock;
         private readonly Mock<IMapper<Transcription, TranscriptionDto, object>> _transcriptionMapperMock;
 
@@ -33,16 +32,12 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _depositionDocumentRepositoryMock = new Mock<IDepositionDocumentRepository>();
             _userRepository = new Mock<IUserRepository>();
             _depositionServiceMock = new Mock<IDepositionService>();
-            _signalRNotificationManagerMock = new Mock<ISignalRNotificationManager>();
             _compositionServiceMock = new Mock<ICompositionService>();
-            _transcriptionMapperMock = new Mock<IMapper<Transcription, TranscriptionDto, object>>();
             _transcriptionService = new TranscriptionService(_transcriptionRepositoryMock.Object,
                 _userRepository.Object,
                 _depositionDocumentRepositoryMock.Object,
                 _depositionServiceMock.Object,
-                _signalRNotificationManagerMock.Object,
-                _compositionServiceMock.Object,
-                _transcriptionMapperMock.Object);
+                _compositionServiceMock.Object);
         }
 
         [Fact]
@@ -251,8 +246,6 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 .ReturnsAsync(user);
 
             _transcriptionRepositoryMock.Setup(x => x.Create(transcription)).ReturnsAsync(transcription);
-            _transcriptionMapperMock.Setup(x => x.ToDto(It.IsAny<Transcription>())).Returns(transcriptionDto);
-            _signalRNotificationManagerMock.Setup(x => x.SendNotificationToDepositionMembers(transcription.DepositionId, notificationDto));
 
             // Act
             var result = await _transcriptionService.StoreTranscription(transcription, depositionId, user.EmailAddress);

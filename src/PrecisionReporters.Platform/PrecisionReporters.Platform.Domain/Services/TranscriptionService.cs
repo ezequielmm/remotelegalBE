@@ -18,8 +18,6 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly ITranscriptionRepository _transcriptionRepository;
         private readonly IUserRepository _userRepository;
         private readonly IDepositionDocumentRepository _depositionDocumentRepository;
-        private readonly ISignalRNotificationManager _signalRNotificationManager;
-        private readonly IMapper<Transcription, TranscriptionDto, object> _transcriptionMapper;
         private readonly IDepositionService _depositionService;
         private readonly ICompositionService _compositionService;
 
@@ -28,17 +26,13 @@ namespace PrecisionReporters.Platform.Domain.Services
             IUserRepository userRepository,
             IDepositionDocumentRepository depositionDocumentRepository,
             IDepositionService depositionService,
-            ISignalRNotificationManager signalRNotificationManager,
-            ICompositionService compositionService,
-            IMapper<Transcription, TranscriptionDto, object> transcriptionMapper)
+            ICompositionService compositionService)
         {
             _transcriptionRepository = transcriptionRepository;
             _userRepository = userRepository;
             _depositionDocumentRepository = depositionDocumentRepository;
             _depositionService = depositionService;
-            _signalRNotificationManager = signalRNotificationManager;
             _compositionService = compositionService;
-            _transcriptionMapper = transcriptionMapper;
         }
 
         public async Task<Result<Transcription>> StoreTranscription(Transcription transcription, string depositionId, string userEmail)
@@ -48,22 +42,9 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (user == null)
                 return Result.Fail("User with such email address was not found.");
 
-            transcription.DepositionId = new Guid(depositionId);
-            transcription.UserId = user.Id;
-
             var newTranscription = await _transcriptionRepository.Create(transcription);
             if (newTranscription == null)
-                return Result.Fail("Fail to create new transcription.");
-
-            var transcriptionDto = _transcriptionMapper.ToDto(newTranscription);
-            var notificationtDto = new NotificationDto
-            {
-                Action = NotificationAction.Create,
-                EntityType = NotificationEntity.Transcript,
-                Content = transcriptionDto
-            };           
-
-            await _signalRNotificationManager.SendNotificationToDepositionMembers(transcriptionDto.DepositionId, notificationtDto);
+                return Result.Fail("Fail to create new transcription.");           
 
             return Result.Ok(transcription);
         }

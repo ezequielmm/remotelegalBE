@@ -3,7 +3,11 @@ using Microsoft.CognitiveServices.Speech.Audio;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using PrecisionReporters.Platform.Data.Entities;
+using PrecisionReporters.Platform.Data.Enums;
+using PrecisionReporters.Platform.Data.Repositories.Interfaces;
 using PrecisionReporters.Platform.Domain.Configurations;
+using PrecisionReporters.Platform.Domain.Dtos;
+using PrecisionReporters.Platform.Domain.Mappers;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using System;
 using System.Linq;
@@ -23,17 +27,27 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly ILogger<TranscriptionLiveAzureService> _logger;
         private PushAudioInputStream _audioInputStream;
         private SpeechRecognizer _recognizer;
+        private readonly ISignalRNotificationManager _signalRNotificationManager;
+        private readonly IMapper<Transcription, TranscriptionDto, object> _transcriptionMapper;
+        private readonly IUserRepository _userRepository;
 
+        private Guid? _currentId;
         private bool _shouldClose = false;
         private static readonly SemaphoreSlim _shouldCloseSemaphore = new SemaphoreSlim(1);
         private bool _isClosed = true;
         private static readonly SemaphoreSlim _isClosedSemaphore = new SemaphoreSlim(1);
+        private static readonly SemaphoreSlim _fluentTranscriptionSemaphore = new SemaphoreSlim(1);
 
-        public TranscriptionLiveAzureService(IOptions<AzureCognitiveServiceConfiguration> azureConfiguration, ITranscriptionService transcriptionService, ILogger<TranscriptionLiveAzureService> logger)
+        public TranscriptionLiveAzureService(IOptions<AzureCognitiveServiceConfiguration> azureConfiguration, ITranscriptionService transcriptionService,
+            ILogger<TranscriptionLiveAzureService> logger, ISignalRNotificationManager signalRNotificationManager, IMapper<Transcription, TranscriptionDto, object> transcriptionMapper,
+            IUserRepository userRepository)
         {
             _azureConfiguration = azureConfiguration.Value;
             _transcriptionService = transcriptionService;
             _logger = logger;
+            _signalRNotificationManager = signalRNotificationManager;
+            _transcriptionMapper = transcriptionMapper;
+            _userRepository = userRepository;
         }
 
         public async Task RecognizeAsync(byte[] audioChunk)
@@ -71,11 +85,25 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             _recognizer = new SpeechRecognizer(speechConfig, audioConfig);
 
+            _recognizer.Recognizing += async (s, e) =>
+            {
+                await _fluentTranscriptionSemaphore.WaitAsync();
+                if (_currentId == null)
+                    _currentId = Guid.NewGuid();
+
+                _fluentTranscriptionSemaphore.Release();
+
+                await HandleRecognizedSpeech(e);
+            };
+
             _recognizer.Recognized += async (s, e) =>
             {
                 if (e.Result.Reason == ResultReason.RecognizedSpeech)
                 {
-                    await HandleRecognizedSpeech(e);
+                    await HandleRecognizedSpeech(e, true);
+                    await _fluentTranscriptionSemaphore.WaitAsync();
+                    _currentId = null;
+                    _fluentTranscriptionSemaphore.Release();
                 }
 
                 await _shouldCloseSemaphore.WaitAsync();
@@ -101,24 +129,41 @@ namespace PrecisionReporters.Platform.Domain.Services
             _isClosedSemaphore.Release();
         }
 
-        private async Task HandleRecognizedSpeech(SpeechRecognitionEventArgs e)
+        private async Task HandleRecognizedSpeech(SpeechRecognitionEventArgs e, bool isFinalTranscript = false)
         {
             try
             {
                 var bestTranscription = e.Result.Best().FirstOrDefault();
                 var durationInMilliseconds = e.Result.Duration.Milliseconds;
                 var offset = TimeSpan.FromTicks(e.Result.OffsetInTicks).TotalSeconds;
-               
+                var user = await _userRepository.GetFirstOrDefaultByFilter(x => x.EmailAddress == _userEmail);
+
                 //OffSet
                 var transcription = new Transcription
                 {
+                    Id = _currentId ?? Guid.NewGuid(),
                     TranscriptDateTime = DateTime.UtcNow,
                     Text = e.Result.Text,
                     Duration = durationInMilliseconds,
-                    Confidence = bestTranscription != null ? bestTranscription.Confidence : 0.0
+                    Confidence = bestTranscription != null ? bestTranscription.Confidence : 0.0,
+                    DepositionId = new Guid(_depositionId),
+                    User = user,
+                    UserId = user.Id
                 };
 
-                await _transcriptionService.StoreTranscription(transcription, _depositionId, _userEmail);
+                var transcriptionDto = _transcriptionMapper.ToDto(transcription);
+                
+                var notificationtDto = new NotificationDto
+                {
+                    Action = NotificationAction.Create,
+                    EntityType = NotificationEntity.Transcript,
+                    Content = transcriptionDto
+                };
+
+                await _signalRNotificationManager.SendNotificationToDepositionMembers(transcriptionDto.DepositionId, notificationtDto);
+
+                if (isFinalTranscript)
+                    await _transcriptionService.StoreTranscription(transcription, _depositionId, _userEmail);
             }
             catch (ObjectDisposedException ex)
             {
