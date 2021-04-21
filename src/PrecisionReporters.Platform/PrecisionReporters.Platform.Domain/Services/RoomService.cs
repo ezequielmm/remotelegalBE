@@ -59,7 +59,8 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<string>> GenerateRoomToken(string roomName, User user, ParticipantType role, string email, ChatDto chatDto = null)
         {
-            var room = await _roomRepository.GetFirstOrDefaultByFilter(x => x.Name == roomName);
+            var room = await _roomRepository.GetFirstOrDefaultByFilter(x => x.Name == roomName);            
+
             if (room == null)
                 return Result.Fail(new ResourceNotFoundError($"Room {roomName} not found"));
 
@@ -96,7 +97,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
                 room.EndDate = DateTime.UtcNow;
                 room.Status = RoomStatus.Completed;
-                
+
                 await _roomRepository.Update(room);
             }
             else
@@ -117,7 +118,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 Status = CompositionStatus.Queued,
                 StartDate = DateTime.UtcNow,
                 Url = compositionResource?.Url.AbsoluteUri,
-                FileType = room.IsRecordingEnabled? ApplicationConstants.Mp4 : ApplicationConstants.Mp3
+                FileType = room.IsRecordingEnabled ? ApplicationConstants.Mp4 : ApplicationConstants.Mp3
             };
 
             room.Composition = composition;

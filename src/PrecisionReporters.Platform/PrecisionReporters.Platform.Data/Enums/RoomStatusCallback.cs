@@ -9,6 +9,8 @@ namespace PrecisionReporters.Platform.Data.Enums
         [Description("participant-connected")]
         ParticipantConnected,
         [Description("room-ended")]
-        RoomEnded
+        RoomEnded,
+        [Description("recording-started")]
+        RecordingStarted
     }
 }

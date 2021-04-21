@@ -19,9 +19,9 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly IRoomService _roomService;
         private readonly ILogger<TwilioCallbackService> _logger;
 
-        public TwilioCallbackService(IDepositionService depositionService, 
+        public TwilioCallbackService(IDepositionService depositionService,
             IRoomService roomService,
-            ILogger<TwilioCallbackService> logger) 
+            ILogger<TwilioCallbackService> logger)
         {
             _depositionService = depositionService;
             _roomService = roomService;
@@ -31,8 +31,8 @@ namespace PrecisionReporters.Platform.Domain.Services
         public async Task<Result<Room>> UpdateStatusCallback(RoomCallbackDto roomEvent)
         {
             _logger.LogDebug($"Handling Twilio's Room Status callback, RoomSId: {roomEvent.RoomSid}, Event: {roomEvent.StatusCallbackEvent}");
-    
-            try 
+
+            try
             {
                 var status = EnumHandler.GetEnumValue<RoomStatusCallback>(roomEvent.StatusCallbackEvent);
 
@@ -42,43 +42,34 @@ namespace PrecisionReporters.Platform.Domain.Services
 
                 var room = roomResult.Value;
 
-                switch(status)
+                switch (status)
                 {
-                    case RoomStatusCallback.RecordingCompleted:
-                    {
-                        if (room.StartedReference == roomEvent.ParticipantSid)
+                    case RoomStatusCallback.RecordingStarted:
                         {
-                            room.RecordingStartDate = roomEvent.Timestamp.UtcDateTime.AddSeconds(- roomEvent.Duration);
-                            await _roomService.Update(room);
+                            if (room.RecordingStartDate == null)
+                            {
+                                room.RecordingStartDate = roomEvent.Timestamp.UtcDateTime.AddSeconds(-roomEvent.Duration);
+                                await _roomService.Update(room);
+                            }
+                            return Result.Ok();
                         }
-                        return Result.Ok();
-                    }
-                    case RoomStatusCallback.ParticipantConnected:
-                    {
-                        if (room.StartedReference == null)
-                        {
-                            room.StartedReference = roomEvent.ParticipantSid;
-                            await _roomService.Update(room);
-                        }
-                        return Result.Ok();
-                    }   
                     case RoomStatusCallback.RoomEnded:
-                    {
-                        var depositionResult = await _depositionService.GetDepositionByRoomId(room.Id);
-                        if (depositionResult.IsFailed)
-                            return depositionResult.ToResult<Room>();
-                        
-                        var witness = depositionResult.Value.Participants.FirstOrDefault(x => x.Role == ParticipantType.Witness);
-                        await _roomService.CreateComposition(room, witness.Email);
-                            
-                        return Result.Ok();
-                    }
-                    default: 
+                        {
+                            var depositionResult = await _depositionService.GetDepositionByRoomId(room.Id);
+                            if (depositionResult.IsFailed)
+                                return depositionResult.ToResult<Room>();
+
+                            var witness = depositionResult.Value.Participants.FirstOrDefault(x => x.Role == ParticipantType.Witness);
+                            await _roomService.CreateComposition(room, witness.Email);
+
+                            return Result.Ok();
+                        }
+                    default:
                         return Result.Fail(new InvalidInputError("Invalid recording status."));
                 }
-                
+
             }
-            catch (ArgumentException e) 
+            catch (ArgumentException e)
             {
                 _logger.LogDebug($"Skipping Room Status Callback event {roomEvent.StatusCallbackEvent}");
                 return Result.Ok();

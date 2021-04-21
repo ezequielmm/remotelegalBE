@@ -20,7 +20,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
         private TwilioCallbackService _service;
 
-        public TwilioCallbackServiceTest ()
+        public TwilioCallbackServiceTest()
         {
             _depositionServiceMock = new Mock<IDepositionService>();
             _roomServiceMock = new Mock<IRoomService>();
@@ -28,7 +28,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _service = new TwilioCallbackService(_depositionServiceMock.Object,
                 _roomServiceMock.Object, _loggerMock.Object);
         }
-        
+
         public void Dispose()
         {
             // Tear down
@@ -37,10 +37,11 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         [Fact]
         public async Task UpdateStatusCallback_ShouldSet_RecordingStartDate_ForRecordingCompletedEvent()
         {
-            var eventDto = new RoomCallbackDto {
+            var eventDto = new RoomCallbackDto
+            {
                 Duration = 10,
                 Timestamp = DateTime.UtcNow,
-                StatusCallbackEvent = "recording-completed",
+                StatusCallbackEvent = "recording-started",
                 ParticipantSid = "P01",
                 RoomSid = "R01"
             };
@@ -48,7 +49,6 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var roomId = Guid.NewGuid();
 
             var room = RoomFactory.GetRoomById(roomId);
-            room.StartedReference = "P01";
             _roomServiceMock.Setup(x => x.GetRoomBySId(It.IsAny<string>())).ReturnsAsync(Result.Ok(room));
 
             // Act
@@ -63,7 +63,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         [Fact]
         public async Task UpdateStatusCallback_ShouldNotSet_RecordingStartDate_ForRecordingCompletedEventAndStartedReferenceDifferent()
         {
-            var eventDto = new RoomCallbackDto {
+            var eventDto = new RoomCallbackDto
+            {
                 Duration = 10,
                 Timestamp = DateTime.UtcNow,
                 StatusCallbackEvent = "recording-completed",
@@ -74,9 +75,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var roomId = Guid.NewGuid();
 
             var room = RoomFactory.GetRoomById(roomId);
-            room.StartedReference = "P00";
             _roomServiceMock.Setup(x => x.GetRoomBySId(It.IsAny<string>())).ReturnsAsync(Result.Ok(room));
-           
+
             // Act
             var result = await _service.UpdateStatusCallback(eventDto);
 
@@ -87,7 +87,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         [Fact]
         public async Task UpdateStatusCallback_ShouldSet_StartedReferenceIfIsNull_ForParticipantConnected()
         {
-            var eventDto = new RoomCallbackDto {
+            var eventDto = new RoomCallbackDto
+            {
                 Timestamp = DateTime.UtcNow,
                 StatusCallbackEvent = "participant-connected",
                 ParticipantSid = "P01",
@@ -103,14 +104,15 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var result = await _service.UpdateStatusCallback(eventDto);
 
             // Assert
-            Assert.True(result.IsSuccess);
-            _roomServiceMock.Verify(x => x.Update(It.IsAny<Room>()), Times.Once);
+            Assert.True(result.IsFailed);
+            _roomServiceMock.Verify(x => x.Update(It.IsAny<Room>()), Times.Never);
         }
 
         [Fact]
         public async Task UpdateStatusCallback_ShouldNotSet_StartedReferenceIfIsNotNull_ForParticipantConnected()
         {
-            var eventDto = new RoomCallbackDto {
+            var eventDto = new RoomCallbackDto
+            {
                 Timestamp = DateTime.UtcNow,
                 StatusCallbackEvent = "participant-connected",
                 ParticipantSid = "P01",
@@ -120,9 +122,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var roomId = Guid.NewGuid();
 
             var room = RoomFactory.GetRoomById(roomId);
-            room.StartedReference = "P00";
             _roomServiceMock.Setup(x => x.GetRoomBySId(It.IsAny<string>())).ReturnsAsync(Result.Ok(room));
-           
+
             // Act
             var result = await _service.UpdateStatusCallback(eventDto);
 
@@ -133,7 +134,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         [Fact]
         public async Task UpdateStatusCallback_ShouldEndDeposition_ForRoomEndedIFDepositionIsNotCompleted()
         {
-            var eventDto = new RoomCallbackDto {
+            var eventDto = new RoomCallbackDto
+            {
                 Timestamp = DateTime.UtcNow,
                 StatusCallbackEvent = "room-ended",
                 RoomSid = "R01"
@@ -158,7 +160,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         [Fact]
         public async Task UpdateStatusCallback_ShouldNotEndDeposition_ForRoomEndedIFDepositionIsCompleted()
         {
-            var eventDto = new RoomCallbackDto {
+            var eventDto = new RoomCallbackDto
+            {
                 Timestamp = DateTime.UtcNow,
                 StatusCallbackEvent = "room-ended",
                 RoomSid = "R01"
@@ -183,7 +186,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         [Fact]
         public async Task UpdateStatusCallback_ShouldReturnOk_IfEventDoesNotMatch()
         {
-            var eventDto = new RoomCallbackDto {
+            var eventDto = new RoomCallbackDto
+            {
                 Timestamp = DateTime.UtcNow,
                 StatusCallbackEvent = "foo-event"
             };

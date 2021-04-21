@@ -109,7 +109,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 {
                     grid = new
                     {
-                        video_sources = new string[] { witnessSid }
+                        video_sources = witnessSid
                     }
                 };
             }
@@ -117,14 +117,15 @@ namespace PrecisionReporters.Platform.Domain.Services
             return await CompositionResource.CreateAsync(options);
         }
 
-        private async Task<string> GetWitnessSid(string roomSid, string witnessEmail)
+        private async Task<string[]> GetWitnessSid(string roomSid, string witnessEmail)
         {
             var participants = await GetParticipantsByRoom(roomSid);
-            var witnessParticipant = participants.FirstOrDefault(x => DeserializeObject(x.Identity).Email == witnessEmail);
-            if (witnessParticipant == null)
-                return participants.First().Sid;
-
-            return witnessParticipant.Sid;
+            var witnessArray = participants.Where(x => DeserializeObject(x.Identity).Email == witnessEmail).Select(w => w.Sid).ToArray();
+            if (!witnessArray.Any())
+            {
+                return new[] { participants.First().Sid };
+            }
+            return witnessArray;
         }
 
         private async Task<List<ParticipantResource>> GetParticipantsByRoom(string roomSid)
@@ -166,7 +167,10 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             var mediaLocation = JsonConvert.DeserializeObject<Dictionary<string, string>>(responseBody)["redirect_to"];
 
-            await new WebClient().DownloadFileTaskAsync(new Uri(mediaLocation), $"{composition.SId}.{ApplicationConstants.Mp4}");
+            using (var client = new WebClient())
+            {
+                await client.DownloadFileTaskAsync(new Uri(mediaLocation), $"{composition.SId}.{ApplicationConstants.Mp4}");
+            }
 
             _log.LogDebug($"Composition downloaded - SId: {composition.SId}");
 
@@ -193,6 +197,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 };
 
                 var result = await _awsStorageService.UploadMultipartAsync(keyName, fileTransferInfo, _twilioAccountConfiguration.S3DestinationBucket);
+                
                 if (result.IsFailed)
                 {
                     _log.LogDebug($"Upload failed. Deleting local file {filePath}");
@@ -324,8 +329,8 @@ namespace PrecisionReporters.Platform.Domain.Services
                 if (userChannel == null)
                 {
                     var chatParticipant = await Twilio.Rest.Conversations.V1.Service.Conversation.ParticipantResource.CreateAsync(
-                        pathChatServiceSid: _twilioAccountConfiguration.ConversationServiceId, 
-                        pathConversationSid: conversationSid, 
+                        pathChatServiceSid: _twilioAccountConfiguration.ConversationServiceId,
+                        pathConversationSid: conversationSid,
                         identity: strIdentity);
                     return Result.Ok(chatParticipant?.Sid);
                 }
