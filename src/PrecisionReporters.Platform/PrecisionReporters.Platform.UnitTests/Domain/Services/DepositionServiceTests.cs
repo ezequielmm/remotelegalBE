@@ -1568,7 +1568,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             deposition.Room.EndDate = DateTime.UtcNow.AddSeconds(300);
             deposition.Case = new Case { Name = "Case123" };
             _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition); _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(user));
-            _awsStorageServiceMock.Setup(x => x.GetFilePublicUri(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>(), null)).Returns("urlMocked");
+            _awsStorageServiceMock.Setup(x => x.GetFilePublicUri(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>(), null, false)).Returns("urlMocked");
 
             //Act
             var result = await _depositionService.GetDepositionVideoInformation(depositionId);

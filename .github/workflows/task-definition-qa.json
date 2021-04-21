@@ -62,6 +62,10 @@
                     "value": "environment-files-qa"
                 },
                 {
+                    "name": "AppConfiguration__DocumentConfiguration__FrontEndContentBucket",
+                    "value": "prp-frontend-content-qa"
+                },
+                {
                     "name": "AppConfiguration__EmailConfiguration__VerifyEmailSubject",
                     "value": "[QA] Verify your Remote Legal account"
                 },

@@ -24,6 +24,7 @@ using System.Threading.Tasks;
 using Xunit;
 using PrecisionReporters.Platform.Domain.Dtos;
 using PrecisionReporters.Platform.Domain.Mappers;
+using Amazon.S3.Model;
 
 namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 {
@@ -795,7 +796,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 .Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<DepositionDocument, bool>>>(), It.IsAny<string[]>()))
                 .ReturnsAsync(new DepositionDocument { Id = documentId, Document = new Document { Id = documentId, DisplayName = "testName.pdf" } });
 
-            _awsStorageServiceMock.Setup(x => x.GetFilePublicUri(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<string>())).Returns(signedUrl);
+            _awsStorageServiceMock.Setup(x => x.GetFilePublicUri(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<string>(), It.IsAny<bool>())).Returns(signedUrl);
 
             // Act
             var result = await _service.GetFileSignedUrl(depositionId, documentId);
@@ -803,7 +804,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             // Assert
 
             _depositionDocumentRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<DepositionDocument, bool>>>(), It.IsAny<string[]>()), Times.Once);
-            _awsStorageServiceMock.Verify(x => x.GetFilePublicUri(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<string>()), Times.Once);
+            _awsStorageServiceMock.Verify(x => x.GetFilePublicUri(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<string>(), It.IsAny<bool>()), Times.Once);
             Assert.NotNull(result);
             Assert.IsType<Result<string>>(result);
             Assert.True(result.IsSuccess);
@@ -835,8 +836,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         {
             // Arrange
             var documentIds = new List<Guid> { Guid.NewGuid(), Guid.NewGuid() };
-            var signedUrlList = new List<string>{"signedUrl1", "signedUrl1"};
-            var deposition = new Deposition {Id = Guid.NewGuid(), EndDate = DateTime.Now };
+            var signedUrlList = new List<string> { "signedUrl1", "signedUrl1" };
+            var deposition = new Deposition { Id = Guid.NewGuid(), EndDate = DateTime.Now };
             var depositionDocumentList = new List<DepositionDocument> {
                 new DepositionDocument {
                     Id = Guid.NewGuid(),
@@ -861,14 +862,14 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 .Setup(x => x.GetByFilter(It.IsAny<Expression<Func<DepositionDocument, bool>>>(), It.IsAny<string[]>()))
                 .ReturnsAsync(depositionDocumentList);
 
-            _awsStorageServiceMock.Setup(x => x.GetFilePublicUri(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<string>())).Returns(It.IsAny<string>());
+            _awsStorageServiceMock.Setup(x => x.GetFilePublicUri(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<string>(), It.IsAny<bool>())).Returns(It.IsAny<string>());
 
             // Act
             var result = await _service.GetFileSignedUrl(deposition.Id, documentIds);
 
             // Assert
             _depositionDocumentRepositoryMock.Verify(x => x.GetByFilter(It.IsAny<Expression<Func<DepositionDocument, bool>>>(), It.IsAny<string[]>()), Times.Once);
-            _awsStorageServiceMock.Verify(x => x.GetFilePublicUri(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<string>()), Times.Exactly(documentIds.Count));
+            _awsStorageServiceMock.Verify(x => x.GetFilePublicUri(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<string>(), It.IsAny<bool>()), Times.Exactly(documentIds.Count));
             Assert.NotNull(result);
             Assert.True(result.IsSuccess);
         }
@@ -922,7 +923,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _userServiceMock.Setup(x => x.GetCurrentUserAsync()).ReturnsAsync(new User());
 
             _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>()))
-                .ReturnsAsync((Deposition)null);            
+                .ReturnsAsync((Deposition)null);
 
             // Act
             var result = await _service.AddAnnotation(document.Id, annotation);
@@ -949,9 +950,9 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 Action = AnnotationAction.Create,
             };
 
-            var deposition = new Deposition 
+            var deposition = new Deposition
             {
-                 Id = Guid.NewGuid(),                  
+                Id = Guid.NewGuid(),
             };
 
             _userServiceMock.Setup(x => x.GetCurrentUserAsync()).ReturnsAsync(new User());
@@ -1653,6 +1654,74 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             Assert.Equal(error, result.Errors[0].Message);
             Assert.True(result.IsFailed);
             Assert.True(result.Errors.Count > 0);
+        }
+
+        [Fact]
+        public async Task GetFrontEndContent_ShouldFail_AwsGetFilesInBucketException()
+        {
+            //Arrange
+            var expectedError = "Unable to get frontend files";
+            _awsStorageServiceMock.Setup(x => x.GetAllObjectInBucketAsync(It.IsAny<string>())).ThrowsAsync(new Exception());
+
+            //Act
+            var result = await _service.GetFrontEndContent();
+
+            //Assert
+            _awsStorageServiceMock.Verify(x => x.GetAllObjectInBucketAsync(It.IsAny<string>()), Times.Once);
+            Assert.True(result.IsFailed);
+            Assert.Contains(expectedError, result.Errors.Select(e => e.Message));
+        }
+
+        [Fact]
+        public async Task GetFrontEndContent_ShouldFail_AwsGetUri_ThrownExeption()
+        {
+            //Arrange
+            var expectedError = "Unable to get frontend files";
+            var s3ObjectsList = new List<S3Object>
+            {
+                new S3Object{Key="File1",BucketName="BucketTest" },
+                new S3Object{Key="File2",BucketName="BucketTest" },
+                new S3Object{Key="File3",BucketName="BucketTest" },
+                new S3Object{Key="File4",BucketName="BucketTest" },
+                new S3Object{Key="File5",BucketName="BucketTest" },
+            };
+            _awsStorageServiceMock.Setup(x => x.GetAllObjectInBucketAsync(It.IsAny<string>())).ReturnsAsync(s3ObjectsList);
+            _awsStorageServiceMock.Setup(x => x.GetFilePublicUri(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<string>(), It.IsAny<bool>())).Throws(new Exception());
+
+            //Act
+            var result = await _service.GetFrontEndContent();
+
+            //Assert
+            _awsStorageServiceMock.Verify(x => x.GetAllObjectInBucketAsync(It.IsAny<string>()), Times.Once);
+            _awsStorageServiceMock.Verify(x => x.GetFilePublicUri(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<string>(), It.IsAny<bool>()), Times.Once());
+            Assert.True(result.IsFailed);
+            Assert.Contains(expectedError, result.Errors.Select(e => e.Message));
+        }
+
+        [Fact]
+        public async Task GetFrontEndContent_ShouldOk()
+        {
+            //Arrange
+            var s3ObjectsList = new List<S3Object>
+            {
+                new S3Object{Key="File1",BucketName="BucketTest" },
+                new S3Object{Key="File2",BucketName="BucketTest" },
+                new S3Object{Key="File3",BucketName="BucketTest" },
+                new S3Object{Key="File4",BucketName="BucketTest" },
+                new S3Object{Key="File5",BucketName="BucketTest" },
+            };
+            _awsStorageServiceMock.Setup(x => x.GetAllObjectInBucketAsync(It.IsAny<string>())).ReturnsAsync(s3ObjectsList);
+            _awsStorageServiceMock.Setup(x => x.GetFilePublicUri(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<string>(), It.IsAny<bool>())).Returns("testURI");
+
+            //Act
+            var result = await _service.GetFrontEndContent();
+
+            //Assert
+            _awsStorageServiceMock.Verify(x => x.GetAllObjectInBucketAsync(It.IsAny<string>()), Times.Once);
+            _awsStorageServiceMock.Verify(x => x.GetFilePublicUri(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<string>(), It.IsAny<bool>()), Times.Exactly(s3ObjectsList.Count));
+            Assert.True(result.IsSuccess);
+            Assert.True(result.Value.Any());
+            Assert.Equal(s3ObjectsList.Count, result.Value.Count);
         }
     }
 }

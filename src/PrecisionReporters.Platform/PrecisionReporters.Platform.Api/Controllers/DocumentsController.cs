@@ -140,13 +140,28 @@ namespace PrecisionReporters.Platform.Api.Controllers
         /// <returns>List of documents information</returns>
         [HttpDelete("Depositions/{depositionId}/documents/{documentId}")]
         [UserAuthorize(ResourceType.Document, ResourceAction.Delete)]
-        public async Task<ActionResult<List<DocumentDto>>> DeleteMyExhibits(Guid depositionId, [ResourceId(ResourceType.Document)]  Guid documentId)
+        public async Task<ActionResult<List<DocumentDto>>> DeleteMyExhibits(Guid depositionId, [ResourceId(ResourceType.Document)] Guid documentId)
         {
             var documentsResult = await _documentService.RemoveDepositionDocument(depositionId, documentId);
             if (documentsResult.IsFailed)
                 return WebApiResponses.GetErrorResponse(documentsResult);
-            
+
             return Ok();
-        }        
+        }
+
+        /// <summary>
+        /// Gets the public urls of the FrontEnd content. This url exipres after 2 hours
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("[controller]/FrontendContent")]
+        [AllowAnonymous]
+        public async Task<ActionResult<List<FileSignedDto>>> FrontendContent()
+        {
+            var fileSignedUrlResult = await _documentService.GetFrontEndContent();
+            if (fileSignedUrlResult.IsFailed)
+                return WebApiResponses.GetErrorResponse(fileSignedUrlResult);
+
+            return Ok(fileSignedUrlResult.Value);
+        }
     }
 }

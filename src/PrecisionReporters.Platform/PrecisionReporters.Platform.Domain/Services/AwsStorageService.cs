@@ -105,7 +105,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             }
         }
 
-        public async Task<Result> UploadObjectFromStreamAsync(string keyName, Stream fileStream, string bucketName) 
+        public async Task<Result> UploadObjectFromStreamAsync(string keyName, Stream fileStream, string bucketName)
         {
             try
             {
@@ -127,15 +127,22 @@ namespace PrecisionReporters.Platform.Domain.Services
             return Result.Ok();
         }
 
-        public string GetFilePublicUri(string key, string bucketName, DateTime expirationDate, string displayName = null)
+        public string GetFilePublicUri(string key, string bucketName, DateTime expirationDate, string displayName = null, bool inline = false)
         {
+            string contentDisposition;
+            if (inline)
+                contentDisposition = "inline";
+            else
+            {
+                contentDisposition = string.IsNullOrWhiteSpace(displayName) ? "attachment" : $"attachment;filename={displayName}";
+            }
             return _fileTransferUtility.S3Client.GetPreSignedURL(new GetPreSignedUrlRequest
             {
                 BucketName = bucketName,
                 Key = key,
                 Expires = expirationDate,
                 ResponseHeaderOverrides = {
-                    ContentDisposition = string.IsNullOrWhiteSpace(displayName)?"attachment":$"attachment;filename={displayName}"
+                    ContentDisposition = contentDisposition
                 }
             }
             );
@@ -154,6 +161,12 @@ namespace PrecisionReporters.Platform.Domain.Services
         {
             // Process event. 
             _logger.LogDebug("{0}/{1}", e.TransferredBytes, e.TotalBytes);
+        }
+
+        public async Task<List<S3Object>> GetAllObjectInBucketAsync(string bucket)
+        {
+            var result = await _fileTransferUtility.S3Client.ListObjectsAsync(bucket);
+            return result.S3Objects;
         }
     }
 }

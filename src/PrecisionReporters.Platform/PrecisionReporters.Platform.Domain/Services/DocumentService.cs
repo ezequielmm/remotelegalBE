@@ -589,5 +589,36 @@ namespace PrecisionReporters.Platform.Domain.Services
                 await output.WriteAsync(buffer, 0, len);
             }
         }
+
+        public async Task<Result<List<FileSignedDto>>> GetFrontEndContent()
+        {
+            try
+            {
+                var s3Objects = await _awsStorageService.GetAllObjectInBucketAsync(_documentsConfiguration.FrontEndContentBucket);
+                List<FileSignedDto> filesList = new List<FileSignedDto>();
+                foreach (var s3Object in s3Objects)
+                {
+                    filesList.Add(GetFileDto(s3Object.Key, s3Object.BucketName));
+                }
+
+                return Result.Ok(filesList);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error getting files fromt bucket: {_documentsConfiguration.FrontEndContentBucket}");
+                return Result.Fail(new ExceptionalError("Unable to get frontend files", ex));
+            }
+            
+        }
+
+        private FileSignedDto GetFileDto(string key, string bucketName)
+        {
+            var expirationDate = DateTime.UtcNow.AddHours(_documentsConfiguration.PreSignedUrlValidHours);
+            return new FileSignedDto
+            {
+                Name = Path.GetFileNameWithoutExtension(key),
+                Url = _awsStorageService.GetFilePublicUri(key, bucketName, expirationDate,null, true)
+            };
+        }
     }
 }

@@ -4,5 +4,6 @@
     {
         public string Url { get; set; }
         public bool IsPublic { get; set; }
+        public string Name { get; set; }
     }
 }

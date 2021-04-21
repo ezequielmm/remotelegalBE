@@ -14,5 +14,6 @@ namespace PrecisionReporters.Platform.Domain.Configurations
         public string PostDepoVideoBucket { get; set; }
         public string EnvironmentFilesBucket { get; set; }
         public IReadOnlyList<string> AcceptedTranscriptionExtensions { get; set; }
+        public string FrontEndContentBucket { get; set; }
     }
 }

@@ -191,6 +191,7 @@ namespace PrecisionReporters.Platform.Api
                 x.PreSignedUrlValidHours = appConfiguration.DocumentConfiguration.PreSignedUrlValidHours;
                 x.PostDepoVideoBucket = appConfiguration.DocumentConfiguration.PostDepoVideoBucket;
                 x.EnvironmentFilesBucket = appConfiguration.DocumentConfiguration.EnvironmentFilesBucket;
+                x.FrontEndContentBucket = appConfiguration.DocumentConfiguration.FrontEndContentBucket;
             });
             services.AddScoped<IDepositionService, DepositionService>();
             services.AddScoped<IAnnotationEventService, AnnotationEventService>();
