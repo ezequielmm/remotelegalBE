@@ -47,7 +47,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             // Assert
             Assert.True(result.IsFailed);
-        }        
+        }
 
         [Fact]
         public async Task JoinBreakRoom_ShouldAddTheUserIntoTheBreakRoom()
@@ -69,7 +69,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 }
             };
             _userServiceMock.Setup(x => x.GetCurrentUserAsync()).ReturnsAsync(user);
-            _roomServiceMock.Setup(x => x.GenerateRoomToken(It.IsAny<string>(), It.IsAny<User>(), It.IsAny<ParticipantType>(), It.IsAny<string>(),It.IsAny<ChatDto>())).ReturnsAsync(Result.Ok("foo"));
+            _roomServiceMock.Setup(x => x.GenerateRoomToken(It.IsAny<string>(), It.IsAny<User>(), It.IsAny<ParticipantType>(), It.IsAny<string>(), It.IsAny<ChatDto>())).ReturnsAsync(Result.Ok("foo"));
             _breakRoomRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).
                 ReturnsAsync(breakRoom);
 
@@ -118,6 +118,29 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             // Assert
             _breakRoomRepositoryMock.Verify(x => x.Update(It.IsAny<BreakRoom>()), Times.Once);
             Assert.True(result.IsSuccess);
+        }
+
+        [Fact]
+        public async Task LockBreakRoom_ShouldFail_BreakRoomNotFound()
+        {
+            // Arrange
+            var breakRoom = new BreakRoom
+            {
+                Id = Guid.NewGuid(),
+                IsLocked = true
+            };
+            var expectedError = $"Break Room with Id {breakRoom.Id} could not be found";
+            _breakRoomRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).
+                ReturnsAsync((BreakRoom)null);
+
+            // Act
+            var result = await _service.LockBreakRoom(breakRoom.Id, !breakRoom.IsLocked);
+
+            // Assert
+            _breakRoomRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(x => x == breakRoom.Id), It.IsAny<string[]>()), Times.Once);
+            Assert.NotNull(result);
+            Assert.True(result.IsFailed);
+            Assert.Contains(expectedError, result.Errors.Select(e => e.Message));
         }
     }
 }

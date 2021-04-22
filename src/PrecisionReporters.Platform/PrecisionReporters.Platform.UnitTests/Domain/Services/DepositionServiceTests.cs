@@ -50,6 +50,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         private readonly Mock<ILogger<DepositionService>> _loggerMock;
         private readonly Mock<IMapper<Deposition, DepositionDto, CreateDepositionDto>> _depositionMapperMock;
         private readonly Mock<IMapper<Participant, ParticipantDto, CreateParticipantDto>> _participantMapperMock;
+        private readonly Mock<IMapper<BreakRoom, BreakRoomDto, object>> _breakRoomMapperMock;
         private readonly Mock<ISignalRNotificationManager> _signalRNotificationManagerMock;
         private readonly Mock<IAwsEmailService> _awsEmailServiceMock;
 
@@ -103,7 +104,9 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             _participantMapperMock = new Mock<IMapper<Participant, ParticipantDto, CreateParticipantDto>>();
             _depositionMapperMock = new Mock<IMapper<Deposition, DepositionDto, CreateDepositionDto>>();
+            _breakRoomMapperMock = new Mock<IMapper<BreakRoom, BreakRoomDto, object>>();
             _participantMapperMock = new Mock<IMapper<Participant, ParticipantDto, CreateParticipantDto>>();
+
             _signalRNotificationManagerMock = new Mock<ISignalRNotificationManager>();
 
             _awsEmailServiceMock = new Mock<IAwsEmailService>();
@@ -128,7 +131,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 _signalRNotificationManagerMock.Object,
                 _awsEmailServiceMock.Object,
                 _urlPathConfigurationMock.Object,
-                _emailConfigurationMock.Object);
+                _emailConfigurationMock.Object,
+                _breakRoomMapperMock.Object);
 
             _transactionHandlerMock.Setup(x => x.RunAsync(It.IsAny<Func<Task<Result<Deposition>>>>()))
                 .Returns(async (Func<Task<Result<Deposition>>> action) =>
@@ -794,6 +798,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             Assert.Equal(token, result.Value.Token);
         }
 
+
         [Fact]
         public async Task JoinBreakRoom_ShouldReturnError_WhenDepositionDoesNotExist()
         {
@@ -881,6 +886,137 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             // Assert
             _userServiceMock.Verify(x => x.GetCurrentUserAsync(), Times.Once);
             _depositionRepositoryMock.Verify(d => d.GetById(It.Is<Guid>(i => i == depositionId), It.IsAny<string[]>()), Times.Once);
+            Assert.NotNull(result);
+            Assert.True(result.IsFailed);
+            Assert.Contains(expectedError, result.Errors.Select(e => e.Message));
+        }
+
+        [Fact]
+        public async Task JoinBreakRoom_ShouldFailIfBreakRoomLocked()
+        {
+            // Arrange
+            var depositionId = Guid.NewGuid();
+            var breakRoomId = Guid.NewGuid();
+
+            var breakRoom = new BreakRoom
+            {
+                Name = "Test BreakRoom",
+                IsLocked = true,
+            };
+            var user = new User
+            {
+                Id = Guid.NewGuid()
+            };
+            var expectedError = $"The Break Room[{ breakRoom.Name}] is currently locked.";
+            var deposition = new Deposition()
+            {
+                Participants = new List<Participant>
+                {
+                    new Participant
+                    {
+                        User = user,
+                        UserId = user.Id
+                    }
+                },
+            };
+            _userServiceMock.Setup(x => x.GetCurrentUserAsync()).ReturnsAsync(user);
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
+            _breakRoomServiceMock.Setup(x => x.JoinBreakRoom(It.IsAny<Guid>(), It.IsAny<Participant>())).ReturnsAsync(Result.Fail(new InvalidInputError(expectedError)));
+            // Act
+            var result = await _depositionService.JoinBreakRoom(depositionId, breakRoomId);
+
+            // Assert
+            _userServiceMock.Verify(x => x.GetCurrentUserAsync(), Times.Once);
+            _depositionRepositoryMock.Verify(d => d.GetById(It.Is<Guid>(i => i == depositionId), It.IsAny<string[]>()), Times.Once);
+            _breakRoomServiceMock.Verify(x => x.JoinBreakRoom(It.IsAny<Guid>(), It.IsAny<Participant>()), Times.Once);
+            Assert.NotNull(result);
+            Assert.True(result.IsFailed);
+            Assert.Contains(expectedError, result.Errors.Select(e => e.Message));
+        }
+
+        [Fact]
+        public async Task JoinBreakRoom_ShouldOkIfBreakRoomLocked_CourtReporterUser()
+        {
+            // Arrange
+            var depositionId = Guid.NewGuid();
+            var breakRoomId = Guid.NewGuid();
+
+            var breakRoom = new BreakRoom
+            {
+                Name = "Test BreakRoom",
+                IsLocked = true,
+            };
+            var user = new User
+            {
+                Id = Guid.NewGuid()
+            };
+            var expectedError = $"The Break Room[{ breakRoom.Name}] is currently locked.";
+            var deposition = new Deposition()
+            {
+                Participants = new List<Participant>
+                {
+                    new Participant
+                    {
+                        User = user,
+                        UserId = user.Id,
+                        Role = ParticipantType.CourtReporter
+                    }
+                },
+            };
+            _userServiceMock.Setup(x => x.GetCurrentUserAsync()).ReturnsAsync(user);
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
+            _breakRoomServiceMock.Setup(x => x.JoinBreakRoom(It.IsAny<Guid>(), It.IsAny<Participant>())).ReturnsAsync(Result.Fail(new InvalidInputError(expectedError)));
+            // Act
+            var result = await _depositionService.JoinBreakRoom(depositionId, breakRoomId);
+
+            // Assert
+            _userServiceMock.Verify(x => x.GetCurrentUserAsync(), Times.Once);
+            _depositionRepositoryMock.Verify(d => d.GetById(It.Is<Guid>(i => i == depositionId), It.IsAny<string[]>()), Times.Once);
+            _breakRoomServiceMock.Verify(x => x.JoinBreakRoom(It.IsAny<Guid>(), It.IsAny<Participant>()), Times.Once);
+            Assert.NotNull(result);
+            Assert.True(result.IsFailed);
+            Assert.Contains(expectedError, result.Errors.Select(e => e.Message));
+        }
+
+        [Fact]
+        public async Task JoinBreakRoom_ShouldOkIfBreakRoomUnlocked_AnyUser()
+        {
+            // Arrange
+            var depositionId = Guid.NewGuid();
+            var breakRoomId = Guid.NewGuid();
+
+            var breakRoom = new BreakRoom
+            {
+                Name = "Test BreakRoom",
+                IsLocked = false,
+            };
+            var user = new User
+            {
+                Id = Guid.NewGuid()
+            };
+            var expectedError = $"The Break Room[{ breakRoom.Name}] is currently locked.";
+            var deposition = new Deposition()
+            {
+                Participants = new List<Participant>
+                {
+                    new Participant
+                    {
+                        User = user,
+                        UserId = user.Id,
+                        Role = ParticipantType.Observer
+                    }
+                },
+            };
+            _userServiceMock.Setup(x => x.GetCurrentUserAsync()).ReturnsAsync(user);
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
+            _breakRoomServiceMock.Setup(x => x.JoinBreakRoom(It.IsAny<Guid>(), It.IsAny<Participant>())).ReturnsAsync(Result.Fail(new InvalidInputError(expectedError)));
+            // Act
+            var result = await _depositionService.JoinBreakRoom(depositionId, breakRoomId);
+
+            // Assert
+            _userServiceMock.Verify(x => x.GetCurrentUserAsync(), Times.Once);
+            _depositionRepositoryMock.Verify(d => d.GetById(It.Is<Guid>(i => i == depositionId), It.IsAny<string[]>()), Times.Once);
+            _breakRoomServiceMock.Verify(x => x.JoinBreakRoom(It.IsAny<Guid>(), It.IsAny<Participant>()), Times.Once);
             Assert.NotNull(result);
             Assert.True(result.IsFailed);
             Assert.Contains(expectedError, result.Errors.Select(e => e.Message));
@@ -2605,5 +2741,23 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             Assert.IsType<bool>(result.Value);
             Assert.True(result.Value);
         }
+
+        [Fact]
+        public async Task LockBreakRoom_ShouldFail_DepositionNotFound()
+        {
+            //Arrange
+            var depositionId = Guid.NewGuid();
+            var expectedError = $"Deposition with id {depositionId} not found.";
+            _depositionRepositoryMock.Setup(d => d.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync((Deposition)null);
+
+            //Act
+            var result = await _depositionService.LockBreakRoom(depositionId, Guid.NewGuid(), true);
+
+            //Assert
+            _depositionRepositoryMock.Verify(d => d.GetById(It.Is<Guid>(x => x == depositionId), It.IsAny<string[]>()), Times.Once);
+            Assert.True(result.IsFailed);
+            Assert.NotNull(result);
+            Assert.Contains(expectedError, result.Errors.Select(e => e.Message));
+        }        
     }
 }

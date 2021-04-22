@@ -48,6 +48,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly IDocumentService _documentService;
         private readonly IMapper<Deposition, DepositionDto, CreateDepositionDto> _depositionMapper;
         private readonly IMapper<Participant, ParticipantDto, CreateParticipantDto> _participantMapper;
+        private readonly IMapper<BreakRoom, BreakRoomDto, object> _breakRoomMapper;
         private readonly DepositionConfiguration _depositionConfiguration;
         private readonly ISignalRNotificationManager _signalRNotificationManager;
         private readonly IAwsEmailService _awsEmailService;
@@ -73,7 +74,8 @@ namespace PrecisionReporters.Platform.Domain.Services
             ISignalRNotificationManager signalRNotificationManager,
             IAwsEmailService awsEmailService,
             IOptions<UrlPathConfiguration> urlPathConfiguration,
-            IOptions<EmailConfiguration> emailConfiguration)
+            IOptions<EmailConfiguration> emailConfiguration,
+            IMapper<BreakRoom, BreakRoomDto, object> breakRoomMapper)
         {
             _awsStorageService = awsStorageService;
             _documentsConfiguration = documentConfigurations.Value ?? throw new ArgumentException(nameof(documentConfigurations));
@@ -95,6 +97,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             _awsEmailService = awsEmailService;
             _urlPathConfiguration = urlPathConfiguration.Value;
             _emailConfiguration = emailConfiguration.Value;
+            _breakRoomMapper = breakRoomMapper;
         }
 
         public async Task<List<Deposition>> GetDepositions(Expression<Func<Deposition, bool>> filter = null,
@@ -425,7 +428,19 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (depositionResult.IsFailed)
                 return depositionResult.ToResult<BreakRoom>();
 
-            return await _breakRoomService.LockBreakRoom(breakRoomId, lockRoom);
+            var result = await _breakRoomService.LockBreakRoom(breakRoomId, lockRoom);
+            if (result.IsSuccess)
+            {
+                var notificationtDto = new NotificationDto
+                {
+                    Action = lockRoom ? NotificationAction.Create : NotificationAction.Update,
+                    EntityType = NotificationEntity.LockBreakRoom,
+                    Content = _breakRoomMapper.ToDto(result.Value)
+                };
+                await _signalRNotificationManager.SendNotificationToDepositionMembers(depositionId, notificationtDto);
+            }
+
+            return result;
         }
 
         public async Task<Result<List<BreakRoom>>> GetDepositionBreakRooms(Guid id)
@@ -1020,7 +1035,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 return Result.Fail(new ResourceConflictError($"The Deposition {depositionId} must have a witness"));
 
             var startDate = depositionResult.Value.GetActualStartDate() ?? depositionResult.Value.StartDate;
-            
+
             try
             {
                 foreach (var participant in participants)
