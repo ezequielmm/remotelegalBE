@@ -1,16 +1,16 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using PrecisionReporters.Platform.Domain.Dtos;
 using PrecisionReporters.Platform.Api.Helpers;
-using PrecisionReporters.Platform.Domain.Mappers;
 using PrecisionReporters.Platform.Api.WebSockets;
 using PrecisionReporters.Platform.Data.Entities;
+using PrecisionReporters.Platform.Domain.Dtos;
+using PrecisionReporters.Platform.Domain.Mappers;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
-using PrecisionReporters.Platform.Data.Enums;
 
 namespace PrecisionReporters.Platform.Api.Controllers
 {
@@ -59,7 +59,8 @@ namespace PrecisionReporters.Platform.Api.Controllers
         [HttpGet("{depositionId}/Files")]
         public async Task<ActionResult<List<DocumentDto>>> GetTranscrpitionsFiles(Guid depositionId)
         {
-            var transcriptionsResult = await _transcriptionService.GetTranscriptionsFiles(depositionId);
+            var identity = HttpContext.User.FindFirstValue(ClaimTypes.Email);
+            var transcriptionsResult = await _transcriptionService.GetTranscriptionsFiles(depositionId, identity);
             if (transcriptionsResult.IsFailed)
                 return WebApiResponses.GetErrorResponse(transcriptionsResult);
 

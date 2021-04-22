@@ -18,6 +18,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly ITranscriptionRepository _transcriptionRepository;
         private readonly IUserRepository _userRepository;
         private readonly IDepositionDocumentRepository _depositionDocumentRepository;
+        private readonly IParticipantRepository _participantRepository;
         private readonly IDepositionService _depositionService;
         private readonly ICompositionService _compositionService;
 
@@ -25,12 +26,14 @@ namespace PrecisionReporters.Platform.Domain.Services
             ITranscriptionRepository transcriptionRepository,
             IUserRepository userRepository,
             IDepositionDocumentRepository depositionDocumentRepository,
+            IParticipantRepository participantRepository,
             IDepositionService depositionService,
             ICompositionService compositionService)
         {
             _transcriptionRepository = transcriptionRepository;
             _userRepository = userRepository;
             _depositionDocumentRepository = depositionDocumentRepository;
+            _participantRepository = participantRepository;
             _depositionService = depositionService;
             _compositionService = compositionService;
         }
@@ -61,11 +64,21 @@ namespace PrecisionReporters.Platform.Domain.Services
             return Result.Ok(result);
         }
 
-        public async Task<Result<List<DepositionDocument>>> GetTranscriptionsFiles(Guid depostionId)
+        public async Task<Result<List<DepositionDocument>>> GetTranscriptionsFiles(Guid depostionId, string identity)
         {
+            var user = await _userRepository.GetFirstOrDefaultByFilter(x => x.EmailAddress == identity);
+            var currentParticipant = await _participantRepository.GetFirstOrDefaultByFilter(x => x.UserId == user.Id);
             var includes = new[] { $"{ nameof(DepositionDocument.Document) }.{ nameof(Document.AddedBy) }" };
-            Expression<Func<DepositionDocument, bool>> filter = x => x.DepositionId == depostionId && (x.Document.DocumentType == DocumentType.DraftTranscription || x.Document.DocumentType == DocumentType.Transcription);
+            Expression<Func< DepositionDocument, bool>> filter;
 
+            if (currentParticipant.Role == ParticipantType.CourtReporter)
+            {
+                 filter = x => x.DepositionId == depostionId && (x.Document.DocumentType == DocumentType.DraftTranscription || x.Document.DocumentType == DocumentType.DraftTranscriptionWord || x.Document.DocumentType == DocumentType.Transcription);
+            }
+            else 
+            {
+                filter = x => x.DepositionId == depostionId && (x.Document.DocumentType == DocumentType.DraftTranscription || x.Document.DocumentType == DocumentType.Transcription);
+            }
             var documentsResult = await _depositionDocumentRepository.GetByFilter(x => x.CreationDate,
                 SortDirection.Ascend,
                 filter,

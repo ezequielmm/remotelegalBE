@@ -39,6 +39,8 @@ using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 using Newtonsoft.Json.Converters;
+using PrecisionReporters.Platform.Domain.Transcripts.Interfaces;
+using PrecisionReporters.Platform.Domain.Transcripts;
 
 namespace PrecisionReporters.Platform.Api
 {
@@ -230,6 +232,9 @@ namespace PrecisionReporters.Platform.Api
             services.AddScoped<IParticipantService, ParticipantService>();
             services.AddSingleton<IBackgroundTaskQueue, BackgroundTaskQueue>();
             services.AddScoped<ISignalRNotificationManager, SignalRNotificationManager>();
+            services.AddScoped<IRoughTranscriptGenerator, GenerateRoughTranscriptPDF>();
+            services.AddScoped<IRoughTranscriptGenerator, GenerateRoughTranscriptWord>();
+            services.AddScoped<IRoughTranscriptHelper, RoughTranscriptHelper>();
             services.Configure<GcpConfiguration>(x =>
             {
                 x.type = appConfiguration.GcpConfiguration.type;

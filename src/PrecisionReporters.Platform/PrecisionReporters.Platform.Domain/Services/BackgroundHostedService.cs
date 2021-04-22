@@ -53,7 +53,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                                 processType = Enum.GetName(typeof(BackgroundTaskType), BackgroundTaskType.DraftTranscription);
                                 var draftTranscriptDto = dequeResult.Content as DraftTranscriptDto;
                                 var scopedDraftTranscription = scope.ServiceProvider.GetRequiredService<IDraftTranscriptGeneratorService>();
-                                await scopedDraftTranscription.GenerateDraftTranscriptionPDF(draftTranscriptDto);
+                                await scopedDraftTranscription.GenerateDraftTranscription(draftTranscriptDto);
                                 break;
                             case BackgroundTaskType.DeleteTwilioComposition:
                                 processType = Enum.GetName(typeof(BackgroundTaskType), BackgroundTaskType.DeleteTwilioComposition);

@@ -11,7 +11,7 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
     {
         Task<Result<List<Transcription>>> GetTranscriptionsByDepositionId(Guid depositionId);
         Task<Result<Transcription>> StoreTranscription(Transcription transcription, string depositionId, string userEmail);
-        Task<Result<List<DepositionDocument>>> GetTranscriptionsFiles(Guid depostionId);
+        Task<Result<List<DepositionDocument>>> GetTranscriptionsFiles(Guid depostionId, string identity);
         Task<Result<List<TranscriptionTimeDto>>> GetTranscriptionsWithTimeOffset(Guid depositionId);
     }
 }

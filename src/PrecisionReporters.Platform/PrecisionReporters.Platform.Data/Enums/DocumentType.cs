@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Text;
+﻿using System.ComponentModel;
 
 namespace PrecisionReporters.Platform.Data.Enums
 {
@@ -14,6 +11,8 @@ namespace PrecisionReporters.Platform.Data.Enums
         [Description("transcriptions")]
         Transcription,
         [Description("transcriptions")]
-        DraftTranscription
+        DraftTranscription,
+        [Description("transcriptions")]
+        DraftTranscriptionWord
     }
 }

@@ -21,7 +21,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         private readonly TranscriptionService _transcriptionService;
         private readonly Mock<IDepositionDocumentRepository> _depositionDocumentRepositoryMock;
         private readonly Mock<ITranscriptionRepository> _transcriptionRepositoryMock;
-        private readonly Mock<IUserRepository> _userRepository;
+        private readonly Mock<IUserRepository> _userRepositoryMock;
+        private readonly Mock<IParticipantRepository> _participantRepositoryMock;
         private readonly Mock<IDepositionService> _depositionServiceMock;
         private readonly Mock<ICompositionService> _compositionServiceMock;
         private readonly Mock<IMapper<Transcription, TranscriptionDto, object>> _transcriptionMapperMock;
@@ -30,12 +31,14 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         {
             _transcriptionRepositoryMock = new Mock<ITranscriptionRepository>();
             _depositionDocumentRepositoryMock = new Mock<IDepositionDocumentRepository>();
-            _userRepository = new Mock<IUserRepository>();
+            _userRepositoryMock = new Mock<IUserRepository>();
+            _participantRepositoryMock = new Mock<IParticipantRepository>();
             _depositionServiceMock = new Mock<IDepositionService>();
             _compositionServiceMock = new Mock<ICompositionService>();
             _transcriptionService = new TranscriptionService(_transcriptionRepositoryMock.Object,
-                _userRepository.Object,
+                _userRepositoryMock.Object,
                 _depositionDocumentRepositoryMock.Object,
+                _participantRepositoryMock.Object,
                 _depositionServiceMock.Object,
                 _compositionServiceMock.Object);
         }
@@ -45,6 +48,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         {
             // Arrange
             var depositionId = Guid.NewGuid();
+            var identity = "user@email.com";
             var documentList = new List<DepositionDocument>
             {
                 new DepositionDocument { Id = Guid.NewGuid(), Document = new Document { Id = Guid.NewGuid(), Name = "docName1.pdf" }, StampLabel = "Stamped1" },
@@ -52,12 +56,21 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 new DepositionDocument { Id = Guid.NewGuid(), Document = new Document { Id = Guid.NewGuid(), Name = "docName3.pdf" }, StampLabel = "Stamped3" },
             };
 
+            var participant = new Participant
+            {
+                UserId = Guid.NewGuid(),
+                Role = ParticipantType.CourtReporter
+            };
+
             _depositionDocumentRepositoryMock
                 .Setup(x => x.GetByFilter(It.IsAny<Expression<Func<DepositionDocument, object>>>(), It.IsAny<SortDirection>(), It.IsAny<Expression<Func<DepositionDocument, bool>>>(), It.IsAny<string[]>()))
                 .ReturnsAsync(documentList);
 
+            _participantRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Participant, bool>>>(), It.IsAny<string[]>()))
+                    .ReturnsAsync(participant);
+
             //  Act
-            var result = await _transcriptionService.GetTranscriptionsFiles(depositionId);
+            var result = await _transcriptionService.GetTranscriptionsFiles(depositionId, identity);
             var documentResult = result.Value;
             // Assert
             _depositionDocumentRepositoryMock.Verify(mock => mock.GetByFilter(It.IsAny<Expression<Func<DepositionDocument, object>>>(), It.IsAny<SortDirection>(), It.IsAny<Expression<Func<DepositionDocument, bool>>>(), It.IsAny<string[]>()), Times.Once());
@@ -69,14 +82,23 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         {
             // Arrange
             var depositionId = Guid.NewGuid();
+            var identity = "user@email.com";
             var documentList = new List<DepositionDocument>();
+            var participant = new Participant
+            {
+                UserId = Guid.NewGuid(),
+                Role = ParticipantType.CourtReporter
+            };
 
             _depositionDocumentRepositoryMock
                 .Setup(x => x.GetByFilter(It.IsAny<Expression<Func<DepositionDocument, object>>>(), It.IsAny<SortDirection>(), It.IsAny<Expression<Func<DepositionDocument, bool>>>(), It.IsAny<string[]>()))
                 .ReturnsAsync(documentList);
 
+            _participantRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Participant, bool>>>(), It.IsAny<string[]>()))
+                    .ReturnsAsync(participant);
+
             //  Act
-            var result = await _transcriptionService.GetTranscriptionsFiles(depositionId);
+            var result = await _transcriptionService.GetTranscriptionsFiles(depositionId, identity);
             var documentResult = result.Value;
 
             // Assert
@@ -178,7 +200,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             // Arrange
             var errorMessage = "User with such email address was not found.";
 
-            _userRepository.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<string[]>()))
+            _userRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<string[]>()))
                 .ReturnsAsync((User)null);
 
             // Act
@@ -204,7 +226,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var transcription = new Transcription { Text = "transcript" };
             var depositionId = Guid.NewGuid().ToString();
 
-            _userRepository.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<string[]>()))
+            _userRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<string[]>()))
                 .ReturnsAsync(user);
 
             _transcriptionRepositoryMock.Setup(x => x.Create(transcription)).ReturnsAsync((Transcription)null);
@@ -242,7 +264,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 Content = transcriptionDto
             };
 
-            _userRepository.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<string[]>()))
+            _userRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<string[]>()))
                 .ReturnsAsync(user);
 
             _transcriptionRepositoryMock.Setup(x => x.Create(transcription)).ReturnsAsync(transcription);
