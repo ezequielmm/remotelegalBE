@@ -6,20 +6,21 @@ using Ical.Net.DataTypes;
 using Ical.Net.Serialization;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using MimeKit;
+using MimeKit.Text;
+using PrecisionReporters.Platform.Data.Entities;
+using PrecisionReporters.Platform.Data.Enums;
 using PrecisionReporters.Platform.Domain.Commons;
 using PrecisionReporters.Platform.Domain.Configurations;
+using PrecisionReporters.Platform.Domain.Extensions;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Text.Json;
 using System.Threading.Tasks;
-using MimeKit;
-using PrecisionReporters.Platform.Data.Entities;
-using MimeKit.Text;
-using System.Linq;
-using PrecisionReporters.Platform.Domain.Extensions;
 
 namespace PrecisionReporters.Platform.Domain.Services
 {
@@ -89,6 +90,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             }
         }
 
+        // TODO: This method is not agnostic from the business so it shouldn't be on this class
         public async Task SendRawEmailNotification(Deposition deposition, Participant participant)
         {
             var templateRequest = new GetTemplateRequest
@@ -101,6 +103,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             await SendRawEmailNotification(CreateMessageStream(deposition, participant, htmlBody));
         }
 
+        // TODO: This method is not agnostic from the business so it shouldn't be on this class
         public async Task SendRawEmailNotification(Deposition deposition)
         {
             var templateRequest = new GetTemplateRequest
@@ -118,32 +121,38 @@ namespace PrecisionReporters.Platform.Domain.Services
             });
         }
 
-        private string AddCalendar(DateTime startDate, DateTime? endDate, Deposition deposition)
+        // TODO: This method is not agnostic from the business so it shouldn't be on this class
+        private string AddCalendar(Deposition deposition)
         {
+            var witness = deposition.Participants.FirstOrDefault(x => x.Role == ParticipantType.Witness);
+            var strWitness = !string.IsNullOrWhiteSpace(witness.Name) ? $"{witness.Name} - {deposition.Case.Name} " : deposition.Case.Name;
             var calendar = new Calendar();
             calendar.Method = "REQUEST";
             var icalEvent = new CalendarEvent
             {
                 Uid = deposition.Id.ToString(),
-                Summary = deposition.Case.Name,
-                Description = $"You can join by clicking the link {_emailConfiguration.PreDepositionLink}{deposition.Id}",
-                Start = new CalDateTime(startDate.GetConvertedTime(deposition.TimeZone), deposition.TimeZone),
-                End = endDate.HasValue ? new CalDateTime(endDate.Value.GetConvertedTime(deposition.TimeZone), deposition.TimeZone) : null
+                Summary = $"Invitation: Remote Legal - {strWitness}",
+                Description = $"{strWitness}{Environment.NewLine}{_emailConfiguration.PreDepositionLink}{deposition.Id}",
+                Start = new CalDateTime(deposition.StartDate.GetConvertedTime(deposition.TimeZone), deposition.TimeZone),
+                End = deposition.EndDate.HasValue ? new CalDateTime(deposition.EndDate.Value.GetConvertedTime(deposition.TimeZone), deposition.TimeZone) : null,
+                Location = $"{_emailConfiguration.PreDepositionLink}{deposition.Id}",
+                Organizer = new Organizer(_emailConfiguration.Sender)
             };
             calendar.Events.Add(icalEvent);
             var iCalSerializer = new CalendarSerializer();
             return iCalSerializer.SerializeToString(calendar);
         }
 
+        // TODO: This method is not agnostic from the business so it shouldn't be on this class
         private Multipart CreateMessageBody(Deposition deposition, string participantName, string witnessName, string htmlBodyTemplate)
         {
             var mixed = new Multipart("mixed");
             var caseName = deposition.Case.Name;
-            var imageUrl = GetImageUrl(_emailConfiguration.LogoImageName);
             var htmlBody = htmlBodyTemplate
                 .Replace("{{dateAndTime}}", $"{deposition.StartDate.GetFormattedDateTime(deposition.TimeZone)}")
                 .Replace("{{name}}", participantName)
-                .Replace("{{imageUrl}}", imageUrl)
+                .Replace("{{imageUrl}}", GetImageUrl(_emailConfiguration.LogoImageName))
+                .Replace("{{calendar}}", GetImageUrl(_emailConfiguration.CalendarImageName))
                 .Replace("{{depositionJoinLink}}", $"{_emailConfiguration.PreDepositionLink}{deposition.Id}");
 
             if (string.IsNullOrEmpty(witnessName))
@@ -151,24 +160,37 @@ namespace PrecisionReporters.Platform.Domain.Services
             else
                 htmlBody = htmlBody.Replace("{{case}}", $"{witnessName} in {caseName}");
 
-            mixed.Add(new TextPart(TextFormat.Html)
+            var alternative = new MultipartAlternative();
+            alternative.Add(new TextPart(TextFormat.Plain)
             {
-                ContentTransferEncoding = ContentEncoding.Base64,
+                ContentTransferEncoding = ContentEncoding.QuotedPrintable,
+                ContentDisposition = new ContentDisposition()
+                {
+                    Disposition = System.Net.Mime.DispositionTypeNames.Inline,
+                    IsAttachment = false,
+                },
+                Text = $"You can join by clicking the link: {_emailConfiguration.PreDepositionLink}{deposition.Id}"
+            });
+            alternative.Add(new TextPart(TextFormat.Html)
+            {
+                ContentTransferEncoding = ContentEncoding.QuotedPrintable,
                 Text = htmlBody
             });
+            
+            mixed.Add(alternative);
 
             var ical = new TextPart("calendar")
             {
                 ContentTransferEncoding = ContentEncoding.SevenBit,
-                Text = AddCalendar(deposition.StartDate, deposition.EndDate, deposition),
+                Text = AddCalendar(deposition)
             };
-
             ical.ContentType.Parameters.Add("method", "REQUEST");
 
             mixed.Add(ical);
             return mixed;
         }
 
+        // TODO: This method is not agnostic from the business so it shouldn't be on this class
         private MimeMessage CreateMessage(Deposition deposition, Participant participant, string htmlBodyTemplate)
         {
             var message = new MimeMessage();
@@ -180,12 +202,14 @@ namespace PrecisionReporters.Platform.Domain.Services
             message.To.Add(new MailboxAddress(participantName, participantMail));
 
             var witnessName = deposition.Participants.Single(x => x.Role == Data.Enums.ParticipantType.Witness)?.Name;
-            message.Subject = $"Invitation: Remote Legal - {witnessName} - {deposition.Case.Name} - {deposition.StartDate.GetFormattedDateTime(deposition.TimeZone)}";
-
+            var strWitnesTitle = !string.IsNullOrWhiteSpace(witnessName) ? $"- {witnessName} " : string.Empty;
+            message.Subject = message.Subject = $"Invitation: Remote Legal {witnessName}- {deposition.Case.Name} - {deposition.StartDate.GetFormattedDateTime(deposition.TimeZone)}";
             message.Body = CreateMessageBody(deposition, participantName ?? "", witnessName, htmlBodyTemplate);
+            
             return message;
         }
 
+        // TODO: This method is not agnostic from the business so it shouldn't be on this class
         private MemoryStream CreateMessageStream(Deposition deposition, Participant participant, string htmlBodyTemplate)
         {
             var stream = new MemoryStream();
@@ -197,6 +221,5 @@ namespace PrecisionReporters.Platform.Domain.Services
         {
             return $"{_emailConfiguration.ImagesUrl}{name}";
         }
-
     }
 }
