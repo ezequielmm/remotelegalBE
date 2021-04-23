@@ -71,6 +71,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 }
             };
 
+            _logger.LogInformation($"Sended template data: {string.Join("\n", emailData.TemplateData.Select(x => x.Key + ": " + x.Value))}");
             await SendEmailAsync(destinations, emailData.TemplateName, sender);
         }
 

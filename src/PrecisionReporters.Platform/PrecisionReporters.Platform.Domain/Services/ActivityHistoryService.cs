@@ -1,17 +1,83 @@
-﻿using PrecisionReporters.Platform.Data.Repositories.Interfaces;
+﻿using FluentResults;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using PrecisionReporters.Platform.Data.Entities;
+using PrecisionReporters.Platform.Data.Enums;
+using PrecisionReporters.Platform.Data.Repositories.Interfaces;
+using PrecisionReporters.Platform.Domain.Commons;
+using PrecisionReporters.Platform.Domain.Configurations;
+using PrecisionReporters.Platform.Domain.Dtos;
+using PrecisionReporters.Platform.Domain.Extensions;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using System;
 using System.Collections.Generic;
-using System.Text;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace PrecisionReporters.Platform.Domain.Services
 {
-    public class ActivityHistoryService:IActivityHistoryService
+    public class ActivityHistoryService : IActivityHistoryService
     {
         private readonly IActivityHistoryRepository _activityHistoryRepository;
-        public ActivityHistoryService(IActivityHistoryRepository activityHistoryRepository)
+        private readonly IAwsEmailService _awsEmailService;
+        private readonly UrlPathConfiguration _urlPathConfiguration;
+        private readonly EmailConfiguration _emailConfiguration;
+        private readonly ILogger<ActivityHistoryService> _logger;
+
+        public ActivityHistoryService(IActivityHistoryRepository activityHistoryRepository, IAwsEmailService awsEmailService,
+            IOptions<UrlPathConfiguration> urlPathConfiguration,
+            IOptions<EmailConfiguration> emailConfiguration,
+            ILogger<ActivityHistoryService> logger)
         {
             _activityHistoryRepository = activityHistoryRepository;
+            _awsEmailService = awsEmailService;
+            _urlPathConfiguration = urlPathConfiguration.Value;
+            _emailConfiguration = emailConfiguration.Value;
+            _logger = logger;
+        }
+
+        public async Task<Result> AddActivity(ActivityHistory activity, User user, Deposition deposition)
+        {
+            try
+            {
+                activity.ActivityDate = DateTime.UtcNow;
+                activity.User = user;
+                activity.Deposition = deposition;
+                activity.Action = ActivityHistoryAction.JoinDeposition;
+
+                await _activityHistoryRepository.Create(activity);
+
+                var witness = deposition.Participants.FirstOrDefault(x => x.Role == ParticipantType.Witness);
+                var startDate = deposition.GetActualStartDate() ?? deposition.StartDate;
+
+                var template = new EmailTemplateInfo
+                {
+                    EmailTo = new List<string> { user.EmailAddress },
+                    TemplateData = new Dictionary<string, string>
+                            {
+                                { "user-name", user.GetFullName() },
+                                { "witness-name", witness?.Name },
+                                { "case-name", deposition.Case?.Name },
+                                { "join-date",  activity.ActivityDate.GetFormattedDateTime(deposition.TimeZone)},
+                                { "start-date",  activity.ActivityDate.GetFormattedDateTime(deposition.TimeZone)},
+                                { "ip-address", activity.IPAddress },
+                                { "device-name", activity.Device },
+                                { "browser-name", activity.Browser },
+                                { "images-url", $"{_emailConfiguration.ImagesUrl}"},
+                                { "logo", $"{_emailConfiguration.ImagesUrl}{_emailConfiguration.LogoImageName}"},
+                                { "sign-up-link", $"{_urlPathConfiguration.FrontendBaseUrl}sign-up"},
+                            },
+                    TemplateName = ApplicationConstants.ActivityTemplateName
+                };
+
+                await _awsEmailService.SetTemplateEmailRequest(template, _emailConfiguration.EmailNotification);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unable to add activity");
+            }
+            
+            return Result.Ok();
         }
     }
 }

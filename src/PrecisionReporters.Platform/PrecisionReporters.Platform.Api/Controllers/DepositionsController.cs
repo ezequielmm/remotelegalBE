@@ -274,7 +274,16 @@ namespace PrecisionReporters.Platform.Api.Controllers
         [AllowAnonymous]
         public async Task<ActionResult<GuestToken>> JoinGuestParticipant(Guid id, CreateGuestDto guest)
         {
-            var tokenResult = await _depositionService.JoinGuestParticipant(id, _guestMapper.ToModel(guest));
+            var ipAddress = HttpContext.Connection.RemoteIpAddress;
+            //TODO: Add mapper
+            var activity = new ActivityHistory
+            {
+                Browser = guest.Browser,
+                Device = guest.Device,
+                IPAddress = ipAddress.ToString()
+            };
+
+            var tokenResult = await _depositionService.JoinGuestParticipant(id, _guestMapper.ToModel(guest), activity);
             if (tokenResult.IsFailed)
                 return WebApiResponses.GetErrorResponse(tokenResult);
 

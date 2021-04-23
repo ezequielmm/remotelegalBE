@@ -21,6 +21,7 @@
         public const string WordExtension = ".docx";
         //TODO: unify ".mp4" and "mp4" constants
         public const string Mp4Extension = ".mp4";
+        public const string ActivityTemplateName = "ActivityEmailTemplate";
 
     }
 }

@@ -50,6 +50,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly IAwsEmailService _awsEmailService;
         private readonly UrlPathConfiguration _urlPathConfiguration;
         private readonly EmailConfiguration _emailConfiguration;
+        private readonly IActivityHistoryService _activityHistoryService;
 
         public DepositionService(IDepositionRepository depositionRepository,
             IParticipantRepository participantRepository,
@@ -71,7 +72,8 @@ namespace PrecisionReporters.Platform.Domain.Services
             IAwsEmailService awsEmailService,
             IOptions<UrlPathConfiguration> urlPathConfiguration,
             IOptions<EmailConfiguration> emailConfiguration,
-            IMapper<BreakRoom, BreakRoomDto, object> breakRoomMapper)
+            IMapper<BreakRoom, BreakRoomDto, object> breakRoomMapper,
+            IActivityHistoryService activityHistoryService)
         {
             _awsStorageService = awsStorageService;
             _documentsConfiguration = documentConfigurations.Value ?? throw new ArgumentException(nameof(documentConfigurations));
@@ -94,6 +96,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             _urlPathConfiguration = urlPathConfiguration.Value;
             _emailConfiguration = emailConfiguration.Value;
             _breakRoomMapper = breakRoomMapper;
+            _activityHistoryService = activityHistoryService;
         }
 
         public async Task<List<Deposition>> GetDepositions(Expression<Func<Deposition, bool>> filter = null,
@@ -535,9 +538,9 @@ namespace PrecisionReporters.Platform.Domain.Services
             return participant;
         }
 
-        public async Task<Result<GuestToken>> JoinGuestParticipant(Guid depositionId, Participant guest)
+        public async Task<Result<GuestToken>> JoinGuestParticipant(Guid depositionId, Participant guest, ActivityHistory activityHistory)
         {
-            var include = new[] { nameof(Deposition.Participants) };
+            var include = new[] { nameof(Deposition.Participants), nameof(Deposition.Case) };
 
             var depositionResult = await GetByIdWithIncludes(depositionId, include);
 
@@ -602,6 +605,8 @@ namespace PrecisionReporters.Platform.Domain.Services
                 };
                 await _signalRNotificationManager.SendNotificationToDepositionAdmins(depositionId, notificationtDto);
             }
+            
+            await _activityHistoryService.AddActivity(activityHistory, userResult.Value, deposition);
 
             return await _userService.LoginGuestAsync(guest.Email);
         }
@@ -663,6 +668,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             await _permissionService.AddParticipantPermissions(participant);
             notificationtDto.Content = _participantMapper.ToDto(participant);
             await _signalRNotificationManager.SendNotificationToDepositionAdmins(depositionId, notificationtDto);
+
             return Result.Ok(participant.Id);
         }
 

@@ -18,5 +18,7 @@ namespace PrecisionReporters.Platform.Domain.Dtos
 
         [JsonConverter(typeof(StringEnumConverter))]
         public ParticipantType ParticipantType { get; set; }
+        public string Device { get; set; }
+        public string Browser { get; set; }
     }
 }

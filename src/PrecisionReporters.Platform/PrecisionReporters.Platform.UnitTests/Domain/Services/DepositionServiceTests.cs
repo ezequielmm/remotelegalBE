@@ -53,6 +53,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         private readonly Mock<IMapper<BreakRoom, BreakRoomDto, object>> _breakRoomMapperMock;
         private readonly Mock<ISignalRNotificationManager> _signalRNotificationManagerMock;
         private readonly Mock<IAwsEmailService> _awsEmailServiceMock;
+        private readonly Mock<IActivityHistoryService> _activityHistoryServiceMock;
 
         private readonly List<Deposition> _depositions = new List<Deposition>();
 
@@ -110,6 +111,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _signalRNotificationManagerMock = new Mock<ISignalRNotificationManager>();
 
             _awsEmailServiceMock = new Mock<IAwsEmailService>();
+            _activityHistoryServiceMock = new Mock<IActivityHistoryService>();
 
             _depositionService = new DepositionService(
                 _depositionRepositoryMock.Object,
@@ -132,7 +134,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 _awsEmailServiceMock.Object,
                 _urlPathConfigurationMock.Object,
                 _emailConfigurationMock.Object,
-                _breakRoomMapperMock.Object);
+                _breakRoomMapperMock.Object,
+                _activityHistoryServiceMock.Object);
 
             _transactionHandlerMock.Setup(x => x.RunAsync(It.IsAny<Func<Task<Result<Deposition>>>>()))
                 .Returns(async (Func<Task<Result<Deposition>>> action) =>
@@ -1463,7 +1466,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             // Arrange
             var guestEmail = "participant@mail.com";
             var user = new User { Id = Guid.NewGuid(), EmailAddress = guestEmail };
-
+            var activity = new ActivityHistory() { Device = "IPhone", Browser = "Safari", IPAddress = "10.10.10.10" };
             var depositionId = Guid.NewGuid();
             var deposition = DepositionFactory.GetDepositionWithParticipantEmail("foo@mail.com");
             deposition.Id = depositionId;
@@ -1481,14 +1484,14 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Fail(new Error()));
             _userServiceMock.Setup(x => x.AddGuestUser(It.IsAny<User>())).ReturnsAsync(Result.Ok(user));
             _userServiceMock.Setup(x => x.LoginGuestAsync(It.IsAny<string>())).ReturnsAsync(Result.Ok(new GuestToken()));
-
+            _activityHistoryServiceMock.Setup(x => x.AddActivity(It.IsAny<ActivityHistory>(), It.IsAny<User>(), It.IsAny<Deposition>()));
             // Act
-            var result = await _depositionService.JoinGuestParticipant(depositionId, participant);
+            var result = await _depositionService.JoinGuestParticipant(depositionId, participant, activity);
 
             // Assert
             _depositionRepositoryMock.Verify(x => x.Update(It.Is<Deposition>(x => x.Id == depositionId)), Times.Once);
             _permissionServiceMock.Verify(x => x.AddParticipantPermissions(It.Is<Participant>(x => x.Email == guestEmail)), Times.Once);
-
+            _activityHistoryServiceMock.Verify(x => x.AddActivity(It.IsAny<ActivityHistory>(), It.IsAny<User>(), It.IsAny<Deposition>()), Times.Once);
             Assert.True(result.IsSuccess);
         }
 
@@ -1498,7 +1501,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             // Arrange
             var guestEmail = "participant@mail.com";
             var user = new User { Id = Guid.NewGuid(), EmailAddress = guestEmail };
-
+            var activity = new ActivityHistory() { Device = "IPhone", Browser = "Safari", IPAddress = "10.10.10.10" };
             var depositionId = Guid.NewGuid();
             var deposition = DepositionFactory.GetDepositionWithParticipantEmail(guestEmail);
             deposition.Id = depositionId;
@@ -1516,14 +1519,16 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _userServiceMock.Setup(x => x.AddGuestUser(It.IsAny<User>())).ReturnsAsync(Result.Ok(user));
             _participantRepositoryMock.Setup(x => x.Update(It.IsAny<Participant>())).ReturnsAsync(participant);
             _userServiceMock.Setup(x => x.LoginGuestAsync(It.IsAny<string>())).ReturnsAsync(Result.Ok(new GuestToken()));
+            _activityHistoryServiceMock.Setup(x => x.AddActivity(It.IsAny<ActivityHistory>(), It.IsAny<User>(), It.IsAny<Deposition>()));
 
             // Act
-            var result = await _depositionService.JoinGuestParticipant(depositionId, participant);
+            var result = await _depositionService.JoinGuestParticipant(depositionId, participant, activity);
 
             // Assert
             _depositionRepositoryMock.Verify(x => x.Update(It.Is<Deposition>(x => x.Id == depositionId)), Times.Never);
             _permissionServiceMock.Verify(x => x.AddParticipantPermissions(It.Is<Participant>(x => x.Email == guestEmail)), Times.Never);
             _signalRNotificationManagerMock.Verify(x => x.SendNotificationToDepositionAdmins(It.Is<Guid>(s => s == depositionId), It.IsAny<NotificationDto>()), Times.Once);
+            _activityHistoryServiceMock.Verify(x => x.AddActivity(It.IsAny<ActivityHistory>(), It.IsAny<User>(), It.IsAny<Deposition>()), Times.Once);
             Assert.True(result.IsSuccess);
         }
 
@@ -1534,6 +1539,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var guestEmail = "participant@mail.com";
             var user = new User { Id = Guid.NewGuid(), EmailAddress = guestEmail };
             var name = "Test";
+            var activity = new ActivityHistory() { Device = "IPhone", Browser = "Safari", IPAddress = "10.10.10.10" };
 
             var depositionId = Guid.NewGuid();
             var deposition = DepositionFactory.GetDepositionWithParticipantEmail("participant@mail.com", false);
@@ -1552,15 +1558,17 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _userServiceMock.Setup(x => x.AddGuestUser(It.IsAny<User>())).ReturnsAsync(Result.Ok(user));
             _participantRepositoryMock.Setup(x => x.Update(It.IsAny<Participant>())).ReturnsAsync(participant);
             _userServiceMock.Setup(x => x.LoginGuestAsync(It.IsAny<string>())).ReturnsAsync(Result.Ok(new GuestToken()));
+            _activityHistoryServiceMock.Setup(x => x.AddActivity(It.IsAny<ActivityHistory>(), It.IsAny<User>(), It.IsAny<Deposition>()));
 
             // Act
-            var result = await _depositionService.JoinGuestParticipant(depositionId, participant);
+            var result = await _depositionService.JoinGuestParticipant(depositionId, participant, activity);
 
             // Assert
             _participantRepositoryMock.Verify(x => x.Update(It.Is<Participant>(x => x.Email == guestEmail)), Times.Once);
             _signalRNotificationManagerMock.Verify(x => x.SendNotificationToDepositionAdmins(It.Is<Guid>(s => s == depositionId), It.IsAny<NotificationDto>()), Times.Once);
             Assert.True(result.IsSuccess);
             _permissionServiceMock.Verify(x => x.AddParticipantPermissions(It.Is<Participant>(x => x.Email == guestEmail)), Times.Once);
+            _activityHistoryServiceMock.Verify(x => x.AddActivity(It.IsAny<ActivityHistory>(), It.IsAny<User>(), It.IsAny<Deposition>()), Times.Once);
         }
 
         [Fact]
