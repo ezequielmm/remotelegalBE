@@ -198,7 +198,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             var orderByQuery = GetDepositionsOrderBy(filterDto);
             var result = await _depositionRepository.GetByFilterPagination(filter, orderByQuery.Compile(), includes, filterDto.Page, filterDto.PageSize);
 
-            var filterCount= await GetDepositionsFilter(filterDto, !filterDto.PastDepositions);
+            var filterCount = await GetDepositionsFilter(filterDto, !filterDto.PastDepositions);
             var count = await _depositionRepository.GetCountByFilter(filterCount);
 
             var response = new DepositionFilterResponseDto
@@ -450,6 +450,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 currentParticipant = new Participant()
                 {
                     User = currentUser,
+                    UserId = currentUser.Id,
                     Role = ParticipantType.Admin
                 };
             }

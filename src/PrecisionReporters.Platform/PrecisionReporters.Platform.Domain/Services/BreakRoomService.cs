@@ -42,7 +42,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             var role = currentParticipant?.Role ?? ParticipantType.Observer;
 
-            if (breakRoom.IsLocked && role != ParticipantType.CourtReporter)
+            if (breakRoom.IsLocked && role != ParticipantType.CourtReporter && !breakRoom.Attendees.Any(a => a.UserId == currentParticipant.UserId))
                 return Result.Fail(new InvalidInputError($"The Break Room [{breakRoom.Name}] is currently locked."));
 
             // TODO: Add distributed lock when our infra allows it
