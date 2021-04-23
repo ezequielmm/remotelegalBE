@@ -57,7 +57,10 @@ namespace PrecisionReporters.Platform.Data.Repositories
             return await GetByFilter(x => x.CreationDate, SortDirection.Ascend, filter, include);
         }
 
-        public async Task<List<T>> GetByFilter(Expression<Func<T, object>> orderBy, SortDirection sortDirection, Expression<Func<T, bool>> filter = null, string[] include = null)
+        public async Task<List<T>> GetByFilter(Expression<Func<T, object>> orderBy,
+            SortDirection sortDirection,
+            Expression<Func<T, bool>> filter = null,
+            string[] include = null)
         {
             IQueryable<T> query = _dbContext.Set<T>();
 
@@ -79,6 +82,57 @@ namespace PrecisionReporters.Platform.Data.Repositories
                 : query.OrderByDescending(orderBy);
 
             return await result.ToListAsync();
+        }
+
+        public async Task<Tuple<int, IEnumerable<T>>> GetByFilterPagination(
+            Expression<Func<T, bool>> filter = null,
+            Func<IQueryable<T>, IOrderedQueryable<T>> orderBy = null,
+            string[] include = null,
+            int? page = null,
+            int? pageSize = null
+            )
+        {
+            IQueryable<T> query = _dbContext.Set<T>();
+
+            if (include != null)
+            {
+                foreach (var property in include)
+                {
+                    query = query.Include(property);
+                }
+            }
+
+            if (orderBy != null)
+            {
+                query = orderBy(query);
+            }
+
+            if (filter != null)
+            {
+                query = query.Where(filter);
+            }
+
+            var totalCount = await query.CountAsync();
+
+            if (page != null)
+            {
+                query = query.Skip(((int)page - 1) * (int)pageSize);
+            }
+
+            if (pageSize != null)
+            {
+                query = query.Take((int)pageSize);
+            }
+
+            var data = await query.ToListAsync();
+            return new Tuple<int, IEnumerable<T>>(totalCount, data);
+        }
+
+        public async Task<int> GetCountByFilter(Expression<Func<T, bool>> filter)
+        {
+            IQueryable<T> query = _dbContext.Set<T>();
+            query = query.Where(filter);
+            return await query.CountAsync();
         }
 
         public async Task<T> GetFirstOrDefaultByFilter(Expression<Func<T, bool>> filter = null, string[] include = null)
@@ -140,7 +194,7 @@ namespace PrecisionReporters.Platform.Data.Repositories
         {
             IQueryable<T> query = _dbContext.Set<T>();
 
-            if (include!=null)
+            if (include != null)
             {
                 foreach (var property in include)
                 {
@@ -149,6 +203,6 @@ namespace PrecisionReporters.Platform.Data.Repositories
             }
 
             return await query.FirstOrDefaultAsync(x => x.Id == id);
-        }        
+        }
     }
 }

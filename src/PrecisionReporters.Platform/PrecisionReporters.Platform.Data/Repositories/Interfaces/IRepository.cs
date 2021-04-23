@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using PrecisionReporters.Platform.Data.Enums;
+using System.Linq;
 
 namespace PrecisionReporters.Platform.Data.Repositories.Interfaces
 {
@@ -17,6 +18,8 @@ namespace PrecisionReporters.Platform.Data.Repositories.Interfaces
         Task<T> GetFirstOrDefaultByFilter(Expression<Func<T, bool>> filter = null, string[] include = null);
         Task<List<T>> GetByFilter(Expression<Func<T, bool>> filter = null, string[] include = null);
         Task<List<T>> GetByFilter(Expression<Func<T, object>> orderBy, SortDirection sortDirection, Expression<Func<T, bool>> filter = null, string[] include = null);
+        Task<Tuple<int, IEnumerable<T>>> GetByFilterPagination(Expression<Func<T, bool>> filter = null, Func<IQueryable<T>, IOrderedQueryable<T>> orderBy = null, string[] include = null, int? page = null, int? pageSize = null);
+        Task<int> GetCountByFilter(Expression<Func<T, bool>> filter);
         Task<List<T>> GetByFilterOrderByThen(Expression<Func<T, object>> orderBy, SortDirection sortDirection, Expression<Func<T, bool>> filter = null, string[] include = null, Expression<Func<T, object>> orderByThen = null);
         Task<T> GetById(Guid id, string[] include = null);
     }

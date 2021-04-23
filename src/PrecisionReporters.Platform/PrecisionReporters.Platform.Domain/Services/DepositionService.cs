@@ -1,11 +1,6 @@
 ﻿using FluentResults;
-using Ical.Net;
-using Ical.Net.CalendarComponents;
-using Ical.Net.DataTypes;
-using Ical.Net.Serialization;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using MimeKit;
 using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Data.Enums;
 using PrecisionReporters.Platform.Data.Handlers.Interfaces;
@@ -24,6 +19,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
+using LinqKit;
 
 namespace PrecisionReporters.Platform.Domain.Services
 {
@@ -191,25 +187,52 @@ namespace PrecisionReporters.Platform.Domain.Services
             }
         }
 
-        public async Task<List<Deposition>> GetDepositionsByStatus(DepositionStatus? status, DepositionSortField? sortedField,
-            SortDirection? sortDirection)
+        public async Task<DepositionFilterResponseDto> GetDepositionsByStatus(DepositionFilterDto filterDto)
         {
-            var user = await _userService.GetCurrentUserAsync();
-
             var includes = new[] { nameof(Deposition.Requester), nameof(Deposition.Participants), nameof(Deposition.Case) };
 
-            Expression<Func<Deposition, bool>> filter = x => status == null || x.Status == status;
+            var filter = await GetDepositionsFilter(filterDto, filterDto.PastDepositions);
+            var orderByQuery = GetDepositionsOrderBy(filterDto);
+            var result = await _depositionRepository.GetByFilterPagination(filter, orderByQuery.Compile(), includes, filterDto.Page, filterDto.PageSize);
+
+            var filterCount= await GetDepositionsFilter(filterDto, !filterDto.PastDepositions);
+            var count = await _depositionRepository.GetCountByFilter(filterCount);
+
+            var response = new DepositionFilterResponseDto
+            {
+                TotalUpcoming = filterDto.PastDepositions ? count : result.Item1,
+                TotalPast = filterDto.PastDepositions ? result.Item1 : count,
+                Page = filterDto.Page,
+                NumberOfPages = (result.Item1 + filterDto.PageSize - 1) / filterDto.PageSize,
+                Depositions = result.Item2?.Select(c => _depositionMapper.ToDto(c)).ToList()
+            };
+            return response;
+        }
+
+        private async Task<Expression<Func<Deposition, bool>>> GetDepositionsFilter(DepositionFilterDto filterDto, bool pastDeposition)
+        {
+            var user = await _userService.GetCurrentUserAsync();
+            var exp = PredicateBuilder.New<Deposition>(true);
+            exp.And(x => filterDto.Status == null || x.Status == filterDto.Status);
+
+            if (filterDto.MaxDate.HasValue && filterDto.MinDate.HasValue)
+                exp.And(x => x.StartDate < filterDto.MaxDate.Value.UtcDateTime && x.StartDate > filterDto.MinDate.Value.UtcDateTime);
 
             if (!user.IsAdmin)
             {
-                filter = x => (status == null || x.Status == status) &&
-                         x.Status != DepositionStatus.Canceled &&
+                exp.And(x => (x.Status != DepositionStatus.Canceled &&
                          (x.Participants.Any(p => p.Email == user.EmailAddress && p.IsAdmitted.HasValue && p.IsAdmitted.Value)
                          || x.Requester.EmailAddress == user.EmailAddress
-                         || x.AddedBy.EmailAddress == user.EmailAddress);
+                         || x.AddedBy.EmailAddress == user.EmailAddress)));
             }
 
-            Expression<Func<Deposition, object>> orderBy = sortedField switch
+            exp.And(x => pastDeposition ? x.StartDate < DateTime.UtcNow : x.StartDate > DateTime.UtcNow);
+            return exp;
+        }
+
+        private Expression<Func<IQueryable<Deposition>, IOrderedQueryable<Deposition>>> GetDepositionsOrderBy(DepositionFilterDto filterDto)
+        {
+            Expression<Func<Deposition, object>> orderBy = filterDto.SortedField switch
             {
                 DepositionSortField.Details => x => x.Details,
                 DepositionSortField.Status => x => x.Status,
@@ -220,18 +243,32 @@ namespace PrecisionReporters.Platform.Domain.Services
                 DepositionSortField.Job => x => x.Job,
                 _ => x => x.StartDate,
             };
-
             Expression<Func<Deposition, object>> orderByThen = x => x.Requester.LastName;
-
-            var depositions = await _depositionRepository.GetByStatus(
-                orderBy,
-                sortDirection ?? SortDirection.Ascend,
-                filter,
-                includes,
-                sortedField == DepositionSortField.Requester ? orderByThen : null
-                );
-
-            return depositions;
+            Expression<Func<Deposition, object>> orderByDefault = x => x.StartDate;
+            Expression<Func<IQueryable<Deposition>, IOrderedQueryable<Deposition>>> orderByQuery = null;
+            if (filterDto.SortedField == DepositionSortField.Requester)
+            {
+                if (filterDto.SortDirection == null || filterDto.SortDirection == SortDirection.Ascend)
+                {
+                    orderByQuery = d => d.OrderBy(orderBy).ThenBy(orderByThen).ThenBy(orderByDefault);
+                }
+                else
+                {
+                    orderByQuery = d => d.OrderByDescending(orderBy).ThenByDescending(orderByThen).ThenBy(orderByDefault);
+                }
+            }
+            else
+            {
+                if (filterDto.SortDirection == null || filterDto.SortDirection == SortDirection.Ascend)
+                {
+                    orderByQuery = d => d.OrderBy(orderBy).ThenBy(orderByDefault);
+                }
+                else
+                {
+                    orderByQuery = d => d.OrderByDescending(orderBy).ThenBy(orderByDefault);
+                }
+            }
+            return orderByQuery;
         }
 
         public async Task<Result<JoinDepositionDto>> JoinDeposition(Guid id, string identity)
@@ -858,20 +895,12 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<DepositionFilterResponseDto>> GetDepositionsByFilter(DepositionFilterDto filterDto)
         {
-            var totalDepositions = await GetDepositionsByStatus(filterDto.Status, filterDto.SortedField, filterDto.SortDirection);
-
-            var filteredDepositions = totalDepositions?.Where(x =>
-                (filterDto.MaxDate.HasValue ? x.StartDate < filterDto.MaxDate.Value.UtcDateTime : x.StartDate > DateTime.UtcNow) &&
-                (!filterDto.MinDate.HasValue || x.StartDate > filterDto.MinDate.Value.UtcDateTime));
-
-            var totalUpcoming = totalDepositions.Count(x => x.StartDate > DateTime.UtcNow);
-
-            var response = new DepositionFilterResponseDto
+            if ((filterDto.MinDate.HasValue && !filterDto.MaxDate.HasValue) || (filterDto.MaxDate.HasValue && !filterDto.MinDate.HasValue) ||
+                ((filterDto.MinDate.HasValue && filterDto.MaxDate.HasValue) && (filterDto.MinDate.Value > filterDto.MaxDate.Value)))
             {
-                TotalUpcoming = totalUpcoming,
-                TotalPast = totalDepositions.Count - totalUpcoming,
-                Depositions = filteredDepositions?.Select(c => _depositionMapper.ToDto(c)).ToList()
-            };
+                return Result.Fail(new InvalidInputError("Invalid range of dates"));
+            }
+            var response = await GetDepositionsByStatus(filterDto);
             return Result.Ok(response);
         }
 

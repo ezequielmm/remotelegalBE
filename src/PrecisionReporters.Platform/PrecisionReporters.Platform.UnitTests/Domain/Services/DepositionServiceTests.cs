@@ -348,50 +348,72 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         public async Task GetDepositionsDepositionsByStatus_ShouldReturnAllDepositions_WhenStatusParameterIsNull()
         {
             _depositions.AddRange(DepositionFactory.GetDepositionList());
-
-            _depositionRepositoryMock.Setup(x => x.GetByStatus(
-                It.IsAny<Expression<Func<Deposition, object>>>(),
-                It.IsAny<SortDirection>(),
-                It.IsAny<Expression<Func<Deposition, bool>>>(),
-                It.IsAny<string[]>(),
-                It.IsAny<Expression<Func<Deposition, object>>>()))
-                .ReturnsAsync(_depositions.FindAll(x => x.Status == DepositionStatus.Pending));
-
+            _depositions.AddRange(DepositionFactory.GetDepositionList());
+            var upcomingList = _depositions.FindAll(x => x.Status == DepositionStatus.Pending);
+            var depostionsResult = new Tuple<int, IEnumerable<Deposition>>(upcomingList.Count, upcomingList);
+            _depositionRepositoryMock.Setup(x => x.GetByFilterPagination(
+               It.IsAny<Expression<Func<Deposition, bool>>>(),
+               It.IsAny<Func<IQueryable<Deposition>, IOrderedQueryable<Deposition>>>(),
+               It.IsAny<string[]>(),
+               It.IsAny<int>(),
+               It.IsAny<int>())
+               ).ReturnsAsync(depostionsResult);
+            _depositionRepositoryMock.Setup(x => x.GetCountByFilter(It.IsAny<Expression<Func<Deposition, bool>>>())).ReturnsAsync(2);
             _userServiceMock.Setup(x => x.GetCurrentUserAsync()).ReturnsAsync(new User { IsAdmin = true });
+            var filter = new DepositionFilterDto
+            {
+                Page = 1,
+                PageSize = 20
+            };
 
             // Act
-            var result = await _depositionService.GetDepositionsByStatus(null, null, null);
+            var result = await _depositionService.GetDepositionsByStatus(filter);
 
-            Assert.NotEmpty(result);
-            _depositionRepositoryMock.Verify(r => r.GetByStatus(It.IsAny<Expression<Func<Deposition, object>>>(),
-                It.IsAny<SortDirection>(),
-                It.Is<Expression<Func<Deposition, bool>>>((x => x != null)),
-                It.IsAny<string[]>(),
-                It.IsAny<Expression<Func<Deposition, object>>>()), Times.Once);
+            Assert.NotEmpty(result.Depositions);
+            _depositionRepositoryMock.Verify(x => x.GetByFilterPagination(
+               It.IsAny<Expression<Func<Deposition, bool>>>(),
+               It.IsAny<Func<IQueryable<Deposition>, IOrderedQueryable<Deposition>>>(),
+               It.IsAny<string[]>(),
+               It.IsAny<int>(),
+               It.IsAny<int>()),
+               Times.Once);
+            _depositionRepositoryMock.Verify(x => x.GetCountByFilter(It.IsAny<Expression<Func<Deposition, bool>>>()), Times.Once);
         }
 
         [Fact]
         public async Task GetDepositionsDepositionsByStatus_ShouldReturnPendingDepositions_WhenStatusParameterIsPending()
         {
             _depositions.AddRange(DepositionFactory.GetDepositionList());
-            _depositionRepositoryMock.Setup(x => x.GetByStatus(
-                It.IsAny<Expression<Func<Deposition, object>>>(),
-                It.IsAny<SortDirection>(),
-                It.IsAny<Expression<Func<Deposition, bool>>>(),
-                It.IsAny<string[]>(),
-                It.IsAny<Expression<Func<Deposition, object>>>()))
-                .ReturnsAsync(_depositions.FindAll(x => x.Status == DepositionStatus.Pending));
-
+            var upcomingList = _depositions.FindAll(x => x.Status == DepositionStatus.Pending);
+            var depositionResult = new Tuple<int, IEnumerable<Deposition>>(upcomingList.Count, upcomingList);
+            _depositionRepositoryMock.SetupSequence(x => x.GetByFilterPagination(
+               It.IsAny<Expression<Func<Deposition, bool>>>(),
+               It.IsAny<Func<IQueryable<Deposition>, IOrderedQueryable<Deposition>>>(),
+               It.IsAny<string[]>(),
+               It.IsAny<int>(),
+               It.IsAny<int>())
+               ).ReturnsAsync(depositionResult);
+            _depositionRepositoryMock.Setup(x => x.GetCountByFilter(It.IsAny<Expression<Func<Deposition, bool>>>())).ReturnsAsync(2);
             _userServiceMock.Setup(x => x.GetCurrentUserAsync()).ReturnsAsync(new User { IsAdmin = true });
+            var filter = new DepositionFilterDto
+            {
+                Status = DepositionStatus.Pending,
+                Page = 1,
+                PageSize = 20
+            };
 
             // Act
-            var result = await _depositionService.GetDepositionsByStatus(DepositionStatus.Pending, null, null);
+            var result = await _depositionService.GetDepositionsByStatus(filter);
 
-            _depositionRepositoryMock.Verify(r => r.GetByStatus(It.IsAny<Expression<Func<Deposition, object>>>(),
-                It.IsAny<SortDirection>(),
-                It.Is<Expression<Func<Deposition, bool>>>(x => x != null),
-                It.IsAny<string[]>(),
-                It.IsAny<Expression<Func<Deposition, object>>>()), Times.Once);
+            //Assert
+            _depositionRepositoryMock.Verify(x => x.GetByFilterPagination(
+               It.IsAny<Expression<Func<Deposition, bool>>>(),
+               It.IsAny<Func<IQueryable<Deposition>, IOrderedQueryable<Deposition>>>(),
+               It.IsAny<string[]>(),
+               It.IsAny<int>(),
+               It.IsAny<int>()),
+               Times.Once);
+            _depositionRepositoryMock.Verify(x => x.GetCountByFilter(It.IsAny<Expression<Func<Deposition, bool>>>()), Times.Once);
         }
 
         [Fact]
@@ -400,21 +422,42 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             // Arrange
             var sortedList = DepositionFactory.GetDepositionsWithRequesters().OrderBy(x => x.Requester.FirstName).ThenBy(x => x.Requester.LastName);
             _depositions.AddRange(sortedList);
-            _depositionRepositoryMock.Setup(x => x.GetByStatus(
-                x => x.Requester.FirstName,
-                It.IsAny<SortDirection>(),
-                It.IsAny<Expression<Func<Deposition, bool>>>(),
-                It.IsAny<string[]>(),
-                It.IsAny<Expression<Func<Deposition, object>>>()))
-                .ReturnsAsync(_depositions.OrderBy(x => x.Requester.FirstName).ThenBy(x => x.Requester.LastName).ToList());
+            var upcomingList = _depositions.OrderBy(x => x.Requester.FirstName).ThenBy(x => x.Requester.LastName).ToList();
+            var depositionResult = new Tuple<int, IEnumerable<Deposition>>(upcomingList.Count, upcomingList);
 
+            _depositionRepositoryMock.Setup(x => x.GetByFilterPagination(
+               It.IsAny<Expression<Func<Deposition, bool>>>(),
+               It.IsAny<Func<IQueryable<Deposition>, IOrderedQueryable<Deposition>>>(),
+               It.IsAny<string[]>(),
+               It.IsAny<int>(),
+               It.IsAny<int>())
+               ).ReturnsAsync(depositionResult);
+            _depositionRepositoryMock.Setup(x => x.GetCountByFilter(It.IsAny<Expression<Func<Deposition, bool>>>())).ReturnsAsync(2);
             _userServiceMock.Setup(x => x.GetCurrentUserAsync()).ReturnsAsync(new User { IsAdmin = true });
+            var filter = new DepositionFilterDto
+            {
+                SortedField = DepositionSortField.Requester,
+                SortDirection = SortDirection.Ascend,
+                Page = 1,
+                PageSize = 20
+            };
 
             // Act
-            var result = await _depositionService.GetDepositionsByStatus(null, DepositionSortField.Requester, SortDirection.Ascend);
+            var result = await _depositionService.GetDepositionsByStatus(filter);
 
             //Assert
-            Assert.Equal(sortedList, result);
+            _depositionRepositoryMock.Verify(x => x.GetByFilterPagination(
+               It.IsAny<Expression<Func<Deposition, bool>>>(),
+               It.IsAny<Func<IQueryable<Deposition>, IOrderedQueryable<Deposition>>>(),
+               It.IsAny<string[]>(),
+               It.IsAny<int>(),
+               It.IsAny<int>()),
+               Times.Once);
+            _depositionRepositoryMock.Verify(x => x.GetCountByFilter(It.IsAny<Expression<Func<Deposition, bool>>>()), Times.Once);
+            Assert.True(result.Depositions.Any());
+            Assert.True(result.Depositions.Count == 5);
+            Assert.True(result.TotalUpcoming == 5);
+            Assert.True(result.TotalPast == 2);
         }
 
         [Fact]
@@ -423,25 +466,42 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             // Arrange
             var sortedList = DepositionFactory.GetDepositionsWithRequesters().OrderBy(x => x.Requester.FirstName).ThenBy(x => x.Requester.LastName);
             _depositions.AddRange(sortedList);
-            _depositionRepositoryMock.Setup(x => x.GetByStatus(
-                x => x.Requester.FirstName,
-                It.IsAny<SortDirection>(),
-                It.IsAny<Expression<Func<Deposition, bool>>>(),
-                It.IsAny<string[]>(),
-                It.IsAny<Expression<Func<Deposition, object>>>()))
-                .ReturnsAsync(_depositions.OrderBy(x => x.Requester.FirstName).ThenBy(x => x.Requester.LastName).ToList());
+            var upcomingList = _depositions.OrderBy(x => x.Requester.FirstName).ThenBy(x => x.Requester.LastName).ToList();
+            var depositionResult = new Tuple<int, IEnumerable<Deposition>>(upcomingList.Count, upcomingList);
 
+            _depositionRepositoryMock.Setup(x => x.GetByFilterPagination(
+               It.IsAny<Expression<Func<Deposition, bool>>>(),
+               It.IsAny<Func<IQueryable<Deposition>, IOrderedQueryable<Deposition>>>(),
+               It.IsAny<string[]>(),
+               It.IsAny<int>(),
+               It.IsAny<int>())
+               ).ReturnsAsync(depositionResult);
+            _depositionRepositoryMock.Setup(x => x.GetCountByFilter(It.IsAny<Expression<Func<Deposition, bool>>>())).ReturnsAsync(2);
             _userServiceMock.Setup(x => x.GetCurrentUserAsync()).ReturnsAsync(new User { IsAdmin = true });
+            var filter = new DepositionFilterDto
+            {
+                SortedField = DepositionSortField.Requester,
+                SortDirection = SortDirection.Ascend,
+                Page = 1,
+                PageSize = 20
+            };
 
             // Act
-            var result = await _depositionService.GetDepositionsByStatus(null, DepositionSortField.Requester, SortDirection.Ascend);
+            var result = await _depositionService.GetDepositionsByStatus(filter);
 
             //Assert
-            _depositionRepositoryMock.Verify(r => r.GetByStatus(It.IsAny<Expression<Func<Deposition, object>>>(),
-                It.IsAny<SortDirection>(),
-                It.IsAny<Expression<Func<Deposition, bool>>>(),
-                It.IsAny<string[]>(),
-                It.Is<Expression<Func<Deposition, object>>>(x => x != null)), Times.Once);
+            _depositionRepositoryMock.Verify(x => x.GetByFilterPagination(
+               It.IsAny<Expression<Func<Deposition, bool>>>(),
+               It.IsAny<Func<IQueryable<Deposition>, IOrderedQueryable<Deposition>>>(),
+               It.IsAny<string[]>(),
+               It.IsAny<int>(),
+               It.IsAny<int>()),
+               Times.Once);
+            _depositionRepositoryMock.Verify(x => x.GetCountByFilter(It.IsAny<Expression<Func<Deposition, bool>>>()), Times.Once);
+            Assert.True(result.Depositions.Any());
+            Assert.True(result.Depositions.Count == 5);
+            Assert.True(result.TotalUpcoming == 5);
+            Assert.True(result.TotalPast == 2);
         }
 
         [Fact]
@@ -2258,64 +2318,33 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         }
 
         [Fact]
-        public async Task GetDepositionsByFilter_ShouldReturnUpcomingDepositions_ForEmptyFilters()
+        public async Task GetDepositionsByFilter_ShouldFail_InvalidRangeOfDates()
         {
-            var filter = new DepositionFilterDto();
-
-            var depositions = new List<Deposition> {
-                new Deposition
-                {
-                    Id = Guid.NewGuid(),
-                    StartDate = DateTime.Now.AddHours(30),
-                    EndDate = DateTime.Now.AddHours(35),
-                    Participants = new List<Participant>{ new Participant { Role = ParticipantType.Witness } },
-                    CreationDate = DateTime.UtcNow
-                },
-                new Deposition
-                {
-                    Id = Guid.NewGuid(),
-                    StartDate = DateTime.Now.AddHours(30),
-                    EndDate = DateTime.Now.AddHours(35),
-                    Participants = new List<Participant>{ new Participant { Role = ParticipantType.Witness } },
-                    CreationDate = DateTime.UtcNow
-                },
-                new Deposition
-                {
-                    Id = Guid.NewGuid(),
-                    StartDate = DateTime.Now.AddHours(-35),
-                    EndDate = DateTime.Now.AddHours(-30),
-                    Participants = new List<Participant>{ new Participant { Role = ParticipantType.Witness } },
-                    CreationDate = DateTime.UtcNow
-                }
+            //Arrange
+            var expectedError = "Invalid range of dates";
+            var filter = new DepositionFilterDto
+            {
+                MinDate = DateTime.Now.AddDays(5),
+                MaxDate = DateTime.Now,
             };
 
-            _userServiceMock.Setup(x => x.GetCurrentUserAsync()).ReturnsAsync(new User { IsAdmin = true });
-
-            _depositionRepositoryMock.Setup(x => x.GetByStatus(
-                It.IsAny<Expression<Func<Deposition, object>>>(),
-                It.IsAny<SortDirection>(),
-                It.IsAny<Expression<Func<Deposition, bool>>>(),
-                It.IsAny<string[]>(),
-                It.IsAny<Expression<Func<Deposition, object>>>()))
-                .ReturnsAsync(depositions);
-
+            //Act
             var result = await _depositionService.GetDepositionsByFilter(filter);
 
-            Assert.True(result.IsSuccess);
-            Assert.True(result.Value.TotalUpcoming == 2);
-            Assert.True(result.Value.TotalPast == 1);
-            Assert.True(result.Value.Depositions.Count == 2);
+            //Assert
+            Assert.True(result.IsFailed);
+            Assert.Contains(expectedError, result.Errors.Select(e => e.Message));
         }
 
         [Fact]
-        public async Task GetDepositionsByFilter_ShouldReturnPassedDepositions_ForMaxDateValueNow()
+        public async Task GetDepositionsByFilter_ShouldReturnUpcomingDepositions_ForEmptyFilters()
         {
             var filter = new DepositionFilterDto
             {
-                MaxDate = DateTime.UtcNow
+                PageSize = 20
             };
 
-            var depositions = new List<Deposition> {
+            var upcommingDepositions = new List<Deposition> {
                 new Deposition
                 {
                     Id = Guid.NewGuid(),
@@ -2331,33 +2360,86 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                     EndDate = DateTime.Now.AddHours(65),
                     Participants = new List<Participant>{ new Participant { Role = ParticipantType.Witness } },
                     CreationDate = DateTime.UtcNow
+                }
+            };
+
+            var depositionResult = new Tuple<int, IEnumerable<Deposition>>(upcommingDepositions.Count, upcommingDepositions);
+
+            _userServiceMock.Setup(x => x.GetCurrentUserAsync()).ReturnsAsync(new User { IsAdmin = true });
+
+            _depositionRepositoryMock.Setup(x => x.GetByFilterPagination(
+                It.IsAny<Expression<Func<Deposition, bool>>>(),
+                It.IsAny<Func<IQueryable<Deposition>, IOrderedQueryable<Deposition>>>(),
+                It.IsAny<string[]>(),
+                It.IsAny<int>(),
+                It.IsAny<int>())
+                ).ReturnsAsync(depositionResult);
+            _depositionRepositoryMock.Setup(x => x.GetCountByFilter(It.IsAny<Expression<Func<Deposition, bool>>>())).ReturnsAsync(2);
+
+            var result = await _depositionService.GetDepositionsByFilter(filter);
+
+            _depositionRepositoryMock.Verify(x => x.GetCountByFilter(It.IsAny<Expression<Func<Deposition, bool>>>()), Times.Once);
+            Assert.True(result.IsSuccess);
+            Assert.True(result.Value.TotalUpcoming == 2);
+            Assert.True(result.Value.TotalPast == 2);
+            Assert.True(result.Value.Depositions.Count == 2);
+        }
+
+        [Fact]
+        public async Task GetDepositionsByFilter_ShouldReturnPassedDepositions_ForPastDepositionFilter()
+        {
+            var filter = new DepositionFilterDto
+            {
+                PastDepositions = true,
+                PageSize = 20
+            };
+
+            var upcommingDepositions = new List<Deposition> {
+                new Deposition
+                {
+                    Id = Guid.NewGuid(),
+                    StartDate = DateTime.Now.AddHours(30),
+                    EndDate = DateTime.Now.AddHours(35),
+                    Participants = new List<Participant>{ new Participant { Role = ParticipantType.Witness } },
+                    CreationDate = DateTime.UtcNow
                 },
                 new Deposition
                 {
                     Id = Guid.NewGuid(),
-                    StartDate = DateTime.Now.AddHours(-35),
-                    EndDate = DateTime.Now.AddHours(-30),
+                    StartDate = DateTime.Now.AddHours(60),
+                    EndDate = DateTime.Now.AddHours(65),
                     Participants = new List<Participant>{ new Participant { Role = ParticipantType.Witness } },
                     CreationDate = DateTime.UtcNow
                 }
             };
 
+            var depositionResult = new Tuple<int, IEnumerable<Deposition>>(upcommingDepositions.Count, upcommingDepositions);
             _userServiceMock.Setup(x => x.GetCurrentUserAsync()).ReturnsAsync(new User { IsAdmin = true });
 
-            _depositionRepositoryMock.Setup(x => x.GetByStatus(
-                It.IsAny<Expression<Func<Deposition, object>>>(),
-                It.IsAny<SortDirection>(),
+            _depositionRepositoryMock.Setup(x => x.GetByFilterPagination(
                 It.IsAny<Expression<Func<Deposition, bool>>>(),
+                It.IsAny<Func<IQueryable<Deposition>, IOrderedQueryable<Deposition>>>(),
                 It.IsAny<string[]>(),
-                It.IsAny<Expression<Func<Deposition, object>>>()))
-                .ReturnsAsync(depositions);
+                It.IsAny<int>(),
+                It.IsAny<int>())
+                ).ReturnsAsync(depositionResult);
+            _depositionRepositoryMock.Setup(x => x.GetCountByFilter(It.IsAny<Expression<Func<Deposition, bool>>>())).ReturnsAsync(2);
 
             var result = await _depositionService.GetDepositionsByFilter(filter);
 
             Assert.True(result.IsSuccess);
+            _depositionRepositoryMock.Verify(x => x.GetByFilterPagination(
+                It.IsAny<Expression<Func<Deposition, bool>>>(),
+                It.IsAny<Func<IQueryable<Deposition>, IOrderedQueryable<Deposition>>>(),
+                It.IsAny<string[]>(),
+                It.IsAny<int>(),
+                It.IsAny<int>()),
+                Times.Once
+                );
+            _depositionRepositoryMock.Verify(x => x.GetCountByFilter(It.IsAny<Expression<Func<Deposition, bool>>>()), Times.Once);
+            Assert.True(result.Value.TotalPast == 2);
             Assert.True(result.Value.TotalUpcoming == 2);
-            Assert.True(result.Value.TotalPast == 1);
-            Assert.True(result.Value.Depositions.Count == 1);
+            Assert.True(result.Value.Depositions.Count == 2);
         }
 
         [Fact]
