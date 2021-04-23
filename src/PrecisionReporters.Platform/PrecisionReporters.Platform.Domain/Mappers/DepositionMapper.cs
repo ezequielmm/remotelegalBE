@@ -36,7 +36,7 @@ namespace PrecisionReporters.Platform.Domain.Mappers
                 Id = dto.Id,
                 CreationDate = dto.CreationDate.UtcDateTime,
                 StartDate = dto.StartDate.UtcDateTime,
-                TimeZone = ((USTimeZone)Enum.Parse(typeof(USTimeZone),dto.TimeZone)).GetDescription(),
+                TimeZone = !string.IsNullOrWhiteSpace(dto.TimeZone) ? ((USTimeZone)Enum.Parse(typeof(USTimeZone), dto.TimeZone)).GetDescription() : string.Empty,
                 EndDate = dto.EndDate?.UtcDateTime,
                 CompleteDate = dto.CompleteDate?.UtcDateTime,
                 Participants = dto.Participants?.Select(p => _participantMapper.ToModel(p)).Append(witness).ToList(),
