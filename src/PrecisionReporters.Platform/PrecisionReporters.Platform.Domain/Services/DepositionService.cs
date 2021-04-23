@@ -762,7 +762,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             await _permissionService.AddParticipantPermissions(newParticipant);
 
             if (deposition.Status == DepositionStatus.Confirmed)
-                await SendDepositionEmailNotification(deposition, participant);
+                await SendDepositionEmailNotification(deposition, newParticipant);
 
             return Result.Ok(newParticipant);
         }
