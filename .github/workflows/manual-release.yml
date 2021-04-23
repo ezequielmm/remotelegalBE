@@ -6,6 +6,10 @@ on:
       image:
         description: 'IMAGE:TAG'
         required: true
+      region:
+        description: 'Region'
+        default: 'us-east-1'
+        required: false
 
 jobs:
   pack-deploy:
@@ -25,7 +29,7 @@ jobs:
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: us-east-1
+        aws-region: ${{ github.event.inputs.region }}
     - name: Set New Image to Amazon ECS Task Definition
       id: task-def
       uses: aws-actions/amazon-ecs-render-task-definition@v1
