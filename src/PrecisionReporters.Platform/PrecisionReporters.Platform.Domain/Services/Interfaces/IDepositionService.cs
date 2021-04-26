@@ -50,6 +50,5 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
         Task<Result<Deposition>> EndDeposition(Guid depositionId);
         Task<Result<Deposition>> ReScheduleDeposition(Deposition deposition, FileTransferInfo file, bool deleteCaption);
         Task<Result<bool>> NotifyParties(Guid depositionId, bool isEndDeposition = false);
-        Task SendDepositionEmailNotification(Deposition deposition);
     }
 }

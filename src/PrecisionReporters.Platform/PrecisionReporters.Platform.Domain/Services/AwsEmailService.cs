@@ -1,18 +1,12 @@
 ﻿using Amazon.SimpleEmail;
 using Amazon.SimpleEmail.Model;
-using Ical.Net;
-using Ical.Net.CalendarComponents;
-using Ical.Net.DataTypes;
 using Ical.Net.Serialization;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MimeKit;
 using MimeKit.Text;
-using PrecisionReporters.Platform.Data.Entities;
-using PrecisionReporters.Platform.Data.Enums;
 using PrecisionReporters.Platform.Domain.Commons;
 using PrecisionReporters.Platform.Domain.Configurations;
-using PrecisionReporters.Platform.Domain.Extensions;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -81,7 +75,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             try
             {
                 _logger.LogDebug("Sending email using Amazon SES.");
-                var r = await _emailService.SendRawEmailAsync(sendRequest);
+                await _emailService.SendRawEmailAsync(sendRequest);
                 _logger.LogDebug("The email was sent successfully.");
             }
             catch (Exception ex)
@@ -91,136 +85,80 @@ namespace PrecisionReporters.Platform.Domain.Services
             }
         }
 
-        // TODO: This method is not agnostic from the business so it shouldn't be on this class
-        public async Task SendRawEmailNotification(Deposition deposition, Participant participant)
+        public async Task SendRawEmailNotification(EmailTemplateInfo emailTemplateInfo)
         {
             var templateRequest = new GetTemplateRequest
             {
-                TemplateName = _emailConfiguration.JoinDepositionTemplate
+                TemplateName = emailTemplateInfo.TemplateName
             };
             var template = await _emailService.GetTemplateAsync(templateRequest);
             string htmlBody = template.Template.HtmlPart;
-
-            await SendRawEmailNotification(CreateMessageStream(deposition, participant, htmlBody));
+            await SendRawEmailNotification(CreateMessageStream(emailTemplateInfo, htmlBody));
         }
-
-        // TODO: This method is not agnostic from the business so it shouldn't be on this class
-        public async Task SendRawEmailNotification(Deposition deposition)
-        {
-            var templateRequest = new GetTemplateRequest
-            {
-                TemplateName = _emailConfiguration.JoinDepositionTemplate
-            };
-            var template = await _emailService.GetTemplateAsync(templateRequest);
-            string htmlBody = template.Template.HtmlPart;
-
-            deposition.Participants.ForEach(async x =>
-            {
-                var participantMail = x.Email ?? x.User?.EmailAddress;
-                if (!string.IsNullOrEmpty(participantMail))
-                    await SendRawEmailNotification(CreateMessageStream(deposition, x, htmlBody));
-            });
-        }
-
-        // TODO: This method is not agnostic from the business so it shouldn't be on this class
-        private string AddCalendar(Deposition deposition)
-        {
-            var witness = deposition.Participants.FirstOrDefault(x => x.Role == ParticipantType.Witness);
-            var strWitness = !string.IsNullOrWhiteSpace(witness.Name) ? $"{witness.Name} - {deposition.Case.Name} " : deposition.Case.Name;
-            var calendar = new Calendar();
-            calendar.Method = "REQUEST";
-            var icalEvent = new CalendarEvent
-            {
-                Uid = deposition.Id.ToString(),
-                Summary = $"Invitation: Remote Legal - {strWitness}",
-                Description = $"{strWitness}{Environment.NewLine}{_emailConfiguration.PreDepositionLink}{deposition.Id}",
-                Start = new CalDateTime(deposition.StartDate.GetConvertedTime(deposition.TimeZone), deposition.TimeZone),
-                End = deposition.EndDate.HasValue ? new CalDateTime(deposition.EndDate.Value.GetConvertedTime(deposition.TimeZone), deposition.TimeZone) : null,
-                Location = $"{_emailConfiguration.PreDepositionLink}{deposition.Id}",
-                Organizer = new Organizer(_emailConfiguration.EmailNotification)
-            };
-            calendar.Events.Add(icalEvent);
-            var iCalSerializer = new CalendarSerializer();
-            return iCalSerializer.SerializeToString(calendar);
-        }
-
-        // TODO: This method is not agnostic from the business so it shouldn't be on this class
-        private Multipart CreateMessageBody(Deposition deposition, string participantName, string witnessName, string htmlBodyTemplate)
+        
+        private Multipart CreateMessageBody(EmailTemplateInfo emailTemplateInfo, string htmlBodyTemplate)
         {
             var mixed = new Multipart("mixed");
-            var caseName = deposition.Case.Name;
-            var htmlBody = htmlBodyTemplate
-                .Replace("{{dateAndTime}}", $"{deposition.StartDate.GetFormattedDateTime(deposition.TimeZone)}")
-                .Replace("{{name}}", participantName)
-                .Replace("{{imageUrl}}", GetImageUrl(_emailConfiguration.LogoImageName))
-                .Replace("{{calendar}}", GetImageUrl(_emailConfiguration.CalendarImageName))
-                .Replace("{{depositionJoinLink}}", $"{_emailConfiguration.PreDepositionLink}{deposition.Id}");
-
-            if (string.IsNullOrEmpty(witnessName))
-                htmlBody = htmlBody.Replace("{{case}}", caseName);
-            else
-                htmlBody = htmlBody.Replace("{{case}}", $"{witnessName} in {caseName}");
-
-            var alternative = new MultipartAlternative();
-            alternative.Add(new TextPart(TextFormat.Plain)
+            foreach (var key in emailTemplateInfo.TemplateData.Keys)
             {
-                ContentTransferEncoding = ContentEncoding.QuotedPrintable,
-                ContentDisposition = new ContentDisposition()
+                var text = htmlBodyTemplate.Replace($"{{{{{key}}}}}", emailTemplateInfo.TemplateData.GetValueOrDefault(key));
+                htmlBodyTemplate = text;
+            }
+
+            var alternative = new MultipartAlternative
+            {
+                new TextPart(TextFormat.Plain)
                 {
-                    Disposition = System.Net.Mime.DispositionTypeNames.Inline,
-                    IsAttachment = false,
+                    ContentTransferEncoding = ContentEncoding.QuotedPrintable,
+                    ContentDisposition = new ContentDisposition()
+                    {
+                        Disposition = System.Net.Mime.DispositionTypeNames.Inline,
+                        IsAttachment = false,
+                    },
+                    Text = emailTemplateInfo.AddiotionalText
                 },
-                Text = $"You can join by clicking the link: {_emailConfiguration.PreDepositionLink}{deposition.Id}"
-            });
-            alternative.Add(new TextPart(TextFormat.Html)
-            {
-                ContentTransferEncoding = ContentEncoding.QuotedPrintable,
-                Text = htmlBody
-            });
-            
+                new TextPart(TextFormat.Html)
+                {
+                    ContentTransferEncoding = ContentEncoding.QuotedPrintable,
+                    Text = htmlBodyTemplate
+                }
+            };
+
             mixed.Add(alternative);
 
+            var calendar = emailTemplateInfo.Calendar;
+            var iCalSerializer = new CalendarSerializer();
             var ical = new TextPart("calendar")
             {
                 ContentTransferEncoding = ContentEncoding.SevenBit,
-                Text = AddCalendar(deposition)
+                Text = iCalSerializer.SerializeToString(calendar)
             };
-            ical.ContentType.Parameters.Add("method", "REQUEST");
+            ical.ContentType.Parameters.Add("method", calendar.Method);
 
             mixed.Add(ical);
             return mixed;
         }
 
-        // TODO: This method is not agnostic from the business so it shouldn't be on this class
-        private MimeMessage CreateMessage(Deposition deposition, Participant participant, string htmlBodyTemplate)
+        private MimeMessage CreateMessage(EmailTemplateInfo emailTemplateInfo, string htmlBodyTemplate)
         {
             var message = new MimeMessage();
             message.From.Add(new MailboxAddress("Remote Legal Team", _emailConfiguration.EmailNotification));
 
-            var participantMail = participant.Email ?? participant.User?.EmailAddress;
-            var participantName = participant.User?.GetFullName() ?? participant.Name;
+            message.To.Add(MailboxAddress.Parse(emailTemplateInfo.EmailTo.FirstOrDefault()));
 
-            message.To.Add(new MailboxAddress(participantName, participantMail));
+            var subject = emailTemplateInfo.Subject;
+            message.Subject = subject;
 
-            var witnessName = deposition.Participants.Single(x => x.Role == Data.Enums.ParticipantType.Witness)?.Name;
-            var strWitnesTitle = !string.IsNullOrWhiteSpace(witnessName) ? $"- {witnessName} " : string.Empty;
-            message.Subject = message.Subject = $"Invitation: Remote Legal {witnessName}- {deposition.Case.Name} - {deposition.StartDate.GetFormattedDateTime(deposition.TimeZone)}";
-            message.Body = CreateMessageBody(deposition, participantName ?? "", witnessName, htmlBodyTemplate);
+            message.Body = CreateMessageBody(emailTemplateInfo, htmlBodyTemplate);
             
             return message;
         }
 
-        // TODO: This method is not agnostic from the business so it shouldn't be on this class
-        private MemoryStream CreateMessageStream(Deposition deposition, Participant participant, string htmlBodyTemplate)
+        private MemoryStream CreateMessageStream(EmailTemplateInfo emailTemplateInfo, string htmlBodyTemplate)
         {
             var stream = new MemoryStream();
-            CreateMessage(deposition, participant, htmlBodyTemplate).WriteTo(stream);
+            CreateMessage(emailTemplateInfo, htmlBodyTemplate).WriteTo(stream);
             return stream;
-        }
-
-        private string GetImageUrl(string name)
-        {
-            return $"{_emailConfiguration.ImagesUrl}{name}";
         }
     }
 }

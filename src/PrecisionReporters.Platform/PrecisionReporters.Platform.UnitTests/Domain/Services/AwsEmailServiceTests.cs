@@ -1,17 +1,20 @@
-﻿using System;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using System.Threading.Tasks;
 using Amazon.SimpleEmail;
 using Moq;
-using PrecisionReporters.Platform.Data.Entities;
-using PrecisionReporters.Platform.Data.Enums;
 using PrecisionReporters.Platform.Domain.Services;
 using Xunit;
 using Microsoft.Extensions.Options;
 using PrecisionReporters.Platform.Domain.Configurations;
-using PrecisionReporters.Platform.UnitTests.Utils;
 using Amazon.SimpleEmail.Model;
 using System.Threading;
+using PrecisionReporters.Platform.Domain.Commons;
+using System.Collections.Generic;
+using Ical.Net;
+using Ical.Net.CalendarComponents;
+using System;
+using Ical.Net.DataTypes;
+using PrecisionReporters.Platform.Domain.Extensions;
 
 namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 {
@@ -48,54 +51,39 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         }
 
         [Fact]
-        public async Task SendRawEmailNotification_ShouldSendEmailForAllParticipantsWithEmail()
+        public async Task SendRawEmailNotification_ShouldSendEmail()
         {
             // Arrange
-            var deposition = DepositionFactory.GetDepositionWithParticipantEmail("foo@email.com", true);
-            deposition.Case = new Case 
-            { 
-                Name = "Case A"
+            var emailTemplateInfo = new EmailTemplateInfo();
+            emailTemplateInfo.AddiotionalText = "";
+            emailTemplateInfo.TemplateData = new Dictionary<string, string>() { { "test", "test" } };
+            emailTemplateInfo.TemplateName = "";
+            emailTemplateInfo.Subject = "";
+            emailTemplateInfo.EmailTo = new List<string> { "test@test.com" };
+            var calendar = new Calendar();
+            calendar.Method = "REQUEST";
+            var timeZone = "America/New_York";
+            var icalEvent = new CalendarEvent
+            {
+                Uid = Guid.NewGuid().ToString(),
+                Summary = "",
+                Description = "",
+                Start = new CalDateTime(DateTime.UtcNow.GetConvertedTime(timeZone), timeZone),
+                End = null,
+                Location = "",
+                Organizer = new Organizer("organizer@test.com")
             };
-            deposition.StartDate = DateTime.UtcNow;
-            deposition.TimeZone = "America/New_York";
 
-            deposition.Participants.Add(new Participant
-                    {
-                        Email = "witnessEmail",
-                        IsAdmitted = false,
-                        Role = ParticipantType.Witness
-                    });
-            deposition.Participants.Add(new Participant
-                    {
-                        IsAdmitted = false,
-                        Role = ParticipantType.Observer
-                    });
-            
+            calendar.Events.Add(icalEvent);
+            emailTemplateInfo.Calendar = calendar;
+
             // Act
-            await _service.SendRawEmailNotification(deposition);
+            await _service.SendRawEmailNotification(emailTemplateInfo);
 
             // Assert
-            _awsSESMock.Verify(x => x.SendRawEmailAsync(It.IsAny<SendRawEmailRequest>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+            _awsSESMock.Verify(x => x.SendRawEmailAsync(It.IsAny<SendRawEmailRequest>(), It.IsAny<CancellationToken>()), Times.Exactly(1));
                
         }
 
-        [Fact]
-        public async Task SendRawEmailNotification_ShouldNotSendEmailForDepositionWithoutParticipants()
-        {
-            // Arrange
-            var deposition = DepositionFactory.GetDepositionWithoutWitness(Guid.NewGuid(), Guid.NewGuid());
-            deposition.Case = new Case 
-            { 
-                Name = "Case A"
-            };
-
-            
-            // Act
-            await _service.SendRawEmailNotification(deposition);
-
-            // Assert
-            _awsSESMock.Verify(x => x.SendRawEmailAsync(It.IsAny<SendRawEmailRequest>(), It.IsAny<CancellationToken>()), Times.Never);
-               
-        }
     }
 }
