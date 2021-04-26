@@ -95,7 +95,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _depositionConfigurationMock = new Mock<IOptions<DepositionConfiguration>>();
             _depositionConfigurationMock.Setup(x => x.Value).Returns(_depositionconfiguration);
 
-            _emailConfiguration = new EmailConfiguration { EmailNotification = "notifications@remotelegal.com" };
+            _emailConfiguration = new EmailConfiguration { EmailNotification = "notifications@remotelegal.com", PreDepositionLink="", LogoImageName="", ImagesUrl="" };
             _emailConfigurationMock = new Mock<IOptions<EmailConfiguration>>();
             _emailConfigurationMock.Setup(x => x.Value).Returns(_emailConfiguration);
 
@@ -2676,8 +2676,12 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         public async Task ReScheduleDeposition_ShouldReturnOk_IfStartDateIsValid()
         {
             // Arrange
-            var depositionMock = new Deposition() { Id = Guid.NewGuid(), StartDate = DateTime.UtcNow.AddSeconds(301), EndDate = DateTime.UtcNow.AddSeconds(600), Status = DepositionStatus.Pending, CaseId = Guid.NewGuid(), Caption = new Document() };
-            var currentDepositionMock = new Deposition() { Id = Guid.NewGuid(), Status = DepositionStatus.Canceled, CaseId = Guid.NewGuid(), Caption = new Document() };
+            var depositionMock = new Deposition() { Id = Guid.NewGuid(), StartDate = DateTime.UtcNow.AddSeconds(400), EndDate = DateTime.UtcNow.AddSeconds(600), Status = DepositionStatus.Pending, CaseId = Guid.NewGuid(), Caption = new Document() , Case = new Case { Name="test"} };
+            var currentDepositionMock = new Deposition() { Id = Guid.NewGuid(), StartDate= DateTime.UtcNow.AddDays(-1), TimeZone= "America/New_York", Status = DepositionStatus.Canceled, CaseId = Guid.NewGuid(), Caption = new Document(), Case = new Case { Name = "test" } };
+            var participant = new Participant { Name = "Jhon", Email = "test@test.com" };
+            currentDepositionMock.Participants = new List<Participant> { participant };
+            depositionMock.Participants = currentDepositionMock.Participants;
+            depositionMock.TimeZone = "America/New_York";
             var testPath = $"{depositionMock.CaseId}/caption";
             var testEmail = "test@test.com";
             var fileName = "testFile.pdf";

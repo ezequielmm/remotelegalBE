@@ -34,7 +34,7 @@ namespace PrecisionReporters.Platform.Domain.Extensions
             var timeZoneInfo = TZConvert.GetTimeZoneInfo(timeZone);
             DateTime convertedTime = TimeZoneInfo.ConvertTimeFromUtc(dateTime, timeZoneInfo);
 
-            return $"{convertedTime:MMMM d, yyyy hh:mm tt} {timeZoneAbbreviation}";
+            return $"{convertedTime:MMM d, yyyy hh:mm tt} {timeZoneAbbreviation}";
         }
     }
 }

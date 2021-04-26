@@ -1033,11 +1033,15 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (deposition.StartDate > deposition.EndDate)
                 return Result.Fail<Deposition>(new ResourceConflictError($"The StartDate must be lower than EndDate"));
 
-            var currentDepositionResult = await GetByIdWithIncludes(deposition.Id, new[] { $"{nameof(Deposition.Caption)}" });
+            var currentDepositionResult = await GetByIdWithIncludes(deposition.Id, new[] { nameof(Deposition.Case), nameof(Deposition.Caption), nameof(Deposition.Participants) });
             if (currentDepositionResult.IsFailed)
                 return currentDepositionResult;
 
             var currentDeposition = currentDepositionResult.Value;
+
+            var oldStartDate = currentDeposition.StartDate;
+            var oldTimeZone = currentDeposition.TimeZone;
+
             try
             {
                 var transactionResult = await _transactionHandler.RunAsync<Deposition>(async () =>
@@ -1053,6 +1057,10 @@ namespace PrecisionReporters.Platform.Domain.Services
                     currentDeposition.TimeZone = deposition.TimeZone;
 
                     await _depositionRepository.Update(currentDeposition);
+                    
+                    var tasks = currentDeposition.Participants.Select(participant => SendReSheduleDepositionEmailNotification(currentDeposition, participant, oldStartDate, oldTimeZone));
+                    await Task.WhenAll(tasks);
+                    
                     return Result.Ok(currentDeposition);
                 });
 
@@ -1263,6 +1271,12 @@ namespace PrecisionReporters.Platform.Domain.Services
             await _awsEmailService.SendRawEmailNotification(template);
         }
 
+        private async Task SendReSheduleDepositionEmailNotification(Deposition deposition, Participant participant, DateTime oldStartDate, string oldTimeZone)
+        {
+            var template = GetReScheduleDepositionEmailTemplate(deposition, participant, oldStartDate, oldTimeZone);
+            await _awsEmailService.SendRawEmailNotification(template);
+        }
+
         private EmailTemplateInfo GetJoinDepositionEmailTemplate(Deposition deposition, Participant participant)
         {
             var witness = deposition.Participants.FirstOrDefault(x => x.Role == ParticipantType.Witness);
@@ -1311,6 +1325,33 @@ namespace PrecisionReporters.Platform.Domain.Services
                 AddiotionalText = string.Empty,
                 Calendar = CreateCalendar(deposition, CalendarAction.Cancel.GetDescription()),
                 Subject = $"Cancellation: Remote Legal {witness?.Name} - {deposition.Case.Name} - {deposition.StartDate.GetFormattedDateTime(deposition.TimeZone)}"
+            };
+
+            return template;
+        }
+
+        private EmailTemplateInfo GetReScheduleDepositionEmailTemplate(Deposition deposition, Participant participant, DateTime oldStartDate, string oldTimeZone)
+        {
+            var witness = deposition.Participants.FirstOrDefault(x => x.Role == ParticipantType.Witness);
+
+            var template = new EmailTemplateInfo
+            {
+                EmailTo = new List<string> { participant.Email },
+                TemplateData = new Dictionary<string, string>
+                            {
+                                { "old-start-date", oldStartDate.GetFormattedDateTime(oldTimeZone) },
+                                { "start-date", deposition.StartDate.GetFormattedDateTime(deposition.TimeZone) },
+                                { "user-name", participant.Name },
+                                { "case-name", deposition.Case.Name },
+                                { "witness-name", witness?.Name ?? string.Empty },
+                                { "images-url",  _emailConfiguration.ImagesUrl },
+                                { "logo", GetImageUrl(_emailConfiguration.LogoImageName) },
+                                { "deposition-join-link", $"{_emailConfiguration.PreDepositionLink}{deposition.Id}"}
+                            },
+                TemplateName = ApplicationConstants.ReScheduleDepositionEmailTemplate,
+                AddiotionalText = $"You can join by clicking the link: {_emailConfiguration.PreDepositionLink}{deposition.Id}",
+                Calendar = CreateCalendar(deposition, CalendarAction.Update.GetDescription()),
+                Subject = $"Invitation update: Remote Legal {witness?.Name} - {deposition.Case.Name} - {deposition.StartDate.GetFormattedDateTime(deposition.TimeZone)}"
             };
 
             return template;

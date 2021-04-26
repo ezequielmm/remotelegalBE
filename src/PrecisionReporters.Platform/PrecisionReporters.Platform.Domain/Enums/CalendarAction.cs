@@ -8,7 +8,7 @@ namespace PrecisionReporters.Platform.Domain.Enums
         Add,
         [Description("CANCEL")]
         Cancel,
-        [Description("UPDATE")]
+        [Description("REQUEST")]
         Update
     }
 }

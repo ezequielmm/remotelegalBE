@@ -23,6 +23,7 @@
         public const string Mp4Extension = ".mp4";
         public const string ActivityTemplateName = "ActivityEmailTemplate";
         public const string CancelDepositionEmailTemplate = "CancelDepositionEmailTemplate";
+        public const string ReScheduleDepositionEmailTemplate = "ReScheduleDepositionEmailTemplate";
 
     }
 }
