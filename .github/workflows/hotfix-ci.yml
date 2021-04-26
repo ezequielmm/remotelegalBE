@@ -3,9 +3,6 @@ name: Hotifx CI
 on:
   workflow_dispatch:
     inputs:
-      image:
-        description: "IMAGE:TAG"
-        required: true
       region:
         description: "Region"
         default: "us-east-1"
@@ -73,5 +70,5 @@ jobs:
         with:
           task-definition: ./.github/workflows/task-definition-${{ github.event.inputs.environment }}.json
           container-name: prp-be-container-${{ github.event.inputs.environment }}
-          image: ${{ github.event.inputs.image }}
+          image: ${{ steps.build-image.outputs.image }}
 
