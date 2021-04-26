@@ -4,6 +4,7 @@
     {
         public const string SectionName = "EmailConfiguration";
 
+        public string SesRegion { get; set; }
         public string Sender { get; set; }
         public string EmailNotification { get; set; }
         public string ImagesUrl { get; set; }

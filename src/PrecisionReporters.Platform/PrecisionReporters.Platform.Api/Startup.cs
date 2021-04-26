@@ -209,9 +209,9 @@ namespace PrecisionReporters.Platform.Api
             });
 
             services.AddSingleton(typeof(IAmazonCognitoIdentityProvider),
-                _ => new AmazonCognitoIdentityProviderClient(RegionEndpoint.GetBySystemName(appConfiguration.AwsStorageConfiguration.S3BucketRegion)));
+                _ => new AmazonCognitoIdentityProviderClient(RegionEndpoint.GetBySystemName(appConfiguration.CognitoConfiguration.AWSRegion)));
             services.AddSingleton(typeof(IAmazonSimpleEmailService),
-                _ => new AmazonSimpleEmailServiceClient(RegionEndpoint.GetBySystemName(appConfiguration.AwsStorageConfiguration.S3BucketRegion)));
+                _ => new AmazonSimpleEmailServiceClient(RegionEndpoint.GetBySystemName(appConfiguration.EmailConfiguration.SesRegion)));
 
             services.AddScoped<ICompositionService, CompositionService>();
             services.AddScoped<ITwilioCallbackService, TwilioCallbackService>();

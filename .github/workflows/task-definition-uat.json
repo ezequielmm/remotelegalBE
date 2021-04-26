@@ -168,6 +168,10 @@
                 {
                     "name": "AppConfiguration__ConnectionStrings__RedisConnectionString",
                     "value": "tf-rep-group-uat.xzj4s3.ng.0001.use1.cache.amazonaws.com:6379"
+                },
+                {
+                    "name": "AppConfiguration__EmailConfiguration__SesRegion",
+                    "value": "us-east-1"
                 }
             ],
             "secrets": [
