@@ -274,7 +274,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
         [AllowAnonymous]
         public async Task<ActionResult<GuestToken>> JoinGuestParticipant(Guid id, CreateGuestDto guest)
         {
-            var ipAddress = HttpContext.Connection.RemoteIpAddress;
+            var ipAddress = HttpContext.Connection.RemoteIpAddress.MapToIPv4();
             //TODO: Add mapper
             var activity = new ActivityHistory
             {
