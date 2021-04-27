@@ -36,8 +36,10 @@ namespace PrecisionReporters.Platform.Domain.Services
             var deposition = await _depositionRepository.GetFirstOrDefaultByFilter(x => x.Id == draftTranscriptDto.DepositionId, include);
             try
             {
-                var tasks = _transcriptGenerators.Select(x => x.GenerateTranscriptTemplate(draftTranscriptDto, deposition, transcriptions.Value));
-                await Task.WhenAll(tasks);
+                foreach (var transcriptGenerator in _transcriptGenerators)
+                {
+                    await transcriptGenerator.GenerateTranscriptTemplate(draftTranscriptDto, deposition, transcriptions.Value);
+                }
             }
             catch (Exception ex)
             {
