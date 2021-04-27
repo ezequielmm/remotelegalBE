@@ -547,7 +547,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             Assert.Equal(errorMessage, result.Errors[0].Message);
             Assert.True(result.IsFailed);
             Assert.NotNull(deposition.TimeZone);
-            Assert.Equal("EST", deposition.TimeZone);
+            Assert.Equal("America/New_York", deposition.TimeZone);
         }
 
         [Fact]

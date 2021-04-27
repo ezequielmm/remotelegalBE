@@ -30,8 +30,8 @@ namespace PrecisionReporters.Platform.UnitTests.Utils
             return new Deposition
             {
                 Id = depositionId,
-                StartDate = DateTime.Now,
-                EndDate = DateTime.Now.AddHours(5),
+                StartDate = DateTime.UtcNow,
+                EndDate = DateTime.UtcNow.AddHours(5),
                 CreationDate = DateTime.UtcNow,
                 Requester = new User
                 {
@@ -53,7 +53,7 @@ namespace PrecisionReporters.Platform.UnitTests.Utils
                     Name = "DepositionDocument_1",
                     FileKey = "fileKey"
                 },
-                TimeZone = "EST",
+                TimeZone = "America/New_York",
                 Participants = new List<Participant> { new Participant { Role = ParticipantType.Witness } }
             };
         }

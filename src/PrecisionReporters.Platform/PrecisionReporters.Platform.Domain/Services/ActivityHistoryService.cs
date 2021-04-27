@@ -49,6 +49,15 @@ namespace PrecisionReporters.Platform.Domain.Services
 
                 var witness = deposition.Participants.FirstOrDefault(x => x.Role == ParticipantType.Witness);
                 var startDate = deposition.GetActualStartDate() ?? deposition.StartDate;
+                var startDateFormatted = startDate.GetFormattedDateTime(deposition.TimeZone);
+                var subject = $"{deposition.Case.Name} - {startDateFormatted}";
+                var caseName = deposition.Case.Name;
+
+                if (!string.IsNullOrEmpty(witness?.Name))
+                { 
+                    subject = $"{witness.Name} - {deposition.Case.Name} - {startDateFormatted}";
+                    caseName = $"<b>{witness.Name}</b> in the case of <b>{caseName}</b>";
+                }
 
                 var template = new EmailTemplateInfo
                 {
@@ -56,10 +65,9 @@ namespace PrecisionReporters.Platform.Domain.Services
                     TemplateData = new Dictionary<string, string>
                             {
                                 { "user-name", user.GetFullName() },
-                                { "witness-name", witness?.Name },
-                                { "case-name", deposition.Case?.Name },
+                                { "subject", subject },
+                                { "case-name", caseName },
                                 { "join-date",  activity.ActivityDate.GetFormattedDateTime(deposition.TimeZone)},
-                                { "start-date",  activity.ActivityDate.GetFormattedDateTime(deposition.TimeZone)},
                                 { "ip-address", activity.IPAddress },
                                 { "device-name", activity.Device },
                                 { "browser-name", activity.Browser },
