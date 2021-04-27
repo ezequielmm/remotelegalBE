@@ -24,12 +24,24 @@ jobs:
       id: extract-branch
       shell: bash
       run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
+
     - name: Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@v1
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ github.event.inputs.region }}
+
+    - name: Update environment files UAT
+      if: ${{ steps.extract-branch.outputs.branch == 'uat' }}
+      run:
+        aws s3 sync s3://environment-files-qa s3://environment-files-uat --metadata-directive REPLACE --cache-control 'max-age=86400,must-revalidate,public' --delete
+
+    - name: Update environment files PROD
+      if: ${{ steps.extract-branch.outputs.branch == 'prod' }}
+      run:
+        aws s3 sync s3://environment-files-uat s3://environment-files-prod --metadata-directive REPLACE --cache-control 'max-age=86400,must-revalidate,public' --delete
+
     - name: Set New Image to Amazon ECS Task Definition
       id: task-def
       uses: aws-actions/amazon-ecs-render-task-definition@v1

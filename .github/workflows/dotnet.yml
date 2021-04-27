@@ -50,6 +50,12 @@ jobs:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: us-east-1
+
+    - name: Update environment files
+      if: ${{ steps.extract-branch.outputs.branch == 'qa' }}
+      run:
+        aws s3 sync s3://environment-files-dev s3://environment-files-qa --metadata-directive REPLACE --cache-control 'max-age=86400,must-revalidate,public' --delete
+
     - name: Login to Amazon ECR
       id: login-ecr
       uses: aws-actions/amazon-ecr-login@v1
