@@ -808,7 +808,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             await _depositionRepository.Update(deposition);
             await _permissionService.AddParticipantPermissions(newParticipant);
 
-            if (deposition.Status == DepositionStatus.Confirmed)
+            if (deposition.Status == DepositionStatus.Confirmed && !string.IsNullOrWhiteSpace(newParticipant.Email))
                 await SendJoinDepositionEmailNotification(deposition, newParticipant);
 
             return Result.Ok(newParticipant);
@@ -949,7 +949,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             if (sendNotification)
             {
-                var tasks = depositionResult.Value.Participants.Select(participant => SendCancelDepositionEmailNotification(depositionResult.Value, participant));
+                var tasks = depositionResult.Value.Participants.Where(p => !string.IsNullOrWhiteSpace(p.Email)).Select(participant => SendCancelDepositionEmailNotification(depositionResult.Value, participant));
                 await Task.WhenAll(tasks);
             }
 
@@ -1058,7 +1058,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
                     await _depositionRepository.Update(currentDeposition);
                     
-                    var tasks = currentDeposition.Participants.Select(participant => SendReSheduleDepositionEmailNotification(currentDeposition, participant, oldStartDate, oldTimeZone));
+                    var tasks = currentDeposition.Participants.Where(p => !string.IsNullOrWhiteSpace(p.Email)).Select(participant => SendReSheduleDepositionEmailNotification(currentDeposition, participant, oldStartDate, oldTimeZone));
                     await Task.WhenAll(tasks);
                     
                     return Result.Ok(currentDeposition);
@@ -1092,7 +1092,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             try
             {
-                foreach (var participant in participants)
+                foreach (var participant in participants.Where(p => !string.IsNullOrWhiteSpace(p.Email)))
                 {
                     if (participant.Role != ParticipantType.Witness)
                     {
@@ -1250,7 +1250,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         private async Task SendJoinDepositionEmailNotification(Deposition deposition)
         {
-            var tasks = deposition.Participants.Select(participant =>
+            var tasks = deposition.Participants.Where(p => !string.IsNullOrWhiteSpace(p.Email)).Select(participant =>
             {
                 var template = GetJoinDepositionEmailTemplate(deposition, participant);
                 return _awsEmailService.SendRawEmailNotification(template);
