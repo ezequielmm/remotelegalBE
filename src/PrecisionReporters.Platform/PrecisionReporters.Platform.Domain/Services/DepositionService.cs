@@ -1279,19 +1279,14 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         private EmailTemplateInfo GetJoinDepositionEmailTemplate(Deposition deposition, Participant participant)
         {
-            var witness = deposition.Participants.FirstOrDefault(x => x.Role == ParticipantType.Witness);
-            var caseName = deposition.Case.Name;
-            if (string.IsNullOrEmpty(witness?.Name))
-                caseName = $"{witness.Name} in the case of {caseName}";
-
             var template = new EmailTemplateInfo
             {
                 EmailTo = new List<string> { participant.Email },
                 TemplateData = new Dictionary<string, string>
                             {
                                 { "dateAndTime", deposition.StartDate.GetFormattedDateTime(deposition.TimeZone) },
-                                { "name", participant.Name },
-                                { "case", caseName },
+                                { "name", participant.Name ?? string.Empty },
+                                { "case", GetDescriptionCase(deposition) },
                                 { "imageUrl",  GetImageUrl(_emailConfiguration.LogoImageName) },
                                 { "calendar", GetImageUrl(_emailConfiguration.CalendarImageName) },
                                 { "depositionJoinLink", $"{_emailConfiguration.PreDepositionLink}{deposition.Id}"}
@@ -1299,7 +1294,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 TemplateName = _emailConfiguration.JoinDepositionTemplate,
                 Calendar = CreateCalendar(deposition, CalendarAction.Add.GetDescription()),
                 AddiotionalText = $"You can join by clicking the link: {_emailConfiguration.PreDepositionLink}{deposition.Id}",
-                Subject = $"Invitation: Remote Legal {witness?.Name}- {deposition.Case.Name} - {deposition.StartDate.GetFormattedDateTime(deposition.TimeZone)}"
+                Subject = $"Invitation: Remote Legal - {GetSubject(deposition)}"
             };
 
             return template;
@@ -1307,8 +1302,6 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         private EmailTemplateInfo GetCancelDepositionEmailTemplate(Deposition deposition, Participant participant)
         {
-            var witness = deposition.Participants.FirstOrDefault(x => x.Role == ParticipantType.Witness);
-
             var template = new EmailTemplateInfo
             {
                 EmailTo = new List<string> { participant.Email },
@@ -1316,15 +1309,14 @@ namespace PrecisionReporters.Platform.Domain.Services
                             {
                                 { "start-date", deposition.StartDate.GetFormattedDateTime(deposition.TimeZone) },
                                 { "user-name", participant.Name },
-                                { "case-name", deposition.Case.Name },
-                                { "witness-name", witness?.Name ?? string.Empty },
+                                { "case-name", GetDescriptionCase(deposition) },
                                 { "images-url",  _emailConfiguration.ImagesUrl },
                                 { "logo", GetImageUrl(_emailConfiguration.LogoImageName) }
                             },
                 TemplateName = ApplicationConstants.CancelDepositionEmailTemplate,
                 AddiotionalText = string.Empty,
                 Calendar = CreateCalendar(deposition, CalendarAction.Cancel.GetDescription()),
-                Subject = $"Cancellation: Remote Legal {witness?.Name} - {deposition.Case.Name} - {deposition.StartDate.GetFormattedDateTime(deposition.TimeZone)}"
+                Subject = $"Cancellation: Remote Legal - {GetSubject(deposition)}"
             };
 
             return template;
@@ -1332,8 +1324,6 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         private EmailTemplateInfo GetReScheduleDepositionEmailTemplate(Deposition deposition, Participant participant, DateTime oldStartDate, string oldTimeZone)
         {
-            var witness = deposition.Participants.FirstOrDefault(x => x.Role == ParticipantType.Witness);
-
             var template = new EmailTemplateInfo
             {
                 EmailTo = new List<string> { participant.Email },
@@ -1341,9 +1331,8 @@ namespace PrecisionReporters.Platform.Domain.Services
                             {
                                 { "old-start-date", oldStartDate.GetFormattedDateTime(oldTimeZone) },
                                 { "start-date", deposition.StartDate.GetFormattedDateTime(deposition.TimeZone) },
-                                { "user-name", participant.Name },
-                                { "case-name", deposition.Case.Name },
-                                { "witness-name", witness?.Name ?? string.Empty },
+                                { "user-name", participant.Name ?? string.Empty },
+                                { "case-name", GetDescriptionCase(deposition) },
                                 { "images-url",  _emailConfiguration.ImagesUrl },
                                 { "logo", GetImageUrl(_emailConfiguration.LogoImageName) },
                                 { "deposition-join-link", $"{_emailConfiguration.PreDepositionLink}{deposition.Id}"}
@@ -1351,10 +1340,32 @@ namespace PrecisionReporters.Platform.Domain.Services
                 TemplateName = ApplicationConstants.ReScheduleDepositionEmailTemplate,
                 AddiotionalText = $"You can join by clicking the link: {_emailConfiguration.PreDepositionLink}{deposition.Id}",
                 Calendar = CreateCalendar(deposition, CalendarAction.Update.GetDescription()),
-                Subject = $"Invitation update: Remote Legal {witness?.Name} - {deposition.Case.Name} - {deposition.StartDate.GetFormattedDateTime(deposition.TimeZone)}"
+                Subject = $"Invitation update: Remote Legal - {GetSubject(deposition)}"
             };
 
             return template;
+        }
+
+        private string GetSubject(Deposition deposition)
+        {
+            var witness = deposition.Participants.FirstOrDefault(x => x.Role == ParticipantType.Witness);
+            var subject = $"{deposition.Case.Name} - {deposition.StartDate.GetFormattedDateTime(deposition.TimeZone)}";
+
+            if (!string.IsNullOrEmpty(witness?.Name))
+                subject = $"{witness.Name} - {deposition.Case.Name} - {deposition.StartDate.GetFormattedDateTime(deposition.TimeZone)}";
+
+            return subject;
+        }
+
+        private string GetDescriptionCase(Deposition deposition)
+        {
+            var witness = deposition.Participants.FirstOrDefault(x => x.Role == ParticipantType.Witness);
+            var caseName = deposition.Case.Name;
+            
+            if (!string.IsNullOrEmpty(witness?.Name))
+                caseName = $"<b>{witness.Name}</b> in the case of <b>{caseName}</b>";
+
+            return caseName;
         }
 
         private string GetImageUrl(string name)
