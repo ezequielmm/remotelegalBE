@@ -3,7 +3,10 @@ using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Data.Enums;
 using PrecisionReporters.Platform.Domain.Dtos;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
+using Twilio.Rest.Video.V1;
+using static Twilio.Rest.Video.V1.RoomResource;
 
 namespace PrecisionReporters.Platform.Domain.Services.Interfaces
 {
@@ -18,5 +21,6 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
         Task<Result<Room>> GetRoomBySId(string roomSid);
         Task<Result<Room>> Update(Room room);
         Task<Result<Composition>> CreateComposition(Room room, string witnessEmail);
+        Task<List<RoomResource>> GetTwilioRoomByNameAndStatus(string uniqueName, RoomStatusEnum status);
     }
 }

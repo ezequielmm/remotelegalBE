@@ -8,9 +8,12 @@ using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Data.Enums;
 using PrecisionReporters.Platform.Data.Repositories.Interfaces;
 using PrecisionReporters.Platform.Domain.Dtos;
+using PrecisionReporters.Platform.Domain.Mappers;
 using PrecisionReporters.Platform.Domain.Services;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
+using Twilio.Rest.Video.V1;
 using Xunit;
+using static Twilio.Rest.Video.V1.RoomResource;
 
 namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 {
@@ -21,13 +24,21 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         private readonly Mock<IBreakRoomRepository> _breakRoomRepositoryMock;
         private readonly Mock<IUserService> _userServiceMock;
         private readonly Mock<IRoomService> _roomServiceMock;
+        private readonly Mock<ISignalRNotificationManager> _signalRNotificationManagerMock;
+        private readonly Mock<IMapper<BreakRoom, BreakRoomDto, object>> _breakRoomMapperMock;
 
         public BreakRoomServiceTest()
         {
             _breakRoomRepositoryMock = new Mock<IBreakRoomRepository>();
             _userServiceMock = new Mock<IUserService>();
             _roomServiceMock = new Mock<IRoomService>();
-            _service = new BreakRoomService(_breakRoomRepositoryMock.Object, _userServiceMock.Object, _roomServiceMock.Object);
+            _signalRNotificationManagerMock = new Mock<ISignalRNotificationManager>();
+            _breakRoomMapperMock = new Mock<IMapper<BreakRoom, BreakRoomDto, object>>();
+            _service = new BreakRoomService(_breakRoomRepositoryMock.Object,
+                _userServiceMock.Object,
+                _roomServiceMock.Object,
+                _breakRoomMapperMock.Object,
+                _signalRNotificationManagerMock.Object);
         }
 
         [Fact]
@@ -69,6 +80,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 }
             };
             _userServiceMock.Setup(x => x.GetCurrentUserAsync()).ReturnsAsync(user);
+            _roomServiceMock.Setup(x => x.GetTwilioRoomByNameAndStatus(It.IsAny<string>(),It.IsAny<RoomStatusEnum>())).ReturnsAsync(new List<RoomResource>());
             _roomServiceMock.Setup(x => x.GenerateRoomToken(It.IsAny<string>(), It.IsAny<User>(), It.IsAny<ParticipantType>(), It.IsAny<string>(), It.IsAny<ChatDto>())).ReturnsAsync(Result.Ok("foo"));
             _breakRoomRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).
                 ReturnsAsync(breakRoom);

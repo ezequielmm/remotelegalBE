@@ -17,6 +17,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         private readonly Mock<IDepositionService> _depositionServiceMock;
         private readonly Mock<IRoomService> _roomServiceMock;
         private readonly Mock<ILogger<TwilioCallbackService>> _loggerMock;
+        private readonly Mock<IBreakRoomService> _breakRoomServiceMock;
 
         private TwilioCallbackService _service;
 
@@ -25,8 +26,9 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _depositionServiceMock = new Mock<IDepositionService>();
             _roomServiceMock = new Mock<IRoomService>();
             _loggerMock = new Mock<ILogger<TwilioCallbackService>>();
+            _breakRoomServiceMock = new Mock<IBreakRoomService>();
             _service = new TwilioCallbackService(_depositionServiceMock.Object,
-                _roomServiceMock.Object, _loggerMock.Object);
+                _roomServiceMock.Object, _loggerMock.Object, _breakRoomServiceMock.Object);
         }
 
         public void Dispose()

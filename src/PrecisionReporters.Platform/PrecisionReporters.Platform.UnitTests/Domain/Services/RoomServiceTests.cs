@@ -196,11 +196,13 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             var roomService = InitializeService(twilioService: twilioServiceMock, roomRepository: roomRepositoryMock);
 
+            twilioServiceMock.Setup(x=>x.CreateRoom(It.IsAny<Room>(),It.IsAny<bool>())).ReturnsAsync(room);
+            
             // Act
             var result = await roomService.StartRoom(room, true);
 
             // Assert            
-            Assert.True(result.IsFailed);
+            Assert.True(result.IsSuccess);
         }
 
         [Fact]

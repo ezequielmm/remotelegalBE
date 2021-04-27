@@ -1,8 +1,10 @@
 ﻿using FluentResults;
 using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Domain.Dtos;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Twilio.Rest.Video.V1;
+using static Twilio.Rest.Video.V1.RoomResource;
 
 namespace PrecisionReporters.Platform.Domain.Services.Interfaces
 {
@@ -20,5 +22,6 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
         Task<Result<string>> CreateChat(string chatName);
         Task<Result<string>> CreateChatUser(TwilioIdentity identity);
         Task<Result> AddUserToChat(string conversationSid, TwilioIdentity identity, string userSid);
+        Task<List<RoomResource>> GetRoomsByUniqueNameAndStatus(string uniqueName, RoomStatusEnum status = null);
     }
 }

@@ -7,9 +7,12 @@ using PrecisionReporters.Platform.Domain.Dtos;
 using PrecisionReporters.Platform.Domain.Errors;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Twilio.Exceptions;
+using Twilio.Rest.Video.V1;
+using static Twilio.Rest.Video.V1.RoomResource;
 
 namespace PrecisionReporters.Platform.Domain.Services
 {
@@ -59,7 +62,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<string>> GenerateRoomToken(string roomName, User user, ParticipantType role, string email, ChatDto chatDto = null)
         {
-            var room = await _roomRepository.GetFirstOrDefaultByFilter(x => x.Name == roomName);            
+            var room = await _roomRepository.GetFirstOrDefaultByFilter(x => x.Name == roomName);
 
             if (room == null)
                 return Result.Fail(new ResourceNotFoundError($"Room {roomName} not found"));
@@ -129,9 +132,6 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<Room>> StartRoom(Room room, bool configureCallbacks)
         {
-            if (room.Status != RoomStatus.Created)
-                return Result.Fail(new InvalidStatusError());
-
             try
             {
                 room = await _twilioService.CreateRoom(room, configureCallbacks);
@@ -189,6 +189,11 @@ namespace PrecisionReporters.Platform.Domain.Services
             }
 
             return Result.Ok();
+        }
+
+        public async Task<List<RoomResource>> GetTwilioRoomByNameAndStatus(string uniqueName, RoomStatusEnum status)
+        {
+            return await _twilioService.GetRoomsByUniqueNameAndStatus(uniqueName, status);
         }
     }
 }

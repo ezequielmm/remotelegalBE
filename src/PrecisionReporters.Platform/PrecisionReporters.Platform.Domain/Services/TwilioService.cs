@@ -134,7 +134,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             return participants.ToList();
         }
 
-        private async Task<List<RoomResource>> GetRoomsByUniqueNameAndStatus(string uniqueName, RoomStatusEnum status = null)
+        public async Task<List<RoomResource>> GetRoomsByUniqueNameAndStatus(string uniqueName, RoomStatusEnum status = null)
         {
             var rooms = await RoomResource.ReadAsync(status: status, uniqueName: uniqueName);
             return rooms.ToList();

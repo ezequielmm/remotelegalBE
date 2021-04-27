@@ -17,15 +17,17 @@ namespace PrecisionReporters.Platform.Domain.Services
     {
         private readonly IDepositionService _depositionService;
         private readonly IRoomService _roomService;
+        private readonly IBreakRoomService _breakRoomService;
         private readonly ILogger<TwilioCallbackService> _logger;
 
         public TwilioCallbackService(IDepositionService depositionService,
             IRoomService roomService,
-            ILogger<TwilioCallbackService> logger)
+            ILogger<TwilioCallbackService> logger, IBreakRoomService breakRoomService)
         {
             _depositionService = depositionService;
             _roomService = roomService;
             _logger = logger;
+            _breakRoomService = breakRoomService;
         }
 
         public async Task<Result<Room>> UpdateStatusCallback(RoomCallbackDto roomEvent)
@@ -62,6 +64,16 @@ namespace PrecisionReporters.Platform.Domain.Services
                             var witness = depositionResult.Value.Participants.FirstOrDefault(x => x.Role == ParticipantType.Witness);
                             await _roomService.CreateComposition(room, witness.Email);
 
+                            return Result.Ok();
+                        }
+                    case RoomStatusCallback.ParticipantDisconnected:
+                        {
+                            //Verify if this room is a break room for remove attende
+                            var breakRoom = await _breakRoomService.GetByRoomId(room.Id);
+                            if (breakRoom.IsSuccess)
+                            {
+                                var result = await _breakRoomService.RemoveAttendeeCallback(breakRoom.Value, roomEvent.ParticipantIdentity);
+                            }
                             return Result.Ok();
                         }
                     default:

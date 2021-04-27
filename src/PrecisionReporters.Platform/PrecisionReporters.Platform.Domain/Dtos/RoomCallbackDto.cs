@@ -12,5 +12,6 @@ namespace PrecisionReporters.Platform.Domain.Dtos
         public string RoomName { get; set; }
         public DateTimeOffset Timestamp { get; set; }
         public int Duration { get; set; }
+        public string ParticipantIdentity { get; set; }
     }
 }
