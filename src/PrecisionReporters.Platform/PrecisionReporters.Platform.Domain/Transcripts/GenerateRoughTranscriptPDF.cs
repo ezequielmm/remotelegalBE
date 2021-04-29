@@ -99,7 +99,7 @@ namespace PrecisionReporters.Platform.Domain.Transcripts
             Page page1 = doc.GetPage(1);
             var startDate = deposition.GetActualStartDate() ?? deposition.StartDate;
             replacer.AddString("case_n_tmp", deposition.Case.CaseNumber);
-            replacer.AddString("date_tmp", startDate.ToLongDateString());
+            replacer.AddString("date_tmp", startDate.ToString("dddd, MMMM d, yyyy"));
             replacer.AddString("time_tmp", startDate.ConvertTimeZone(deposition.TimeZone));
             replacer.AddString("witness_tmp", deposition.Participants?.FirstOrDefault(x => x.Role == ParticipantType.Witness)?.Name.ToUpper() ?? "");
             replacer.AddString("reportedBy_tmp", deposition.Participants?.FirstOrDefault(x => x.Role == ParticipantType.CourtReporter)?.Name ?? "");

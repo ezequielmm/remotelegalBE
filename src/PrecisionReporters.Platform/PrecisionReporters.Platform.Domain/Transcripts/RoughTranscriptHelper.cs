@@ -91,15 +91,17 @@ namespace PrecisionReporters.Platform.Domain.Transcripts
             foreach (var sentence in transcripts)
             {
                 string text;
+                var fullName = sentence.User.IsGuest ? $"{sentence.User.FirstName?.Trim()}" : $"{sentence.User.FirstName?.Trim()} {sentence.User.LastName?.Trim()}";
+
                 if (!string.IsNullOrEmpty(sentence.Text))
                 {
                     if (isPDF) 
                     {
-                        text = $"\t\t{sentence.User.FirstName?.Trim()} {sentence.User.LastName?.Trim()}: {sentence.Text}";
+                        text = $"\t\t{fullName}: {sentence.Text}";
                     }                    
                     else 
                     {
-                        text = $"\t{sentence.User.FirstName?.Trim()} {sentence.User.LastName?.Trim()}: {sentence.Text}";
+                        text = $"\t{fullName}: {sentence.Text}";
                     }
 
                     if (text.Length > MAX_CHARACTERS_PER_LINE)

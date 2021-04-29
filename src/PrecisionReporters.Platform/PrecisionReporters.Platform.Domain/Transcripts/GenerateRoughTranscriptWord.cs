@@ -92,7 +92,7 @@ namespace PrecisionReporters.Platform.Domain.Transcripts
             var startDate = deposition.GetActualStartDate() ?? deposition.StartDate;
             // Do the replacement of all the found tags and with green bold strings.                    
             document.ReplaceText("case_n_tmp", deposition.Case.CaseNumber);
-            document.ReplaceText("date_tmp", startDate.ToLongDateString());
+            document.ReplaceText("date_tmp", startDate.ToString("dddd, MMMM d, yyyy"));
             document.ReplaceText("time_tmp", startDate.ConvertTimeZone(deposition.TimeZone));
             document.ReplaceText("witness_tmp", deposition.Participants?.FirstOrDefault(x => x.Role == ParticipantType.Witness)?.Name.ToUpper() ?? "");
             document.ReplaceText("reportedBy_tmp", deposition.Participants?.FirstOrDefault(x => x.Role == ParticipantType.CourtReporter)?.Name ?? "");

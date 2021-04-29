@@ -11,7 +11,7 @@ namespace PrecisionReporters.Platform.Domain.Extensions
             var timeZoneInfo = TZConvert.GetTimeZoneInfo(timeZone);
             DateTime convertedTime = TimeZoneInfo.ConvertTimeFromUtc(dateTime, timeZoneInfo);
 
-            return $"{convertedTime.ToString("h:mm tt")} {timeZoneAbbreviation}";
+            return $"{convertedTime:h:mm tt} {timeZoneAbbreviation}";
         }
 
         public static string ConvertTime(this DateTime dateTime, string timeZone)
