@@ -189,14 +189,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             if (file.Exists)
             {
-                var fileTransferInfo = new FileTransferInfo
-                {
-                    FileStream = file.OpenRead(),
-                    Name = file.Name,
-                    Length = file.Length,
-                };
-
-                var result = await _awsStorageService.UploadMultipartAsync(keyName, fileTransferInfo, _twilioAccountConfiguration.S3DestinationBucket);
+                var result = await UploadMultipartAsync(file, keyName);
                 
                 if (result.IsFailed)
                 {
@@ -215,6 +208,21 @@ namespace PrecisionReporters.Platform.Domain.Services
             }
             _log.LogError($"File Not found - path: {filePath}");
             return false;
+        }
+
+        private async Task<Result> UploadMultipartAsync(FileInfo file, string keyName)
+        {
+            using (Stream fileStream = file.OpenRead())
+            {
+                var fileTransferInfo = new FileTransferInfo
+                {
+                    FileStream = fileStream,
+                    Name = file.Name,
+                    Length = file.Length,
+                };
+
+                return await _awsStorageService.UploadMultipartAsync(keyName, fileTransferInfo, _twilioAccountConfiguration.S3DestinationBucket);
+            }
         }
 
         private string SerializeObject(object item)

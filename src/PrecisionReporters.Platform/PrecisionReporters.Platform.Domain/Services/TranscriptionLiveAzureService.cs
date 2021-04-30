@@ -32,6 +32,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly IUserRepository _userRepository;
 
         private Guid? _currentId;
+        private DateTime _transcriptionDateTime;
         private bool _shouldClose = false;
         private static readonly SemaphoreSlim _shouldCloseSemaphore = new SemaphoreSlim(1);
         private bool _isClosed = true;
@@ -88,6 +89,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             _recognizer.Recognizing += async (s, e) =>
             {
                 await _fluentTranscriptionSemaphore.WaitAsync();
+                _transcriptionDateTime = DateTime.UtcNow;
                 if (_currentId == null)
                     _currentId = Guid.NewGuid();
 
@@ -142,7 +144,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 var transcription = new Transcription
                 {
                     Id = _currentId ?? Guid.NewGuid(),
-                    TranscriptDateTime = DateTime.UtcNow,
+                    TranscriptDateTime = _transcriptionDateTime,
                     Text = e.Result.Text,
                     Duration = durationInMilliseconds,
                     Confidence = bestTranscription != null ? bestTranscription.Confidence : 0.0,
