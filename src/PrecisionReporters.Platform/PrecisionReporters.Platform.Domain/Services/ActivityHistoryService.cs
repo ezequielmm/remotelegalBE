@@ -51,7 +51,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 var startDate = deposition.GetActualStartDate() ?? deposition.StartDate;
                 var startDateFormatted = startDate.GetFormattedDateTime(deposition.TimeZone);
                 var subject = $"{deposition.Case.Name} - {startDateFormatted}";
-                var caseName = deposition.Case.Name;
+                var caseName = $"<b>{deposition.Case.Name}</b>";
 
                 if (!string.IsNullOrEmpty(witness?.Name))
                 { 

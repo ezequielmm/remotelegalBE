@@ -1360,7 +1360,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         private string GetDescriptionCase(Deposition deposition)
         {
             var witness = deposition.Participants.FirstOrDefault(x => x.Role == ParticipantType.Witness);
-            var caseName = deposition.Case.Name;
+            var caseName = $"<b>{deposition.Case.Name}</b>";
             
             if (!string.IsNullOrEmpty(witness?.Name))
                 caseName = $"<b>{witness.Name}</b> in the case of <b>{caseName}</b>";
