@@ -63,20 +63,20 @@ namespace PrecisionReporters.Platform.Domain.Services
             return Result.Ok(result);
         }
 
-        public async Task<Result<List<DepositionDocument>>> GetTranscriptionsFiles(Guid depostionId, string identity)
+        public async Task<Result<List<DepositionDocument>>> GetTranscriptionsFiles(Guid depositionId, string identity)
         {
             var user = await _userRepository.GetFirstOrDefaultByFilter(x => x.EmailAddress == identity);
-            var currentParticipant = await _participantRepository.GetFirstOrDefaultByFilter(x => x.UserId == user.Id);
+            var currentParticipant = await _participantRepository.GetFirstOrDefaultByFilter(x => x.DepositionId == depositionId && x.UserId == user.Id);
             var includes = new[] { $"{ nameof(DepositionDocument.Document) }.{ nameof(Document.AddedBy) }" };
             Expression<Func< DepositionDocument, bool>> filter;
 
             if (currentParticipant.Role == ParticipantType.CourtReporter || user.IsAdmin)
             {
-                 filter = x => x.DepositionId == depostionId && (x.Document.DocumentType == DocumentType.DraftTranscription || x.Document.DocumentType == DocumentType.DraftTranscriptionWord || x.Document.DocumentType == DocumentType.Transcription);
+                 filter = x => x.DepositionId == depositionId && (x.Document.DocumentType == DocumentType.DraftTranscription || x.Document.DocumentType == DocumentType.DraftTranscriptionWord || x.Document.DocumentType == DocumentType.Transcription);
             }
             else 
             {
-                filter = x => x.DepositionId == depostionId && (x.Document.DocumentType == DocumentType.DraftTranscription || x.Document.DocumentType == DocumentType.Transcription);
+                filter = x => x.DepositionId == depositionId && (x.Document.DocumentType == DocumentType.DraftTranscription || x.Document.DocumentType == DocumentType.Transcription);
             }
             var documentsResult = await _depositionDocumentRepository.GetByFilter(x => x.CreationDate,
                 SortDirection.Ascend,
