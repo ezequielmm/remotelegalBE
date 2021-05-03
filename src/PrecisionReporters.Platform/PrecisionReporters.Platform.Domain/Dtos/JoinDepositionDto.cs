@@ -12,5 +12,6 @@ namespace PrecisionReporters.Platform.Domain.Dtos
         public List<ParticipantDto> Participants { get; set; }
         public bool ShouldSendToPreDepo { get; set; }
         public DateTimeOffset StartDate { get; set; }
+        public string JobNumber { get; set; }
     }
 }

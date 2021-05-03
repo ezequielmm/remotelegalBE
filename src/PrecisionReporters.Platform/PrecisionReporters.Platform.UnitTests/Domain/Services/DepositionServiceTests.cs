@@ -575,7 +575,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                    currentParticipant
                 },
                 TimeZone = "AT",
-                IsOnTheRecord = true
+                IsOnTheRecord = true,
+                Job = "Test123"
             };
             _depositions.Add(deposition);
             _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(user));
@@ -601,6 +602,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             Assert.Equal(deposition.TimeZone, result.Value.TimeZone);
             Assert.Equal(deposition.IsOnTheRecord, result.Value.IsOnTheRecord);
             Assert.Equal(token, result.Value.Token);
+            Assert.Equal(deposition.Job, result.Value.JobNumber);
         }
 
         [Fact]
@@ -626,7 +628,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                    new Participant { Email = userEmail, Role = ParticipantType.CourtReporter, User = courtReporterUser }
                 },
                 TimeZone = "TetingTimeZone",
-                IsOnTheRecord = true
+                IsOnTheRecord = true,
+                Job = "Test123"
             };
             _depositions.Add(deposition);
             _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(courtReporterUser));
@@ -652,6 +655,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             Assert.NotNull(result.Value.TimeZone);
             Assert.Equal(deposition.IsOnTheRecord, result.Value.IsOnTheRecord);
             Assert.Equal(token, result.Value.Token);
+            Assert.Equal(deposition.Job, result.Value.JobNumber);
         }
 
         [Fact]
@@ -679,7 +683,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                    new Participant { Email = userEmail, Role = ParticipantType.Witness, User = user, IsAdmitted = true }
                 },
                 TimeZone = "America/Puerto_Rico",
-                IsOnTheRecord = true
+                IsOnTheRecord = true,
+                Job = "Test123"
             };
             _depositions.Add(deposition);
             _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(user));
@@ -704,6 +709,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             Assert.NotNull(result.Value.TimeZone);
             Assert.Equal(deposition.IsOnTheRecord, result.Value.IsOnTheRecord);
             Assert.Equal(token, result.Value.Token);
+            Assert.Equal(deposition.Job, result.Value.JobNumber);
         }
 
         [Fact]
@@ -730,7 +736,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                    new Participant { Name = "ParticipantCR", Role = ParticipantType.CourtReporter, User = courtReporter2, IsAdmitted = true, HasJoined = false }
                 },
                 TimeZone = "America/Puerto_Rico",
-                IsOnTheRecord = true
+                IsOnTheRecord = true,
+                Job = "Test123"
             };
             _depositions.Add(deposition);
             _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(courtReporter2));
@@ -755,6 +762,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             Assert.NotNull(result.Value.TimeZone);
             Assert.Equal(deposition.IsOnTheRecord, result.Value.IsOnTheRecord);
             Assert.Equal(token, result.Value.Token);
+            Assert.Equal(deposition.Job, result.Value.JobNumber);
         }
 
         [Fact]
@@ -782,7 +790,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                    new Participant { Email = userEmail, Role = ParticipantType.Witness, User = user, IsAdmitted = true }
                 },
                 TimeZone = "America/Puerto_Rico",
-                IsOnTheRecord = true
+                IsOnTheRecord = true,
+                Job = "Test123"
             };
             _depositions.Add(deposition);
             _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(user));
@@ -807,6 +816,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             Assert.NotNull(result.Value.TimeZone);
             Assert.Equal(deposition.IsOnTheRecord, result.Value.IsOnTheRecord);
             Assert.Equal(token, result.Value.Token);
+            Assert.Equal(deposition.Job, result.Value.JobNumber);
         }
 
         [Fact]
@@ -834,7 +844,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                    new Participant { Email = userEmail, Role = ParticipantType.Witness, User = user, IsAdmitted = true }
                 },
                 TimeZone = "America/Puerto_Rico",
-                IsOnTheRecord = true
+                IsOnTheRecord = true,
+                Job = "Test123"
             };
             _depositions.Add(deposition);
             _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(user));
@@ -859,6 +870,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             Assert.NotNull(result.Value.TimeZone);
             Assert.Equal(deposition.IsOnTheRecord, result.Value.IsOnTheRecord);
             Assert.Equal(token, result.Value.Token);
+            Assert.Equal(deposition.Job, result.Value.JobNumber);
         }
 
 
