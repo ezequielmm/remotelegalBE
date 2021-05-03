@@ -609,7 +609,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 };
                 await _signalRNotificationManager.SendNotificationToDepositionAdmins(depositionId, notificationtDto);
             }
-            
+
             await _activityHistoryService.AddActivity(activityHistory, userResult.Value, deposition);
 
             return await _userService.LoginGuestAsync(guest.Email);
@@ -1018,6 +1018,10 @@ namespace PrecisionReporters.Platform.Domain.Services
             {
                 await _permissionService.RemoveParticipantPermissions(participant.DepositionId.Value, participant);
             }
+            else
+            {
+                await _permissionService.AddParticipantPermissions(participant);
+            }
             await _participantRepository.Update(participant);
             await _signalRNotificationManager.SendDirectMessage(participant.Email, notificationtDto);
             await _signalRNotificationManager.SendNotificationToDepositionAdmins(participant.DepositionId.Value, notificationtDto);
@@ -1057,10 +1061,10 @@ namespace PrecisionReporters.Platform.Domain.Services
                     currentDeposition.TimeZone = deposition.TimeZone;
 
                     await _depositionRepository.Update(currentDeposition);
-                    
+
                     var tasks = currentDeposition.Participants.Where(p => !string.IsNullOrWhiteSpace(p.Email)).Select(participant => SendReSheduleDepositionEmailNotification(currentDeposition, participant, oldStartDate, oldTimeZone));
                     await Task.WhenAll(tasks);
-                    
+
                     return Result.Ok(currentDeposition);
                 });
 
@@ -1362,7 +1366,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         {
             var witness = deposition.Participants.FirstOrDefault(x => x.Role == ParticipantType.Witness);
             var caseName = $"<b>{deposition.Case.Name}</b>";
-            
+
             if (!string.IsNullOrEmpty(witness?.Name))
                 caseName = $"<b>{witness.Name}</b> in the case of <b>{caseName}</b>";
 
@@ -1393,7 +1397,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 Location = $"{_emailConfiguration.PreDepositionLink}{deposition.Id}",
                 Organizer = new Organizer(_emailConfiguration.EmailNotification)
             };
-            
+
             calendar.Events.Add(icalEvent);
 
             return calendar;
