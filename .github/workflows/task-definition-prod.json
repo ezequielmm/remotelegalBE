@@ -39,7 +39,7 @@
                 },
                 {
                     "name": "AppConfiguration__TwilioAccountConfiguration__StatusCallbackUrl",
-                    "value": "https://api.prdevelopment.net/api/compositions"
+                    "value": "https://api.remotelegal.com/api/compositions"
                 },
                 {
                     "name": "AppConfiguration__TwilioAccountConfiguration__S3DestinationBucket",
@@ -71,11 +71,11 @@
                 },
                 {
                     "name": "AppConfiguration__EmailConfiguration__ImagesUrl",
-                    "value": "https://prdevelopment.net/email/images/"
+                    "value": "https://app.remotelegal.com/email/images/"
                 },
                 {
                     "name": "AppConfiguration__EmailConfiguration__PreDepositionLink",
-                    "value": "https://prdevelopment.net/deposition/pre-join/"
+                    "value": "https://app.remotelegal.com/deposition/pre-join/"
                 },
                 {
                     "name": "AppConfiguration__ConfigurationFlags__IsDeveloperExceptionPageEnabled",
@@ -91,11 +91,11 @@
                 },
                 {
                     "name": "AppConfiguration__UrlPathConfiguration__FrontendBaseUrl",
-                    "value": "https://prdevelopment.net/"
+                    "value": "https://app.remotelegal.com/"
                 },
                 {
                     "name": "AppConfiguration__CorsConfiguration__Origins",
-                    "value": "https://*.prdevelopment.net,https://prdevelopment.net"
+                    "value": "https://app.remotelegal.com"
                 },
                 {
                     "name": "AppConfiguration__GcpConfiguration__client_email",
