@@ -70,7 +70,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             var includes = new[] { $"{ nameof(DepositionDocument.Document) }.{ nameof(Document.AddedBy) }" };
             Expression<Func< DepositionDocument, bool>> filter;
 
-            if (currentParticipant.Role == ParticipantType.CourtReporter || user.IsAdmin)
+            if (user.IsAdmin || currentParticipant.Role == ParticipantType.CourtReporter)
             {
                  filter = x => x.DepositionId == depositionId && (x.Document.DocumentType == DocumentType.DraftTranscription || x.Document.DocumentType == DocumentType.DraftTranscriptionWord || x.Document.DocumentType == DocumentType.Transcription);
             }

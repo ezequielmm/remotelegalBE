@@ -62,6 +62,16 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 Role = ParticipantType.CourtReporter
             };
 
+            var user = new User
+            {
+                FirstName = "UserName",
+                LastName = "LastName",
+                EmailAddress = "email@email.com"
+            };
+
+            _userRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<string[]>()))
+                .ReturnsAsync(user);
+
             _depositionDocumentRepositoryMock
                 .Setup(x => x.GetByFilter(It.IsAny<Expression<Func<DepositionDocument, object>>>(), It.IsAny<SortDirection>(), It.IsAny<Expression<Func<DepositionDocument, bool>>>(), It.IsAny<string[]>()))
                 .ReturnsAsync(documentList);
@@ -89,6 +99,15 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 UserId = Guid.NewGuid(),
                 Role = ParticipantType.CourtReporter
             };
+            var user = new User
+            {
+                FirstName = "UserName",
+                LastName = "LastName",
+                EmailAddress = "email@email.com"
+            };
+
+            _userRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<string[]>()))
+                .ReturnsAsync(user);
 
             _depositionDocumentRepositoryMock
                 .Setup(x => x.GetByFilter(It.IsAny<Expression<Func<DepositionDocument, object>>>(), It.IsAny<SortDirection>(), It.IsAny<Expression<Func<DepositionDocument, bool>>>(), It.IsAny<string[]>()))
