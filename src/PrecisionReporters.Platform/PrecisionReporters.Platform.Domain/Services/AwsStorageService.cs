@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Threading.Tasks;
+using System.Web;
 
 namespace PrecisionReporters.Platform.Domain.Services
 {
@@ -134,7 +135,9 @@ namespace PrecisionReporters.Platform.Domain.Services
                 contentDisposition = "inline";
             else
             {
-                contentDisposition = string.IsNullOrWhiteSpace(displayName) ? "attachment" : $"attachment;filename={displayName}";
+                //HttpUtility.UrlEncode change the white space for a + character, with this line the URL is encoding the special characters and replace the + character for white space again
+                //This is necessary for getting the file name properly and avoid errors whenever the SignedURL is called
+                contentDisposition = string.IsNullOrWhiteSpace(displayName) ? "attachment" : $"attachment;filename={HttpUtility.UrlEncode(displayName).Replace('+', ' ')}";
             }
             return _fileTransferUtility.S3Client.GetPreSignedURL(new GetPreSignedUrlRequest
             {
