@@ -1062,8 +1062,11 @@ namespace PrecisionReporters.Platform.Domain.Services
 
                     await _depositionRepository.Update(currentDeposition);
 
-                    var tasks = currentDeposition.Participants.Where(p => !string.IsNullOrWhiteSpace(p.Email)).Select(participant => SendReSheduleDepositionEmailNotification(currentDeposition, participant, oldStartDate, oldTimeZone));
-                    await Task.WhenAll(tasks);
+                    if (currentDeposition.Status == DepositionStatus.Confirmed)
+                    {
+                        var tasks = currentDeposition.Participants.Where(p => !string.IsNullOrWhiteSpace(p.Email)).Select(participant => SendReSheduleDepositionEmailNotification(currentDeposition, participant, oldStartDate, oldTimeZone));
+                        await Task.WhenAll(tasks);
+                    }                    
 
                     return Result.Ok(currentDeposition);
                 });
