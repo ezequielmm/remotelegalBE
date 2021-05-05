@@ -82,6 +82,8 @@ namespace PrecisionReporters.Platform.Domain.Services
         public async Task<Result<VerifyUser>> VerifyUser(Guid verifyuserId)
         {
             var verifyUser = await _verifyUserService.GetVerifyUserById(verifyuserId);
+            if (verifyUser == null)
+                return Result.Fail(new InvalidInputError("Invalid Verification Code"));
 
             var checkVerficationResult = CheckVerification(verifyUser);
             if (checkVerficationResult.IsFailed)

@@ -46,10 +46,10 @@ namespace PrecisionReporters.Platform.Api.Controllers
         /// <returns>Verify Action Result code</returns>
         [HttpPost]
         [Route("verifyUser")]
-        public async Task<IActionResult> VerifyUserAsync(VerifyUseRequestDto verifyUseRequestDto)
+        public async Task<ActionResult<ResultDto>> VerifyUserAsync(VerifyUseRequestDto verifyUseRequestDto)
         {
-            await _userService.VerifyUser(verifyUseRequestDto.VerificationHash);
-            return Ok();
+            var result = await _userService.VerifyUser(verifyUseRequestDto.VerificationHash);
+            return Ok(new ResultDto { Success = result.IsSuccess });
         }
 
         /// <summary>
@@ -59,10 +59,10 @@ namespace PrecisionReporters.Platform.Api.Controllers
         /// <returns>Email Action Result code</returns>
         [HttpPost]
         [Route("resendVerificationEmail")]
-        public async Task<IActionResult> ResendVerificationEmailAsync(ResendEmailRequestDto dto)
+        public async Task<ActionResult<ResultDto>> ResendVerificationEmailAsync(ResendEmailRequestDto dto)
         {
             await _userService.ResendVerificationEmailAsync(dto.EmailAddress);
-            return Ok();
+            return Ok(new ResultDto { Success = true });
         }
 
         /// <summary>
