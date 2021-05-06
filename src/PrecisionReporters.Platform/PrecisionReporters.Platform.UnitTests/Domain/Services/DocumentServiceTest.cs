@@ -768,14 +768,14 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(new User()));
 
             _depositionDocumentRepositoryMock
-                .Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<DepositionDocument, bool>>>(), It.IsAny<string[]>()))
+                .Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<DepositionDocument, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()))
                     .ReturnsAsync((DepositionDocument)null);
 
             // Act
             var result = await _service.GetFileSignedUrl(depositionId, documentId);
 
             // Assert
-            _depositionDocumentRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<DepositionDocument, bool>>>(), It.IsAny<string[]>()), Times.Once);
+            _depositionDocumentRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<DepositionDocument, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()), Times.Once);
             Assert.NotNull(result);
             Assert.IsType<Result<string>>(result);
             Assert.True(result.IsFailed);
@@ -793,7 +793,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(new User()));
 
             _depositionDocumentRepositoryMock
-                .Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<DepositionDocument, bool>>>(), It.IsAny<string[]>()))
+                .Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<DepositionDocument, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()))
                 .ReturnsAsync(new DepositionDocument { Id = documentId, Document = new Document { Id = documentId, DisplayName = "testName.pdf" } });
 
             _awsStorageServiceMock.Setup(x => x.GetFilePublicUri(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<string>(), It.IsAny<bool>())).Returns(signedUrl);
@@ -803,7 +803,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             // Assert
 
-            _depositionDocumentRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<DepositionDocument, bool>>>(), It.IsAny<string[]>()), Times.Once);
+            _depositionDocumentRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<DepositionDocument, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()), Times.Once);
             _awsStorageServiceMock.Verify(x => x.GetFilePublicUri(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<string>(), It.IsAny<bool>()), Times.Once);
             Assert.NotNull(result);
             Assert.IsType<Result<string>>(result);
@@ -1034,14 +1034,14 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var documentId = Guid.NewGuid();
             var expectedError = $"Could not find any document with Id {documentId} for user {userEmail}";
             _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(user));
-            _documentUserDepositionRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<DocumentUserDeposition, bool>>>(), It.IsAny<string[]>())).ReturnsAsync((DocumentUserDeposition)null);
+            _documentUserDepositionRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<DocumentUserDeposition, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>())).ReturnsAsync((DocumentUserDeposition)null);
 
             // Act
             var result = await _service.Share(documentId, userEmail);
 
             // Assert
             _userServiceMock.Verify(x => x.GetUserByEmail(It.Is<string>(a => a == userEmail)), Times.Once);
-            _documentUserDepositionRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<DocumentUserDeposition, bool>>>(), It.Is<string[]>(a => a.Contains(nameof(DocumentUserDeposition.Document)))), Times.Once);
+            _documentUserDepositionRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<DocumentUserDeposition, bool>>>(), It.Is<string[]>(a => a.Contains(nameof(DocumentUserDeposition.Document))), It.IsAny<bool>()), Times.Once);
             Assert.NotNull(result);
             Assert.IsType<Result>(result);
             Assert.True(result.IsFailed);
@@ -1059,7 +1059,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var documentUserDeposition = new DocumentUserDeposition { User = user, DepositionId = depositionId };
             var expectedError = $"Deposition with id {depositionId} not found.";
             _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(user));
-            _documentUserDepositionRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<DocumentUserDeposition, bool>>>(), It.IsAny<string[]>())).ReturnsAsync(documentUserDeposition);
+            _documentUserDepositionRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<DocumentUserDeposition, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>())).ReturnsAsync(documentUserDeposition);
             _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync((Deposition)null);
 
             // Act
@@ -1067,7 +1067,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             // Assert
             _userServiceMock.Verify(x => x.GetUserByEmail(It.Is<string>(a => a == userEmail)), Times.Once);
-            _documentUserDepositionRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<DocumentUserDeposition, bool>>>(), It.Is<string[]>(a => a.Contains(nameof(DocumentUserDeposition.Document)))), Times.Once);
+            _documentUserDepositionRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<DocumentUserDeposition, bool>>>(), It.Is<string[]>(a => a.Contains(nameof(DocumentUserDeposition.Document))), It.IsAny<bool>()), Times.Once);
             _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(a => a == depositionId), It.Is<string[]>(i => i.SequenceEqual(includes))), Times.Once);
             Assert.NotNull(result);
             Assert.IsType<Result>(result);
@@ -1089,7 +1089,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var documentUserDeposition = new DocumentUserDeposition { User = user, DepositionId = depositionId };
             var expectedError = "Can't share document while another document is being shared.";
             _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(user));
-            _documentUserDepositionRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<DocumentUserDeposition, bool>>>(), It.IsAny<string[]>())).ReturnsAsync(documentUserDeposition);
+            _documentUserDepositionRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<DocumentUserDeposition, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>())).ReturnsAsync(documentUserDeposition);
             _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
 
             // Act
@@ -1097,7 +1097,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             // Assert
             _userServiceMock.Verify(x => x.GetUserByEmail(It.Is<string>(a => a == userEmail)), Times.Once);
-            _documentUserDepositionRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<DocumentUserDeposition, bool>>>(), It.Is<string[]>(a => a.Contains(nameof(DocumentUserDeposition.Document)))), Times.Once);
+            _documentUserDepositionRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<DocumentUserDeposition, bool>>>(), It.Is<string[]>(a => a.Contains(nameof(DocumentUserDeposition.Document))), It.IsAny<bool>()), Times.Once);
             _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(a => a == depositionId), It.Is<string[]>(i => i.SequenceEqual(includes))), Times.Once);
             Assert.NotNull(result);
             Assert.IsType<Result>(result);
@@ -1122,7 +1122,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var documentUserDeposition = new DocumentUserDeposition { User = user, DepositionId = depositionId, Deposition = deposition };
             var expectedError = $"Deposition with id {depositionId} not found.";
             _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(user));
-            _documentUserDepositionRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<DocumentUserDeposition, bool>>>(), It.IsAny<string[]>())).ReturnsAsync(documentUserDeposition);
+            _documentUserDepositionRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<DocumentUserDeposition, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>())).ReturnsAsync(documentUserDeposition);
             _documentRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(document);
             _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
             _depositionRepositoryMock.Setup(x => x.Update(It.IsAny<Deposition>())).ReturnsAsync((Deposition)null);
@@ -1132,7 +1132,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             // Assert
             _userServiceMock.Verify(x => x.GetUserByEmail(It.Is<string>(a => a == userEmail)), Times.Once);
-            _documentUserDepositionRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<DocumentUserDeposition, bool>>>(), It.Is<string[]>(a => a.Contains(nameof(DocumentUserDeposition.Document)))), Times.Once);
+            _documentUserDepositionRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<DocumentUserDeposition, bool>>>(), It.Is<string[]>(a => a.Contains(nameof(DocumentUserDeposition.Document))), It.IsAny<bool>()), Times.Once);
             _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(a => a == depositionId), It.Is<string[]>(i => i.SequenceEqual(includes))), Times.Once);
             _depositionRepositoryMock.Verify(x => x.Update(It.Is<Deposition>(a => a == deposition)), Times.Once);
             _depositionRepositoryMock.Verify(x => x.Update(It.Is<Deposition>(a => a == deposition)), Times.Once);
@@ -1156,7 +1156,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             deposition.Participants.FirstOrDefault().UserId = Guid.NewGuid();
             var documentUserDeposition = new DocumentUserDeposition { User = user, Deposition = deposition, DepositionId = depositionId, DocumentId = documentId };
             _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(user));
-            _documentUserDepositionRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<DocumentUserDeposition, bool>>>(), It.IsAny<string[]>())).ReturnsAsync(documentUserDeposition);
+            _documentUserDepositionRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<DocumentUserDeposition, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>())).ReturnsAsync(documentUserDeposition);
             _documentRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(document);
             _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
             _depositionRepositoryMock.Setup(x => x.Update(It.IsAny<Deposition>())).ReturnsAsync(deposition);
@@ -1166,7 +1166,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             // Assert
             _userServiceMock.Verify(x => x.GetUserByEmail(It.Is<string>(a => a == userEmail)), Times.Once);
-            _documentUserDepositionRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<DocumentUserDeposition, bool>>>(), It.Is<string[]>(a => a.Contains(nameof(DocumentUserDeposition.Document)))), Times.Once);
+            _documentUserDepositionRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<DocumentUserDeposition, bool>>>(), It.Is<string[]>(a => a.Contains(nameof(DocumentUserDeposition.Document))), It.IsAny<bool>()), Times.Once);
             _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(a => a == depositionId), It.Is<string[]>(i => i.SequenceEqual(includes))), Times.Once);
             _depositionRepositoryMock.Verify(x => x.Update(It.Is<Deposition>(a => a == deposition)), Times.Once);
             _depositionRepositoryMock.Verify(x => x.Update(It.Is<Deposition>(a => a == deposition)), Times.Once);
@@ -1377,7 +1377,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             };
 
             _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), null)).ReturnsAsync(deposition);
-            _documentRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Document, bool>>>(), It.IsAny<string[]>())).ReturnsAsync(document);
+            _documentRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Document, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>())).ReturnsAsync(document);
             _transactionHandlerMock
                 .Setup(x => x.RunAsync(It.IsAny<Func<Task>>()))
                 .Returns(async (Func<Task> action) =>
@@ -1423,7 +1423,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             };
 
             _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), null)).ReturnsAsync(deposition);
-            _documentRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Document, bool>>>(), It.IsAny<string[]>())).ReturnsAsync((Document)null);
+            _documentRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Document, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>())).ReturnsAsync((Document)null);
             _transactionHandlerMock
                 .Setup(x => x.RunAsync(It.IsAny<Func<Task>>()))
                 .Returns(async (Func<Task> action) =>
@@ -1472,7 +1472,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 }
             };
 
-            _documentRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Document, bool>>>(), It.IsAny<string[]>())).ReturnsAsync(document);
+            _documentRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Document, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>())).ReturnsAsync(document);
             _depositionRepositoryMock.Setup(x => x.GetById(depositionId, null)).ReturnsAsync((Deposition)null);
             _transactionHandlerMock
                 .Setup(x => x.RunAsync(It.IsAny<Func<Task>>()))
@@ -1523,7 +1523,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             };
 
             _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), null)).ReturnsAsync(deposition);
-            _documentRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Document, bool>>>(), It.IsAny<string[]>())).ReturnsAsync(document);
+            _documentRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Document, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>())).ReturnsAsync(document);
             _transactionHandlerMock
                 .Setup(x => x.RunAsync(It.IsAny<Func<Task>>()))
                 .Returns(async (Func<Task> action) =>
@@ -1536,7 +1536,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var result = await _service.RemoveDepositionDocument(depositionId, documentId);
 
             // Assert
-            _documentRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Document, bool>>>(), It.IsAny<string[]>()), Times.Once());
+            _documentRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Document, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()), Times.Once());
             _depositionRepositoryMock.Verify(x => x.GetById(It.IsAny<Guid>(), null), Times.Once());
             _awsStorageServiceMock.Verify(x => x.DeleteObjectAsync(It.Is<string>(a => a == _documentConfiguration.BucketName), It.IsAny<string>()), Times.Never());
             _documentRepositoryMock.Verify(x => x.Remove(It.Is<Document>(a => a.Id == documentId)), Times.Never);
@@ -1574,7 +1574,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 }
             };
             _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), null)).ReturnsAsync(deposition);
-            _documentRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Document, bool>>>(), It.IsAny<string[]>())).ReturnsAsync(document);
+            _documentRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Document, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>())).ReturnsAsync(document);
             _transactionHandlerMock
                 .Setup(x => x.RunAsync(It.IsAny<Func<Task>>()))
                 .Returns(async (Func<Task> action) =>
@@ -1587,7 +1587,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var result = await _service.RemoveDepositionDocument(depositionId, documentId);
 
             // Assert
-            _documentRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Document, bool>>>(), It.IsAny<string[]>()), Times.Once());
+            _documentRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Document, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()), Times.Once());
             _depositionRepositoryMock.Verify(x => x.GetById(It.IsAny<Guid>(), null), Times.Once());
             _awsStorageServiceMock.Verify(x => x.DeleteObjectAsync(It.Is<string>(a => a == _documentConfiguration.BucketName), It.IsAny<string>()), Times.Never());
             _documentRepositoryMock.Verify(x => x.Remove(It.Is<Document>(a => a.Id == documentId)), Times.Never);
@@ -1624,7 +1624,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             };
 
             _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), null)).ReturnsAsync(deposition);
-            _documentRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Document, bool>>>(), It.IsAny<string[]>())).ReturnsAsync(document);
+            _documentRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Document, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>())).ReturnsAsync(document);
             _transactionHandlerMock
                 .Setup(x => x.RunAsync(It.IsAny<Func<Task>>()))
                 .Returns(async (Func<Task> action) =>
@@ -1645,8 +1645,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var result = await _service.RemoveDepositionDocument(depositionId, documentId);
 
             // Assert
-            _documentRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Document, bool>>>(), It.IsAny<string[]>()), Times.Once());
-            _documentRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Document, bool>>>(), It.IsAny<string[]>()), Times.Once());
+            _documentRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Document, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()), Times.Once());
+            _documentRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Document, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()), Times.Once());
             _awsStorageServiceMock.Verify(x => x.DeleteObjectAsync(It.Is<string>(a => a == _documentConfiguration.BucketName), It.IsAny<string>()), Times.Once());
             _documentRepositoryMock.Verify(x => x.Remove(It.Is<Document>(a => a.Id == documentId)), Times.Once);
             _documentUserDepositionRepositoryMock.Verify(x => x.Remove(It.Is<DocumentUserDeposition>(a => a.DocumentId == documentId)), Times.Once);

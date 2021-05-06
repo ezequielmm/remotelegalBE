@@ -15,7 +15,7 @@ namespace PrecisionReporters.Platform.Data.Repositories.Interfaces
         Task<T> Update(T entity);
         Task Remove(T entity);
         Task RemoveRange(List<T> entities);
-        Task<T> GetFirstOrDefaultByFilter(Expression<Func<T, bool>> filter = null, string[] include = null);
+        Task<T> GetFirstOrDefaultByFilter(Expression<Func<T, bool>> filter = null, string[] include = null, bool tracking = true);
         Task<List<T>> GetByFilter(Expression<Func<T, bool>> filter = null, string[] include = null);
         Task<List<T>> GetByFilter(Expression<Func<T, object>> orderBy, SortDirection sortDirection, Expression<Func<T, bool>> filter = null, string[] include = null);
         Task<Tuple<int, IEnumerable<T>>> GetByFilterPagination(Expression<Func<T, bool>> filter = null, Func<IQueryable<T>, IOrderedQueryable<T>> orderBy = null, string[] include = null, int? page = null, int? pageSize = null);

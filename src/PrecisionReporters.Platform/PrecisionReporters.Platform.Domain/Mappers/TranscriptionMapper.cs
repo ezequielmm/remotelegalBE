@@ -30,7 +30,7 @@ namespace PrecisionReporters.Platform.Domain.Mappers
                 UserId = model.User.Id,
                 UserName = model.User?.GetFullName(),
                 TranscriptDateTime = new DateTimeOffset(model.TranscriptDateTime, TimeSpan.Zero),
-                UserEmail = model.User  .EmailAddress
+                UserEmail = model.User.EmailAddress
             };
         }        
 

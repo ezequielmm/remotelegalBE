@@ -54,7 +54,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var twilioServiceMock = new Mock<ITwilioService>();
 
             var roomRepositoryMock = new Mock<IRoomRepository>();
-            roomRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Room, bool>>>(), It.IsAny<string[]>()))
+            roomRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Room, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()))
                 .ReturnsAsync(_rooms.FirstOrDefault());
 
             var roomService = InitializeService(twilioService: twilioServiceMock, roomRepository: roomRepositoryMock);
@@ -63,7 +63,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var result = await roomService.GetById(roomId);
 
             // Assert
-            roomRepositoryMock.Verify(mock => mock.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Room, bool>>>(), It.IsAny<string[]>()), Times.Once());
+            roomRepositoryMock.Verify(mock => mock.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Room, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()), Times.Once());
             Assert.NotNull(result);
         }
 
@@ -79,7 +79,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var twilioServiceMock = new Mock<ITwilioService>();
 
             var roomRepositoryMock = new Mock<IRoomRepository>();
-            roomRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Room, bool>>>(), It.IsAny<string[]>()))
+            roomRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Room, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()))
                 .ReturnsAsync((Room)null);
 
             var roomService = InitializeService(twilioService: twilioServiceMock, roomRepository: roomRepositoryMock);
@@ -88,7 +88,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var result = await roomService.GetById(roomId);
 
             // Assert
-            roomRepositoryMock.Verify(mock => mock.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Room, bool>>>(), It.IsAny<string[]>()), Times.Once());
+            roomRepositoryMock.Verify(mock => mock.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Room, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()), Times.Once());
             Assert.True(result.IsFailed);
         }
 
@@ -253,13 +253,13 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             // Arrange
             var roomName = "TestingRoom";
             var expectedError = $"Room {roomName} not found";
-            _roomRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Room, bool>>>(), It.IsAny<string[]>())).ReturnsAsync((Room)null);
+            _roomRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Room, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>())).ReturnsAsync((Room)null);
 
             // Act
             var result = await _service.GenerateRoomToken(roomName, new User(), ParticipantType.Attorney, "any@mail.com");
 
             // Assert
-            _roomRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Room, bool>>>(), It.IsAny<string[]>()), Times.Once);
+            _roomRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Room, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()), Times.Once);
             Assert.NotNull(result);
             Assert.IsType<Result<string>>(result);
             Assert.True(result.IsFailed);
@@ -275,13 +275,13 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var roomName = "TestingRoom";
             var room = new Room { Name = roomName, Status = roomStatus };
             var expectedError = $"There was an error ending the the Room '{roomName}'. It's not in progress. Current state: {roomStatus}";
-            _roomRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Room, bool>>>(), It.IsAny<string[]>())).ReturnsAsync(room);
+            _roomRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Room, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>())).ReturnsAsync(room);
 
             // Act
             var result = await _service.GenerateRoomToken(roomName, new User(), ParticipantType.Attorney, "any@mail.com");
 
             // Assert
-            _roomRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Room, bool>>>(), It.IsAny<string[]>()), Times.Once);
+            _roomRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Room, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()), Times.Once);
             Assert.NotNull(result);
             Assert.IsType<Result<string>>(result);
             Assert.True(result.IsFailed);
@@ -304,14 +304,14 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             };
 
             var token = "TestingToken";
-            _roomRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Room, bool>>>(), It.IsAny<string[]>())).ReturnsAsync(room);
+            _roomRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Room, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>())).ReturnsAsync(room);
             _twilioServiceMock.Setup(x => x.GenerateToken(It.IsAny<string>(), It.IsAny<TwilioIdentity>(), It.IsAny<bool>())).Returns(token);
 
             // Act
             var result = await _service.GenerateRoomToken(roomName, user, participantRole, user.EmailAddress);
 
             // Assert
-            _roomRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Room, bool>>>(), It.IsAny<string[]>()), Times.Once);
+            _roomRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Room, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()), Times.Once);
             _twilioServiceMock.Verify(x => x.GenerateToken(It.Is<string>(a => a == roomName), It.Is<TwilioIdentity>(a => a.Email == identityObject.Email), It.IsAny<bool>()), Times.Once);
             Assert.NotNull(result);
             Assert.IsType<Result<string>>(result);

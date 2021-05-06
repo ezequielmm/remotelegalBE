@@ -135,9 +135,12 @@ namespace PrecisionReporters.Platform.Data.Repositories
             return await query.CountAsync();
         }
 
-        public async Task<T> GetFirstOrDefaultByFilter(Expression<Func<T, bool>> filter = null, string[] include = null)
+        public async Task<T> GetFirstOrDefaultByFilter(Expression<Func<T, bool>> filter = null, string[] include = null, bool tracking = true)
         {
             IQueryable<T> query = _dbContext.Set<T>();
+
+            if (!tracking)
+                query = query.AsNoTracking();
 
             if (include != null)
             {

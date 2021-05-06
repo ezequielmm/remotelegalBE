@@ -37,7 +37,7 @@ namespace PrecisionReporters.Platform.UnitTests.Data.Services
         {
             var id = Guid.NewGuid();
             var verifyUser = new VerifyUser { Id = id };
-            _verifyUserRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<VerifyUser, bool>>>(), It.IsAny<string[]>()))
+            _verifyUserRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<VerifyUser, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()))
                 .ReturnsAsync(verifyUser);
             var service = InitializeService(_verifyUserRepositoryMock);
 
@@ -45,7 +45,7 @@ namespace PrecisionReporters.Platform.UnitTests.Data.Services
             var result = await service.GetVerifyUserByUserId(id);
 
             // Assert
-            _verifyUserRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<VerifyUser, bool>>>(), It.Is<string[]>(a => a.Contains(nameof(VerifyUser.User)))), Times.Once);
+            _verifyUserRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<VerifyUser, bool>>>(), It.Is<string[]>(a => a.Contains(nameof(VerifyUser.User))), It.IsAny<bool>()), Times.Once);
             Assert.NotNull(result);
         }
 
@@ -54,7 +54,7 @@ namespace PrecisionReporters.Platform.UnitTests.Data.Services
         {
             var id = Guid.NewGuid();
             var verifyUser = new VerifyUser { Id = id };
-            _verifyUserRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<VerifyUser, bool>>>(), It.IsAny<string[]>()))
+            _verifyUserRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<VerifyUser, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()))
                 .ReturnsAsync(verifyUser);
             var service = InitializeService(_verifyUserRepositoryMock);
 
@@ -62,7 +62,7 @@ namespace PrecisionReporters.Platform.UnitTests.Data.Services
             var result = await service.GetVerifyUserByUserId(id, VerificationType.VerifyUser);
 
             // Assert
-            _verifyUserRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<VerifyUser, bool>>>(), It.Is<string[]>(a => a.Contains(nameof(VerifyUser.User)))), Times.Once);
+            _verifyUserRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<VerifyUser, bool>>>(), It.Is<string[]>(a => a.Contains(nameof(VerifyUser.User))), It.IsAny<bool>()), Times.Once);
             Assert.NotNull(result);
         }
 
@@ -103,7 +103,7 @@ namespace PrecisionReporters.Platform.UnitTests.Data.Services
         {
             var email = "User1@TestMail.com";
             var verifyUser = new VerifyUser { Id = Guid.NewGuid() };
-            _verifyUserRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<VerifyUser, bool>>>(), It.IsAny<string[]>()))
+            _verifyUserRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<VerifyUser, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()))
                 .ReturnsAsync(verifyUser);
             var service = InitializeService(_verifyUserRepositoryMock);
 
@@ -111,7 +111,7 @@ namespace PrecisionReporters.Platform.UnitTests.Data.Services
             var result = await service.GetVerifyUserByEmail(email);
 
             // Assert
-            _verifyUserRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<VerifyUser, bool>>>(), It.Is<string[]>(a => a.Contains(nameof(VerifyUser.User)))), Times.Once);
+            _verifyUserRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<VerifyUser, bool>>>(), It.Is<string[]>(a => a.Contains(nameof(VerifyUser.User))), It.IsAny<bool>()), Times.Once);
             Assert.NotNull(result);
         }
 
@@ -120,7 +120,7 @@ namespace PrecisionReporters.Platform.UnitTests.Data.Services
         {
             var email = "User1@TestMail.com";
             var verifyUser = new VerifyUser { Id = Guid.NewGuid() };
-            _verifyUserRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<VerifyUser, bool>>>(), It.IsAny<string[]>()))
+            _verifyUserRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<VerifyUser, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()))
                 .ReturnsAsync(verifyUser);
             var service = InitializeService(_verifyUserRepositoryMock);
 
@@ -128,7 +128,7 @@ namespace PrecisionReporters.Platform.UnitTests.Data.Services
             var result = await service.GetVerifyUserByEmail(email, VerificationType.VerifyUser);
 
             // Assert
-            _verifyUserRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<VerifyUser, bool>>>(), It.Is<string[]>(a => a.Contains(nameof(VerifyUser.User)))), Times.Once);
+            _verifyUserRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<VerifyUser, bool>>>(), It.Is<string[]>(a => a.Contains(nameof(VerifyUser.User))), It.IsAny<bool>()), Times.Once);
             Assert.NotNull(result);
         }
 

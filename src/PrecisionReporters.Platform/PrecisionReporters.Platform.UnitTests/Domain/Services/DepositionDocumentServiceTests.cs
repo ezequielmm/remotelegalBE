@@ -754,7 +754,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         public async Task IsPublicDocument_ReturnFalse_WhenDepositionDocumentResultIsNull()
         {
             // Arrange           
-            _depositionDocumentRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<DepositionDocument, bool>>>(), It.IsAny<string[]>())).ReturnsAsync((DepositionDocument)null);
+            _depositionDocumentRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<DepositionDocument, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>())).ReturnsAsync((DepositionDocument)null);
 
             //  Act
             var result = await _depositionDocumentService.IsPublicDocument(It.IsAny<Guid>(), It.IsAny<Guid>());
@@ -767,7 +767,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         public async Task IsPublicDocument_ReturnTrue_WhenDepositionDocumentResultIsNotNull()
         {
             // Arrange           
-            _depositionDocumentRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<DepositionDocument, bool>>>(), It.IsAny<string[]>())).ReturnsAsync(new DepositionDocument());
+            _depositionDocumentRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<DepositionDocument, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>())).ReturnsAsync(new DepositionDocument());
 
             //  Act
             var result = await _depositionDocumentService.IsPublicDocument(It.IsAny<Guid>(), It.IsAny<Guid>());

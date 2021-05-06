@@ -69,14 +69,14 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 EmailAddress = "email@email.com"
             };
 
-            _userRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<string[]>()))
+            _userRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()))
                 .ReturnsAsync(user);
 
             _depositionDocumentRepositoryMock
                 .Setup(x => x.GetByFilter(It.IsAny<Expression<Func<DepositionDocument, object>>>(), It.IsAny<SortDirection>(), It.IsAny<Expression<Func<DepositionDocument, bool>>>(), It.IsAny<string[]>()))
                 .ReturnsAsync(documentList);
 
-            _participantRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Participant, bool>>>(), It.IsAny<string[]>()))
+            _participantRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Participant, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()))
                     .ReturnsAsync(participant);
 
             //  Act
@@ -106,14 +106,14 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 EmailAddress = "email@email.com"
             };
 
-            _userRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<string[]>()))
+            _userRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()))
                 .ReturnsAsync(user);
 
             _depositionDocumentRepositoryMock
                 .Setup(x => x.GetByFilter(It.IsAny<Expression<Func<DepositionDocument, object>>>(), It.IsAny<SortDirection>(), It.IsAny<Expression<Func<DepositionDocument, bool>>>(), It.IsAny<string[]>()))
                 .ReturnsAsync(documentList);
 
-            _participantRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Participant, bool>>>(), It.IsAny<string[]>()))
+            _participantRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Participant, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()))
                     .ReturnsAsync(participant);
 
             //  Act
@@ -219,7 +219,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             // Arrange
             var errorMessage = "User with such email address was not found.";
 
-            _userRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<string[]>()))
+            _userRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()))
                 .ReturnsAsync((User)null);
 
             // Act
@@ -245,7 +245,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var transcription = new Transcription { Text = "transcript" };
             var depositionId = Guid.NewGuid().ToString();
 
-            _userRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<string[]>()))
+            _userRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()))
                 .ReturnsAsync(user);
 
             _transcriptionRepositoryMock.Setup(x => x.Create(transcription)).ReturnsAsync((Transcription)null);
@@ -283,7 +283,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 Content = transcriptionDto
             };
 
-            _userRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<string[]>()))
+            _userRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()))
                 .ReturnsAsync(user);
 
             _transcriptionRepositoryMock.Setup(x => x.Create(transcription)).ReturnsAsync(transcription);

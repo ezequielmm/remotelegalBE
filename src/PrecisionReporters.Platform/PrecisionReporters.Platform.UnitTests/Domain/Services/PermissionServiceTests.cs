@@ -105,7 +105,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var userId = Guid.NewGuid();
             var roleName = RoleName.CaseAdmin;
             var role = new Role { Id = Guid.NewGuid(), Name = roleName };
-            _roleRepositoryMock.Setup(r => r.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Role, bool>>>(), It.IsAny<string[]>())).ReturnsAsync(role);
+            _roleRepositoryMock.Setup(r => r.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Role, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>())).ReturnsAsync(role);
 
             // Act
             var result = await _permissionService.AddUserRole(userId, resourceId, resourceType, roleName);

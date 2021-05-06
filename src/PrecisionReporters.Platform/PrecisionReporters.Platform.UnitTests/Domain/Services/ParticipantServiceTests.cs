@@ -40,7 +40,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             _userServiceMock.Setup(x => x.GetCurrentUserAsync())
                 .ReturnsAsync(user);
-            _participantRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Participant, bool>>>(), It.IsAny<string[]>()))
+            _participantRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Participant, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()))
                 .ReturnsAsync(participant);
             _participantRepositoryMock.Setup(x => x.Update(It.IsAny<Participant>()))
                 .ReturnsAsync(participant);
@@ -50,7 +50,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             // Assert
             _userServiceMock.Verify(x => x.GetCurrentUserAsync(), Times.Once);
-            _participantRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Participant, bool>>>(), It.IsAny<string[]>()), Times.Once);
+            _participantRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Participant, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()), Times.Once);
             _participantRepositoryMock.Verify(x => x.Update(It.IsAny<Participant>()), Times.Once);
             _participantRepositoryMock.Verify(x => x.Create(It.IsAny<Participant>()), Times.Never);
 
@@ -72,7 +72,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             _userServiceMock.Setup(x => x.GetCurrentUserAsync())
                 .ReturnsAsync(user);
-            _participantRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Participant, bool>>>(), It.IsAny<string[]>()))
+            _participantRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Participant, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()))
                 .ReturnsAsync((Participant)null);
 
             //Act
@@ -80,7 +80,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             // Assert
             _userServiceMock.Verify(x => x.GetCurrentUserAsync(), Times.Once);
-            _participantRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Participant, bool>>>(), It.IsAny<string[]>()), Times.Once);
+            _participantRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Participant, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()), Times.Once);
             _participantRepositoryMock.Verify(x => x.Create(It.IsAny<Participant>()), Times.Never);
             _participantRepositoryMock.Verify(x => x.Update(It.IsAny<Participant>()), Times.Never);
 
@@ -100,7 +100,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             _userServiceMock.Setup(x => x.GetCurrentUserAsync())
                 .ReturnsAsync(user);
-            _participantRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Participant, bool>>>(), It.IsAny<string[]>()))
+            _participantRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Participant, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()))
                 .ReturnsAsync((Participant)null);
             _participantRepositoryMock.Setup(x => x.Create(It.IsAny<Participant>()))
                  .ReturnsAsync((Participant)null);
@@ -110,7 +110,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             // Assert
             _userServiceMock.Verify(x => x.GetCurrentUserAsync(), Times.Once);
-            _participantRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Participant, bool>>>(), It.IsAny<string[]>()), Times.Once);
+            _participantRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Participant, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()), Times.Once);
             _participantRepositoryMock.Verify(x => x.Create(It.IsAny<Participant>()), Times.Once);
             _participantRepositoryMock.Verify(x => x.Update(It.IsAny<Participant>()), Times.Never);
 
@@ -129,7 +129,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             _userServiceMock.Setup(x => x.GetCurrentUserAsync())
                 .ReturnsAsync(user);
-            _participantRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Participant, bool>>>(), It.IsAny<string[]>()))
+            _participantRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Participant, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()))
                 .ReturnsAsync((Participant)null);
             _participantRepositoryMock.Setup(x => x.Create(It.IsAny<Participant>()))
                  .ReturnsAsync(participant);
@@ -139,7 +139,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             // Assert
             _userServiceMock.Verify(x => x.GetCurrentUserAsync(), Times.Once);
-            _participantRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Participant, bool>>>(), It.IsAny<string[]>()), Times.Once);
+            _participantRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Participant, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()), Times.Once);
             _participantRepositoryMock.Verify(x => x.Create(It.IsAny<Participant>()), Times.Once);
             _participantRepositoryMock.Verify(x => x.Update(It.IsAny<Participant>()), Times.Never);
 
@@ -161,7 +161,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             _userServiceMock.Setup(x => x.GetCurrentUserAsync())
                 .ReturnsAsync(user);
-            _participantRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Participant, bool>>>(), It.IsAny<string[]>()))
+            _participantRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Participant, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()))
                 .ReturnsAsync(participant);
             _participantRepositoryMock.Setup(x => x.Update(It.IsAny<Participant>()))
                  .ReturnsAsync((Participant)null);
@@ -171,7 +171,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             // Assert
             _userServiceMock.Verify(x => x.GetCurrentUserAsync(), Times.Once);
-            _participantRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Participant, bool>>>(), It.IsAny<string[]>()), Times.Once);
+            _participantRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Participant, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()), Times.Once);
             _participantRepositoryMock.Verify(x => x.Create(It.IsAny<Participant>()), Times.Never);
             _participantRepositoryMock.Verify(x => x.Update(It.IsAny<Participant>()), Times.Once);
 
@@ -190,7 +190,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             _userServiceMock.Setup(x => x.GetCurrentUserAsync())
                 .ReturnsAsync(user);
-            _participantRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Participant, bool>>>(), It.IsAny<string[]>()))
+            _participantRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Participant, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()))
                 .ReturnsAsync(participant);
             _participantRepositoryMock.Setup(x => x.Update(It.IsAny<Participant>()))
                  .ReturnsAsync(participant);
@@ -202,7 +202,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             // Assert
             _userServiceMock.Verify(x => x.GetCurrentUserAsync(), Times.Once);
-            _participantRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Participant, bool>>>(), It.IsAny<string[]>()), Times.Once);
+            _participantRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Participant, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()), Times.Once);
             _participantRepositoryMock.Verify(x => x.Create(It.IsAny<Participant>()), Times.Never);
             _participantRepositoryMock.Verify(x => x.Update(It.IsAny<Participant>()), Times.Once);
 

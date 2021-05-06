@@ -65,7 +65,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         public async Task PostDepoCompositionCallback_ShouldFail_CompositionNotFound()
         {
             //Arrange
-            _compositionRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Composition, bool>>>(), It.IsAny<string[]>())).ReturnsAsync((Composition)null);
+            _compositionRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Composition, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>())).ReturnsAsync((Composition)null);
 
             //Act
             var result = await _service.PostDepoCompositionCallback(new PostDepositionEditionDto());
@@ -94,7 +94,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 Video = $"{compositionId}.test",
                 ConfigurationId = "foo"
             };
-            _compositionRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Composition, bool>>>(), It.IsAny<string[]>())).ReturnsAsync(composition);
+            _compositionRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Composition, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>())).ReturnsAsync(composition);
             _compositionRepositoryMock.Setup(x => x.Update(It.IsAny<Composition>()));
             _backgroundTaskQueue.Setup(x => x.QueueBackgroundWorkItem(It.IsAny<BackgroundTaskDto>()));
 
@@ -102,7 +102,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var result = await _service.PostDepoCompositionCallback(postDepositionEdition);
 
             //Assert
-            _compositionRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Composition, bool>>>(), It.IsAny<string[]>()), Times.Once);
+            _compositionRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Composition, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()), Times.Once);
             _compositionRepositoryMock.Verify(x => x.Update(It.IsAny<Composition>()), Times.Once);
             _backgroundTaskQueue.Verify(x => x.QueueBackgroundWorkItem(It.IsAny<BackgroundTaskDto>()), Times.Once);
             Assert.True(result.IsSuccess);
