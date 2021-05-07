@@ -152,7 +152,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                     User = _user
                 };
                 
-                _currentId = null;
+                _currentId = isFinalTranscript ? null : _currentId;
                 _fluentTranscriptionSemaphore.Release();
 
                 var transcriptionDto = _transcriptionMapper.ToDto(transcription);
@@ -168,8 +168,12 @@ namespace PrecisionReporters.Platform.Domain.Services
 
                 if (isFinalTranscript)
                 {
+                    // Create a copy in order to avoid trying to persist the untracked User entity
+                    var transcriptionToStore = new Transcription();
+                    transcriptionToStore.CopyFrom(transcription);
+
                     await _storeTranscriptionSemaphore.WaitAsync();
-                    await _transcriptionService.StoreTranscription(transcription, _depositionId, _userEmail);
+                    await _transcriptionService.StoreTranscription(transcriptionToStore, _depositionId, _userEmail);
                     _storeTranscriptionSemaphore.Release();
                 }
             }
