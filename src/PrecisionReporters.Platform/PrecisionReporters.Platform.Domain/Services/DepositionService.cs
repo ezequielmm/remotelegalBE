@@ -306,28 +306,41 @@ namespace PrecisionReporters.Platform.Domain.Services
                 return Result.Fail(new ResourceNotFoundError($"Deposition with id {depositionId} not found."));
 
             var currentUser = await _userService.GetCurrentUserAsync();
+            var transactionResult = await _transactionHandler.RunAsync<Deposition>(async () =>
+            {
+                var witness = deposition.Participants.FirstOrDefault(x => x.Role == ParticipantType.Witness);
+                var roomResult = await _roomService.EndRoom(deposition.Room, witness.Email);
+                if (roomResult.IsFailed)
+                    return roomResult.ToResult<Deposition>();
 
-            var witness = deposition.Participants.FirstOrDefault(x => x.Role == ParticipantType.Witness);
-            var roomResult = await _roomService.EndRoom(deposition.Room, witness.Email);
-            if (roomResult.IsFailed)
-                return roomResult.ToResult<Deposition>();
+                deposition.CompleteDate = DateTime.UtcNow;
+                deposition.Status = DepositionStatus.Completed;
+                deposition.EndedById = currentUser?.Id;
 
-            deposition.CompleteDate = DateTime.UtcNow;
-            deposition.Status = DepositionStatus.Completed;
-            deposition.EndedById = currentUser?.Id;
+                var email = currentUser != null ? currentUser.EmailAddress : deposition.AddedBy.EmailAddress;
+                var updatedDeposition = await _depositionRepository.Update(deposition);
 
-            var email = currentUser != null ? currentUser.EmailAddress : deposition.AddedBy.EmailAddress;
-            await GoOnTheRecord(deposition.Id, false, email);
-            var updatedDeposition = await _depositionRepository.Update(deposition);
+                await GoOnTheRecord(deposition.Id, false, email);
+                await _userService.RemoveGuestParticipants(deposition.Participants);
 
-            await _userService.RemoveGuestParticipants(deposition.Participants);
+                return Result.Ok(updatedDeposition);
+            });
+            if (transactionResult.IsFailed)
+                return transactionResult;
+
+            var notification = new NotificationDto
+            {
+                Action = NotificationAction.Update,
+                EntityType = NotificationEntity.EndDeposition
+            };
+            await _signalRNotificationManager.SendNotificationToDepositionMembers(depositionId, notification);
 
             var transcriptDto = new DraftTranscriptDto { DepositionId = deposition.Id, CurrentUserId = currentUser.Id };
             var backGround = new BackgroundTaskDto() { Content = transcriptDto, TaskType = BackgroundTaskType.DraftTranscription };
             _backgroundTaskQueue.QueueBackgroundWorkItem(backGround);
             await NotifyParties(deposition.Id, true);
 
-            return Result.Ok(updatedDeposition);
+            return transactionResult;
         }
 
         public async Task<Result<Participant>> GetDepositionParticipantByEmail(Guid id, string participantEmail)
@@ -1066,7 +1079,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                     {
                         var tasks = currentDeposition.Participants.Where(p => !string.IsNullOrWhiteSpace(p.Email)).Select(participant => SendReSheduleDepositionEmailNotification(currentDeposition, participant, oldStartDate, oldTimeZone));
                         await Task.WhenAll(tasks);
-                    }                    
+                    }
 
                     return Result.Ok(currentDeposition);
                 });

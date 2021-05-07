@@ -9,6 +9,7 @@
         JoinResponse,
         BringAllTo,
         Deposition,
-        LockBreakRoom
+        LockBreakRoom,
+        EndDeposition
     }
 }
