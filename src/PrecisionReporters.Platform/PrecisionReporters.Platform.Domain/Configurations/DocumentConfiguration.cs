@@ -15,5 +15,6 @@ namespace PrecisionReporters.Platform.Domain.Configurations
         public string EnvironmentFilesBucket { get; set; }
         public IReadOnlyList<string> AcceptedTranscriptionExtensions { get; set; }
         public string FrontEndContentBucket { get; set; }
+        public string PDFTronLicenseKey { get; set; }
     }
 }

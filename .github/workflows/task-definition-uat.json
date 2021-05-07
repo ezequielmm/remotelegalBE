@@ -218,6 +218,10 @@
                 {
                     "name": "AppConfiguration__AzureCognitiveServiceConfiguration__SubscriptionKey",
                     "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:AppConfiguration__AzureCognitiveServiceConfiguration__SubscriptionKey-6JVtew"
+                },
+                {
+                    "name": "AppConfiguration__DocumentConfiguration__PDFTronLicenseKey",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:AppConfiguration__DocumentConfiguration__PDFTronLicenseKey-ZF4Gtw"
                 }
             ],
             "dockerLabels": {

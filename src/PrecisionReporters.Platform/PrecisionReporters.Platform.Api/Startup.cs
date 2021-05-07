@@ -323,6 +323,15 @@ namespace PrecisionReporters.Platform.Api
             services.AddSignalR()
                 .AddNewtonsoftJsonProtocol(opt => opt.PayloadSerializerSettings.Converters.Add(new StringEnumConverter()))
                 .AddStackExchangeRedis(appConfiguration.ConnectionStrings.RedisConnectionString);
+
+            if (!string.IsNullOrWhiteSpace(appConfiguration.DocumentConfiguration.PDFTronLicenseKey))
+            {
+                pdftron.PDFNet.Initialize(appConfiguration.DocumentConfiguration.PDFTronLicenseKey);
+            }
+            else
+            {
+                pdftron.PDFNet.Initialize();
+            }
         }
 
         private Task GetTokenFromWebSocket(MessageReceivedContext context)
