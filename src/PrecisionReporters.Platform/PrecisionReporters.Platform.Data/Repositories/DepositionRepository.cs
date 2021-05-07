@@ -36,8 +36,8 @@ namespace PrecisionReporters.Platform.Data.Repositories
             }
 
             Expression<Func<Deposition, object>> orderByDefault = x => x.StartDate;
-             
-            if(orderByThen != null)
+
+            if (orderByThen != null)
             {
                 result = sortDirection == SortDirection.Ascend
                 ? query.OrderBy(orderBy).ThenBy(orderByThen).ThenBy(orderByDefault)
@@ -49,8 +49,45 @@ namespace PrecisionReporters.Platform.Data.Repositories
                 ? query.OrderBy(orderBy).ThenBy(orderByDefault)
                 : query.OrderByDescending(orderBy).ThenBy(orderByDefault);
             }
-            
+
             return await result.ToListAsync();
+        }
+
+        public async Task<Deposition> GetByIdWithAdmittedParticipants(Guid id, string[] include = null)
+        {
+            IQueryable<Deposition> depositions = _dbContext.Set<Deposition>();
+            IQueryable<Participant> participants = _dbContext.Set<Participant>();
+
+            if (include != null)
+            {
+                foreach (var property in include)
+                {
+                    depositions = depositions.Include(property);
+                }
+            }
+
+            var result = await GetDepositionWithAdmittedParticipant(depositions);
+
+            return result.FirstOrDefault(x => x.Id == id);
+        }
+
+        public async Task<List<Deposition>> GetDepositionWithAdmittedParticipant(IQueryable<Deposition> depositions)
+        {
+            IQueryable<Participant> participants = _dbContext.Set<Participant>();
+
+            var result = from d in depositions
+                         join p in participants.Where(x => x.IsAdmitted == true)
+                              on d.Id equals p.DepositionId
+                         select new { d, p };
+
+            var filterParticipant = result.Select(x => x.p).ToList();
+
+            foreach (var item in depositions)
+            {
+                item.Participants = filterParticipant.Where(p => p.DepositionId == item.Id).ToList();
+            }
+
+            return await depositions.ToListAsync();
         }
     }
 }

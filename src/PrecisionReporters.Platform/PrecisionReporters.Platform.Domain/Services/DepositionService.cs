@@ -110,15 +110,15 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<Deposition>> GetDepositionById(Guid id)
         {
-            var includes = new[] { nameof(Deposition.Requester), nameof(Deposition.Participants),
-                nameof(Deposition.Case), nameof(Deposition.AddedBy),nameof(Deposition.Caption), nameof(Deposition.Events)};
-            return await GetByIdWithIncludes(id, includes);
+            var includes = new[] { nameof(Deposition.Requester), nameof(Deposition.Case), 
+                nameof(Deposition.AddedBy),nameof(Deposition.Caption), nameof(Deposition.Events)};
+            return await GetByIdWithIncludesAndIsAdmitted(id, includes);
         }
 
         public async Task<Result<Deposition>> GetDepositionByIdWithDocumentUsers(Guid id)
         {
             var include = new[] { nameof(Deposition.DocumentUserDepositions) };
-            return await GetByIdWithIncludes(id, include);
+            return await GetByIdWithIncludesAndIsAdmitted(id, include);
         }
 
         public async Task<Result<Deposition>> GenerateScheduledDeposition(Guid caseId, Deposition deposition, List<Document> uploadedDocuments, User addedBy)
@@ -195,22 +195,22 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<DepositionFilterResponseDto> GetDepositionsByStatus(DepositionFilterDto filterDto)
         {
-            var includes = new[] { nameof(Deposition.Requester), nameof(Deposition.Participants), nameof(Deposition.Case) };
+            var includes = new[] { nameof(Deposition.Requester), nameof(Deposition.Case) };
 
             var filter = await GetDepositionsFilter(filterDto, filterDto.PastDepositions);
             var orderByQuery = GetDepositionsOrderBy(filterDto);
-            var result = await _depositionRepository.GetByFilterPagination(filter, orderByQuery.Compile(), includes, filterDto.Page, filterDto.PageSize);
-
+            var paginationResult = await _depositionRepository.GetByFilterPaginationQueryable(filter, orderByQuery.Compile(), includes, filterDto.Page, filterDto.PageSize);
+            var filteredDeposition = await _depositionRepository.GetDepositionWithAdmittedParticipant(paginationResult.Item2);
             var filterCount = await GetDepositionsFilter(filterDto, !filterDto.PastDepositions);
             var count = await _depositionRepository.GetCountByFilter(filterCount);
 
             var response = new DepositionFilterResponseDto
             {
-                TotalUpcoming = filterDto.PastDepositions ? count : result.Item1,
-                TotalPast = filterDto.PastDepositions ? result.Item1 : count,
+                TotalUpcoming = filterDto.PastDepositions ? count : paginationResult.Item1,
+                TotalPast = filterDto.PastDepositions ? paginationResult.Item1 : count,
                 Page = filterDto.Page,
-                NumberOfPages = (result.Item1 + filterDto.PageSize - 1) / filterDto.PageSize,
-                Depositions = result.Item2?.Select(c => _depositionMapper.ToDto(c)).ToList()
+                NumberOfPages = (paginationResult.Item1 + filterDto.PageSize - 1) / filterDto.PageSize,
+                Depositions = filteredDeposition?.Select(c => _depositionMapper.ToDto(c)).ToList()
             };
             return response;
         }
@@ -389,9 +389,9 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<DepositionEvent>> GoOnTheRecord(Guid id, bool onTheRecord, string userEmail)
         {
-            var includes = new[] { nameof(Deposition.Requester), nameof(Deposition.Participants), nameof(Deposition.Case), nameof(Deposition.Events) };
+            var includes = new[] { nameof(Deposition.Requester), nameof(Deposition.Case), nameof(Deposition.Events) };
 
-            var depositionResult = await GetByIdWithIncludes(id, includes);
+            var depositionResult = await GetByIdWithIncludesAndIsAdmitted(id, includes);
             if (depositionResult.IsFailed)
                 return depositionResult.ToResult<DepositionEvent>();
 
@@ -437,6 +437,15 @@ namespace PrecisionReporters.Platform.Domain.Services
                 return Result.Fail(new ResourceConflictError("No document is being shared in this deposition"));
 
             return Result.Ok(deposition.SharingDocument);
+        }
+
+        public async Task<Result<Deposition>> GetByIdWithIncludesAndIsAdmitted(Guid id, string[] include = null)
+        {
+            var deposition = await _depositionRepository.GetByIdWithAdmittedParticipants(id, include);
+            if (deposition == null)
+                return Result.Fail(new ResourceNotFoundError($"Deposition with id {id} not found."));
+
+            return Result.Ok(deposition);
         }
 
         public async Task<Result<Deposition>> GetByIdWithIncludes(Guid id, string[] include = null)
@@ -507,7 +516,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 $"{nameof(Deposition.BreakRooms)}.{nameof(BreakRoom.Attendees)}",
                 $"{nameof(Deposition.BreakRooms)}.{nameof(BreakRoom.Attendees)}.{nameof(BreakRoomAttendee.User)}"
             };
-            var depositionResult = await GetByIdWithIncludes(id, include);
+            var depositionResult = await GetByIdWithIncludesAndIsAdmitted(id, include);
             if (depositionResult.IsFailed)
                 return depositionResult.ToResult<List<BreakRoom>>();
 
@@ -517,10 +526,8 @@ namespace PrecisionReporters.Platform.Domain.Services
         }
 
         public async Task<Result<(Participant, bool)>> CheckParticipant(Guid id, string emailAddress)
-        {
-            var include = new[] { nameof(Deposition.Participants) };
-
-            var depositionResult = await GetByIdWithIncludes(id, include);
+        {           
+            var depositionResult = await GetByIdWithIncludesAndIsAdmitted(id);
 
             if (depositionResult.IsFailed)
                 return depositionResult.ToResult<(Participant, bool)>();
@@ -598,7 +605,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             {
                 shouldAddPermissions = true;
                 guest.User = userResult.Value;
-                if (guest.Role == ParticipantType.Witness)
+                if (guest.Role == ParticipantType.Witness && deposition.Participants.Any(x => x.Role == ParticipantType.Witness))
                     deposition.Participants[deposition.Participants.FindIndex(x => x.Role == ParticipantType.Witness)] = guest;
                 else
                 {
@@ -630,9 +637,9 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<Guid>> AddParticipant(Guid depositionId, Participant participant)
         {
-            var include = new[] { nameof(Deposition.Participants), nameof(Deposition.Case) };
+            var include = new[] { nameof(Deposition.Case) };
 
-            var depositionResult = await GetByIdWithIncludes(depositionId, include);
+            var depositionResult = await GetByIdWithIncludesAndIsAdmitted(depositionId, include);
 
             var deposition = depositionResult.Value;
             if (deposition.Status == DepositionStatus.Completed
@@ -701,8 +708,8 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<DepositionVideoDto>> GetDepositionVideoInformation(Guid depositionId)
         {
-            var include = new[] { $"{nameof(Deposition.Room)}.{nameof(Room.Composition)}", nameof(Deposition.Events), nameof(Deposition.Case), nameof(Deposition.Participants) };
-            var depositionResult = await GetByIdWithIncludes(depositionId, include);
+            var include = new[] { $"{nameof(Deposition.Room)}.{nameof(Room.Composition)}", nameof(Deposition.Events), nameof(Deposition.Case) };
+            var depositionResult = await GetByIdWithIncludesAndIsAdmitted(depositionId, include);
 
             if (depositionResult.IsFailed)
                 return depositionResult.ToResult<DepositionVideoDto>();
@@ -789,6 +796,12 @@ namespace PrecisionReporters.Platform.Domain.Services
                 sortDirection,
                 x => x.DepositionId == depositionId && x.IsAdmitted.HasValue && x.IsAdmitted.Value,
                 new string[] { nameof(Participant.User) });
+
+            if (lstParticipant.Count > 0 && !lstParticipant.Any(x => x.Role == ParticipantType.Witness)) 
+            {
+                lstParticipant = lstParticipant.Prepend(new Participant { Role = ParticipantType.Witness}).ToList();
+            }
+
             return Result.Ok(lstParticipant);
         }
 
@@ -873,7 +886,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<Deposition>> EditDepositionDetails(Deposition deposition, FileTransferInfo file, bool deleteCaption)
         {
-            var currentDepositionResult = await GetByIdWithIncludes(deposition.Id, new[] { nameof(Deposition.Caption), nameof(Deposition.Participants), nameof(Deposition.Case) });
+            var currentDepositionResult = await GetByIdWithIncludesAndIsAdmitted(deposition.Id, new[] { nameof(Deposition.Caption), nameof(Deposition.Case) });
             if (currentDepositionResult.IsFailed)
                 return currentDepositionResult;
 
@@ -971,7 +984,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<Deposition>> RevertCancel(Deposition deposition, FileTransferInfo file, bool deleteCaption)
         {
-            var currentDepositionResult = await GetByIdWithIncludes(deposition.Id, new[] { $"{nameof(Deposition.Caption)}" });
+            var currentDepositionResult = await GetByIdWithIncludesAndIsAdmitted(deposition.Id, new[] { $"{nameof(Deposition.Caption)}" });
             if (currentDepositionResult.IsFailed)
                 return currentDepositionResult;
 
@@ -1050,7 +1063,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (deposition.StartDate > deposition.EndDate)
                 return Result.Fail<Deposition>(new ResourceConflictError($"The StartDate must be lower than EndDate"));
 
-            var currentDepositionResult = await GetByIdWithIncludes(deposition.Id, new[] { nameof(Deposition.Case), nameof(Deposition.Caption), nameof(Deposition.Participants) });
+            var currentDepositionResult = await GetByIdWithIncludesAndIsAdmitted(deposition.Id, new[] { nameof(Deposition.Case), nameof(Deposition.Caption)});
             if (currentDepositionResult.IsFailed)
                 return currentDepositionResult;
 

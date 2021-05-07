@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using PrecisionReporters.Platform.Data.Entities;
@@ -11,5 +12,9 @@ namespace PrecisionReporters.Platform.Data.Repositories.Interfaces
     {
         Task<List<Deposition>> GetByStatus(Expression<Func<Deposition, object>> orderBy, SortDirection sortDirection,
             Expression<Func<Deposition, bool>> filter = null, string[] include = null, Expression<Func<Deposition, object>> orderByThen = null);
+
+        Task<Deposition> GetByIdWithAdmittedParticipants(Guid id, string[] include = null);
+
+        Task<List<Deposition>> GetDepositionWithAdmittedParticipant(IQueryable<Deposition> depositions);
     }
 } 

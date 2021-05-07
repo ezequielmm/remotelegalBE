@@ -92,6 +92,20 @@ namespace PrecisionReporters.Platform.Data.Repositories
             int? pageSize = null
             )
         {
+            var result = await GetByFilterPaginationQueryable(filter, orderBy, include, page, pageSize);
+
+            var list = await result.Item2.ToListAsync();
+            return new Tuple<int, IEnumerable<T>>(result.Item1, list);
+        }
+
+        public async Task<Tuple<int, IQueryable<T>>> GetByFilterPaginationQueryable(
+            Expression<Func<T, bool>> filter = null,
+            Func<IQueryable<T>, IOrderedQueryable<T>> orderBy = null,
+            string[] include = null,
+            int? page = null,
+            int? pageSize = null
+            )
+        {
             IQueryable<T> query = _dbContext.Set<T>();
 
             if (include != null)
@@ -124,8 +138,7 @@ namespace PrecisionReporters.Platform.Data.Repositories
                 query = query.Take((int)pageSize);
             }
 
-            var data = await query.ToListAsync();
-            return new Tuple<int, IEnumerable<T>>(totalCount, data);
+            return new Tuple<int, IQueryable<T>>(totalCount, query);
         }
 
         public async Task<int> GetCountByFilter(Expression<Func<T, bool>> filter)
