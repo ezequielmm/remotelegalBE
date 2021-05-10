@@ -1395,7 +1395,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var depositionId = Guid.NewGuid();
             var deposition = DepositionFactory.GetDepositionWithParticipantEmail(participantEmail);
 
-            _depositionRepositoryMock.Setup(x => x.GetByIdWithAdmittedParticipants(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
             _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(user));
 
             // Act
@@ -1416,7 +1416,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var depositionId = Guid.NewGuid();
             var deposition = DepositionFactory.GetDepositionWithParticipantEmail(participantEmail);
 
-            _depositionRepositoryMock.Setup(x => x.GetByIdWithAdmittedParticipants(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
             _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Fail(new Error()));
 
             // Act
@@ -1440,7 +1440,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var depositionId = Guid.NewGuid();
             var deposition = DepositionFactory.GetDepositionWithParticipantEmail("foo@mail.com");
 
-            _depositionRepositoryMock.Setup(x => x.GetByIdWithAdmittedParticipants(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
             _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(user));
 
             // Act
@@ -1464,7 +1464,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var depositionId = Guid.NewGuid();
             var deposition = DepositionFactory.GetDepositionWithParticipantEmail("foo@mail.com");
 
-            _depositionRepositoryMock.Setup(x => x.GetByIdWithAdmittedParticipants(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
             _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Fail(new Error()));
 
             // Act

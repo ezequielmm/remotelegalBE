@@ -526,8 +526,9 @@ namespace PrecisionReporters.Platform.Domain.Services
         }
 
         public async Task<Result<(Participant, bool)>> CheckParticipant(Guid id, string emailAddress)
-        {           
-            var depositionResult = await GetByIdWithIncludesAndIsAdmitted(id);
+        {
+            var include = new[] { nameof(Deposition.Participants)};
+            var depositionResult = await GetByIdWithIncludes(id, include);
 
             if (depositionResult.IsFailed)
                 return depositionResult.ToResult<(Participant, bool)>();

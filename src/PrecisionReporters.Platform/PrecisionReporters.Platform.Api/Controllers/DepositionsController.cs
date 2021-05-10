@@ -252,7 +252,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
         [AllowAnonymous]
         public async Task<ActionResult<ParticipantValidationDto>> CheckParticipant(Guid id, string emailAddress)
         {
-            var participantResult = await _depositionService.CheckParticipant(id, emailAddress.ToLower()); ;
+            var participantResult = await _depositionService.CheckParticipant(id, emailAddress.ToLower());
             if (participantResult.IsFailed)
                 return WebApiResponses.GetErrorResponse(participantResult);
 
