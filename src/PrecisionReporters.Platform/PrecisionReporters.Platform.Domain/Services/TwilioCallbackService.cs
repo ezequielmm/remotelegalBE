@@ -46,15 +46,6 @@ namespace PrecisionReporters.Platform.Domain.Services
 
                 switch (status)
                 {
-                    case RoomStatusCallback.RecordingStarted:
-                        {
-                            if (room.RecordingStartDate == null)
-                            {
-                                room.RecordingStartDate = roomEvent.Timestamp.UtcDateTime.AddSeconds(-roomEvent.Duration);
-                                await _roomService.Update(room);
-                            }
-                            return Result.Ok();
-                        }
                     case RoomStatusCallback.RoomEnded:
                         {
                             var depositionResult = await _depositionService.GetDepositionByRoomId(room.Id);

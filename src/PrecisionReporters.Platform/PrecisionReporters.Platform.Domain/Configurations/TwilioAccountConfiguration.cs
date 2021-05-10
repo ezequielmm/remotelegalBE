@@ -10,5 +10,6 @@
         public string S3DestinationBucket { get; set; }
         public string StatusCallbackUrl { get; set; }
         public string ConversationServiceId { get; set; }
+        public string TwilioStartedDateReference { get; set; }
     }
 }

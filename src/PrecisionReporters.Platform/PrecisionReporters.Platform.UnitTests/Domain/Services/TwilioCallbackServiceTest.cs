@@ -37,32 +37,6 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         }
 
         [Fact]
-        public async Task UpdateStatusCallback_ShouldSet_RecordingStartDate_ForRecordingCompletedEvent()
-        {
-            var eventDto = new RoomCallbackDto
-            {
-                Duration = 10,
-                Timestamp = DateTime.UtcNow,
-                StatusCallbackEvent = "recording-started",
-                ParticipantSid = "P01",
-                RoomSid = "R01"
-            };
-
-            var roomId = Guid.NewGuid();
-
-            var room = RoomFactory.GetRoomById(roomId);
-            _roomServiceMock.Setup(x => x.GetRoomBySId(It.IsAny<string>())).ReturnsAsync(Result.Ok(room));
-
-            // Act
-            var result = await _service.UpdateStatusCallback(eventDto);
-
-            // Assert
-            Assert.True(result.IsSuccess);
-            _roomServiceMock.Verify(x => x.Update(It.IsAny<Room>()), Times.Once);
-        }
-
-
-        [Fact]
         public async Task UpdateStatusCallback_ShouldNotSet_RecordingStartDate_ForRecordingCompletedEventAndStartedReferenceDifferent()
         {
             var eventDto = new RoomCallbackDto

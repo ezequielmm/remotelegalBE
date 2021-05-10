@@ -142,7 +142,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         private long GetDateTimestamp(DateTime date)
         {
-            return new DateTimeOffset(date).ToUnixTimeSeconds();
+            return new DateTimeOffset(date, TimeSpan.Zero).ToUnixTimeSeconds();
         }
 
         private int CalculateSpeechTime(int offset, List<CompositionInterval> intervals)

@@ -6,6 +6,7 @@ using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Domain.Commons;
 using PrecisionReporters.Platform.Domain.Configurations;
 using PrecisionReporters.Platform.Domain.Dtos;
+using PrecisionReporters.Platform.Domain.Extensions;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -190,7 +191,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (file.Exists)
             {
                 var result = await UploadMultipartAsync(file, keyName);
-                
+
                 if (result.IsFailed)
                 {
                     _log.LogDebug($"Upload failed. Deleting local file {filePath}");
@@ -353,5 +354,12 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         }
 
+        public async Task<Result<long>> GetVideoStartTimeStamp(string roomSid)
+        {
+            var recordings = await RoomRecordingResource.ReadAsync(roomSid);
+            var firstRecording = recordings.OrderBy(x => x.DateCreated).First();
+            var date= DateTimeOffset.FromUnixTimeMilliseconds(long.Parse(_twilioAccountConfiguration.TwilioStartedDateReference) + firstRecording.Offset.Value);
+            return Result.Ok(date.ToUnixTimeSeconds());
+        }
     }
 }

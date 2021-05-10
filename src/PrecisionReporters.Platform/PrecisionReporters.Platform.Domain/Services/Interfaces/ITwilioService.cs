@@ -23,5 +23,6 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
         Task<Result<string>> CreateChatUser(TwilioIdentity identity);
         Task<Result> AddUserToChat(string conversationSid, TwilioIdentity identity, string userSid);
         Task<List<RoomResource>> GetRoomsByUniqueNameAndStatus(string uniqueName, RoomStatusEnum status = null);
+        Task<Result<long>> GetVideoStartTimeStamp(string roomSid);
     }
 }

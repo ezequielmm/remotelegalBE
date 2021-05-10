@@ -163,6 +163,7 @@ namespace PrecisionReporters.Platform.Api
                 x.S3DestinationBucket = appConfiguration.TwilioAccountConfiguration.S3DestinationBucket;
                 x.StatusCallbackUrl = appConfiguration.TwilioAccountConfiguration.StatusCallbackUrl;
                 x.ConversationServiceId = appConfiguration.TwilioAccountConfiguration.ConversationServiceId;
+                x.TwilioStartedDateReference = appConfiguration.TwilioAccountConfiguration.TwilioStartedDateReference;
             });
 
             services.AddScoped<IRoomService, RoomService>();

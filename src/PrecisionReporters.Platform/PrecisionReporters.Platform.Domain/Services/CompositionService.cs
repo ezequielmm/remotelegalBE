@@ -105,7 +105,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         private CompositionRecordingMetadata CreateCompositioMetadata(Deposition deposition)
         {
-            var startDateTime = GetDateTimestamp(deposition.Room.RecordingStartDate.Value);
+            var startDateTime = _twilioService.GetVideoStartTimeStamp(deposition.Room.SId);
             return new CompositionRecordingMetadata
             {
                 //TODO unified file name generation in one place
@@ -114,9 +114,9 @@ namespace PrecisionReporters.Platform.Domain.Services
                 TimeZone = Enum.GetValues(typeof(USTimeZone)).Cast<USTimeZone>().FirstOrDefault(x => x.GetDescription() == deposition.TimeZone).ToString(),
                 TimeZoneDescription = deposition.TimeZone,
                 OutputFormat = deposition.Room.Composition.FileType,
-                StartDate = startDateTime,
+                StartDate = startDateTime.Result.Value,
                 EndDate = GetDateTimestamp(deposition.Room.EndDate.Value),
-                Intervals = GetDepositionRecordingIntervals(deposition.Events, startDateTime)
+                Intervals = GetDepositionRecordingIntervals(deposition.Events, startDateTime.Result.Value)
             };
         }
 
@@ -154,7 +154,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         private long GetDateTimestamp(DateTime date)
         {
-            return new DateTimeOffset(date).ToUnixTimeSeconds();
+            return new DateTimeOffset(date, TimeSpan.Zero).ToUnixTimeSeconds();
         }
 
         private int CalculateSeconds(long startTime, long splitTime)
