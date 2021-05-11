@@ -34,6 +34,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         private Guid? _currentId;
         private DateTime _transcriptionDateTime;
+        private DateTime _lastSentTimestamp;
         private bool _shouldClose = false;
         private static readonly SemaphoreSlim _shouldCloseSemaphore = new SemaphoreSlim(1);
         private bool _isClosed = true;
@@ -55,6 +56,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task RecognizeAsync(byte[] audioChunk)
         {
+            _lastSentTimestamp = DateTime.UtcNow;
             await _isClosedSemaphore.WaitAsync();
             if (_isClosed)
             {
@@ -83,7 +85,6 @@ namespace PrecisionReporters.Platform.Domain.Services
             _user = await _userRepository.GetFirstOrDefaultByFilter(x => x.EmailAddress == _userEmail, tracking: false);
 
             var speechConfig = SpeechConfig.FromSubscription(_azureConfiguration.SubscriptionKey, _azureConfiguration.RegionCode);
-
             _audioInputStream = AudioInputStream.CreatePushStream(AudioStreamFormat.GetWaveFormatPCM(Convert.ToUInt16(sampleRate), BitsPerSample, ChannelCount));
             var audioConfig = AudioConfig.FromStreamInput(_audioInputStream);
 
@@ -92,10 +93,11 @@ namespace PrecisionReporters.Platform.Domain.Services
             _recognizer.Recognizing += async (s, e) =>
             {
                 await _fluentTranscriptionSemaphore.WaitAsync();
-                _transcriptionDateTime = DateTime.UtcNow;
                 if (_currentId == null)
+                {
                     _currentId = Guid.NewGuid();
-
+                    _transcriptionDateTime = _lastSentTimestamp;
+                }
                 _fluentTranscriptionSemaphore.Release();
 
                 await HandleRecognizedSpeech(e);
@@ -140,10 +142,12 @@ namespace PrecisionReporters.Platform.Domain.Services
                 var offset = TimeSpan.FromTicks(e.Result.OffsetInTicks).TotalSeconds;
 
                 await _fluentTranscriptionSemaphore.WaitAsync();
+                var latency = isFinalTranscript ? Convert.ToInt32(e.Result.Properties.GetProperty(PropertyId.SpeechServiceResponse_RecognitionLatencyMs)) : 0;
+
                 var transcription = new Transcription
                 {
                     Id = _currentId ?? Guid.NewGuid(),
-                    TranscriptDateTime = _transcriptionDateTime,
+                    TranscriptDateTime = _transcriptionDateTime.AddMilliseconds(-latency),
                     Text = e.Result.Text,
                     Duration = durationInMilliseconds,
                     Confidence = bestTranscription != null ? bestTranscription.Confidence : 0.0,
@@ -151,12 +155,12 @@ namespace PrecisionReporters.Platform.Domain.Services
                     UserId = _user.Id,
                     User = _user
                 };
-                
+
                 _currentId = isFinalTranscript ? null : _currentId;
                 _fluentTranscriptionSemaphore.Release();
 
                 var transcriptionDto = _transcriptionMapper.ToDto(transcription);
-                
+
                 var notificationtDto = new NotificationDto
                 {
                     Action = NotificationAction.Create,
