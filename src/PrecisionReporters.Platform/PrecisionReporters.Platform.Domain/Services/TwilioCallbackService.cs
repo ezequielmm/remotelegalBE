@@ -53,6 +53,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                                 return depositionResult.ToResult<Room>();
 
                             var witness = depositionResult.Value.Participants.FirstOrDefault(x => x.Role == ParticipantType.Witness);
+                            //TODO: If the Deposition never went OnRecord, we don't have to create a composition
                             await _roomService.CreateComposition(room, witness.Email);
 
                             return Result.Ok();

@@ -83,8 +83,8 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (depositionResult.IsFailed)
                 return depositionResult.ToResult<Composition>();
 
-            compositionToUpdate.Status = composition.Status;
-
+            compositionToUpdate.Status = depositionResult.Value.Events.Any(x => x.EventType == EventType.OnTheRecord) ? composition.Status : CompositionStatus.Empty;
+                
             if (compositionToUpdate.Status == CompositionStatus.Available)
             {
                 compositionToUpdate.MediaUri = composition.MediaUri;
@@ -106,6 +106,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         private CompositionRecordingMetadata CreateCompositioMetadata(Deposition deposition)
         {
             var startDateTime = _twilioService.GetVideoStartTimeStamp(deposition.Room.SId);
+
             return new CompositionRecordingMetadata
             {
                 //TODO unified file name generation in one place
@@ -123,6 +124,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         private async Task<Result> UploadCompositionMetadata(Deposition deposition)
         {
             var metadata = CreateCompositioMetadata(deposition);
+
             return await _twilioService.UploadCompositionMetadata(metadata);
 
         }
