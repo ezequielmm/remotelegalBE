@@ -8,6 +8,7 @@ using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using PrecisionReporters.Platform.UnitTests.Utils;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Xunit;
@@ -18,15 +19,23 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
     {
         private readonly ParticipantService _participantService;
         private readonly Mock<IParticipantRepository> _participantRepositoryMock;
+        private readonly Mock<IDepositionRepository> _depositionRepositoryMock;
         private readonly Mock<ISignalRNotificationManager> _signalRNotificationManagerMock;
         private readonly Mock<IUserService> _userServiceMock;
+        private readonly Mock<IPermissionService> _permissionServiceMock;
         public ParticipantServiceTests()
         {
             _participantRepositoryMock = new Mock<IParticipantRepository>();
             _signalRNotificationManagerMock = new Mock<ISignalRNotificationManager>();
             _userServiceMock = new Mock<IUserService>();
+            _depositionRepositoryMock = new Mock<IDepositionRepository>();
+            _permissionServiceMock = new Mock<IPermissionService>();
 
-            _participantService = new ParticipantService(_participantRepositoryMock.Object, _signalRNotificationManagerMock.Object, _userServiceMock.Object);
+            _participantService = new ParticipantService(_participantRepositoryMock.Object,
+                _signalRNotificationManagerMock.Object,
+                _userServiceMock.Object,
+                _depositionRepositoryMock.Object,
+                _permissionServiceMock.Object);
         }
 
         [Fact]
@@ -233,6 +242,85 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             Assert.True(result.IsSuccess);
             Assert.True(participantList.Count == result.Value.Count);
             Assert.IsType<Participant>(result.Value[0]);
+        }
+        
+        [Fact]
+        public async Task RemoveParticipant_ShouldReturnFail_IfDepositionNotFound()
+        {
+            // Arrange
+            var depositionId = Guid.NewGuid();
+            var participantId = Guid.NewGuid();
+            var expectedError = $"Deposition not found with ID {depositionId}";
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync((Deposition)null);
+
+            // Act
+            var result = await _participantService.RemoveParticipantFromDeposition(depositionId, participantId);
+
+            // Assert
+            _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(a => a == depositionId), It.Is<string[]>(a => a.SequenceEqual(new[] { $"{nameof(Deposition.Participants)}.{nameof(Participant.User)}" }))), Times.Once);
+            Assert.NotNull(result);
+            Assert.True(result.IsFailed);
+            Assert.Contains(expectedError, result.Errors.Select(e => e.Message));
+        }
+
+        [Fact]
+        public async Task RemoveParticipant_ShouldReturnFail_IfParticipantNotFound()
+        {
+            // Arrange
+            var depositionId = Guid.NewGuid();
+            var mockDeposition = new Deposition()
+            {
+                Id = depositionId,
+                Participants = new List<Participant>()
+                {
+                    new Participant()
+                    {
+                        Id = Guid.NewGuid()
+                    }
+                }
+            };
+            var participantId = Guid.NewGuid();
+            var expectedError = $"Participant not found with ID {participantId}";
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(mockDeposition);
+
+            // Act
+            var result = await _participantService.RemoveParticipantFromDeposition(depositionId, participantId);
+
+            // Assert
+            _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(a => a == depositionId), It.Is<string[]>(a => a.SequenceEqual(new[] { $"{nameof(Deposition.Participants)}.{nameof(Participant.User)}" }))), Times.Once);
+            Assert.NotNull(result);
+            Assert.True(result.IsFailed);
+            Assert.Contains(expectedError, result.Errors.Select(e => e.Message));
+        }
+
+        [Fact]
+        public async Task RemoveParticipant_ShouldReturnOk()
+        {
+            // Arrange
+            var depositionId = Guid.NewGuid();
+            var participantId = Guid.NewGuid();
+            var mockDeposition = new Deposition()
+            {
+                Id = depositionId,
+                Participants = new List<Participant>()
+                {
+                    new Participant()
+                    {
+                        Id = participantId
+                    }
+                }
+            };
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(mockDeposition);
+
+            // Act
+            var result = await _participantService.RemoveParticipantFromDeposition(depositionId, participantId);
+
+            // Assert
+            _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(a => a == depositionId), It.Is<string[]>(a => a.SequenceEqual(new[] { $"{nameof(Deposition.Participants)}.{nameof(Participant.User)}" }))), Times.Once);
+            _permissionServiceMock.Verify(x => x.RemoveParticipantPermissions(It.IsAny<Guid>(), It.IsAny<Participant>()), Times.Once);
+            _participantRepositoryMock.Verify(x => x.Remove(It.IsAny<Participant>()));
+            Assert.NotNull(result);
+            Assert.True(result.IsSuccess);
         }
 
     }

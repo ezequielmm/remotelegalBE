@@ -7,6 +7,7 @@ using PrecisionReporters.Platform.Domain.Errors;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace PrecisionReporters.Platform.Domain.Services
@@ -14,14 +15,22 @@ namespace PrecisionReporters.Platform.Domain.Services
     public class ParticipantService : IParticipantService
     {
         private readonly IParticipantRepository _participantRepository;
+        private readonly IDepositionRepository _depositionRepository;
         private readonly ISignalRNotificationManager _signalRNotificationManager;
         private readonly IUserService _userService;
+        private readonly IPermissionService _permissionService;
 
-        public ParticipantService(IParticipantRepository participantRepository, ISignalRNotificationManager signalRNotificationManager, IUserService userService)
+        public ParticipantService(IParticipantRepository participantRepository,
+            ISignalRNotificationManager signalRNotificationManager,
+            IUserService userService,
+            IDepositionRepository depositionRepository,
+            IPermissionService permissionService)
         {
             _participantRepository = participantRepository;
             _signalRNotificationManager = signalRNotificationManager;
             _userService = userService;
+            _depositionRepository = depositionRepository;
+            _permissionService = permissionService;
         }
 
         public async Task<Result<ParticipantStatusDto>> UpdateParticipantStatus(ParticipantStatusDto participantStatusDto, Guid depositionId)
@@ -82,6 +91,22 @@ namespace PrecisionReporters.Platform.Domain.Services
         {
             var includes = new[] { nameof(Participant.User) };
             return Result.Ok(await _participantRepository.GetByFilter(x => x.DepositionId == depositionId && x.HasJoined == false && x.IsAdmitted == null, includes));
+        }
+
+        public async Task<Result> RemoveParticipantFromDeposition(Guid id, Guid participantId)
+        {
+            var deposition = await _depositionRepository.GetById(id,
+                new[] { $"{nameof(Deposition.Participants)}.{nameof(Participant.User)}" });
+            if (deposition == null)
+                return Result.Fail(new ResourceNotFoundError($"Deposition not found with ID {id}"));
+
+            var participant = deposition.Participants.FirstOrDefault(x => x.Id == participantId);
+            if (participant == null)
+                return Result.Fail(new ResourceNotFoundError($"Participant not found with ID {participantId}"));
+
+            await _permissionService.RemoveParticipantPermissions(id, participant);
+            await _participantRepository.Remove(participant);
+            return Result.Ok();
         }
     }
 }

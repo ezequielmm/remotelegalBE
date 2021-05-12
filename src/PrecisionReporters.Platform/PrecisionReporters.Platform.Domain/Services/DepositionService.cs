@@ -841,22 +841,6 @@ namespace PrecisionReporters.Platform.Domain.Services
             return Result.Ok(newParticipant);
         }
 
-        public async Task<Result> RemoveParticipantFromDeposition(Guid id, Guid participantId)
-        {
-            var deposition = await _depositionRepository.GetById(id,
-                new[] { $"{nameof(Deposition.Participants)}.{nameof(Participant.User)}" });
-            if (deposition == null)
-                return Result.Fail(new ResourceNotFoundError($"Deposition not found with ID {id}"));
-
-            var participant = deposition.Participants.FirstOrDefault(x => x.Id == participantId);
-            if (participant == null)
-                return Result.Fail(new ResourceNotFoundError($"Participant not found with ID {participantId}"));
-
-            await _permissionService.RemoveParticipantPermissions(id, participant);
-            await _participantRepository.Remove(participant);
-            return Result.Ok();
-        }
-
         private async Task<Result<Document>> UpdateDepositionFiles(FileTransferInfo file, Deposition currentDeposition, bool deleteCaption)
         {
             var currentUser = await _userService.GetCurrentUserAsync();

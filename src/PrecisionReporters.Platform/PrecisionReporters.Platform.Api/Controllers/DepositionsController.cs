@@ -360,20 +360,6 @@ namespace PrecisionReporters.Platform.Api.Controllers
         }
 
         /// <summary>
-        /// Remove a registered participant from the deposition
-        /// </summary>
-        /// <param name="id">Deposition identifier</param>
-        /// <param name="participantId">Participant identifier</param>
-        /// <returns>Ok if succeeded</returns>
-        [HttpDelete("{id}/participants/{participantId}")]
-        [UserAuthorize(ResourceType.Deposition, ResourceAction.Update)]
-        public async Task<ActionResult<Guid>> RemoveParticipantFromExistingDeposition([ResourceId(ResourceType.Deposition)] Guid id, Guid participantId)
-        {
-            var result = await _depositionService.RemoveParticipantFromDeposition(id, participantId);
-            return Ok(result);
-        }
-
-        /// <summary>
         /// Edit deposition details
         /// </summary>
         /// <param name="id">Deposition identifier</param>

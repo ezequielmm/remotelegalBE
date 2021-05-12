@@ -11,5 +11,6 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
     {
         Task<Result<ParticipantStatusDto>> UpdateParticipantStatus(ParticipantStatusDto participantStatusDto, Guid depositionId);
         Task<Result<List<Participant>>> GetWaitParticipants(Guid depositionId);
+        Task<Result> RemoveParticipantFromDeposition(Guid id, Guid participantId);
     }
 }
