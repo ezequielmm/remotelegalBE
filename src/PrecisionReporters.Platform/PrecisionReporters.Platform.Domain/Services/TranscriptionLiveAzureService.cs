@@ -33,8 +33,8 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly IUserRepository _userRepository;
 
         private Guid? _currentId;
-        private DateTime _transcriptionDateTime;
-        private DateTime _lastSentTimestamp;
+        private DateTime _transcriptionDateTime = DateTime.UtcNow;
+        private DateTime _lastSentTimestamp = DateTime.UtcNow;
         private bool _shouldClose = false;
         private static readonly SemaphoreSlim _shouldCloseSemaphore = new SemaphoreSlim(1);
         private bool _isClosed = true;
@@ -142,7 +142,11 @@ namespace PrecisionReporters.Platform.Domain.Services
                 var offset = TimeSpan.FromTicks(e.Result.OffsetInTicks).TotalSeconds;
 
                 await _fluentTranscriptionSemaphore.WaitAsync();
-                var latency = isFinalTranscript ? Convert.ToInt32(e.Result.Properties.GetProperty(PropertyId.SpeechServiceResponse_RecognitionLatencyMs)) : 0;
+                int latency;
+                if (!isFinalTranscript || !int.TryParse(e.Result.Properties.GetProperty(PropertyId.SpeechServiceResponse_RecognitionLatencyMs), out latency))
+                {
+                    latency = 0;
+                }
 
                 var transcription = new Transcription
                 {
