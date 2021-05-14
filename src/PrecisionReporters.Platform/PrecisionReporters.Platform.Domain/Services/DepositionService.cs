@@ -54,6 +54,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly UrlPathConfiguration _urlPathConfiguration;
         private readonly EmailConfiguration _emailConfiguration;
         private readonly IActivityHistoryService _activityHistoryService;
+        private readonly IDepositionEmailService _depositionEmailService;
 
         public DepositionService(IDepositionRepository depositionRepository,
             IParticipantRepository participantRepository,
@@ -76,7 +77,8 @@ namespace PrecisionReporters.Platform.Domain.Services
             IOptions<UrlPathConfiguration> urlPathConfiguration,
             IOptions<EmailConfiguration> emailConfiguration,
             IMapper<BreakRoom, BreakRoomDto, object> breakRoomMapper,
-            IActivityHistoryService activityHistoryService)
+            IActivityHistoryService activityHistoryService,
+            IDepositionEmailService depositionEmailService)
         {
             _awsStorageService = awsStorageService;
             _documentsConfiguration = documentConfigurations.Value ?? throw new ArgumentException(nameof(documentConfigurations));
@@ -100,6 +102,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             _emailConfiguration = emailConfiguration.Value;
             _breakRoomMapper = breakRoomMapper;
             _activityHistoryService = activityHistoryService;
+            _depositionEmailService = depositionEmailService;
         }
 
         public async Task<List<Deposition>> GetDepositions(Expression<Func<Deposition, bool>> filter = null,
@@ -836,7 +839,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             await _permissionService.AddParticipantPermissions(newParticipant);
 
             if (deposition.Status == DepositionStatus.Confirmed && !string.IsNullOrWhiteSpace(newParticipant.Email))
-                await SendJoinDepositionEmailNotification(deposition, newParticipant);
+                await _depositionEmailService.SendJoinDepositionEmailNotification(deposition, newParticipant);
 
             return Result.Ok(newParticipant);
         }
@@ -900,7 +903,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
                     await _depositionRepository.Update(currentDeposition);
                     if (sendEmailNotification)
-                        await SendJoinDepositionEmailNotification(currentDeposition);
+                        await _depositionEmailService.SendJoinDepositionEmailNotification(currentDeposition);
                     return Result.Ok(currentDeposition);
                 });
 
@@ -960,7 +963,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             if (sendNotification)
             {
-                var tasks = depositionResult.Value.Participants.Where(p => !string.IsNullOrWhiteSpace(p.Email)).Select(participant => SendCancelDepositionEmailNotification(depositionResult.Value, participant));
+                var tasks = depositionResult.Value.Participants.Where(p => !string.IsNullOrWhiteSpace(p.Email)).Select(participant => _depositionEmailService.SendCancelDepositionEmailNotification(depositionResult.Value, participant));
                 await Task.WhenAll(tasks);
             }
 
@@ -969,7 +972,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<Deposition>> RevertCancel(Deposition deposition, FileTransferInfo file, bool deleteCaption)
         {
-            var currentDepositionResult = await GetByIdWithIncludesAndIsAdmitted(deposition.Id, new[] { $"{nameof(Deposition.Caption)}" });
+            var currentDepositionResult = await GetByIdWithIncludesAndIsAdmitted(deposition.Id, new[] { nameof(Deposition.Caption), nameof(Deposition.Case), nameof(Deposition.Participants) });
             if (currentDepositionResult.IsFailed)
                 return currentDepositionResult;
 
@@ -985,6 +988,10 @@ namespace PrecisionReporters.Platform.Domain.Services
                     currentDeposition = UpdateDepositionDetails(currentDeposition, deposition, uploadDocumentResult.Value);
 
                     await _depositionRepository.Update(currentDeposition);
+
+                    if (currentDeposition.Status == DepositionStatus.Confirmed)
+                        await _depositionEmailService.SendJoinDepositionEmailNotification(currentDeposition);
+
                     return Result.Ok(currentDeposition);
                 });
 
@@ -1075,7 +1082,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
                     if (currentDeposition.Status == DepositionStatus.Confirmed)
                     {
-                        var tasks = currentDeposition.Participants.Where(p => !string.IsNullOrWhiteSpace(p.Email)).Select(participant => SendReSheduleDepositionEmailNotification(currentDeposition, participant, oldStartDate, oldTimeZone));
+                        var tasks = currentDeposition.Participants.Where(p => !string.IsNullOrWhiteSpace(p.Email)).Select(participant => _depositionEmailService.SendReSheduleDepositionEmailNotification(currentDeposition, participant, oldStartDate, oldTimeZone));
                         await Task.WhenAll(tasks);
                     }
 
@@ -1265,156 +1272,6 @@ namespace PrecisionReporters.Platform.Domain.Services
         {
             currentParticipant.HasJoined = true;
             await _participantRepository.Update(currentParticipant);
-        }
-
-        private async Task SendJoinDepositionEmailNotification(Deposition deposition)
-        {
-            var tasks = deposition.Participants.Where(p => !string.IsNullOrWhiteSpace(p.Email)).Select(participant =>
-            {
-                var template = GetJoinDepositionEmailTemplate(deposition, participant);
-                return _awsEmailService.SendRawEmailNotification(template);
-            });
-
-            await Task.WhenAll(tasks);
-        }
-
-        private async Task SendJoinDepositionEmailNotification(Deposition deposition, Participant participant)
-        {
-            var template = GetJoinDepositionEmailTemplate(deposition, participant);
-            await _awsEmailService.SendRawEmailNotification(template);
-        }
-
-        private async Task SendCancelDepositionEmailNotification(Deposition deposition, Participant participant)
-        {
-            var template = GetCancelDepositionEmailTemplate(deposition, participant);
-            await _awsEmailService.SendRawEmailNotification(template);
-        }
-
-        private async Task SendReSheduleDepositionEmailNotification(Deposition deposition, Participant participant, DateTime oldStartDate, string oldTimeZone)
-        {
-            var template = GetReScheduleDepositionEmailTemplate(deposition, participant, oldStartDate, oldTimeZone);
-            await _awsEmailService.SendRawEmailNotification(template);
-        }
-
-        private EmailTemplateInfo GetJoinDepositionEmailTemplate(Deposition deposition, Participant participant)
-        {
-            var template = new EmailTemplateInfo
-            {
-                EmailTo = new List<string> { participant.Email },
-                TemplateData = new Dictionary<string, string>
-                            {
-                                { "dateAndTime", deposition.StartDate.GetFormattedDateTime(deposition.TimeZone) },
-                                { "name", participant.Name ?? string.Empty },
-                                { "case", GetDescriptionCase(deposition) },
-                                { "imageUrl",  GetImageUrl(_emailConfiguration.LogoImageName) },
-                                { "calendar", GetImageUrl(_emailConfiguration.CalendarImageName) },
-                                { "depositionJoinLink", $"{_emailConfiguration.PreDepositionLink}{deposition.Id}"}
-                            },
-                TemplateName = _emailConfiguration.JoinDepositionTemplate,
-                Calendar = CreateCalendar(deposition, CalendarAction.Add.GetDescription()),
-                AddiotionalText = $"You can join by clicking the link: {_emailConfiguration.PreDepositionLink}{deposition.Id}",
-                Subject = $"Invitation: Remote Legal - {GetSubject(deposition)}"
-            };
-
-            return template;
-        }
-
-        private EmailTemplateInfo GetCancelDepositionEmailTemplate(Deposition deposition, Participant participant)
-        {
-            var template = new EmailTemplateInfo
-            {
-                EmailTo = new List<string> { participant.Email },
-                TemplateData = new Dictionary<string, string>
-                            {
-                                { "start-date", deposition.StartDate.GetFormattedDateTime(deposition.TimeZone) },
-                                { "user-name", participant.Name },
-                                { "case-name", GetDescriptionCase(deposition) },
-                                { "images-url",  _emailConfiguration.ImagesUrl },
-                                { "logo", GetImageUrl(_emailConfiguration.LogoImageName) }
-                            },
-                TemplateName = ApplicationConstants.CancelDepositionEmailTemplate,
-                AddiotionalText = string.Empty,
-                Calendar = CreateCalendar(deposition, CalendarAction.Cancel.GetDescription()),
-                Subject = $"Cancellation: Remote Legal - {GetSubject(deposition)}"
-            };
-
-            return template;
-        }
-
-        private EmailTemplateInfo GetReScheduleDepositionEmailTemplate(Deposition deposition, Participant participant, DateTime oldStartDate, string oldTimeZone)
-        {
-            var template = new EmailTemplateInfo
-            {
-                EmailTo = new List<string> { participant.Email },
-                TemplateData = new Dictionary<string, string>
-                            {
-                                { "old-start-date", oldStartDate.GetFormattedDateTime(oldTimeZone) },
-                                { "start-date", deposition.StartDate.GetFormattedDateTime(deposition.TimeZone) },
-                                { "user-name", participant.Name ?? string.Empty },
-                                { "case-name", GetDescriptionCase(deposition) },
-                                { "images-url",  _emailConfiguration.ImagesUrl },
-                                { "logo", GetImageUrl(_emailConfiguration.LogoImageName) },
-                                { "deposition-join-link", $"{_emailConfiguration.PreDepositionLink}{deposition.Id}"}
-                            },
-                TemplateName = ApplicationConstants.ReScheduleDepositionEmailTemplate,
-                AddiotionalText = $"You can join by clicking the link: {_emailConfiguration.PreDepositionLink}{deposition.Id}",
-                Calendar = CreateCalendar(deposition, CalendarAction.Update.GetDescription()),
-                Subject = $"Invitation update: Remote Legal - {GetSubject(deposition)}"
-            };
-
-            return template;
-        }
-
-        private string GetSubject(Deposition deposition)
-        {
-            var witness = deposition.Participants.FirstOrDefault(x => x.Role == ParticipantType.Witness);
-            var subject = $"{deposition.Case.Name} - {deposition.StartDate.GetFormattedDateTime(deposition.TimeZone)}";
-
-            if (!string.IsNullOrEmpty(witness?.Name))
-                subject = $"{witness.Name} - {deposition.Case.Name} - {deposition.StartDate.GetFormattedDateTime(deposition.TimeZone)}";
-
-            return subject;
-        }
-
-        private string GetDescriptionCase(Deposition deposition)
-        {
-            var witness = deposition.Participants.FirstOrDefault(x => x.Role == ParticipantType.Witness);
-            var caseName = $"<b>{deposition.Case.Name}</b>";
-
-            if (!string.IsNullOrEmpty(witness?.Name))
-                caseName = $"<b>{witness.Name}</b> in the case of <b>{caseName}</b>";
-
-            return caseName;
-        }
-
-        private string GetImageUrl(string name)
-        {
-            return $"{_emailConfiguration.ImagesUrl}{name}";
-        }
-
-        private Calendar CreateCalendar(Deposition deposition, string method = "REQUEST")
-        {
-            var witness = deposition.Participants.FirstOrDefault(x => x.Role == ParticipantType.Witness);
-            var strWitness = !string.IsNullOrWhiteSpace(witness?.Name) ? $"{witness.Name} - {deposition.Case.Name} " : deposition.Case.Name;
-            var calendar = new Calendar
-            {
-                Method = method
-            };
-
-            var icalEvent = new CalendarEvent
-            {
-                Uid = deposition.Id.ToString(),
-                Summary = $"Invitation: Remote Legal - {strWitness}",
-                Description = $"{strWitness}{Environment.NewLine}{_emailConfiguration.PreDepositionLink}{deposition.Id}",
-                Start = new CalDateTime(deposition.StartDate.GetConvertedTime(deposition.TimeZone), deposition.TimeZone),
-                End = deposition.EndDate.HasValue ? new CalDateTime(deposition.EndDate.Value.GetConvertedTime(deposition.TimeZone), deposition.TimeZone) : null,
-                Location = $"{_emailConfiguration.PreDepositionLink}{deposition.Id}",
-                Organizer = new Organizer(_emailConfiguration.EmailNotification)
-            };
-
-            calendar.Events.Add(icalEvent);
-
-            return calendar;
         }
     }
 }

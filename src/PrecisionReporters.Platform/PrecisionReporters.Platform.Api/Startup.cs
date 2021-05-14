@@ -236,6 +236,7 @@ namespace PrecisionReporters.Platform.Api
             services.AddScoped<IRoughTranscriptGenerator, GenerateRoughTranscriptPDF>();
             services.AddScoped<IRoughTranscriptGenerator, GenerateRoughTranscriptWord>();
             services.AddScoped<IRoughTranscriptHelper, RoughTranscriptHelper>();
+            services.AddScoped<IDepositionEmailService, DepositionEmailService>();
             services.Configure<GcpConfiguration>(x =>
             {
                 x.type = appConfiguration.GcpConfiguration.type;
