@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
+using PrecisionReporters.Platform.Data.Enums;
 using Xunit;
 
 namespace PrecisionReporters.Platform.UnitTests.Domain.Services
@@ -23,6 +24,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         private readonly Mock<ISignalRNotificationManager> _signalRNotificationManagerMock;
         private readonly Mock<IUserService> _userServiceMock;
         private readonly Mock<IPermissionService> _permissionServiceMock;
+        private readonly Mock<IDepositionEmailService> _depositionEmailServiceMock;
         public ParticipantServiceTests()
         {
             _participantRepositoryMock = new Mock<IParticipantRepository>();
@@ -30,12 +32,14 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _userServiceMock = new Mock<IUserService>();
             _depositionRepositoryMock = new Mock<IDepositionRepository>();
             _permissionServiceMock = new Mock<IPermissionService>();
+            _depositionEmailServiceMock = new Mock<IDepositionEmailService>();
 
             _participantService = new ParticipantService(_participantRepositoryMock.Object,
                 _signalRNotificationManagerMock.Object,
                 _userServiceMock.Object,
                 _depositionRepositoryMock.Object,
-                _permissionServiceMock.Object);
+                _permissionServiceMock.Object,
+                _depositionEmailServiceMock.Object);
         }
 
         [Fact]
@@ -74,7 +78,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         {
             // Arrange
             var depositionId = Guid.NewGuid();
-            var errorMessage = "The are no participant available with such userId and depositionId combination.";
+            var errorMessage = "There are no participant available with such userId and depositionId combination.";
             var user = ParticipantFactory.GetNotAdminUser();
             var participantStatus = ParticipantFactory.GetParticipantSatus();
             var participant = ParticipantFactory.GetParticipant(depositionId);
@@ -102,7 +106,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         {
             // Arrange
             var depositionId = Guid.NewGuid();
-            var errorMessage = "The was an error creating a new Participant.";
+            var errorMessage = "There was an error creating a new Participant.";
             var user = ParticipantFactory.GetAdminUser();
             var participantStatus = ParticipantFactory.GetParticipantSatus();
             var participant = ParticipantFactory.GetParticipant(depositionId);
@@ -163,7 +167,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         {
             // Arrange
             var depositionId = Guid.NewGuid();
-            var errorMessage = $"The was an error updating Participant with Id:";
+            var errorMessage = $"There was an error updating Participant with Id:";
             var user = ParticipantFactory.GetNotAdminUser();
             var participantStatus = ParticipantFactory.GetParticipantSatus();
             var participant = ParticipantFactory.GetParticipant(depositionId);
@@ -323,5 +327,156 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             Assert.True(result.IsSuccess);
         }
 
+        [Fact]
+        public async Task EditParticipantDetails_ShouldReturnOk()
+        {
+            // Arrange
+            var depositionId = Guid.NewGuid();
+            var baseParticipant = ParticipantFactory.GetParticipant(depositionId);
+            var editedParticipant = new Participant { Id = baseParticipant.Id, Email = "newparticipant@mail.com", Name = "Participant Name", Role = baseParticipant.Role };
+            var user = ParticipantFactory.GetAdminUser();
+
+            _userServiceMock
+                .Setup(x => x.GetCurrentUserAsync())
+                .ReturnsAsync(user);
+            _depositionRepositoryMock
+                .Setup(mock => mock.GetById(It.IsAny<Guid>(), It.IsAny<string[]>()))
+                .ReturnsAsync(new Deposition{Id = depositionId, Participants = new List<Participant>{baseParticipant}});
+            
+            _participantRepositoryMock
+                .Setup(x => x.Update(It.IsAny<Participant>()))
+                .ReturnsAsync(editedParticipant);
+
+            //Act
+            var result = await _participantService.EditParticipantDetails(depositionId, editedParticipant);
+
+            // Assert
+            _userServiceMock.Verify(x => x.GetCurrentUserAsync(), Times.Once);
+            _depositionRepositoryMock.Verify(mock=>mock.GetById(It.IsAny<Guid>(), It.Is<string[]>(a => a.SequenceEqual(new[] { nameof(Deposition.Participants), nameof(Deposition.Case)}))), Times.Once);
+            _participantRepositoryMock.Verify(x => x.Update(It.IsAny<Participant>()), Times.Once);
+            Assert.NotNull(result);
+            Assert.True(result.IsSuccess);
+            Assert.True(result.Errors.Count == 0);
+        }
+
+        [Fact]
+        public async Task EditParticipantDetails_ShouldReturnResourceNotFoundError_WhenParticipantNotFound()
+        {
+            // Arrange
+            var depositionId = Guid.NewGuid();
+            var errorMessage = "There are no participant available with ID:";
+            var user = ParticipantFactory.GetNotAdminUser();
+            var editedParticipant = ParticipantFactory.GetParticipant(depositionId);
+
+            _userServiceMock
+                .Setup(x => x.GetCurrentUserAsync())
+                .ReturnsAsync(user);
+            _depositionRepositoryMock
+                .Setup(mock => mock.GetById(It.IsAny<Guid>(), It.IsAny<string[]>()))
+                .ReturnsAsync(new Deposition{Id = depositionId, Participants = new List<Participant>{ParticipantFactory.GetParticipant(depositionId)}});
+
+            //Act
+            var result = await _participantService.EditParticipantDetails(depositionId, editedParticipant);
+
+            // Assert
+            _userServiceMock.Verify(x => x.GetCurrentUserAsync(), Times.Once);
+            _depositionRepositoryMock.Verify(mock=>mock.GetById(It.IsAny<Guid>(), It.Is<string[]>(a => a.SequenceEqual(new[] { nameof(Deposition.Participants), nameof(Deposition.Case)}))), Times.Once);
+            _participantRepositoryMock.Verify(x => x.Update(It.IsAny<Participant>()), Times.Never);
+
+            Assert.True(result.IsFailed);
+            Assert.Contains(errorMessage, result.Errors[0].Message);
+        }
+
+        [Fact]
+        public async Task EditParticipantDetails_ShouldReturnResourceNotFoundError_WhenFailsToUpdateParticipant()
+        {
+            // Arrange
+            var depositionId = Guid.NewGuid();
+            var baseParticipant = ParticipantFactory.GetParticipant(depositionId);
+            var editedParticipant = new Participant { Id = baseParticipant.Id, Email = null, Name = null, Role = baseParticipant.Role };
+            var errorMessage = $"There was an error updating Participant with Id:";
+            var user = ParticipantFactory.GetNotAdminUser();
+
+            _userServiceMock
+                .Setup(x => x.GetCurrentUserAsync())
+                .ReturnsAsync(user);
+            _depositionRepositoryMock
+                .Setup(mock => mock.GetById(It.IsAny<Guid>(), It.IsAny<string[]>()))
+                .ReturnsAsync(new Deposition{Id = depositionId, Participants = new List<Participant>{baseParticipant}});
+            _participantRepositoryMock
+                .Setup(x => x.Update(It.IsAny<Participant>()))
+                .ReturnsAsync((Participant) null);
+
+            //Act
+            var result = await _participantService.EditParticipantDetails(depositionId, editedParticipant);
+
+            // Assert
+            _userServiceMock.Verify(x => x.GetCurrentUserAsync(), Times.Once);
+            _depositionRepositoryMock.Verify(mock=>mock.GetById(It.IsAny<Guid>(), It.Is<string[]>(a => a.SequenceEqual(new[] { nameof(Deposition.Participants), nameof(Deposition.Case)}))), Times.Once);
+            _participantRepositoryMock.Verify(x => x.Update(It.IsAny<Participant>()), Times.Once);
+
+            Assert.True(result.IsFailed);
+            Assert.Contains(errorMessage, result.Errors[0].Message);
+        }
+
+        [Fact]
+        public async Task EditParticipantDetails_ShouldReturnResourceNotFoundError_WhenDepositionNotExist()
+        {
+            // Arrange
+            var depositionId = Guid.NewGuid();
+            var baseParticipant = ParticipantFactory.GetParticipant(depositionId);
+            var editedParticipant = new Participant { Id = baseParticipant.Id, Email = null, Name = null, Role = baseParticipant.Role };
+            var errorMessage = "Deposition not found with ID:";
+            var user = ParticipantFactory.GetNotAdminUser();
+
+            _userServiceMock
+                .Setup(x => x.GetCurrentUserAsync())
+                .ReturnsAsync(user);
+            _depositionRepositoryMock
+                .Setup(mock => mock.GetById(It.IsAny<Guid>(), It.IsAny<string[]>()))
+                .ReturnsAsync((Deposition) null);
+
+            //Act
+            var result = await _participantService.EditParticipantDetails(depositionId, editedParticipant);
+
+            // Assert
+            _userServiceMock.Verify(x => x.GetCurrentUserAsync(), Times.Once);
+            _depositionRepositoryMock.Verify(mock=>mock.GetById(It.IsAny<Guid>(), It.Is<string[]>(a => a.SequenceEqual(new[] { nameof(Deposition.Participants), nameof(Deposition.Case)}))), Times.Once);
+            _participantRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Participant, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()), Times.Never);
+            Assert.True(result.IsFailed);
+            Assert.Contains(errorMessage, result.Errors[0].Message);
+        }
+
+        [Fact]
+        public async Task EditParticipantDetails_ShouldReturnResourceConflictError_WhenMoreThanOneCourtReporter()
+        {
+            // Arrange
+            var depositionId = Guid.NewGuid();
+            var courtReporterParticipant = ParticipantFactory.GetParticipant(depositionId);
+            courtReporterParticipant.Role = ParticipantType.CourtReporter;
+            var baseParticipant = ParticipantFactory.GetParticipant(depositionId);
+            baseParticipant.Role = ParticipantType.CourtReporter;
+            var editedParticipant = new Participant { Id = baseParticipant.Id, Email = null, Name = null, Role = baseParticipant.Role };
+            var errorMessage = "Only one participant with Court reporter role is available.";
+            var user = ParticipantFactory.GetNotAdminUser();
+
+            _userServiceMock
+                .Setup(x => x.GetCurrentUserAsync())
+                .ReturnsAsync(user);
+            _depositionRepositoryMock
+                .Setup(mock => mock.GetById(It.IsAny<Guid>(), It.IsAny<string[]>()))
+                .ReturnsAsync(new Deposition{Id = depositionId , Participants = new List<Participant>{courtReporterParticipant}});
+            
+
+            //Act
+            var result = await _participantService.EditParticipantDetails(depositionId, editedParticipant);
+
+            // Assert
+            _userServiceMock.Verify(x => x.GetCurrentUserAsync(), Times.Once);
+            _depositionRepositoryMock.Verify(mock=>mock.GetById(It.IsAny<Guid>(), It.Is<string[]>(a => a.SequenceEqual(new[] { nameof(Deposition.Participants), nameof(Deposition.Case)}))), Times.Once);
+
+            Assert.True(result.IsFailed);
+            Assert.Equal(errorMessage, result.Errors[0].Message);
+        }
     }
 }

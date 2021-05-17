@@ -9,20 +9,27 @@ using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using System;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using PrecisionReporters.Platform.Data.Entities;
+using PrecisionReporters.Platform.Domain.Mappers;
 
 namespace PrecisionReporters.Platform.Api.Controllers
 {
     [Route("api")]
     [ApiController]
     [Authorize]
-
     public class ParticipantsController : ControllerBase
     {
-        public readonly IParticipantService _participantService;
+        private readonly IParticipantService _participantService;
+        private readonly IMapper<Participant, ParticipantDto, CreateParticipantDto> _participantMapper;
+        private readonly IMapper<Participant, EditParticipantDto, object> _editParticipantMapper;
 
-        public ParticipantsController(IParticipantService participantService)
+        public ParticipantsController(IParticipantService participantService,
+            IMapper<Participant, ParticipantDto, CreateParticipantDto> participantMapper,
+            IMapper<Participant, EditParticipantDto, object> editParticipantMapper)
         {
             _participantService = participantService;
+            _participantMapper = participantMapper;
+            _editParticipantMapper = editParticipantMapper;
         }
 
         /// <summary>
@@ -55,6 +62,25 @@ namespace PrecisionReporters.Platform.Api.Controllers
         {
             var result = await _participantService.RemoveParticipantFromDeposition(id, participantId);
             return Ok(result);
+        }
+
+        /// <summary>
+        /// Edit a registered participant details
+        /// </summary>
+        /// <param name="id">Deposition identifier</param>
+        /// <param name="participant">Edited participant details</param>
+        /// <returns>Ok if succeeded</returns>
+        [HttpPatch("Depositions/{id}/editParticipant")]
+        [UserAuthorize(ResourceType.Deposition, ResourceAction.Update)]
+        public async Task<ActionResult<ParticipantDto>> EditParticipant([ResourceId(ResourceType.Deposition)] Guid id, EditParticipantDto participant)
+        {
+            var participantToEdit = _editParticipantMapper.ToModel(participant);
+            var editParticipantResult = await _participantService.EditParticipantDetails(id, participantToEdit);
+
+            if (editParticipantResult.IsFailed)
+                return WebApiResponses.GetErrorResponse(editParticipantResult);
+
+            return Ok(_participantMapper.ToDto(editParticipantResult.Value));
         }
     }
 }

@@ -19,18 +19,21 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly ISignalRNotificationManager _signalRNotificationManager;
         private readonly IUserService _userService;
         private readonly IPermissionService _permissionService;
+        private readonly IDepositionEmailService _depositionEmailService;
 
         public ParticipantService(IParticipantRepository participantRepository,
             ISignalRNotificationManager signalRNotificationManager,
             IUserService userService,
             IDepositionRepository depositionRepository,
-            IPermissionService permissionService)
+            IPermissionService permissionService,
+            IDepositionEmailService depositionEmailService)
         {
             _participantRepository = participantRepository;
             _signalRNotificationManager = signalRNotificationManager;
             _userService = userService;
             _depositionRepository = depositionRepository;
             _permissionService = permissionService;
+            _depositionEmailService = depositionEmailService;
         }
 
         public async Task<Result<ParticipantStatusDto>> UpdateParticipantStatus(ParticipantStatusDto participantStatusDto, Guid depositionId)
@@ -43,7 +46,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 {
                     if (!user.IsAdmin)
                     {
-                        return Result.Fail(new ResourceNotFoundError("The are no participant available with such userId and depositionId combination."));
+                        return Result.Fail(new ResourceNotFoundError("There are no participant available with such userId and depositionId combination."));
                     }
 
                     var newParticipantAdmin = new Participant
@@ -60,14 +63,14 @@ namespace PrecisionReporters.Platform.Domain.Services
 
                     var result = await _participantRepository.Create(newParticipantAdmin);
                     if (result == null)
-                        return Result.Fail(new UnexpectedError("The was an error creating a new Participant."));
+                        return Result.Fail(new UnexpectedError("There was an error creating a new Participant."));
                 }
                 else
                 {
                     participant.IsMuted = participantStatusDto.IsMuted;
                     var updatedParticipant = await _participantRepository.Update(participant);
                     if (updatedParticipant == null)
-                        return Result.Fail(new ResourceNotFoundError($"The was an error updating Participant with Id: {participant.Id}"));
+                        return Result.Fail(new ResourceNotFoundError($"There was an error updating Participant with Id: {participant.Id}"));
                 }
 
                 participantStatusDto.Email = user.EmailAddress;
@@ -87,6 +90,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 return Result.Fail(new UnexpectedError(ex.Message));
             }
         }
+
         public async Task<Result<List<Participant>>> GetWaitParticipants(Guid depositionId)
         {
             var includes = new[] { nameof(Participant.User) };
@@ -107,6 +111,37 @@ namespace PrecisionReporters.Platform.Domain.Services
             await _permissionService.RemoveParticipantPermissions(id, participant);
             await _participantRepository.Remove(participant);
             return Result.Ok();
+        }
+
+        public async Task<Result<Participant>> EditParticipantDetails(Guid depositionId, Participant participant)
+        {
+            var user = await _userService.GetCurrentUserAsync();
+            var deposition = await _depositionRepository.GetById(depositionId, include: new[] {nameof(Deposition.Participants), nameof(Deposition.Case)});
+            if (deposition == null)
+                return Result.Fail(new ResourceNotFoundError($"Deposition not found with ID: {depositionId}"));
+
+            var hasCourtReporter = deposition.Participants.Any(p => p.Id != participant.Id && Equals(p.Role, ParticipantType.CourtReporter));
+            if (hasCourtReporter && Equals(participant.Role, ParticipantType.CourtReporter))
+                return Result.Fail(new ResourceConflictError("Only one participant with Court reporter role is available."));
+
+            var currentParticipant = deposition.Participants.FirstOrDefault( p => p.Id == participant.Id);
+            if (currentParticipant == null)
+                return Result.Fail(new ResourceNotFoundError($"There are no participant available with ID: {participant.Id}."));
+            var currentParticipantEmail = currentParticipant.Email;
+
+            currentParticipant.Email = participant.Email;
+            currentParticipant.Name = participant.Name;
+            currentParticipant.Role = participant.Role;
+            currentParticipant.Phone = participant.Phone;
+
+            var updatedParticipant = await _participantRepository.Update(currentParticipant);
+            if (updatedParticipant == null)
+                return Result.Fail(new ResourceNotFoundError($"There was an error updating Participant with Id: {currentParticipant.Id}"));
+
+            if (deposition.Status == DepositionStatus.Confirmed && !string.IsNullOrWhiteSpace(updatedParticipant.Email) && !string.Equals(updatedParticipant.Email, currentParticipantEmail))
+                await _depositionEmailService.SendJoinDepositionEmailNotification(deposition, updatedParticipant);
+
+            return Result.Ok(updatedParticipant);
         }
     }
 }
