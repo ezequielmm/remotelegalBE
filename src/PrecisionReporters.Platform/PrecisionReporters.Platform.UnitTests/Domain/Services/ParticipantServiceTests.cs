@@ -256,12 +256,14 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var participantId = Guid.NewGuid();
             var expectedError = $"Deposition not found with ID {depositionId}";
             _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync((Deposition)null);
+            _depositionEmailServiceMock.Setup(x => x.SendCancelDepositionEmailNotification(It.IsAny<Deposition>(), It.IsAny<Participant>()));
 
             // Act
             var result = await _participantService.RemoveParticipantFromDeposition(depositionId, participantId);
 
             // Assert
-            _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(a => a == depositionId), It.Is<string[]>(a => a.SequenceEqual(new[] { $"{nameof(Deposition.Participants)}.{nameof(Participant.User)}" }))), Times.Once);
+            _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(a => a == depositionId), It.Is<string[]>(a => a.SequenceEqual(new[] { nameof(Deposition.Case), $"{nameof(Deposition.Participants)}.{nameof(Participant.User)}" }))), Times.Once);
+            _depositionEmailServiceMock.Verify(x => x.SendCancelDepositionEmailNotification(It.IsAny<Deposition>(), It.IsAny<Participant>()), Times.Never);
             Assert.NotNull(result);
             Assert.True(result.IsFailed);
             Assert.Contains(expectedError, result.Errors.Select(e => e.Message));
@@ -286,12 +288,14 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var participantId = Guid.NewGuid();
             var expectedError = $"Participant not found with ID {participantId}";
             _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(mockDeposition);
-
+            _depositionEmailServiceMock.Setup(x => x.SendCancelDepositionEmailNotification(It.IsAny<Deposition>(), It.IsAny<Participant>()));
+            
             // Act
             var result = await _participantService.RemoveParticipantFromDeposition(depositionId, participantId);
 
             // Assert
-            _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(a => a == depositionId), It.Is<string[]>(a => a.SequenceEqual(new[] { $"{nameof(Deposition.Participants)}.{nameof(Participant.User)}" }))), Times.Once);
+            _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(a => a == depositionId), It.Is<string[]>(a => a.SequenceEqual(new[] { nameof(Deposition.Case), $"{nameof(Deposition.Participants)}.{nameof(Participant.User)}" }))), Times.Once);
+            _depositionEmailServiceMock.Verify(x => x.SendCancelDepositionEmailNotification(It.IsAny<Deposition>(), It.IsAny<Participant>()), Times.Never);
             Assert.NotNull(result);
             Assert.True(result.IsFailed);
             Assert.Contains(expectedError, result.Errors.Select(e => e.Message));
@@ -315,14 +319,16 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 }
             };
             _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(mockDeposition);
-
+            _depositionEmailServiceMock.Setup(x => x.SendCancelDepositionEmailNotification(It.IsAny<Deposition>(), It.IsAny<Participant>()));
+            
             // Act
             var result = await _participantService.RemoveParticipantFromDeposition(depositionId, participantId);
 
             // Assert
-            _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(a => a == depositionId), It.Is<string[]>(a => a.SequenceEqual(new[] { $"{nameof(Deposition.Participants)}.{nameof(Participant.User)}" }))), Times.Once);
+            _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(a => a == depositionId), It.Is<string[]>(a => a.SequenceEqual(new[] { nameof(Deposition.Case), $"{nameof(Deposition.Participants)}.{nameof(Participant.User)}" }))), Times.Once);
             _permissionServiceMock.Verify(x => x.RemoveParticipantPermissions(It.IsAny<Guid>(), It.IsAny<Participant>()), Times.Once);
             _participantRepositoryMock.Verify(x => x.Remove(It.IsAny<Participant>()));
+            _depositionEmailServiceMock.Verify(x => x.SendCancelDepositionEmailNotification(It.IsAny<Deposition>(), It.IsAny<Participant>()), Times.Never);
             Assert.NotNull(result);
             Assert.True(result.IsSuccess);
         }
@@ -357,6 +363,39 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             Assert.NotNull(result);
             Assert.True(result.IsSuccess);
             Assert.True(result.Errors.Count == 0);
+        }
+
+        [Fact]
+        public async Task RemoveParticipant_ShouldSendEmail_WhenStatusIsConfirmed()
+        {
+            // Arrange
+            var depositionId = Guid.NewGuid();
+            var participantId = Guid.NewGuid();
+            var mockDeposition = new Deposition()
+            {
+                Id = depositionId,
+                Participants = new List<Participant>()
+                {
+                    new Participant()
+                    {
+                        Id = participantId
+                    }
+                },
+                Status = DepositionStatus.Confirmed
+            };
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(mockDeposition);
+            _depositionEmailServiceMock.Setup(x => x.SendCancelDepositionEmailNotification(It.IsAny<Deposition>(), It.IsAny<Participant>()));
+
+            // Act
+            var result = await _participantService.RemoveParticipantFromDeposition(depositionId, participantId);
+
+            // Assert
+            _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(a => a == depositionId), It.Is<string[]>(a => a.SequenceEqual(new[] { nameof(Deposition.Case), $"{nameof(Deposition.Participants)}.{nameof(Participant.User)}" }))), Times.Once);
+            _permissionServiceMock.Verify(x => x.RemoveParticipantPermissions(It.IsAny<Guid>(), It.IsAny<Participant>()), Times.Once);
+            _participantRepositoryMock.Verify(x => x.Remove(It.IsAny<Participant>()));
+            _depositionEmailServiceMock.Verify(x => x.SendCancelDepositionEmailNotification(It.IsAny<Deposition>(), It.IsAny<Participant>()), Times.Once);
+            Assert.NotNull(result);
+            Assert.True(result.IsSuccess);
         }
 
         [Fact]
