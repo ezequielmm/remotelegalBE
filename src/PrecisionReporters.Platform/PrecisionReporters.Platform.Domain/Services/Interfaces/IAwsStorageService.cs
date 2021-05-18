@@ -1,7 +1,6 @@
 ﻿using Amazon.S3.Model;
 using FluentResults;
-using PrecisionReporters.Platform.Data.Entities;
-using PrecisionReporters.Platform.Domain.Commons;
+using PrecisionReporters.Platform.Shared.Commons;
 using System;
 using System.Collections.Generic;
 using System.IO;

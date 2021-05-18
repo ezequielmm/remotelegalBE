@@ -1,7 +1,6 @@
 ﻿using FluentResults;
 using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Data.Enums;
-using PrecisionReporters.Platform.Domain.Commons;
 using PrecisionReporters.Platform.Domain.Dtos;
 using System;
 using System.Collections.Generic;

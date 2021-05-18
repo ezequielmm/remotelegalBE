@@ -1,16 +1,16 @@
-﻿using System.IO;
-using System.Threading.Tasks;
+﻿using Amazon.SimpleNotificationService.Util;
 using Microsoft.AspNetCore.Mvc;
-using PrecisionReporters.Platform.Domain.Dtos;
-using PrecisionReporters.Platform.Api.Filters;
-using PrecisionReporters.Platform.Api.Helpers;
-using PrecisionReporters.Platform.Domain.Mappers;
-using PrecisionReporters.Platform.Data.Entities;
-using PrecisionReporters.Platform.Domain.Services.Interfaces;
-using Amazon.SimpleNotificationService.Util;
-using System;
-using Newtonsoft.Json;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
+using PrecisionReporters.Platform.Api.Filters;
+using PrecisionReporters.Platform.Data.Entities;
+using PrecisionReporters.Platform.Domain.Dtos;
+using PrecisionReporters.Platform.Domain.Mappers;
+using PrecisionReporters.Platform.Domain.Services.Interfaces;
+using PrecisionReporters.Platform.Shared.Helpers;
+using System;
+using System.IO;
+using System.Threading.Tasks;
 
 namespace PrecisionReporters.Platform.Api.Controllers
 {

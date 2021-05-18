@@ -10,7 +10,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace PrecisionReporters.Platform.Api.WebSockets
+namespace PrecisionReporters.Platform.API.WebSockets
 {
     public class TranscriptionsHandler : ITranscriptionsHandler
     {
@@ -30,7 +30,7 @@ namespace PrecisionReporters.Platform.Api.WebSockets
             var sampleRate = int.Parse(context.Request.Query["sampleRate"]);
             var incomingMessage = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
 
-            await _transcriptionLiveService.InitializeRecognition(userEmail, depositionId, sampleRate);            
+            await _transcriptionLiveService.InitializeRecognition(userEmail, depositionId, sampleRate);
 
             while (!incomingMessage.CloseStatus.HasValue)
             {

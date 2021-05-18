@@ -1,16 +1,16 @@
-﻿using System;
-using System.Linq;
-using System.Threading.Tasks;
-using FluentResults;
+﻿using FluentResults;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Data.Enums;
 using PrecisionReporters.Platform.Data.Repositories.Interfaces;
 using PrecisionReporters.Platform.Domain.Dtos;
-using PrecisionReporters.Platform.Domain.Errors;
 using PrecisionReporters.Platform.Domain.Mappers;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
+using PrecisionReporters.Platform.Shared.Errors;
+using System;
+using System.Linq;
+using System.Threading.Tasks;
 using static Twilio.Rest.Video.V1.RoomResource;
 
 namespace PrecisionReporters.Platform.Domain.Services

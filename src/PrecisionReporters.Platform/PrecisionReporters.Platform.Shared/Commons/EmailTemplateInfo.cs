@@ -1,8 +1,7 @@
 ﻿using Ical.Net;
-using Ical.Net.CalendarComponents;
 using System.Collections.Generic;
 
-namespace PrecisionReporters.Platform.Domain.Commons
+namespace PrecisionReporters.Platform.Shared.Commons
 {
     public class EmailTemplateInfo
     {

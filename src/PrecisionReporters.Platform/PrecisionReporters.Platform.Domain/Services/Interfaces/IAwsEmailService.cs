@@ -1,6 +1,5 @@
 ﻿using Amazon.SimpleEmail.Model;
-using PrecisionReporters.Platform.Data.Entities;
-using PrecisionReporters.Platform.Domain.Commons;
+using PrecisionReporters.Platform.Shared.Commons;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;

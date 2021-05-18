@@ -1,11 +1,10 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using PrecisionReporters.Platform.Domain.Dtos;
-using PrecisionReporters.Platform.Api.Helpers;
-using PrecisionReporters.Platform.Domain.Mappers;
 using PrecisionReporters.Platform.Data.Entities;
+using PrecisionReporters.Platform.Domain.Dtos;
+using PrecisionReporters.Platform.Domain.Mappers;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
+using PrecisionReporters.Platform.Shared.Helpers;
 using System.Threading.Tasks;
-using System;
 
 namespace PrecisionReporters.Platform.Api.Controllers
 {

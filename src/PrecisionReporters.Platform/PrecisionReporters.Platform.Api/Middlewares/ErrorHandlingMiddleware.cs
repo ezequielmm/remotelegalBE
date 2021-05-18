@@ -1,11 +1,11 @@
-﻿using System;
-using System.Net;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using PrecisionReporters.Platform.Domain.Dtos;
-using PrecisionReporters.Platform.Domain.Commons;
+using PrecisionReporters.Platform.Shared.Commons;
+using System;
+using System.Net;
+using System.Threading.Tasks;
 
 namespace PrecisionReporters.Platform.Api.Middlewares
 {

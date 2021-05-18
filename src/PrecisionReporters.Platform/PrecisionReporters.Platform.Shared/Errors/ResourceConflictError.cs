@@ -1,6 +1,6 @@
 using FluentResults;
 
-namespace PrecisionReporters.Platform.Domain.Errors
+namespace PrecisionReporters.Platform.Shared.Errors
 {
     public class ResourceConflictError : Error
     {

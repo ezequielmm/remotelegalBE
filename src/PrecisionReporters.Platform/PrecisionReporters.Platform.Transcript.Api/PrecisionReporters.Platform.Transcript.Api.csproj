@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNet.SignalR.Core" Version="2.4.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PrecisionReporters.Platform.Data\PrecisionReporters.Platform.Data.csproj" />
+    <ProjectReference Include="..\PrecisionReporters.Platform.Domain\PrecisionReporters.Platform.Domain.csproj" />
+    <ProjectReference Include="..\PrecisionReporters.Platform.Shared\PrecisionReporters.Platform.Shared.csproj" />
+  </ItemGroup>
+
+
+</Project>

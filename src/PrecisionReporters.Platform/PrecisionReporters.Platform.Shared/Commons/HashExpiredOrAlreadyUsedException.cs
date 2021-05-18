@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace PrecisionReporters.Platform.Domain.Commons
+namespace PrecisionReporters.Platform.Shared.Commons
 {
     [Serializable]
     public class HashExpiredOrAlreadyUsedException : BaseException

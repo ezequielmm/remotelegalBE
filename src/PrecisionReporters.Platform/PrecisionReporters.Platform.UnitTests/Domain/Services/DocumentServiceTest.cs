@@ -1,19 +1,21 @@
-﻿using FluentResults;
+﻿using Amazon.S3.Model;
+using FluentResults;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
-using Org.BouncyCastle.Asn1.Cms;
 using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Data.Enums;
 using PrecisionReporters.Platform.Data.Handlers.Interfaces;
 using PrecisionReporters.Platform.Data.Repositories.Interfaces;
-using PrecisionReporters.Platform.Domain.Commons;
 using PrecisionReporters.Platform.Domain.Configurations;
-using PrecisionReporters.Platform.Domain.Errors;
+using PrecisionReporters.Platform.Domain.Dtos;
+using PrecisionReporters.Platform.Domain.Extensions;
+using PrecisionReporters.Platform.Domain.Mappers;
 using PrecisionReporters.Platform.Domain.Services;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
+using PrecisionReporters.Platform.Shared.Commons;
+using PrecisionReporters.Platform.Shared.Errors;
 using PrecisionReporters.Platform.UnitTests.Utils;
-using PrecisionReporters.Platform.Domain.Extensions;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -22,9 +24,6 @@ using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
-using PrecisionReporters.Platform.Domain.Dtos;
-using PrecisionReporters.Platform.Domain.Mappers;
-using Amazon.S3.Model;
 
 namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 {

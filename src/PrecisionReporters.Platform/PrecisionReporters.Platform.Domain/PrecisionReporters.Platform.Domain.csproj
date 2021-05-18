@@ -38,6 +38,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\PrecisionReporters.Platform.Data\PrecisionReporters.Platform.Data.csproj" />
+    <ProjectReference Include="..\PrecisionReporters.Platform.Shared\PrecisionReporters.Platform.Shared.csproj" />
   </ItemGroup>
 
   <ItemGroup>

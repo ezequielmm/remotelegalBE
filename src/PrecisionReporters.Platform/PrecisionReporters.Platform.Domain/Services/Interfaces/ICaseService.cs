@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using FluentResults;
 using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Data.Enums;
-using PrecisionReporters.Platform.Domain.Commons;
+using PrecisionReporters.Platform.Shared.Commons;
 
 namespace PrecisionReporters.Platform.Domain.Services.Interfaces
 {

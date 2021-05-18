@@ -1,15 +1,14 @@
-using System;
-using System.Threading.Tasks;
 using FluentResults;
+using Microsoft.Extensions.Logging;
 using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Data.Enums;
-using PrecisionReporters.Platform.Domain.Dtos;
-using PrecisionReporters.Platform.Domain.Errors;
-using PrecisionReporters.Platform.Domain.Extensions;
-using PrecisionReporters.Platform.Domain.Services.Interfaces;
-using Microsoft.Extensions.Logging;
 using PrecisionReporters.Platform.Data.Handlers;
+using PrecisionReporters.Platform.Domain.Dtos;
+using PrecisionReporters.Platform.Domain.Services.Interfaces;
+using PrecisionReporters.Platform.Shared.Errors;
+using System;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace PrecisionReporters.Platform.Domain.Services
 {

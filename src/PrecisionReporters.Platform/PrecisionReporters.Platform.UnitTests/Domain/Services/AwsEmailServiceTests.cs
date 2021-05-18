@@ -1,20 +1,20 @@
-﻿using Microsoft.Extensions.Logging;
-using System.Threading.Tasks;
-using Amazon.SimpleEmail;
-using Moq;
-using PrecisionReporters.Platform.Domain.Services;
-using Xunit;
-using Microsoft.Extensions.Options;
-using PrecisionReporters.Platform.Domain.Configurations;
+﻿using Amazon.SimpleEmail;
 using Amazon.SimpleEmail.Model;
-using System.Threading;
-using PrecisionReporters.Platform.Domain.Commons;
-using System.Collections.Generic;
 using Ical.Net;
 using Ical.Net.CalendarComponents;
-using System;
 using Ical.Net.DataTypes;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Moq;
+using PrecisionReporters.Platform.Domain.Configurations;
 using PrecisionReporters.Platform.Domain.Extensions;
+using PrecisionReporters.Platform.Domain.Services;
+using PrecisionReporters.Platform.Shared.Commons;
+using System;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
+using Xunit;
 
 namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 {

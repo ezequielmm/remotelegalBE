@@ -1,20 +1,19 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
+﻿using FluentResults;
+using Microsoft.Extensions.Logging;
 using Moq;
-using PrecisionReporters.Platform.Data.Enums;
 using PrecisionReporters.Platform.Data.Entities;
+using PrecisionReporters.Platform.Data.Enums;
 using PrecisionReporters.Platform.Data.Repositories.Interfaces;
+using PrecisionReporters.Platform.Domain.Dtos;
+using PrecisionReporters.Platform.Domain.QueuedBackgroundTasks.Interfaces;
 using PrecisionReporters.Platform.Domain.Services;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
-using Xunit;
-using Microsoft.Extensions.Logging;
-using PrecisionReporters.Platform.Domain.QueuedBackgroundTasks.Interfaces;
-using PrecisionReporters.Platform.Domain.Dtos;
-using PrecisionReporters.Platform.Domain.Mappers;
+using PrecisionReporters.Platform.Shared.Errors;
+using System;
+using System.Collections.Generic;
 using System.Linq.Expressions;
-using PrecisionReporters.Platform.Domain.Errors;
-using FluentResults;
+using System.Threading.Tasks;
+using Xunit;
 
 namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 {

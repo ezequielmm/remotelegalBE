@@ -1,6 +1,6 @@
 ﻿using System.IO;
 
-namespace PrecisionReporters.Platform.Domain.Commons
+namespace PrecisionReporters.Platform.Shared.Commons
 {
     public class FileTransferInfo
     {

@@ -1,8 +1,8 @@
-﻿using System.Collections.Generic;
-using Microsoft.AspNetCore.Http;
-using PrecisionReporters.Platform.Domain.Commons;
+﻿using Microsoft.AspNetCore.Http;
+using PrecisionReporters.Platform.Shared.Commons;
+using System.Collections.Generic;
 
-namespace PrecisionReporters.Platform.Api.Helpers
+namespace PrecisionReporters.Platform.Shared.Helpers
 {
     public static class FileHandlerHelper
     {

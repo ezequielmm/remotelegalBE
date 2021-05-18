@@ -1,4 +1,4 @@
-﻿using PrecisionReporters.Platform.Domain.Commons;
+﻿using PrecisionReporters.Platform.Shared.Commons;
 using System;
 
 namespace PrecisionReporters.Platform.Api.Extensions

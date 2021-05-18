@@ -7,9 +7,9 @@ using PrecisionReporters.Platform.Api.Authorization.Attributes;
 using PrecisionReporters.Platform.Api.Extensions;
 using PrecisionReporters.Platform.Api.Hubs.Interfaces;
 using PrecisionReporters.Platform.Data.Enums;
-using PrecisionReporters.Platform.Domain.Commons;
 using PrecisionReporters.Platform.Domain.Dtos;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
+using PrecisionReporters.Platform.Shared.Commons;
 using System;
 using System.Threading.Tasks;
 

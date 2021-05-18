@@ -1,4 +1,4 @@
-﻿namespace PrecisionReporters.Platform.Domain.Commons
+﻿namespace PrecisionReporters.Platform.Shared.Commons
 {
     public static class ApplicationConstants
     {
