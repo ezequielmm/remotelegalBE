@@ -886,7 +886,8 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<Deposition>> EditDepositionDetails(Deposition deposition, FileTransferInfo file, bool deleteCaption)
         {
-            var currentDepositionResult = await GetByIdWithIncludesAndIsAdmitted(deposition.Id, new[] { nameof(Deposition.Caption), nameof(Deposition.Case) });
+            var currentDepositionResult = await GetByIdWithIncludesAndIsAdmitted(deposition.Id,
+                new[] { nameof(Deposition.Caption), nameof(Deposition.Case), nameof(Deposition.AddedBy) });
             if (currentDepositionResult.IsFailed)
                 return currentDepositionResult;
 
