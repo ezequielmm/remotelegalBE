@@ -872,6 +872,18 @@ namespace PrecisionReporters.Platform.Domain.Services
             return currentDeposition;
         }
 
+        private Result<Deposition> ValidateDepositionDates(Deposition deposition)
+        {
+            var minReScheduleTime = int.Parse(_depositionConfiguration.MinimumReScheduleSeconds);
+            if (deposition.StartDate < DateTime.UtcNow.AddSeconds(minReScheduleTime))
+                return Result.Fail<Deposition>(new ResourceConflictError($"The StartDate is lower than the minimum time to re-schedule"));
+
+            if (deposition.StartDate > deposition.EndDate)
+                return Result.Fail<Deposition>(new ResourceConflictError($"The StartDate must be lower than EndDate"));
+
+            return Result.Ok();
+        }
+
         public async Task<Result<Deposition>> EditDepositionDetails(Deposition deposition, FileTransferInfo file, bool deleteCaption)
         {
             var currentDepositionResult = await GetByIdWithIncludesAndIsAdmitted(deposition.Id, new[] { nameof(Deposition.Caption), nameof(Deposition.Case) });
@@ -987,6 +999,10 @@ namespace PrecisionReporters.Platform.Domain.Services
 
                     currentDeposition = UpdateDepositionDetails(currentDeposition, deposition, uploadDocumentResult.Value);
 
+                    currentDeposition.StartDate = deposition.StartDate;
+                    currentDeposition.EndDate = deposition.EndDate;
+                    currentDeposition.TimeZone = deposition.TimeZone;
+
                     await _depositionRepository.Update(currentDeposition);
 
                     if (currentDeposition.Status == DepositionStatus.Confirmed)
@@ -1048,12 +1064,9 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<Deposition>> ReScheduleDeposition(Deposition deposition, FileTransferInfo file, bool deleteCaption)
         {
-            var minReScheduleTime = int.Parse(_depositionConfiguration.MinimumReScheduleSeconds);
-            if (deposition.StartDate < DateTime.UtcNow.AddSeconds(minReScheduleTime))
-                return Result.Fail<Deposition>(new ResourceConflictError($"The StartDate is lower than the minimum time to re-schedule"));
-
-            if (deposition.StartDate > deposition.EndDate)
-                return Result.Fail<Deposition>(new ResourceConflictError($"The StartDate must be lower than EndDate"));
+            var validateDatesResult = ValidateDepositionDates(deposition);
+            if (validateDatesResult.IsFailed)
+                return validateDatesResult;
 
             var currentDepositionResult = await GetByIdWithIncludesAndIsAdmitted(deposition.Id, new[] { nameof(Deposition.Case), nameof(Deposition.Caption)});
             if (currentDepositionResult.IsFailed)
