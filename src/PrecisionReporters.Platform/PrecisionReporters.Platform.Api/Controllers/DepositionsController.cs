@@ -274,13 +274,14 @@ namespace PrecisionReporters.Platform.Api.Controllers
         [AllowAnonymous]
         public async Task<ActionResult<GuestToken>> JoinGuestParticipant(Guid id, CreateGuestDto guest)
         {
-            var ipAddress = HttpContext.Connection.RemoteIpAddress.MapToIPv4();
+            var publicIPAddress = HttpContext.Request.Headers["X-Forwarded-For"].ToString().Split(new[] { ',' }).FirstOrDefault();
+            var localIPAddress = HttpContext.Connection.RemoteIpAddress.MapToIPv4();
             //TODO: Add mapper
             var activity = new ActivityHistory
             {
                 Browser = guest.Browser,
                 Device = guest.Device,
-                IPAddress = ipAddress.ToString()
+                IPAddress = string.IsNullOrWhiteSpace(publicIPAddress)? localIPAddress.ToString() : publicIPAddress
             };
 
             var tokenResult = await _depositionService.JoinGuestParticipant(id, _guestMapper.ToModel(guest), activity);
