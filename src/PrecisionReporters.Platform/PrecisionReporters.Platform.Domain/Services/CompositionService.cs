@@ -100,13 +100,20 @@ namespace PrecisionReporters.Platform.Domain.Services
             }
 
             var updatedComposition = await UpdateComposition(compositionToUpdate);
+
+            if (updatedComposition.Status == CompositionStatus.Empty)
+            {
+                var deleteTwilioRecordings = new DeleteTwilioRecordingsDto() { RoomSid = updatedComposition.Room.SId.Trim(), CompositionSid = updatedComposition.SId.Trim() };
+                var backGround = new BackgroundTaskDto() { Content = deleteTwilioRecordings, TaskType = BackgroundTaskType.DeleteTwilioComposition };
+                _backgroundTaskQueue.QueueBackgroundWorkItem(backGround);
+            }
+
             return Result.Ok(updatedComposition);
         }
 
         private CompositionRecordingMetadata CreateCompositioMetadata(Deposition deposition)
         {
             var startDateTime = _twilioService.GetVideoStartTimeStamp(deposition.Room.SId);
-
             return new CompositionRecordingMetadata
             {
                 //TODO unified file name generation in one place
@@ -124,7 +131,6 @@ namespace PrecisionReporters.Platform.Domain.Services
         private async Task<Result> UploadCompositionMetadata(Deposition deposition)
         {
             var metadata = CreateCompositioMetadata(deposition);
-
             return await _twilioService.UploadCompositionMetadata(metadata);
 
         }
