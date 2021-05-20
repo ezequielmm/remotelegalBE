@@ -378,7 +378,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 {
                     new Participant()
                     {
-                        Id = participantId
+                        Id = participantId,
+                        Email = "participant@test.com"
                     }
                 },
                 Status = DepositionStatus.Confirmed

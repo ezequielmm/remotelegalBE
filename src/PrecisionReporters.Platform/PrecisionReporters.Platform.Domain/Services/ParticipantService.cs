@@ -111,7 +111,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             await _permissionService.RemoveParticipantPermissions(id, participant);
             await _participantRepository.Remove(participant);
 
-            if(deposition.Status == DepositionStatus.Confirmed)
+            if(deposition.Status == DepositionStatus.Confirmed && !string.IsNullOrWhiteSpace(participant.Email))
                 await _depositionEmailService.SendCancelDepositionEmailNotification(deposition, participant);
 
             return Result.Ok();
