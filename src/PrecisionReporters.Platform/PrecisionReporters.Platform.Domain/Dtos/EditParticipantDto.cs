@@ -12,7 +12,7 @@ namespace PrecisionReporters.Platform.Domain.Dtos
         public string Name { get; set; }
         [DataType(DataType.EmailAddress)]
         public string Email { get; set; }
-        [RegularExpression(@"^(?([2-9][0-8][0-9]))?[-. ]?([2-9][0-9]{2})[-. ]?([0-9]{4})$", ErrorMessage = "Invalid US phone number format")]
+        [RegularExpression(@"^\(?([2-9][0-8][0-9])\)?[-. ]?([2-9][0-9]{2})[-. ]?([0-9]{4})$", ErrorMessage = "Invalid US phone number format")]
         public string Phone { get; set; }
         [Required]
         public ParticipantType Role { get; set; }
