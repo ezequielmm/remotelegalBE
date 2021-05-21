@@ -164,6 +164,7 @@ namespace PrecisionReporters.Platform.Api
                 x.StatusCallbackUrl = appConfiguration.TwilioAccountConfiguration.StatusCallbackUrl;
                 x.ConversationServiceId = appConfiguration.TwilioAccountConfiguration.ConversationServiceId;
                 x.TwilioStartedDateReference = appConfiguration.TwilioAccountConfiguration.TwilioStartedDateReference;
+                x.ClientTokenExpirationMinutes = appConfiguration.TwilioAccountConfiguration.ClientTokenExpirationMinutes;
             });
 
             services.AddScoped<IRoomService, RoomService>();

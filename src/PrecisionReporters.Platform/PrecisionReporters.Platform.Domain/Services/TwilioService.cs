@@ -73,8 +73,9 @@ namespace PrecisionReporters.Platform.Domain.Services
                 grants.Add(new ChatGrant { ServiceSid = _twilioAccountConfiguration.ConversationServiceId });
 
             var stringIdentity = SerializeObject(identity);
+            var expirationOffset = Convert.ToInt32(_twilioAccountConfiguration.ClientTokenExpirationMinutes);
             var token = new Token(_twilioAccountConfiguration.AccountSid, _twilioAccountConfiguration.ApiKeySid,
-                _twilioAccountConfiguration.ApiKeySecret, identity: stringIdentity, grants: grants);
+                _twilioAccountConfiguration.ApiKeySecret, identity: stringIdentity, expiration: DateTime.UtcNow.AddMinutes(expirationOffset), grants: grants);
 
             return token.ToJwt();
         }

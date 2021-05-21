@@ -11,5 +11,6 @@
         public string StatusCallbackUrl { get; set; }
         public string ConversationServiceId { get; set; }
         public string TwilioStartedDateReference { get; set; }
+        public string ClientTokenExpirationMinutes { get; set; }
     }
 }
