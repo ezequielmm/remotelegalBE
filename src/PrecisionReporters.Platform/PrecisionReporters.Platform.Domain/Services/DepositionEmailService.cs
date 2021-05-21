@@ -59,6 +59,12 @@ namespace PrecisionReporters.Platform.Domain.Services
             await _awsEmailService.SendRawEmailNotification(template);
         }
 
+        public async Task SendDepositionReminder(Deposition deposition, Participant participant)
+        {
+            var template = GetDepositionReminderEmailTemplate(deposition, participant);
+            await _awsEmailService.SendRawEmailNotification(template);
+        }
+
         private EmailTemplateInfo GetJoinDepositionEmailTemplate(Deposition deposition, Participant participant)
         {
             var template = new EmailTemplateInfo
@@ -75,7 +81,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                             },
                 TemplateName = _emailConfiguration.JoinDepositionTemplate,
                 Calendar = CreateCalendar(deposition, CalendarAction.Add.GetDescription()),
-                AddiotionalText = $"You can join by clicking the link: {_emailConfiguration.PreDepositionLink}{deposition.Id}",
+                AdditionalText = $"You can join by clicking the link: {_emailConfiguration.PreDepositionLink}{deposition.Id}",
                 Subject = $"Invitation: Remote Legal - {GetSubject(deposition)}"
             };
 
@@ -96,7 +102,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                                 { "logo", GetImageUrl(_emailConfiguration.LogoImageName) }
                             },
                 TemplateName = ApplicationConstants.CancelDepositionEmailTemplate,
-                AddiotionalText = string.Empty,
+                AdditionalText = string.Empty,
                 Calendar = CreateCalendar(deposition, CalendarAction.Cancel.GetDescription()),
                 Subject = $"Cancellation: Remote Legal - {GetSubject(deposition)}"
             };
@@ -120,9 +126,32 @@ namespace PrecisionReporters.Platform.Domain.Services
                                 { "deposition-join-link", $"{_emailConfiguration.PreDepositionLink}{deposition.Id}"}
                             },
                 TemplateName = ApplicationConstants.ReScheduleDepositionEmailTemplate,
-                AddiotionalText = $"You can join by clicking the link: {_emailConfiguration.PreDepositionLink}{deposition.Id}",
+                AdditionalText = $"You can join by clicking the link: {_emailConfiguration.PreDepositionLink}{deposition.Id}",
                 Calendar = CreateCalendar(deposition, CalendarAction.Update.GetDescription()),
                 Subject = $"Invitation update: Remote Legal - {GetSubject(deposition)}"
+            };
+
+            return template;
+        }
+
+        private EmailTemplateInfo GetDepositionReminderEmailTemplate(Deposition deposition, Participant participant)
+        {
+            var template = new EmailTemplateInfo
+            {
+                EmailTo = new List<string> { participant.Email },
+                TemplateData = new Dictionary<string, string>
+                            {
+                                { "dateAndTime", deposition.StartDate.GetFormattedDateTime(deposition.TimeZone) },
+                                { "name", participant.Name ?? string.Empty },
+                                { "case", GetDescriptionCase(deposition) },
+                                { "imageUrl",  GetImageUrl(_emailConfiguration.LogoImageName) },
+                                { "calendar", GetImageUrl(_emailConfiguration.CalendarImageName) },
+                                { "depositionJoinLink", $"{_emailConfiguration.PreDepositionLink}{deposition.Id}"}
+                            },
+                TemplateName = ApplicationConstants.DepositionReminderEmailTemplate,
+                Calendar = CreateCalendar(deposition, CalendarAction.Add.GetDescription()),
+                AdditionalText = $"You can join by clicking the link: {_emailConfiguration.PreDepositionLink}{deposition.Id}",
+                Subject = $"Invitation reminder: Remote Legal - {GetSubject(deposition)}"
             };
 
             return template;

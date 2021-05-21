@@ -24,6 +24,6 @@
         public const string ActivityTemplateName = "ActivityEmailTemplate";
         public const string CancelDepositionEmailTemplate = "CancelDepositionEmailTemplate";
         public const string ReScheduleDepositionEmailTemplate = "ReScheduleDepositionEmailTemplate";
-
+        public const string DepositionReminderEmailTemplate = "DepositionReminderEmailTemplate";
     }
 }

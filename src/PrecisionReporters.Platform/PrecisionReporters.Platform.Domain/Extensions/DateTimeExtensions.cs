@@ -36,5 +36,11 @@ namespace PrecisionReporters.Platform.Domain.Extensions
 
             return $"{convertedTime:MMM d, yyyy hh:mm tt} {timeZoneAbbreviation}";
         }
+
+        public static DateTime GetWithSpecificTimeZone(this DateTime dateTime, string timeZone)
+        {
+            var timeZoneInfo = TZConvert.GetTimeZoneInfo(timeZone);
+            return TimeZoneInfo.ConvertTime(dateTime, TimeZoneInfo.FindSystemTimeZoneById(timeZoneInfo.Id));
+        }
     }
 }

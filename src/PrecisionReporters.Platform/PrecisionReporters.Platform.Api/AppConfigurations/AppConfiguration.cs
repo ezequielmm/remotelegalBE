@@ -21,5 +21,6 @@ namespace PrecisionReporters.Platform.Api
         public CloudServicesConfiguration CloudServicesConfiguration { get; set; }
         public VerificationLinkConfiguration VerificationLinkConfiguration { get; set; }
         public DepositionConfiguration DepositionConfiguration { get; set; }
+        public ReminderConfiguration ReminderConfiguration { get; set; }
     }
 }

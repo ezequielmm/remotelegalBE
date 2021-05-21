@@ -196,6 +196,14 @@ namespace PrecisionReporters.Platform.Api
                 x.EnvironmentFilesBucket = appConfiguration.DocumentConfiguration.EnvironmentFilesBucket;
                 x.FrontEndContentBucket = appConfiguration.DocumentConfiguration.FrontEndContentBucket;
             });
+
+            services.AddScoped<IReminderService, ReminderService>().Configure<ReminderConfiguration>(x =>
+            {
+                x.MinutesBefore = appConfiguration.ReminderConfiguration.MinutesBefore;
+                x.DailyExecution = appConfiguration.ReminderConfiguration.DailyExecution;
+                x.ReminderRecurrency = appConfiguration.ReminderConfiguration.ReminderRecurrency;
+            });
+
             services.AddScoped<IDepositionService, DepositionService>();
             services.AddScoped<IAnnotationEventService, AnnotationEventService>();
             services.AddTransient<IAwsEmailService, AwsEmailService>().Configure<EmailConfiguration>(x =>

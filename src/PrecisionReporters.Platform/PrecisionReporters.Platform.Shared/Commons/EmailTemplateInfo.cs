@@ -11,6 +11,6 @@ namespace PrecisionReporters.Platform.Shared.Commons
         public Calendar Calendar { get; set; }
         public string Subject { get; set; }
         public Dictionary<string, string> SubjectData { get; set; }
-        public string AddiotionalText { get; set; }
+        public string AdditionalText { get; set; }
     }
 }

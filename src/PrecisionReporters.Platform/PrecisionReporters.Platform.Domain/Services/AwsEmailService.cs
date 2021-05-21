@@ -115,7 +115,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                         Disposition = System.Net.Mime.DispositionTypeNames.Inline,
                         IsAttachment = false,
                     },
-                    Text = emailTemplateInfo.AddiotionalText
+                    Text = emailTemplateInfo.AdditionalText
                 },
                 new TextPart(TextFormat.Html)
                 {

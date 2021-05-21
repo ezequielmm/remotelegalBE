@@ -55,7 +55,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         {
             // Arrange
             var emailTemplateInfo = new EmailTemplateInfo();
-            emailTemplateInfo.AddiotionalText = "";
+            emailTemplateInfo.AdditionalText = "";
             emailTemplateInfo.TemplateData = new Dictionary<string, string>() { { "test", "test" } };
             emailTemplateInfo.TemplateName = "";
             emailTemplateInfo.Subject = "";
