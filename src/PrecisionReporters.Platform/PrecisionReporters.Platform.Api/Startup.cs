@@ -334,6 +334,8 @@ namespace PrecisionReporters.Platform.Api
             {
                 pdftron.PDFNet.Initialize();
             }
+
+            services.AddResponseCompression();
         }
 
         private Task GetTokenFromWebSocket(MessageReceivedContext context)
@@ -403,6 +405,8 @@ namespace PrecisionReporters.Platform.Api
                 endpoints.MapControllers();
                 endpoints.MapHub<DepositionHub>("/depositionHub");
             });
+
+            app.UseResponseCompression();
 
             db.Database.Migrate();
         }
