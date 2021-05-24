@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
+using PrecisionReporters.Platform.Shared.Helpers;
 using System;
 using System.IO;
 using System.Threading.Tasks;
@@ -38,6 +39,14 @@ namespace PrecisionReporters.Platform.Api.Controllers
 
             if (!message.IsMessageSignatureValid())
                 return BadRequest();
+
+            if (message.IsSubscriptionType)
+            {
+                var result = await SnsHelper.SubscribeEndpoint(message.SubscribeURL);
+                if (result.IsFailed)
+                    _logger.LogError($"There was an error subscribing URL, {result}");
+            }
+
             try
             {
                 await _reminderService.SendReminder();
@@ -63,6 +72,14 @@ namespace PrecisionReporters.Platform.Api.Controllers
 
             if (!message.IsMessageSignatureValid())
                 return BadRequest();
+
+            if (message.IsSubscriptionType)
+            {
+                var result = await SnsHelper.SubscribeEndpoint(message.SubscribeURL);
+                if (result.IsFailed)
+                    _logger.LogError($"There was an error subscribing URL, {result}");
+            }
+
             try
             {
                 await _reminderService.SendDailyReminder();

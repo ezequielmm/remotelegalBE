@@ -13,7 +13,6 @@ using PrecisionReporters.Platform.Shared.Errors;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using System.Threading.Tasks;
 
 namespace PrecisionReporters.Platform.Domain.Services
@@ -187,24 +186,6 @@ namespace PrecisionReporters.Platform.Domain.Services
             var deleteTwilioRecordings = new DeleteTwilioRecordingsDto() { RoomSid = composition.Room.SId.Trim(), CompositionSid = composition.SId.Trim() };
             var backGround = new BackgroundTaskDto() { Content = deleteTwilioRecordings, TaskType = BackgroundTaskType.DeleteTwilioComposition };
             _backgroundTaskQueue.QueueBackgroundWorkItem(backGround);
-            return Result.Ok();
-        }
-
-        // This method is meant to validate and confirm the endpoind added
-        // as a valid destination to receive messages from aws notification service
-        public async Task<Result> SubscribeEndpoint(string subscribeURL)
-        {
-            var request = (HttpWebRequest)WebRequest.Create(subscribeURL);
-            try
-            {
-                await request.GetResponseAsync();
-            }
-            catch (Exception e)
-            {
-                _logger.LogError($"There was an error subscribing URL, {e.Message}");
-                return Result.Fail(new Error("There was an error subscribing URL"));
-            }
-
             return Result.Ok();
         }
 

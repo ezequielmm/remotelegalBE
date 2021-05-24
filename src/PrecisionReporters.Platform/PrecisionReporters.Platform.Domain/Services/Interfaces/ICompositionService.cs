@@ -14,7 +14,6 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
         Task<Result> StoreCompositionMediaAsync(Composition composition);
         Task<Result<Composition>> UpdateCompositionCallback(Composition composition);
         Task<Result> PostDepoCompositionCallback(PostDepositionEditionDto payload);
-        Task<Result> SubscribeEndpoint(string subscribeURL);
         List<CompositionInterval> GetDepositionRecordingIntervals(List<DepositionEvent> events, long startTime);
         Task<Result> DeleteTwilioCompositionAndRecordings(DeleteTwilioRecordingsDto deleteTwilioRecordings);
     }

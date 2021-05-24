@@ -74,7 +74,11 @@ namespace PrecisionReporters.Platform.Api.Controllers
                 return BadRequest();
 
             if (message.IsSubscriptionType)
-                await _compositionService.SubscribeEndpoint(message.SubscribeURL);
+            {
+                var result = await SnsHelper.SubscribeEndpoint(message.SubscribeURL);
+                if (result.IsFailed)
+                    _logger.LogError($"There was an error subscribing URL, {result}");
+            }
 
             if (message.IsNotificationType)
             {
