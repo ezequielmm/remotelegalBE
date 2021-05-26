@@ -832,6 +832,9 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (userResult.IsSuccess)
             {
                 newParticipant.User = userResult.Value;
+                newParticipant.Name = string.IsNullOrWhiteSpace(newParticipant.Name)
+                    ? $"{userResult.Value.FirstName} {userResult.Value.LastName}"
+                    : newParticipant.Name;
             }
             newParticipant.IsAdmitted = true;
             deposition.Participants.Add(newParticipant);
