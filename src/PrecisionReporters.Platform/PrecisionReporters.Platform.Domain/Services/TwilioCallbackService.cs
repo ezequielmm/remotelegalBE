@@ -5,7 +5,6 @@ using PrecisionReporters.Platform.Data.Enums;
 using PrecisionReporters.Platform.Data.Handlers;
 using PrecisionReporters.Platform.Domain.Dtos;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
-using PrecisionReporters.Platform.Shared.Errors;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -68,9 +67,8 @@ namespace PrecisionReporters.Platform.Domain.Services
                             return Result.Ok();
                         }
                     default:
-                        return Result.Fail(new InvalidInputError("Invalid recording status."));
+                        return Result.Ok();
                 }
-
             }
             catch (ArgumentException e)
             {

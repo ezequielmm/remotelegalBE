@@ -80,7 +80,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var result = await _service.UpdateStatusCallback(eventDto);
 
             // Assert
-            Assert.True(result.IsFailed);
+            Assert.True(result.IsSuccess);
             _roomServiceMock.Verify(x => x.Update(It.IsAny<Room>()), Times.Never);
         }
 
