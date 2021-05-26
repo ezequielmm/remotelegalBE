@@ -122,7 +122,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 USTimeZone enumValue = (USTimeZone)Enum.Parse(typeof(USTimeZone), timeZone);
                 var dateTimeZone = date.GetConvertedTime(enumValue.GetDescription());
                 var executionTime = new DateTime(dateTimeZone.Year, dateTimeZone.Month, dateTimeZone.Day, dailyExecutionTs.Hours, dailyExecutionTs.Minutes, 0, 0);
-                if ((dateTimeZone - executionTime).TotalMinutes > 0 && (dateTimeZone - executionTime).TotalMinutes < 60)
+                if ((dateTimeZone - executionTime).TotalMinutes >= 0 && (dateTimeZone - executionTime).TotalMinutes < 60)
                     lstTimeZone.Add(enumValue.GetDescription());
             }
             return lstTimeZone;
