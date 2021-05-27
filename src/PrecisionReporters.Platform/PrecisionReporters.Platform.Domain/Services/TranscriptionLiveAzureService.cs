@@ -87,6 +87,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             var speechConfig = SpeechConfig.FromSubscription(_azureConfiguration.SubscriptionKey, _azureConfiguration.RegionCode);
             _audioInputStream = AudioInputStream.CreatePushStream(AudioStreamFormat.GetWaveFormatPCM(Convert.ToUInt16(sampleRate), BitsPerSample, ChannelCount));
             var audioConfig = AudioConfig.FromStreamInput(_audioInputStream);
+            speechConfig.SetProperty(PropertyId.SpeechServiceResponse_OutputFormatOption, "1"); // Enable detailed results, needed for getting the confidence level
 
             _recognizer = new SpeechRecognizer(speechConfig, audioConfig);
 
