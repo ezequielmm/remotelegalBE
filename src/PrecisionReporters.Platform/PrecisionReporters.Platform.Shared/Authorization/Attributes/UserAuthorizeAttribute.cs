@@ -2,7 +2,7 @@
 using PrecisionReporters.Platform.Data.Enums;
 using System;
 
-namespace PrecisionReporters.Platform.Api.Authorization.Attributes
+namespace PrecisionReporters.Platform.Shared.Authorization.Attributes
 {
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = true, Inherited = true)]
     public class UserAuthorizeAttribute : AuthorizeAttribute

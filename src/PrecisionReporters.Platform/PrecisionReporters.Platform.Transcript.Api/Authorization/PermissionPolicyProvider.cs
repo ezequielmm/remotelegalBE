@@ -1,12 +1,12 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using PrecisionReporters.Platform.Api.Authorization.Handlers;
+using PrecisionReporters.Platform.Transcript.Api.Authorization.Handlers;
 using PrecisionReporters.Platform.Shared.Authorization.Requirements;
 using System;
 using System.Threading.Tasks;
 
-namespace PrecisionReporters.Platform.Api.Authorization
+namespace PrecisionReporters.Platform.Transcript.Api.Authorization
 {
     public class PermissionPolicyProvider : IAuthorizationPolicyProvider
     {

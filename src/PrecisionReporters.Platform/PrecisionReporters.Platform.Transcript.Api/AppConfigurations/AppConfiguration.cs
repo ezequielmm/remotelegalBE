@@ -1,9 +1,9 @@
-﻿using PrecisionReporters.Platform.Api.AppConfigurations;
-using PrecisionReporters.Platform.Api.AppConfigurations.Sections;
-using PrecisionReporters.Platform.Domain.AppConfigurations.Sections;
+﻿using PrecisionReporters.Platform.Domain.AppConfigurations.Sections;
 using PrecisionReporters.Platform.Domain.Configurations;
+using PrecisionReporters.Platform.Transcript.Api.AppConfigurations;
+using PrecisionReporters.Platform.Transcript.Api.AppConfigurations.Sections;
 
-namespace PrecisionReporters.Platform.Api
+namespace PrecisionReporters.Platform.Transcript.Api
 {
     public class AppConfiguration : IAppConfiguration
     {
@@ -22,6 +22,5 @@ namespace PrecisionReporters.Platform.Api
         public CloudServicesConfiguration CloudServicesConfiguration { get; set; }
         public VerificationLinkConfiguration VerificationLinkConfiguration { get; set; }
         public DepositionConfiguration DepositionConfiguration { get; set; }
-        public ReminderConfiguration ReminderConfiguration { get; set; }
     }
 }

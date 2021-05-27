@@ -1,5 +1,5 @@
 ﻿using Microsoft.AspNetCore.SignalR;
-using PrecisionReporters.Platform.Api.Extensions;
+using PrecisionReporters.Platform.Shared.Extensions;
 using PrecisionReporters.Platform.Api.Hubs.Interfaces;
 using PrecisionReporters.Platform.Domain.Dtos;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;

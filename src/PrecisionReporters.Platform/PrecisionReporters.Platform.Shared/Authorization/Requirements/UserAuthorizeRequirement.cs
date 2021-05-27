@@ -2,7 +2,7 @@
 using PrecisionReporters.Platform.Data.Enums;
 using System;
 
-namespace PrecisionReporters.Platform.Api.Authorization.Requirements
+namespace PrecisionReporters.Platform.Shared.Authorization.Requirements
 {
     public class UserAuthorizeRequirement: IAuthorizationRequirement
     {

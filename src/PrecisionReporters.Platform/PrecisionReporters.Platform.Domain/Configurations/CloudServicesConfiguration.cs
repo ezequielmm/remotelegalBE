@@ -1,4 +1,4 @@
-﻿namespace PrecisionReporters.Platform.Api.AppConfigurations.Sections
+﻿namespace PrecisionReporters.Platform.Domain.AppConfigurations.Sections
 {
     public class CloudServicesConfiguration
     {

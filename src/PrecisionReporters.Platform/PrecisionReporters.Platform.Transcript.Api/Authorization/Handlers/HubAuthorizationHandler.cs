@@ -1,34 +1,32 @@
 ﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 using PrecisionReporters.Platform.Shared.Authorization.Requirements;
-using PrecisionReporters.Platform.Api.Extensions;
+using PrecisionReporters.Platform.Transcript.Api.Extensions;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
-using System;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
-namespace PrecisionReporters.Platform.Api.Authorization.Handlers
+namespace PrecisionReporters.Platform.Transcript.Api.Authorization.Handlers
 {
-    public class UserAuthorizeHandler : AuthorizationHandler<UserAuthorizeRequirement, Endpoint>
+    public class HubAuthorizeHandler : AuthorizationHandler<UserAuthorizeRequirement, HubInvocationContext>
     {
         private readonly IPermissionService _permissionService;
         private readonly ILogger<UserAuthorizeHandler> _logger;
-        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public UserAuthorizeHandler(IPermissionService permissionService, ILogger<UserAuthorizeHandler> logger, IHttpContextAccessor httpContextAccessor)
+        public HubAuthorizeHandler(IPermissionService permissionService, ILogger<UserAuthorizeHandler> logger)
         {
             _permissionService = permissionService;
             _logger = logger;
-            _httpContextAccessor = httpContextAccessor;
         }
 
-        protected override async Task HandleRequirementAsync(AuthorizationHandlerContext context, UserAuthorizeRequirement requirement, Endpoint resource)
+        protected override async Task HandleRequirementAsync(AuthorizationHandlerContext context, UserAuthorizeRequirement requirement, HubInvocationContext resource)
         {
-            if (context.TryGetRouteIdNameOfResourceType(requirement.ResourceType, out var resourceId) && _httpContextAccessor.HttpContext.GetRouteGuid(resourceId) is Guid identifier)
+            var identifier = resource.GetResourceIdFromHubMethod(requirement.ResourceType);
+            if (identifier.HasValue)
             {
                 var currentUserEmail = context.User.FindFirstValue(ClaimTypes.Email);
-                if (await _permissionService.CheckUserHasPermissionForAction(currentUserEmail, requirement.ResourceType, identifier, requirement.ResourceAction))
+                if (await _permissionService.CheckUserHasPermissionForAction(currentUserEmail, requirement.ResourceType, identifier.Value, requirement.ResourceAction))
                 {
                     context.Succeed(requirement);
                 }

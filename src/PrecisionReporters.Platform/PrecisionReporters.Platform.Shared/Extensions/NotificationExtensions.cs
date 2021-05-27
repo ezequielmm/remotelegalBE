@@ -1,7 +1,7 @@
 ﻿using PrecisionReporters.Platform.Shared.Commons;
 using System;
 
-namespace PrecisionReporters.Platform.Api.Extensions
+namespace PrecisionReporters.Platform.Shared.Extensions
 {
     public static class NotificationExtensions
     {

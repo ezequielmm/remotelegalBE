@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
-using PrecisionReporters.Platform.Api.Authorization.Requirements;
+using PrecisionReporters.Platform.Shared.Authorization.Requirements;
 using PrecisionReporters.Platform.Api.Extensions;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using System.Security.Claims;

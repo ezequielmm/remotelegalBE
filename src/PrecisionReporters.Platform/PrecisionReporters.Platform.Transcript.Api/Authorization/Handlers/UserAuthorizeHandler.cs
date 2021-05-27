@@ -2,13 +2,13 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using PrecisionReporters.Platform.Shared.Authorization.Requirements;
-using PrecisionReporters.Platform.Api.Extensions;
+using PrecisionReporters.Platform.Transcript.Api.Extensions;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using System;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
-namespace PrecisionReporters.Platform.Api.Authorization.Handlers
+namespace PrecisionReporters.Platform.Transcript.Api.Authorization.Handlers
 {
     public class UserAuthorizeHandler : AuthorizationHandler<UserAuthorizeRequirement, Endpoint>
     {
