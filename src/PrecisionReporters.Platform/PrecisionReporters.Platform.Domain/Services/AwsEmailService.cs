@@ -33,9 +33,10 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<SendBulkTemplatedEmailResponse> SendEmailAsync(List<BulkEmailDestination> destinations, string templateName, string sender = null)
         {
+            var source = new MailboxAddress(_emailConfiguration.SenderLabel, sender ?? _emailConfiguration.Sender).ToString();
             var emailRequest = new SendBulkTemplatedEmailRequest
             {
-                Source = sender == null ? _emailConfiguration.Sender : sender,
+                Source = source,
                 Template = templateName,
                 DefaultTemplateData = destinations[0].ReplacementTemplateData,
                 Destinations = destinations
@@ -142,7 +143,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         private MimeMessage CreateMessage(EmailTemplateInfo emailTemplateInfo, string htmlBodyTemplate)
         {
             var message = new MimeMessage();
-            message.From.Add(new MailboxAddress("Remote Legal Team", _emailConfiguration.EmailNotification));
+            message.From.Add(new MailboxAddress(_emailConfiguration.SenderLabel, _emailConfiguration.EmailNotification));
 
             message.To.Add(MailboxAddress.Parse(emailTemplateInfo.EmailTo.FirstOrDefault()));
 

@@ -71,7 +71,11 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 Start = new CalDateTime(DateTime.UtcNow.GetConvertedTime(timeZone), timeZone),
                 End = null,
                 Location = "",
-                Organizer = new Organizer("organizer@test.com")
+                Organizer = new Organizer
+                {
+                    CommonName = "Organizer Name",
+                    Value = new Uri("mailto: organizer@test.com")
+                }
             };
 
             calendar.Events.Add(icalEvent);

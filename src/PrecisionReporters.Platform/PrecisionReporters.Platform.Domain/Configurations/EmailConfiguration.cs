@@ -12,5 +12,6 @@
         public string CalendarImageName { get; set; }
         public string PreDepositionLink { get; set; }
         public string JoinDepositionTemplate { get; set; }
+        public string SenderLabel { get; set; }
     }
 }

@@ -216,6 +216,7 @@ namespace PrecisionReporters.Platform.Api
                 x.CalendarImageName = appConfiguration.EmailConfiguration.CalendarImageName;
                 x.PreDepositionLink = appConfiguration.EmailConfiguration.PreDepositionLink;
                 x.JoinDepositionTemplate = appConfiguration.EmailConfiguration.JoinDepositionTemplate;
+                x.SenderLabel = appConfiguration.EmailConfiguration.SenderLabel;
             });
 
             services.AddSingleton(typeof(IAmazonCognitoIdentityProvider),

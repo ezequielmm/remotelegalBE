@@ -201,7 +201,11 @@ namespace PrecisionReporters.Platform.Domain.Services
                 Start = new CalDateTime(deposition.StartDate.GetConvertedTime(deposition.TimeZone), deposition.TimeZone),
                 End = deposition.EndDate.HasValue ? new CalDateTime(deposition.EndDate.Value.GetConvertedTime(deposition.TimeZone), deposition.TimeZone) : null,
                 Location = $"{_emailConfiguration.PreDepositionLink}{deposition.Id}",
-                Organizer = new Organizer(_emailConfiguration.EmailNotification)
+                Organizer = new Organizer()
+                {
+                    CommonName = _emailConfiguration.SenderLabel,
+                    Value = new Uri($"mailto:{_emailConfiguration.EmailNotification}")
+                }
             };
 
             calendar.Events.Add(icalEvent);
