@@ -188,6 +188,22 @@ namespace PrecisionReporters.Platform.Domain.Services
             }
         }
 
+        public async Task<Result<Case>> EditCase(Case editCase)
+        {
+            var originalCase = await _caseRepository.GetById(editCase.Id);
+            if (originalCase == null)
+                return Result.Fail(new ResourceNotFoundError($"Case with id {editCase.Id} not found."));
+
+            originalCase.Name = editCase.Name;
+            originalCase.CaseNumber = editCase.CaseNumber;
+
+            var updatedCase = await _caseRepository.Update(originalCase);
+            if (updatedCase == null)
+                return Result.Fail(new ResourceNotFoundError($"There was an error updating Case with Id: {originalCase.Id}"));
+
+            return Result.Ok(updatedCase);
+        }
+
         private void AddMemberToCase(User userToAdd, Case caseToUpdate)
         {
             if (userToAdd != null && caseToUpdate.Members.All(m => m.UserId != userToAdd.Id))

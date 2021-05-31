@@ -673,5 +673,100 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 It.Is<Func<It.IsAnyType, Exception, string>>((v, t) => true)), Times.Never);
             _documentServiceMock.Verify(x => x.DeleteUploadedFiles(It.IsAny<List<Document>>()), Times.Never);
         }
+
+        [Fact]
+        public async Task EditCase_ShouldReturnOk()
+        {
+            // Arrange
+            var id = Guid.NewGuid();
+            var oldCase = new Case
+            {
+                Id = id,
+                Name = "TestCase1",
+                CreationDate = DateTime.Now,
+                CaseNumber = $"#{short.MaxValue}"
+            };
+            _cases.Add(oldCase);
+            var editCase = new Case
+            {
+                Id = id,
+                CaseNumber = $"#{int.MaxValue}",
+                Name = "Different CaseName"
+            };
+
+            _caseRepositoryMock
+                .Setup(mock => mock.GetById(It.Is<Guid>(a => a == id), It.IsAny<string[]>()))
+                .ReturnsAsync(oldCase);
+            _caseRepositoryMock
+                .Setup(mock => mock.Update(It.IsAny<Case>()))
+                .ReturnsAsync(new Case { Id = oldCase.Id, Name = editCase.Name, CaseNumber = editCase.CaseNumber, CreationDate = oldCase.CreationDate });
+            // Act
+            var result = await _service.EditCase(editCase);
+
+            // Assert
+            _caseRepositoryMock.Verify(mock => mock.GetById(It.Is<Guid>(a => a == id), It.IsAny<string[]>()), Times.Once());
+            _caseRepositoryMock.Verify(mock => mock.Update(It.IsAny<Case>()), Times.Once);
+            Assert.NotNull(result);
+            Assert.True(result.IsSuccess);
+            Assert.True(result.Errors.Count == 0);
+        }
+
+        [Fact]
+        public async Task EditCase_ShouldReturnResourceNotFoundError_WhenCaseNotFound()
+        {
+            // Arrange
+            var errorMessage = "Case with id";
+            var id = Guid.NewGuid();
+            var editCase = new Case
+            {
+                Id = id,
+                CaseNumber = $"#{int.MaxValue}",
+                Name = "Different CaseName"
+            };
+
+            // Act
+            var result = await _service.EditCase(editCase);
+
+            // Assert
+            _caseRepositoryMock.Verify(mock => mock.GetById(It.Is<Guid>(a => a == id), It.IsAny<string[]>()), Times.Once());
+            _caseRepositoryMock.Verify(mock => mock.Update(It.IsAny<Case>()), Times.Never);
+            Assert.True(result.IsFailed);
+            Assert.Contains(errorMessage, result.Errors[0].Message);
+        }
+
+        [Fact]
+        public async Task EditCase_ShouldReturnResourceNotFoundError_WhenFailsToEditCase()
+        {
+            // Arrange
+            var errorMessage = "There was an error updating Case with Id:";
+            var id = Guid.NewGuid();
+            var oldCase = new Case
+            {
+                Id = id,
+                Name = "TestCase1",
+                CreationDate = DateTime.Now,
+                CaseNumber = $"#{short.MaxValue}"
+            };
+            _cases.Add(oldCase);
+            var editCase = new Case
+            {
+                Id = id,
+                CaseNumber = $"#{int.MaxValue}",
+                Name = "Different CaseName"
+            };
+
+            _caseRepositoryMock
+                .Setup(mock => mock.GetById(It.Is<Guid>(a => a == id), It.IsAny<string[]>()))
+                .ReturnsAsync(oldCase);
+
+            // Act
+            var result = await _service.EditCase(editCase);
+
+            // Assert
+            _caseRepositoryMock.Verify(mock => mock.GetById(It.Is<Guid>(a => a == id), It.IsAny<string[]>()), Times.Once());
+            _caseRepositoryMock.Verify(mock => mock.Update(It.IsAny<Case>()), Times.Once);
+            Assert.True(result.IsFailed);
+            Assert.Contains(errorMessage, result.Errors[0].Message);
+        }
     }
 }

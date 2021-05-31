@@ -24,12 +24,17 @@ namespace PrecisionReporters.Platform.Api.Controllers
         private readonly ICaseService _caseService;
         private readonly IMapper<Case, CaseDto, CreateCaseDto> _caseMapper;
         private readonly IMapper<Deposition, DepositionDto, CreateDepositionDto> _depositionMapper;
+        private readonly IMapper<Case, EditCaseDto, object> _editCaseMapper;
 
-        public CasesController(ICaseService caseService, IMapper<Case, CaseDto, CreateCaseDto> caseMapper, IMapper<Deposition, DepositionDto, CreateDepositionDto> depositionMapper)
+        public CasesController(ICaseService caseService,
+            IMapper<Case, CaseDto, CreateCaseDto> caseMapper,
+            IMapper<Deposition, DepositionDto, CreateDepositionDto> depositionMapper,
+            IMapper<Case, EditCaseDto, object> editCaseMapper)
         {
             _caseService = caseService;
             _caseMapper = caseMapper;
             _depositionMapper = depositionMapper;
+            _editCaseMapper = editCaseMapper;
         }
 
         /// <summary>
@@ -113,6 +118,26 @@ namespace PrecisionReporters.Platform.Api.Controllers
                 Depositions = caseToUpdate.Depositions.Select(d => _depositionMapper.ToDto(d)).ToList()
             };
             return new ObjectResult(caseWithDepositions);
+        }
+
+        /// <summary>
+        /// Edit an existing case details
+        /// </summary>
+        /// <param name="id">Case identifier</param>
+        /// <param name="editCaseDto">Edited case details</param>
+        /// <returns>Ok if succeeded</returns>
+        [HttpPut("{id}")]
+        [UserAuthorize(ResourceType.Case, ResourceAction.Update)]
+        public async Task<ActionResult<CaseDto>> EditCase([ResourceId(ResourceType.Case)] Guid id, EditCaseDto editCaseDto)
+        {
+            var caseToEdit = _editCaseMapper.ToModel(editCaseDto);
+            caseToEdit.Id = id;
+            var editCaseResult = await _caseService.EditCase(caseToEdit);
+
+            if (editCaseResult.IsFailed)
+                return WebApiResponses.GetErrorResponse(editCaseResult);
+
+            return Ok(_caseMapper.ToDto(editCaseResult.Value));
         }
     }
 }
