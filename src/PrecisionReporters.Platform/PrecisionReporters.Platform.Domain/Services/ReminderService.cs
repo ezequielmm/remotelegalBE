@@ -39,7 +39,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<bool>> SendReminder()
         {
-            var minutesBefoe = _reminderConfiguration.MinutesBefore;
+            var minutesBefore = _reminderConfiguration.MinutesBefore;
             var reminderRecurrency = _reminderConfiguration.ReminderRecurrency;
             var tasks = new List<Task>();
             var currentDate = DateTime.UtcNow;
@@ -48,10 +48,10 @@ namespace PrecisionReporters.Platform.Domain.Services
                 var transactionResult = await _transactionHandler.RunAsync<bool>(async () =>
                 {
                     _logger.LogInformation($"Init reminder method transaction");
-                    foreach (var item in minutesBefoe)
+                    foreach (var item in minutesBefore)
                     {
                         var startDate = new DateTime(currentDate.Year, currentDate.Month, currentDate.Day, currentDate.Hour, currentDate.Minute, 0, 0, DateTimeKind.Utc).AddMinutes(item);
-                        var endDate = new DateTime(currentDate.Year, currentDate.Month, currentDate.Day, currentDate.Hour, (currentDate.Minute + reminderRecurrency - 1), 59, 0, DateTimeKind.Utc).AddMinutes(item);
+                        var endDate = new DateTime(currentDate.Year, currentDate.Month, currentDate.Day, currentDate.Hour, currentDate.Minute, 59, 0, DateTimeKind.Utc).AddMinutes(item + reminderRecurrency - 1);
                         var includes = new[] { nameof(Deposition.Case), nameof(Deposition.Participants) };
 
                         var depositions = await _depositionRepository.GetByFilter(d => d.StartDate >= startDate && d.StartDate <= endDate && d.Status == DepositionStatus.Confirmed, includes);
