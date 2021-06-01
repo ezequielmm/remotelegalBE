@@ -190,7 +190,8 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<Case>> EditCase(Case editCase)
         {
-            var originalCase = await _caseRepository.GetById(editCase.Id);
+            var include = new[] { nameof(Case.Members), nameof(Case.Depositions), nameof(Case.AddedBy) };
+            var originalCase = await _caseRepository.GetById(editCase.Id, include);
             if (originalCase == null)
                 return Result.Fail(new ResourceNotFoundError($"Case with id {editCase.Id} not found."));
 
