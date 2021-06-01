@@ -78,6 +78,23 @@ namespace PrecisionReporters.Platform.Api.Controllers
             return Ok(_userMapper.ToDto(user));
         }
 
+        /// <summary>
+        /// Gets the logged in admin user
+        /// </summary>
+        /// <returns>The current Admin User logged in if succeeded</returns>
+        [HttpGet]
+        [Route("currentAdminUser")]
+        public async Task<ActionResult<UserDto>> GetCurrentAdminUser()
+        {
+            var user = await _userService.GetCurrentUserAsync();
+            if (user == null)
+                return NotFound();
+            if (!user.IsAdmin)
+                return StatusCode(403);
+
+            return Ok(_userMapper.ToDto(user));
+        }
+
         [HttpPost]
         [Route("forgotPassword")]
         public async Task<ActionResult<bool>> ForgotPassword(ForgotPasswordDto forgotPasswordDto)
