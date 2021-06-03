@@ -1147,7 +1147,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                                 { "user-name", participant.Name },
                                 { "witness-name", witness.Name },
                                 { "case-name", depositionResult.Value.Case.Name },
-                                { "start-date",  startDate.GetFormattedDateTime(depositionResult.Value.TimeZone)},
+                                { "start-date",  depositionResult.Value.StartDate.GetFormattedDateTime(depositionResult.Value.TimeZone)},
                                 { "depo-details-link", $"{_urlPathConfiguration.FrontendBaseUrl}deposition/post-depo-details/{depositionResult.Value.Id}" },
                                 { "logo", $"{_emailConfiguration.ImagesUrl}{_emailConfiguration.LogoImageName}"},
                                 { "calendar", $"{_emailConfiguration.ImagesUrl}{_emailConfiguration.CalendarImageName}"}
