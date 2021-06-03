@@ -1,5 +1,6 @@
 ﻿using PrecisionReporters.Platform.Data.Entities;
 using System;
+using PrecisionReporters.Platform.Domain.Dtos;
 
 namespace PrecisionReporters.Platform.UnitTests.Utils
 {
@@ -60,6 +61,23 @@ namespace PrecisionReporters.Platform.UnitTests.Utils
                 Password = "123456",
                 PhoneNumber = "1234567890",
                 IsGuest = true
+            };
+        }
+
+        public static UserDto GetCreateUserDto()
+        {
+            return new UserDto
+            {
+                Id = Guid.NewGuid(),
+                CreationDate = DateTime.UtcNow,
+                EmailAddress = "mock@mail.Com",
+                FirstName = "First",
+                LastName = "Last",
+                PhoneNumber = "2105428027",
+                CompanyAddress = "Mock Address",
+                CompanyName = "Mock & Co",
+                IsAdmin = false,
+                IsGuest = false
             };
         }
     }

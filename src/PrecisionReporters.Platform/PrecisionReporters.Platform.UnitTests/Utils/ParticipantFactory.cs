@@ -1,6 +1,7 @@
 ﻿using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Domain.Dtos;
 using System;
+using PrecisionReporters.Platform.Data.Enums;
 
 namespace PrecisionReporters.Platform.UnitTests.Utils
 {
@@ -15,6 +16,32 @@ namespace PrecisionReporters.Platform.UnitTests.Utils
                 Name = "Participant Email",
                 IsMuted = false,
                 DepositionId = depositionId
+            };
+        }
+
+        public static ParticipantDto GetParticipantDtoByGivenRole(ParticipantType role)
+        {
+            return new ParticipantDto
+            {
+                Id = Guid.NewGuid(),
+                CreationDate = DateTimeOffset.Now,
+                Email = $"{role}@mockEmail.Com",
+                Name = "Name",
+                Phone = "2105428027",
+                Role = role.ToString(),
+                User = new UserOutputDto { Id = Guid.NewGuid() }
+            };
+        }
+
+        public static CreateParticipantDto GetCreateParticipantDtoByGivenRole(ParticipantType role)
+        {
+            return new CreateParticipantDto
+            {
+                Email = $"{role}@mockEmail.Com",
+                Name = "Name",
+                Phone = "2105428027",
+                Role = role,
+                IsMuted = false
             };
         }
 
