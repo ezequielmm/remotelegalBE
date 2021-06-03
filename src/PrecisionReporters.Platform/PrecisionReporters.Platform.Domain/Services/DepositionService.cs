@@ -581,9 +581,10 @@ namespace PrecisionReporters.Platform.Domain.Services
                 return Result.Fail(new InvalidInputError("The deposition is not longer available"));
 
             var participant = deposition.Participants.FirstOrDefault(p => p.Email == guest.Email);
-            if (guest.Role == ParticipantType.Witness
-                && participant == null
-                && deposition.Participants.Single(x => x.Role == ParticipantType.Witness).UserId != null)
+            var witnessParticipant = deposition.Participants.FirstOrDefault(w => w.Role == ParticipantType.Witness && w.IsAdmitted == true);
+            if (guest.Role == ParticipantType.Witness 
+                && witnessParticipant?.Email != null 
+                && guest.Email != witnessParticipant?.Email)
                 return Result.Fail(new InvalidInputError("The deposition already has a participant as witness"));
 
             var userResult = await _userService.AddGuestUser(guest.User);
@@ -661,7 +662,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 EntityType = NotificationEntity.JoinRequest
             };
 
-            var participantResult = deposition.Participants.FirstOrDefault(p => p.Email == userResult.Value.EmailAddress);
+            var participantResult = await _participantRepository.GetFirstOrDefaultByFilter(x => x.Email == participant.Email && x.DepositionId == depositionId);
             if (participantResult != null)
             {
                 if (participantResult.IsAdmitted.HasValue && !participantResult.IsAdmitted.Value && !userResult.Value.IsAdmin)
