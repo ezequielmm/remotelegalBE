@@ -325,6 +325,12 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             // Assert
             Assert.NotNull(result);
+            _loggerMock.Verify(x => x.Log(
+                    LogLevel.Error,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((v,t) => true),
+                    It.IsAny<Exception>(),
+                    It.Is<Func<It.IsAnyType, Exception, string>>((v,t) => true)));
             Assert.IsType<Result>(result);
             Assert.True(result.IsFailed);
         }
@@ -431,6 +437,86 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             Assert.IsType<Result>(result);
             Assert.True(result.IsFailed);
             Assert.Contains(expectedError, result.Errors[0].Message);
+            _loggerMock.Verify(x => x.Log(
+                    LogLevel.Error,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((v,t) => true),
+                    It.IsAny<Exception>(),
+                    It.Is<Func<It.IsAnyType, Exception, string>>((v,t) => true)));
+        }
+
+        [Fact]
+        public void ValidateFile_ShouldReturnResultFail_IfFileLengthTooBig()
+        {
+            // Arrange
+            var maxSize = 52428800;
+            var file = new FileTransferInfo
+            {
+                Length = maxSize + 10,
+                Name = "acceptedFile.doc"
+            };
+
+            // Act
+            var result = _service.ValidateFile(file);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.IsType<Result>(result);
+            Assert.True(result.IsFailed);
+            _loggerMock.Verify(x => x.Log(
+                    LogLevel.Error,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((v,t) => true),
+                    It.IsAny<Exception>(),
+                    It.Is<Func<It.IsAnyType, Exception, string>>((v,t) => true)));
+        }
+
+        [Fact]
+        public void ValidateFile_ShouldReturnResultFail_IfFileExtensionNotAccepted()
+        {
+            // Arrange
+            var file = new FileTransferInfo
+            {
+                Length = 100,
+                Name = "UnacceptedFile.not"
+            };
+
+            // Act
+            var result = _service.ValidateFile(file);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.IsType<Result>(result);
+            Assert.True(result.IsFailed);
+        }
+
+        [Theory]
+        [InlineData(".pdf")]
+        [InlineData(".doc")]
+        [InlineData(".docx")]
+        [InlineData(".xls")]
+        [InlineData(".xlsx")]
+        [InlineData(".ppt")]
+        [InlineData(".pptx")]
+        [InlineData(".jpg")]
+        [InlineData(".png")]
+        [InlineData(".mp4")]
+        public void ValidateFile_ShouldReturnResultOk_IfFileExtensionAccepted(string extension)
+        {
+            // Arrange
+            var file = new FileTransferInfo
+            {
+                Length = 100,
+                Name = $"file{extension}"
+            };
+
+            // Act
+            var result = _service.ValidateFile(file);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.IsType<Result>(result);
+            Assert.True(result.IsSuccess);
         }
 
         [Fact]
@@ -1251,6 +1337,38 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(a => a == depositionId), It.Is<string[]>(i => i.SequenceEqual(includes))), Times.Once);
             Assert.NotNull(result);
             Assert.True(result.IsFailed);
+        }
+
+        [Fact]
+        public async Task UploadTrancriptions_ShouldReturnResultFail_IfFilesSizeNotValid()
+        {
+            // Arrange
+            var depositionId = Guid.NewGuid();
+            var maxSize = 52428800;
+            var file = new FileTransferInfo
+            {
+                Length = maxSize + 10,
+                Name = $"fileTooBig.doc"
+            };
+            _userServiceMock.Setup(x => x.GetCurrentUserAsync()).ReturnsAsync(new User());
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(new Deposition());
+            
+            var folder = DocumentType.Transcription.GetDescription();
+
+            // Act
+            var result = await _service.UploadTranscriptions(depositionId, new List<FileTransferInfo> { file });
+
+            // Assert
+            _userServiceMock.Verify(x => x.GetCurrentUserAsync(), Times.Once);
+            _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(a => a == depositionId), It.Is<string[]>(i => i.SequenceEqual(includes))), Times.Once);
+            Assert.NotNull(result);
+            Assert.True(result.IsFailed);
+            _loggerMock.Verify(x => x.Log(
+                    LogLevel.Error,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((v,t) => true),
+                    It.IsAny<Exception>(),
+                    It.Is<Func<It.IsAnyType, Exception, string>>((v,t) => true)));
         }
 
         [Fact]

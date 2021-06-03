@@ -96,10 +96,16 @@ namespace PrecisionReporters.Platform.Domain.Services
         public Result ValidateFiles(List<FileTransferInfo> files)
         {
             if (files.Any(f => f.Length > _documentsConfiguration.MaxFileSize))
+            {
+                _logger.LogError("Error while trying to validate files: At least one of the files size exceeds the allowed limit");
                 return Result.Fail(new InvalidInputError("Exhibit size exceeds the allowed limit"));
+            }
 
-            if (files.Any(f => !_documentsConfiguration.AcceptedFileExtensions.Contains(Path.GetExtension(f.Name))))
+            if (files.Any(f => !_documentsConfiguration.AcceptedFileExtensions.Contains(Path.GetExtension(f.Name)?.ToLower())))
+            {
+                _logger.LogError("Error while trying to validate files: At least one of the files extension is not valid");
                 return Result.Fail(new InvalidInputError("Failed to upload the file. Please try again"));
+            }
 
             return Result.Ok();
         }
@@ -107,10 +113,16 @@ namespace PrecisionReporters.Platform.Domain.Services
         public Result ValidateFile(FileTransferInfo file)
         {
             if (file.Length > _documentsConfiguration.MaxFileSize)
+            {
+                _logger.LogError("Error while trying to validate file: File size exceeds the allowed limit");
                 return Result.Fail(new InvalidInputError("Exhibit size exceeds the allowed limit"));
+            }
 
-            if (!_documentsConfiguration.AcceptedFileExtensions.Contains(Path.GetExtension(file.Name)))
+            if (!_documentsConfiguration.AcceptedFileExtensions.Contains(Path.GetExtension(file.Name)?.ToLower()))
+            {
+                _logger.LogError($"Error while trying to validate file: File extension \"{Path.GetExtension(file.Name)}\" is not valid");
                 return Result.Fail(new InvalidInputError("Failed to upload the file. Please try again"));
+            }
 
             return Result.Ok();
         }
@@ -118,10 +130,16 @@ namespace PrecisionReporters.Platform.Domain.Services
         private Result ValidateTranscriptions(List<FileTransferInfo> files)
         {
             if (files.Any(f => f.Length > _documentsConfiguration.MaxFileSize))
+            {
+                _logger.LogError("Error while trying to validate transcriptions: At least one of the files size exceeds the allowed limit");
                 return Result.Fail(new InvalidInputError("Exhibit size exceeds the allowed limit"));
+            }
 
-            if (files.Any(f => !_documentsConfiguration.AcceptedTranscriptionExtensions.Contains(Path.GetExtension(f.Name))))
+            if (files.Any(f => !_documentsConfiguration.AcceptedTranscriptionExtensions.Contains(Path.GetExtension(f.Name)?.ToLower())))
+            {
+                _logger.LogError("Error while trying to validate transcriptions: At least one of the files extension is not valid");
                 return Result.Fail(new InvalidInputError("Extension of the file is not correct"));
+            }
 
             return Result.Ok();
         }
