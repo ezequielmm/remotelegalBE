@@ -35,7 +35,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         private readonly Mock<IAwsStorageService> _awsStorageServiceMock;
         private readonly Mock<IOptions<DocumentConfiguration>> _depositionDocumentConfigurationMock;
         private readonly Mock<ILogger<DepositionDocumentService>> _loggerMock;
-        private readonly Mock<ISignalRNotificationManager> _signalRNotificationManagerMock;
+        private readonly Mock<ISignalRDepositionManager> _signalRNotificationManagerMock;
 
         private readonly List<DepositionDocument> _depositionDocuments = new List<DepositionDocument>();
 
@@ -62,7 +62,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _depositionDocumentConfigurationMock = new Mock<IOptions<DocumentConfiguration>>();
             _depositionDocumentConfigurationMock.Setup(x => x.Value).Returns(_documentConfiguration);
             _loggerMock = new Mock<ILogger<DepositionDocumentService>>();
-            _signalRNotificationManagerMock = new Mock<ISignalRNotificationManager>();
+            _signalRNotificationManagerMock = new Mock<ISignalRDepositionManager>();
 
             _depositionDocumentService = new DepositionDocumentService(
                 _depositionDocumentRepositoryMock.Object,

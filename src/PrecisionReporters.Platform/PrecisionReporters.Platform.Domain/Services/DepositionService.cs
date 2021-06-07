@@ -49,7 +49,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly IMapper<Participant, ParticipantDto, CreateParticipantDto> _participantMapper;
         private readonly IMapper<BreakRoom, BreakRoomDto, object> _breakRoomMapper;
         private readonly DepositionConfiguration _depositionConfiguration;
-        private readonly ISignalRNotificationManager _signalRNotificationManager;
+        private readonly ISignalRDepositionManager _signalRNotificationManager;
         private readonly IAwsEmailService _awsEmailService;
         private readonly UrlPathConfiguration _urlPathConfiguration;
         private readonly EmailConfiguration _emailConfiguration;
@@ -72,7 +72,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             IMapper<Deposition, DepositionDto, CreateDepositionDto> depositionMapper,
             IMapper<Participant, ParticipantDto, CreateParticipantDto> participantMapper,
             IOptions<DepositionConfiguration> depositionConfiguration,
-            ISignalRNotificationManager signalRNotificationManager,
+            ISignalRDepositionManager signalRNotificationManager,
             IAwsEmailService awsEmailService,
             IOptions<UrlPathConfiguration> urlPathConfiguration,
             IOptions<EmailConfiguration> emailConfiguration,

@@ -6,6 +6,7 @@ using PrecisionReporters.Platform.Data.Repositories.Interfaces;
 using PrecisionReporters.Platform.Domain.Dtos;
 using PrecisionReporters.Platform.Domain.Enums;
 using PrecisionReporters.Platform.Domain.Extensions;
+using PrecisionReporters.Platform.Domain.Helpers.Interfaces;
 using PrecisionReporters.Platform.Domain.QueuedBackgroundTasks.Interfaces;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using PrecisionReporters.Platform.Shared.Commons;
@@ -25,10 +26,11 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly IDepositionService _depositionService;
         private readonly ILogger<CompositionService> _logger;
         private readonly IBackgroundTaskQueue _backgroundTaskQueue;
+        private readonly ICompositionHelper _compositionHelper;
 
         public CompositionService(ICompositionRepository compositionRepository,
             ITwilioService twilioService, IRoomService roomService, IDepositionService depositionService,
-            ILogger<CompositionService> logger, IBackgroundTaskQueue backgroundTaskQueue
+            ILogger<CompositionService> logger, IBackgroundTaskQueue backgroundTaskQueue, ICompositionHelper compositionHelper
             )
         {
             _compositionRepository = compositionRepository;
@@ -37,6 +39,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             _depositionService = depositionService;
             _logger = logger;
             _backgroundTaskQueue = backgroundTaskQueue;
+            _compositionHelper = compositionHelper;
         }
 
         public async Task<Result> StoreCompositionMediaAsync(Composition composition)
@@ -122,8 +125,8 @@ namespace PrecisionReporters.Platform.Domain.Services
                 TimeZoneDescription = deposition.TimeZone,
                 OutputFormat = deposition.Room.Composition.FileType,
                 StartDate = startDateTime.Result.Value,
-                EndDate = GetDateTimestamp(deposition.Room.EndDate.Value),
-                Intervals = GetDepositionRecordingIntervals(deposition.Events, startDateTime.Result.Value)
+                EndDate = _compositionHelper.GetDateTimestamp(deposition.Room.EndDate.Value),
+                Intervals = _compositionHelper.GetDepositionRecordingIntervals(deposition.Events, startDateTime.Result.Value)
             };
         }
 
@@ -133,42 +136,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             return await _twilioService.UploadCompositionMetadata(metadata);
 
         }
-
-        public List<CompositionInterval> GetDepositionRecordingIntervals(List<DepositionEvent> events, long startTime)
-        {
-            var result = events
-                .OrderBy(x => x.CreationDate)
-                .Where(x => x.EventType == EventType.OnTheRecord || x.EventType == EventType.OffTheRecord)
-                .Aggregate(new List<CompositionInterval>(),
-                (list, x) =>
-                {
-                    if (x.EventType == EventType.OnTheRecord)
-                    {
-                        var compositionInterval = new CompositionInterval
-                        {
-                            Start = CalculateSeconds(startTime, GetDateTimestamp(x.CreationDate))
-                        };
-                        list.Add(compositionInterval);
-                    }
-                    if (x.EventType == EventType.OffTheRecord)
-                        list.Last().Stop = CalculateSeconds(startTime, GetDateTimestamp(x.CreationDate));
-
-                    return list;
-                });
-
-            return result;
-        }
-
-        private long GetDateTimestamp(DateTime date)
-        {
-            return new DateTimeOffset(date, TimeSpan.Zero).ToUnixTimeSeconds();
-        }
-
-        private int CalculateSeconds(long startTime, long splitTime)
-        {
-            return (int)(splitTime - startTime);
-        }
-
+        
         public async Task<Result> PostDepoCompositionCallback(PostDepositionEditionDto message)
         {
             var includes = new[] { nameof(Composition.Room) };

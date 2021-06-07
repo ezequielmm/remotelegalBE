@@ -5,6 +5,7 @@ using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Data.Enums;
 using PrecisionReporters.Platform.Data.Repositories.Interfaces;
 using PrecisionReporters.Platform.Domain.Dtos;
+using PrecisionReporters.Platform.Domain.Helpers.Interfaces;
 using PrecisionReporters.Platform.Domain.QueuedBackgroundTasks.Interfaces;
 using PrecisionReporters.Platform.Domain.Services;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
@@ -26,6 +27,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         private readonly Mock<IDepositionService> _depositionServiceMock;
         private readonly Mock<ILogger<CompositionService>> _loggerMock;
         private readonly Mock<IBackgroundTaskQueue> _backgroundTaskQueue;
+        private readonly Mock<ICompositionHelper> _compositionHelperMock;
 
         public CompositionServiceTest()
         {
@@ -35,29 +37,14 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _roomServiceMock = new Mock<IRoomService>();
             _loggerMock = new Mock<ILogger<CompositionService>>();
             _backgroundTaskQueue = new Mock<IBackgroundTaskQueue>();
-            //_compositionMapperMock = new Mock<IMapper<Composition, CompositionDto, object>>();
+            _compositionHelperMock = new Mock<ICompositionHelper>();
 
             _service = new CompositionService(_compositionRepositoryMock.Object, _twilioServiceMock.Object,
-                _roomServiceMock.Object, _depositionServiceMock.Object, _loggerMock.Object, _backgroundTaskQueue.Object);
+                _roomServiceMock.Object, _depositionServiceMock.Object, _loggerMock.Object, _backgroundTaskQueue.Object, _compositionHelperMock.Object);
         }
 
         public void Dispose()
         {
-        }
-
-        [Fact]
-        public async Task GetDepositionRecordingIntervals()
-        {
-            var events = new List<DepositionEvent>();
-            events.Add(new DepositionEvent { CreationDate = DateTime.UtcNow, EventType = EventType.StartDeposition });
-            events.Add(new DepositionEvent { CreationDate = DateTime.UtcNow.AddSeconds(1), EventType = EventType.OnTheRecord });
-            events.Add(new DepositionEvent { CreationDate = DateTime.UtcNow.AddSeconds(25), EventType = EventType.OffTheRecord });
-            events.Add(new DepositionEvent { CreationDate = DateTime.UtcNow.AddSeconds(56), EventType = EventType.OnTheRecord });
-            events.Add(new DepositionEvent { CreationDate = DateTime.UtcNow, EventType = EventType.StartDeposition });
-            events.Add(new DepositionEvent { CreationDate = DateTime.UtcNow.AddSeconds(125), EventType = EventType.OffTheRecord });
-            var result = await Task.Run(() => _service.GetDepositionRecordingIntervals(events, new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds()));
-
-            Assert.Equal(2, result.Count);
         }
 
         [Fact]

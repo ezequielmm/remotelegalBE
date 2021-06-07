@@ -3,13 +3,13 @@ using Microsoft.AspNet.SignalR.Hubs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
-using PrecisionReporters.Platform.Shared.Authorization.Attributes;
-using PrecisionReporters.Platform.Shared.Extensions;
 using PrecisionReporters.Platform.Api.Hubs.Interfaces;
 using PrecisionReporters.Platform.Data.Enums;
+using PrecisionReporters.Platform.Domain.Authorization.Attributes;
 using PrecisionReporters.Platform.Domain.Dtos;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using PrecisionReporters.Platform.Shared.Commons;
+using PrecisionReporters.Platform.Shared.Extensions;
 using System;
 using System.Threading.Tasks;
 

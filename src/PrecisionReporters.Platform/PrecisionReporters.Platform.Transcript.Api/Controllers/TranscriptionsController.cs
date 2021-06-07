@@ -21,18 +21,16 @@ namespace PrecisionReporters.Platform.Transcript.Api.Controllers
     {
         private readonly ITranscriptionsHandler _transcriptionsHandler;
         private readonly ITranscriptionService _transcriptionService;
-        private readonly IDocumentService _documentService;
         private readonly IMapper<Transcription, TranscriptionDto, object> _transcriptionMapper;
         private readonly IMapper<Document, DocumentDto, CreateDocumentDto> _documentMapper;
 
         public TranscriptionsController(ITranscriptionsHandler transcriptionsHandler, ITranscriptionService transcriptionService,
-            IMapper<Transcription, TranscriptionDto, object> transcriptionMapper, IMapper<Document, DocumentDto, CreateDocumentDto> documentMapper, IDocumentService documentService)
+            IMapper<Transcription, TranscriptionDto, object> transcriptionMapper, IMapper<Document, DocumentDto, CreateDocumentDto> documentMapper)
         {
             _transcriptionsHandler = transcriptionsHandler;
             _transcriptionService = transcriptionService;
             _transcriptionMapper = transcriptionMapper;
             _documentMapper = documentMapper;
-            _documentService = documentService;
         }
 
         [HttpGet]
@@ -66,28 +64,6 @@ namespace PrecisionReporters.Platform.Transcript.Api.Controllers
 
             var transcriptionList = transcriptionsResult.Value.Select(d => _documentMapper.ToDto(d.Document));
             return Ok(transcriptionList);
-        }
-
-        /// <summary>
-        /// Upload one or a set of transcriptions files and asociates them to a deposition
-        /// </summary>
-        /// <param name="depositionId">Identifier of the deposition which files are going to asociated with</param>
-        /// <returns>Ok if succeeded</returns>
-        [HttpPost]
-        [Route("{depositionId}/Files")]
-        public async Task<IActionResult> UploadTranscriptionsFiles(Guid depositionId)
-        {
-            var files = FileHandlerHelper.GetFilesFromRequest(Request);
-
-            if (files.Count == 0)
-                return BadRequest("No files to upload");
-
-            var uploadTranscriptionsFilesResult = await _documentService.UploadTranscriptions(depositionId, files);
-
-            if (uploadTranscriptionsFilesResult.IsFailed)
-                return WebApiResponses.GetErrorResponse(uploadTranscriptionsFilesResult);
-
-            return Ok();
         }
 
         [HttpGet("{depositionId}/offsets")]

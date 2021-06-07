@@ -41,7 +41,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         private readonly Mock<IDocumentRepository> _documentRepositoryMock;
         private readonly Mock<IDepositionDocumentRepository> _depositionDocumentRepositoryMock;
         private readonly Mock<IAnnotationEventRepository> _annotationEventRepositoryMock;
-        private readonly Mock<ISignalRNotificationManager> _signalRNotificationManagerMock;
+        private readonly Mock<ISignalRDepositionManager> _signalRNotificationManagerMock;
         private readonly Mock<IMapper<AnnotationEvent, AnnotationEventDto, CreateAnnotationEventDto>> _annotationEventMapperMock;
         private readonly DocumentService _service;
         private readonly string[] includes = new[] { nameof(Deposition.Requester), nameof(Deposition.Participants),
@@ -69,7 +69,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _depositionDocumentRepositoryMock = new Mock<IDepositionDocumentRepository>();
             _depositionRepositoryMock = new Mock<IDepositionRepository>();
             _annotationEventRepositoryMock = new Mock<IAnnotationEventRepository>();
-            _signalRNotificationManagerMock = new Mock<ISignalRNotificationManager>();
+            _signalRNotificationManagerMock = new Mock<ISignalRDepositionManager>();
             _annotationEventMapperMock = new Mock<IMapper<AnnotationEvent, AnnotationEventDto, CreateAnnotationEventDto>>();
 
             _service = new DocumentService(

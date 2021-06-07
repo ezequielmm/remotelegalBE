@@ -28,7 +28,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly ILogger<TranscriptionLiveAzureService> _logger;
         private PushAudioInputStream _audioInputStream;
         private SpeechRecognizer _recognizer;
-        private readonly ISignalRNotificationManager _signalRNotificationManager;
+        private readonly ISignalRTranscriptionManager _signalRTranscriptionManager;
         private readonly IMapper<Transcription, TranscriptionDto, object> _transcriptionMapper;
         private readonly IUserRepository _userRepository;
 
@@ -43,13 +43,13 @@ namespace PrecisionReporters.Platform.Domain.Services
         private static readonly SemaphoreSlim _storeTranscriptionSemaphore = new SemaphoreSlim(1);
 
         public TranscriptionLiveAzureService(IOptions<AzureCognitiveServiceConfiguration> azureConfiguration, ITranscriptionService transcriptionService,
-            ILogger<TranscriptionLiveAzureService> logger, ISignalRNotificationManager signalRNotificationManager, IMapper<Transcription, TranscriptionDto, object> transcriptionMapper,
+            ILogger<TranscriptionLiveAzureService> logger, ISignalRTranscriptionManager signalRTranscriptionManager, IMapper<Transcription, TranscriptionDto, object> transcriptionMapper,
             IUserRepository userRepository)
         {
             _azureConfiguration = azureConfiguration.Value;
             _transcriptionService = transcriptionService;
             _logger = logger;
-            _signalRNotificationManager = signalRNotificationManager;
+            _signalRTranscriptionManager = signalRTranscriptionManager;
             _transcriptionMapper = transcriptionMapper;
             _userRepository = userRepository;
         }
@@ -173,7 +173,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                     Content = transcriptionDto
                 };
 
-                await _signalRNotificationManager.SendNotificationToDepositionMembers(transcriptionDto.DepositionId, notificationtDto);
+                await _signalRTranscriptionManager.SendNotificationToDepositionMembers(transcriptionDto.DepositionId, notificationtDto);
 
                 if (isFinalTranscript)
                 {

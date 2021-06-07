@@ -16,13 +16,13 @@ namespace PrecisionReporters.Platform.Domain.Services
     {
         private readonly IParticipantRepository _participantRepository;
         private readonly IDepositionRepository _depositionRepository;
-        private readonly ISignalRNotificationManager _signalRNotificationManager;
+        private readonly ISignalRDepositionManager _signalRNotificationManager;
         private readonly IUserService _userService;
         private readonly IPermissionService _permissionService;
         private readonly IDepositionEmailService _depositionEmailService;
 
         public ParticipantService(IParticipantRepository participantRepository,
-            ISignalRNotificationManager signalRNotificationManager,
+            ISignalRDepositionManager signalRNotificationManager,
             IUserService userService,
             IDepositionRepository depositionRepository,
             IPermissionService permissionService,

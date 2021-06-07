@@ -51,7 +51,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         private readonly Mock<IMapper<Deposition, DepositionDto, CreateDepositionDto>> _depositionMapperMock;
         private readonly Mock<IMapper<Participant, ParticipantDto, CreateParticipantDto>> _participantMapperMock;
         private readonly Mock<IMapper<BreakRoom, BreakRoomDto, object>> _breakRoomMapperMock;
-        private readonly Mock<ISignalRNotificationManager> _signalRNotificationManagerMock;
+        private readonly Mock<ISignalRDepositionManager> _signalRNotificationManagerMock;
         private readonly Mock<IAwsEmailService> _awsEmailServiceMock;
         private readonly Mock<IActivityHistoryService> _activityHistoryServiceMock;
         private readonly Mock<IDepositionEmailService> _depositionEmailServiceMock;
@@ -109,7 +109,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _breakRoomMapperMock = new Mock<IMapper<BreakRoom, BreakRoomDto, object>>();
             _participantMapperMock = new Mock<IMapper<Participant, ParticipantDto, CreateParticipantDto>>();
 
-            _signalRNotificationManagerMock = new Mock<ISignalRNotificationManager>();
+            _signalRNotificationManagerMock = new Mock<ISignalRDepositionManager>();
 
             _awsEmailServiceMock = new Mock<IAwsEmailService>();
             _activityHistoryServiceMock = new Mock<IActivityHistoryService>();

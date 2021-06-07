@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using PrecisionReporters.Platform.Shared.Authorization.Attributes;
+using PrecisionReporters.Platform.Domain.Authorization.Attributes;
 using PrecisionReporters.Platform.Data.Enums;
 using PrecisionReporters.Platform.Domain.Attributes;
 using PrecisionReporters.Platform.Domain.Dtos;

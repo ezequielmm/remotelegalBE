@@ -21,10 +21,10 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly IUserService _userService;
         private readonly IRoomService _roomService;
         private readonly IMapper<BreakRoom, BreakRoomDto, object> _breakRoomMapper;
-        private readonly ISignalRNotificationManager _signalRNotificationManager;
+        private readonly ISignalRDepositionManager _signalRNotificationManager;
         private JsonSerializerSettings _serializeOptions;
 
-        public BreakRoomService(IBreakRoomRepository breakRoomRepository, IUserService userService, IRoomService roomService, IMapper<BreakRoom, BreakRoomDto, object> breakRoomMapper, ISignalRNotificationManager signalRNotificationManager)
+        public BreakRoomService(IBreakRoomRepository breakRoomRepository, IUserService userService, IRoomService roomService, IMapper<BreakRoom, BreakRoomDto, object> breakRoomMapper, ISignalRDepositionManager signalRNotificationManager)
         {
             _breakRoomRepository = breakRoomRepository;
             _userService = userService;

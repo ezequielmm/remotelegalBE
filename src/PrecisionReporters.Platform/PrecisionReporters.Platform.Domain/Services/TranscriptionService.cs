@@ -3,6 +3,7 @@ using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Data.Enums;
 using PrecisionReporters.Platform.Data.Repositories.Interfaces;
 using PrecisionReporters.Platform.Domain.Dtos;
+using PrecisionReporters.Platform.Domain.Helpers.Interfaces;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -18,23 +19,23 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly IUserRepository _userRepository;
         private readonly IDepositionDocumentRepository _depositionDocumentRepository;
         private readonly IParticipantRepository _participantRepository;
-        private readonly IDepositionService _depositionService;
-        private readonly ICompositionService _compositionService;
+        private readonly IDepositionRepository _depositionRepository;
+        private readonly ICompositionHelper _compositionHelper;
 
         public TranscriptionService(
             ITranscriptionRepository transcriptionRepository,
             IUserRepository userRepository,
             IDepositionDocumentRepository depositionDocumentRepository,
             IParticipantRepository participantRepository,
-            IDepositionService depositionService,
-            ICompositionService compositionService)
+            IDepositionRepository depositionRepository,
+            ICompositionHelper compositionHelper)
         {
             _transcriptionRepository = transcriptionRepository;
             _userRepository = userRepository;
             _depositionDocumentRepository = depositionDocumentRepository;
             _participantRepository = participantRepository;
-            _depositionService = depositionService;
-            _compositionService = compositionService;
+            _depositionRepository = depositionRepository;
+            _compositionHelper = compositionHelper;
         }
 
         public async Task<Result<Transcription>> StoreTranscription(Transcription transcription, string depositionId, string userEmail)
@@ -89,18 +90,18 @@ namespace PrecisionReporters.Platform.Domain.Services
         public async Task<Result<List<TranscriptionTimeDto>>> GetTranscriptionsWithTimeOffset(Guid depositionId)
         {
             var include = new[] { nameof(Deposition.Room), nameof(Deposition.Events) };
-            var depositionResult = await _depositionService.GetByIdWithIncludes(depositionId, include);
+            var depositionResult = await _depositionRepository.GetById(depositionId, include);
 
-            if (depositionResult.IsFailed)
-                return depositionResult.ToResult<List<TranscriptionTimeDto>>();
+            if (depositionResult == null)
+                return Result.Fail($"Unable to find deposition with Id {depositionId}");
 
             var transcriptionsResult = await GetTranscriptionsByDepositionId(depositionId);
             if (transcriptionsResult.IsFailed)
                 return transcriptionsResult.ToResult<List<TranscriptionTimeDto>>();
 
-            var deposition = depositionResult.Value;
+            var deposition = depositionResult;
             var startedAt =  VideoStartDate(deposition.Events);
-            var compositionIntervals = _compositionService.GetDepositionRecordingIntervals(deposition.Events, startedAt);
+            var compositionIntervals = _compositionHelper.GetDepositionRecordingIntervals(deposition.Events, startedAt);
 
             var resultList = transcriptionsResult.Value
                 .OrderBy(x => x.CreationDate)

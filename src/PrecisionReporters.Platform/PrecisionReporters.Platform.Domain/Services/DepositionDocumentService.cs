@@ -31,7 +31,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly IAwsStorageService _awsStorageService;
         private readonly DocumentConfiguration _documentsConfiguration;
         private readonly ILogger<DepositionDocumentService> _logger;
-        private readonly ISignalRNotificationManager _signalRNotificationManager;
+        private readonly ISignalRDepositionManager _signalRNotificationManager;
 
         public DepositionDocumentService(IDepositionDocumentRepository depositionDocumentRepository,
             IAnnotationEventService annotationEventService,
@@ -44,7 +44,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             IAwsStorageService awsStorageService,
             IOptions<DocumentConfiguration> documentConfigurations,
             ILogger<DepositionDocumentService> logger,
-            ISignalRNotificationManager signalRNotificationManager)
+            ISignalRDepositionManager signalRNotificationManager)
         {
             _documentsConfiguration = documentConfigurations.Value ?? throw new ArgumentException(nameof(documentConfigurations));
             _depositionDocumentRepository = depositionDocumentRepository;

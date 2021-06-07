@@ -10,6 +10,6 @@ namespace PrecisionReporters.Platform.Transcript.Api.Hubs.Interfaces
         /// </summary>
         /// <param name="notification"></param>
         /// <returns></returns>
-        Task ReceiveTranscription(NotificationDto notification);
+        Task ReceiveNotification(NotificationDto notification);
     }
 }

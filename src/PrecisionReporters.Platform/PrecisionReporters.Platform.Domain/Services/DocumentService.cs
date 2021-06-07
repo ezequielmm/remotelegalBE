@@ -37,7 +37,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly DocumentConfiguration _documentsConfiguration;
         private readonly IDepositionRepository _depositionRepository;
         private readonly IAnnotationEventRepository _annotationEventRepository;
-        private readonly ISignalRNotificationManager _signalRNotificationManager;
+        private readonly ISignalRDepositionManager _signalRNotificationManager;
         private readonly IMapper<AnnotationEvent, AnnotationEventDto, CreateAnnotationEventDto> _annotationEventMapper;
 
         public DocumentService(IAwsStorageService awsStorageService, IOptions<DocumentConfiguration> documentConfigurations, ILogger<DocumentService> logger,
@@ -45,7 +45,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             IPermissionService permissionService, ITransactionHandler transactionHandler,
             IDocumentRepository documentRepository, IDepositionDocumentRepository depositionDocumentRepository,
             IDepositionRepository depositionRepository, IAnnotationEventRepository annotationEventRepository,
-            ISignalRNotificationManager signalRNotificationManager,
+            ISignalRDepositionManager signalRNotificationManager,
             IMapper<AnnotationEvent, AnnotationEventDto, CreateAnnotationEventDto> annotationEventMapper)
         {
             _awsStorageService = awsStorageService;

@@ -21,14 +21,14 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         private readonly ParticipantService _participantService;
         private readonly Mock<IParticipantRepository> _participantRepositoryMock;
         private readonly Mock<IDepositionRepository> _depositionRepositoryMock;
-        private readonly Mock<ISignalRNotificationManager> _signalRNotificationManagerMock;
+        private readonly Mock<ISignalRDepositionManager> _signalRNotificationManagerMock;
         private readonly Mock<IUserService> _userServiceMock;
         private readonly Mock<IPermissionService> _permissionServiceMock;
         private readonly Mock<IDepositionEmailService> _depositionEmailServiceMock;
         public ParticipantServiceTests()
         {
             _participantRepositoryMock = new Mock<IParticipantRepository>();
-            _signalRNotificationManagerMock = new Mock<ISignalRNotificationManager>();
+            _signalRNotificationManagerMock = new Mock<ISignalRDepositionManager>();
             _userServiceMock = new Mock<IUserService>();
             _depositionRepositoryMock = new Mock<IDepositionRepository>();
             _permissionServiceMock = new Mock<IPermissionService>();

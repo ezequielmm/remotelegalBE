@@ -24,7 +24,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         private readonly Mock<IBreakRoomRepository> _breakRoomRepositoryMock;
         private readonly Mock<IUserService> _userServiceMock;
         private readonly Mock<IRoomService> _roomServiceMock;
-        private readonly Mock<ISignalRNotificationManager> _signalRNotificationManagerMock;
+        private readonly Mock<ISignalRDepositionManager> _signalRNotificationManagerMock;
         private readonly Mock<IMapper<BreakRoom, BreakRoomDto, object>> _breakRoomMapperMock;
 
         public BreakRoomServiceTest()
@@ -32,7 +32,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _breakRoomRepositoryMock = new Mock<IBreakRoomRepository>();
             _userServiceMock = new Mock<IUserService>();
             _roomServiceMock = new Mock<IRoomService>();
-            _signalRNotificationManagerMock = new Mock<ISignalRNotificationManager>();
+            _signalRNotificationManagerMock = new Mock<ISignalRDepositionManager>();
             _breakRoomMapperMock = new Mock<IMapper<BreakRoom, BreakRoomDto, object>>();
             _service = new BreakRoomService(_breakRoomRepositoryMock.Object,
                 _userServiceMock.Object,

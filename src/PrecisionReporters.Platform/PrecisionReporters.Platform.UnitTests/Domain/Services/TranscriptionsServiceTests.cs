@@ -13,6 +13,7 @@ using PrecisionReporters.Platform.UnitTests.Utils;
 using FluentResults;
 using PrecisionReporters.Platform.Domain.Mappers;
 using PrecisionReporters.Platform.Domain.Dtos;
+using PrecisionReporters.Platform.Domain.Helpers.Interfaces;
 
 namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 {
@@ -23,8 +24,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         private readonly Mock<ITranscriptionRepository> _transcriptionRepositoryMock;
         private readonly Mock<IUserRepository> _userRepositoryMock;
         private readonly Mock<IParticipantRepository> _participantRepositoryMock;
-        private readonly Mock<IDepositionService> _depositionServiceMock;
-        private readonly Mock<ICompositionService> _compositionServiceMock;
+        private readonly Mock<IDepositionRepository> _depositionRepositoryMock;
+        private readonly Mock<ICompositionHelper> _compositionHelperMock;
         private readonly Mock<IMapper<Transcription, TranscriptionDto, object>> _transcriptionMapperMock;
 
         public TranscriptionsServiceTests()
@@ -33,14 +34,14 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _depositionDocumentRepositoryMock = new Mock<IDepositionDocumentRepository>();
             _userRepositoryMock = new Mock<IUserRepository>();
             _participantRepositoryMock = new Mock<IParticipantRepository>();
-            _depositionServiceMock = new Mock<IDepositionService>();
-            _compositionServiceMock = new Mock<ICompositionService>();
+            _depositionRepositoryMock = new Mock<IDepositionRepository>();
+            _compositionHelperMock = new Mock<ICompositionHelper>();
             _transcriptionService = new TranscriptionService(_transcriptionRepositoryMock.Object,
                 _userRepositoryMock.Object,
                 _depositionDocumentRepositoryMock.Object,
                 _participantRepositoryMock.Object,
-                _depositionServiceMock.Object,
-                _compositionServiceMock.Object);
+                _depositionRepositoryMock.Object,
+                _compositionHelperMock.Object);
         }
 
         [Fact]
@@ -141,8 +142,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             deposition.Room.RecordingStartDate = DateTime.UtcNow;
             deposition.Events = DepositionFactory.GetDepositionEvents();
 
-            _depositionServiceMock.Setup(x => x.GetByIdWithIncludes(
-                It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(Result.Ok(deposition));
+            _depositionRepositoryMock.Setup(x => x.GetById(
+                It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
 
             _transcriptionRepositoryMock.Setup(x => x.GetByFilter(
                 It.IsAny<Expression<Func<Transcription, object>>>(),
@@ -150,7 +151,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 It.IsAny<Expression<Func<Transcription, bool>>>(),
                 It.IsAny<string[]>())).ReturnsAsync(GetTranscriptions(depositionId));
 
-            _compositionServiceMock.Setup(x => x.GetDepositionRecordingIntervals(
+            _compositionHelperMock.Setup(x => x.GetDepositionRecordingIntervals(
                 It.IsAny<List<DepositionEvent>>(),
                 It.IsAny<long>())).Returns(interval);
 
@@ -173,8 +174,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             deposition.Events = DepositionFactory.GetDepositionEvents();
 
-            _depositionServiceMock.Setup(x => x.GetByIdWithIncludes(
-                It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(Result.Ok(deposition));
+            _depositionRepositoryMock.Setup(x => x.GetById(
+                It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
 
             _transcriptionRepositoryMock.Setup(x => x.GetByFilter(
                 It.IsAny<Expression<Func<Transcription, object>>>(),
@@ -182,7 +183,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 It.IsAny<Expression<Func<Transcription, bool>>>(),
                 It.IsAny<string[]>())).ReturnsAsync(GetTranscriptions(depositionId));
 
-            _compositionServiceMock.Setup(x => x.GetDepositionRecordingIntervals(
+            _compositionHelperMock.Setup(x => x.GetDepositionRecordingIntervals(
                 It.IsAny<List<DepositionEvent>>(),
                 It.IsAny<long>())).Returns(GetCompositionIntervals());
 
@@ -203,8 +204,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             // Arrange
             var depositionId = Guid.NewGuid();
 
-            _depositionServiceMock.Setup(x => x.GetByIdWithIncludes(
-                It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(Result.Fail("Fail"));
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync((Deposition)null);
 
             // Act
             var result = await _transcriptionService.GetTranscriptionsWithTimeOffset(depositionId);

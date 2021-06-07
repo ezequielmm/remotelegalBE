@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using PrecisionReporters.Platform.Shared.Authorization.Attributes;
+using PrecisionReporters.Platform.Domain.Authorization.Attributes;
 using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Data.Enums;
 using PrecisionReporters.Platform.Domain.Attributes;
@@ -162,6 +162,28 @@ namespace PrecisionReporters.Platform.Api.Controllers
                 return WebApiResponses.GetErrorResponse(fileSignedUrlResult);
 
             return Ok(fileSignedUrlResult.Value);
+        }
+
+        /// <summary>
+        /// Upload one or a set of transcriptions files and asociates them to a deposition
+        /// </summary>
+        /// <param name="depositionId">Identifier of the deposition which files are going to asociated with</param>
+        /// <returns>Ok if succeeded</returns>
+        [HttpPost]
+        [Route("{depositionId}/Files")]
+        public async Task<IActionResult> UploadTranscriptionsFiles(Guid depositionId)
+        {
+            var files = FileHandlerHelper.GetFilesFromRequest(Request);
+
+            if (files.Count == 0)
+                return BadRequest("No files to upload");
+
+            var uploadTranscriptionsFilesResult = await _documentService.UploadTranscriptions(depositionId, files);
+
+            if (uploadTranscriptionsFilesResult.IsFailed)
+                return WebApiResponses.GetErrorResponse(uploadTranscriptionsFilesResult);
+
+            return Ok();
         }
     }
 }
