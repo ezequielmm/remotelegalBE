@@ -94,8 +94,8 @@ namespace PrecisionReporters.Platform.Domain.Transcripts
             document.ReplaceText("case_n_tmp", deposition.Case.CaseNumber);
             document.ReplaceText("date_tmp", startDate.ToString("dddd, MMMM d, yyyy"));
             document.ReplaceText("time_tmp", startDate.ConvertTimeZone(deposition.TimeZone));
-            document.ReplaceText("witness_tmp", deposition.Participants?.FirstOrDefault(x => x.Role == ParticipantType.Witness)?.Name.ToUpper() ?? "");
-            document.ReplaceText("reportedBy_tmp", deposition.Participants?.FirstOrDefault(x => x.Role == ParticipantType.CourtReporter)?.Name ?? "");
+            document.ReplaceText("witness_tmp", deposition.Participants?.FirstOrDefault(x => x.Role == ParticipantType.Witness)?.Name?.ToUpper() ?? "");
+            document.ReplaceText("reportedBy_tmp", deposition.Participants?.FirstOrDefault(x => x.Role == ParticipantType.CourtReporter).Name);
             document.ReplaceText("job_n_tmp", deposition.Job ?? string.Empty);
         }
 
