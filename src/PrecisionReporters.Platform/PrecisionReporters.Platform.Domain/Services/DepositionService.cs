@@ -1268,7 +1268,10 @@ namespace PrecisionReporters.Platform.Domain.Services
             joinDepositionInfo.TimeZone = Enum.GetValues(typeof(USTimeZone)).Cast<USTimeZone>().FirstOrDefault(x => x.GetDescription() == deposition.TimeZone).ToString();
             joinDepositionInfo.IsOnTheRecord = deposition.IsOnTheRecord;
             joinDepositionInfo.IsSharing = deposition.SharingDocumentId.HasValue;
-            joinDepositionInfo.Participants = deposition.Participants.Where(x => x.HasJoined == true).Select(p => _participantMapper.ToDto(p)).ToList();
+            if (shouldSendToPreDepo)
+                joinDepositionInfo.Participants = deposition.Participants.Select(p => _participantMapper.ToDto(p)).ToList();
+            else
+                joinDepositionInfo.Participants = deposition.Participants.Where(x => x.HasJoined == true).Select(p => _participantMapper.ToDto(p)).ToList();
             joinDepositionInfo.StartDate = deposition.StartDate;
             joinDepositionInfo.JobNumber = deposition.Job;
 
