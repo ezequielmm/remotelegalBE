@@ -15,7 +15,7 @@ jobs:
   build-test:
     runs-on: ubuntu-latest
     env:
-      work-dir: ./src/PrecisionReporters.Platform  
+      work-dir: ./src/PrecisionReporters.Platform
     steps:
       - uses: actions/checkout@v2
       - name: Setup .NET Core
@@ -31,7 +31,7 @@ jobs:
       - name: Test
         run: dotnet test --no-restore --verbosity normal /p:CollectCoverage=true /p:CoverletOutputFormat=opencover
         working-directory: ${{ env.work-dir }}
-  
+
   pack-deploy:
     runs-on: ubuntu-latest
     needs: [build-test]
@@ -48,27 +48,27 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ github.event.inputs.region }}
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
-      - name: Build, tag, and push image to Amazon ECR
-        id: build-image
+      - name: Build, tag, and push API image to Amazon ECR
+        id: build-api-image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: prp-be
           IMAGE_TAG: ${{ github.sha }}
-          BRANCH_IMAGE_TAG: ${{ steps.extract-branch.outputs.branch  }}-${{ github.sha }}
+          BRANCH_IMAGE_TAG: ${{ steps.extract-branch.outputs.branch }}-${{ github.sha }}
         run: |
           docker build -f ./src/PrecisionReporters.Platform/PrecisionReporters.Platform.Api/Docker/Dockerfile -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY:$BRANCH_IMAGE_TAG .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$BRANCH_IMAGE_TAG
           echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
-
-      - name: Set New Image to Amazon ECS Task Definition
-        id: task-def
-        uses: aws-actions/amazon-ecs-render-task-definition@v1
-        with:
-          task-definition: ./.github/workflows/task-definition-${{ github.event.inputs.environment }}.json
-          container-name: prp-be-container-${{ github.event.inputs.environment }}
-          image: ${{ steps.build-image.outputs.image }}
-
+      - name: Build, tag, and push Transcript Service image to Amazon ECR
+        id: build-transcript-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: prp-transcript
+          IMAGE_TAG: ${{ github.sha }}
+          BRANCH_IMAGE_TAG: ${{ steps.extract-branch.outputs.branch }}-${{ github.sha }}
+        run: |
+          docker build -f ./src/PrecisionReporters.Platform/PrecisionReporters.Platform.Transcript.Api/Docker/Dockerfile -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY:$BRANCH_IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$BRANCH_IMAGE_TAG
+          echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"

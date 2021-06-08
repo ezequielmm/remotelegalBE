@@ -102,34 +102,6 @@
                     "value": "https://*.prdevelopment.net,https://prdevelopment.net,https://localhost:3000,http://localhost:3000"
                 },
                 {
-                    "name": "AppConfiguration__GcpConfiguration__client_email",
-                    "value": "remotelegal-text-to-speech@our-service-296819.iam.gserviceaccount.com"
-                },
-                {
-                    "name": "AppConfiguration__GcpConfiguration__type",
-                    "value": "service_account"
-                },
-                {
-                    "name": "AppConfiguration__GcpConfiguration__project_id",
-                    "value": "our-service-296819"
-                },
-                {
-                    "name": "AppConfiguration__GcpConfiguration__auth_uri",
-                    "value": "https://accounts.google.com/o/oauth2/auth"
-                },
-                {
-                    "name": "AppConfiguration__GcpConfiguration__token_uri",
-                    "value": "https://oauth2.googleapis.com/token"
-                },
-                {
-                    "name": "AppConfiguration__GcpConfiguration__auth_provider_x509_cert_url",
-                    "value": "https://www.googleapis.com/oauth2/v1/certs"
-                },
-                {
-                    "name": "AppConfiguration__GcpConfiguration__client_x509_cert_url",
-                    "value": "https://www.googleapis.com/robot/v1/metadata/x509/remotelegal-text-to-speech%40our-service-296819.iam.gserviceaccount.com"
-                },
-                {
                     "name": "AppConfiguration__CloudServicesConfiguration__TranscriptionProvider",
                     "value": "Azure"
                 },
@@ -182,18 +154,6 @@
                 {
                     "name": "AppConfiguration__ConnectionStrings__MySqlConnection",
                     "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:DEV/AppConfiguration__ConnectionStrings__MySqlConnection-lbkpap"
-                },
-                {
-                    "name": "AppConfiguration__GcpConfiguration__client_id",
-                    "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:AppConfiguration__GcpConfiguration__client_id-86EMDk"
-                },
-                {
-                    "name": "AppConfiguration__GcpConfiguration__private_key",
-                    "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:AppConfiguration__GcpConfiguration__private_key-IrkP9i"
-                },
-                {
-                    "name": "AppConfiguration__GcpConfiguration__private_key_id",
-                    "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:AppConfiguration__GcpConfiguration__private_key_id-EIACdq"
                 },
                 {
                     "name": "AppConfiguration__CognitoConfiguration__GuestUsersPass",
@@ -294,7 +254,7 @@
                 }
             },
             "memoryReservation": 256,
-            "cpu": 200
+            "cpu": 100
         }
     ],
     "family": "prp-be-task-develop",
@@ -306,6 +266,6 @@
     "requiresCompatibilities": [
         "FARGATE"
     ],
-    "cpu": "512",
-    "memory": "1024"
+    "cpu": "256",
+    "memory": "512"
 }
