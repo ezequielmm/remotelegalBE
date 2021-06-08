@@ -3,12 +3,15 @@ name: Manual Deployment
 on:
   workflow_dispatch:
     inputs:
-      image:
-        description: 'IMAGE:TAG'
+      api-image:
+        description: "API-IMAGE:TAG"
+        required: true
+      transcript-image:
+        description: "TRANSCRIPT-IMAGE:TAG"
         required: true
       region:
-        description: 'Region'
-        default: 'us-east-1'
+        description: "Region"
+        default: "us-east-1"
         required: false
 
 jobs:
@@ -19,40 +22,53 @@ jobs:
       refs/heads/prod
       ', github.ref)
     steps:
-    - uses: actions/checkout@v2
-    - name: Extract Branch Name
-      id: extract-branch
-      shell: bash
-      run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
+      - uses: actions/checkout@v2
+      - name: Extract Branch Name
+        id: extract-branch
+        shell: bash
+        run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
 
-    - name: Configure AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v1
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ github.event.inputs.region }}
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ github.event.inputs.region }}
 
-    - name: Update environment files UAT
-      if: ${{ steps.extract-branch.outputs.branch == 'uat' }}
-      run:
-        aws s3 sync s3://environment-files-qa s3://environment-files-uat --metadata-directive REPLACE --cache-control 'max-age=86400,must-revalidate,public' --delete
+      - name: Update environment files UAT
+        if: ${{ steps.extract-branch.outputs.branch == 'uat' }}
+        run: aws s3 sync s3://environment-files-qa s3://environment-files-uat --metadata-directive REPLACE --cache-control 'max-age=86400,must-revalidate,public' --delete
 
-    - name: Update environment files PROD
-      if: ${{ steps.extract-branch.outputs.branch == 'prod' }}
-      run:
-        aws s3 sync s3://environment-files-uat s3://environment-files-prod --metadata-directive REPLACE --cache-control 'max-age=86400,must-revalidate,public' --delete
+      - name: Update environment files PROD
+        if: ${{ steps.extract-branch.outputs.branch == 'prod' }}
+        run: aws s3 sync s3://environment-files-uat s3://environment-files-prod --metadata-directive REPLACE --cache-control 'max-age=86400,must-revalidate,public' --delete
 
-    - name: Set New Image to Amazon ECS Task Definition
-      id: task-def
-      uses: aws-actions/amazon-ecs-render-task-definition@v1
-      with:
-        task-definition: ./.github/workflows/task-definition-${{ steps.extract-branch.outputs.branch }}.json
-        container-name: prp-be-container-${{ steps.extract-branch.outputs.branch }}
-        image: ${{ github.event.inputs.image }}
-    - name: Update Amazon ECS Cluster Service
-      uses: aws-actions/amazon-ecs-deploy-task-definition@v1
-      with:
-        task-definition: ${{ steps.task-def.outputs.task-definition }}
-        service: prp-be-srv-${{ steps.extract-branch.outputs.branch }}
-        cluster: prp-cluster-${{ steps.extract-branch.outputs.branch }}
-        wait-for-service-stability: true
+      - name: Set New API Image to Amazon ECS Task Definition
+        id: api-task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: ./.github/workflows/task-definition-${{ steps.extract-branch.outputs.branch  }}.json
+          container-name: prp-be-container-${{ steps.extract-branch.outputs.branch }}
+          image: ${{ github.event.inputs.image }}
+      - name: Update Amazon ECS Cluster API Service
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.api-task-def.outputs.task-definition }}
+          service: prp-be-srv-${{ steps.extract-branch.outputs.branch }}
+          cluster: prp-cluster-${{ steps.extract-branch.outputs.branch }}
+          wait-for-service-stability: true
+
+      - name: Set New Transcript Service Image to Amazon ECS Task Definition
+        id: transcript-task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: ./.github/workflows/transcript-task-definition-${{ steps.extract-branch.outputs.branch }}.json
+          container-name: prp-transcript-container-${{ steps.extract-branch.outputs.branch }}
+          image: ${{ steps.build-transcript-image.outputs.image }}
+      - name: Update Amazon ECS Cluster Transcript Service
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.transcript-task-def.outputs.task-definition }}
+          service: prp-transcript-srv-${{ steps.extract-branch.outputs.branch }}
+          cluster: prp-cluster-${{ steps.extract-branch.outputs.branch }}
+          wait-for-service-stability: true
