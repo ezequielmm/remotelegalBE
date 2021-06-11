@@ -49,7 +49,7 @@ jobs:
         with:
           task-definition: ./.github/workflows/task-definition-${{ steps.extract-branch.outputs.branch  }}.json
           container-name: prp-be-container-${{ steps.extract-branch.outputs.branch }}
-          image: ${{ github.event.inputs.image }}
+          image: ${{ github.event.inputs.api-image }}
       - name: Update Amazon ECS Cluster API Service
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
@@ -64,7 +64,7 @@ jobs:
         with:
           task-definition: ./.github/workflows/transcript-task-definition-${{ steps.extract-branch.outputs.branch }}.json
           container-name: prp-transcript-container-${{ steps.extract-branch.outputs.branch }}
-          image: ${{ steps.build-transcript-image.outputs.image }}
+          image: ${{ github.event.inputs.transcript-image }}
       - name: Update Amazon ECS Cluster Transcript Service
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
