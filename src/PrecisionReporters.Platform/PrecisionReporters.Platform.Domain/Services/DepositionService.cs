@@ -874,6 +874,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             currentDeposition.Caption = caption ?? currentDeposition.Caption;
             currentDeposition.StartDate = deposition.StartDate;
             currentDeposition.EndDate = deposition.EndDate;
+            currentDeposition.TimeZone = deposition.TimeZone;
 
             return currentDeposition;
         }
