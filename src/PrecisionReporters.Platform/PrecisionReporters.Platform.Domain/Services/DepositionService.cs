@@ -872,6 +872,8 @@ namespace PrecisionReporters.Platform.Domain.Services
             currentDeposition.IsVideoRecordingNeeded = deposition.IsVideoRecordingNeeded;
             currentDeposition.Status = deposition.Status;
             currentDeposition.Caption = caption ?? currentDeposition.Caption;
+            currentDeposition.StartDate = deposition.StartDate;
+            currentDeposition.EndDate = deposition.EndDate;
 
             return currentDeposition;
         }
