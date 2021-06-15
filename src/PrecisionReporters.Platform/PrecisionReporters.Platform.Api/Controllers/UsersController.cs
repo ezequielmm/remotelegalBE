@@ -4,7 +4,9 @@ using PrecisionReporters.Platform.Domain.Dtos;
 using PrecisionReporters.Platform.Domain.Mappers;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using PrecisionReporters.Platform.Shared.Helpers;
+using PrecisionReporters.Platform.Data.Enums;
 using System.Threading.Tasks;
+using PrecisionReporters.Platform.Domain.Authorization.Attributes;
 
 namespace PrecisionReporters.Platform.Api.Controllers
 {
@@ -93,6 +95,19 @@ namespace PrecisionReporters.Platform.Api.Controllers
                 return StatusCode(403);
 
             return Ok(_userMapper.ToDto(user));
+        }
+
+        [HttpGet]
+        [Route("getUsers")]
+        [UserAuthorize(ResourceType.User, ResourceAction.List)]
+        public async Task<ActionResult<UserFilterResponseDto>> GetUsers([FromQuery] UserFilterDto filter)
+        {
+            var userResponseResult = await _userService.GetUsersByFilter(filter);
+
+            if (userResponseResult.IsFailed)
+                return WebApiResponses.GetErrorResponse(userResponseResult);
+
+            return Ok(userResponseResult.Value);
         }
 
         [HttpPost]

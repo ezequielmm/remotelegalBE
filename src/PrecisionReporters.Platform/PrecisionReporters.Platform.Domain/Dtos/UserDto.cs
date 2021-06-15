@@ -15,5 +15,6 @@ namespace PrecisionReporters.Platform.Domain.Dtos
         public string CompanyAddress { get; set; }
         public bool IsAdmin { get; set; }
         public bool IsGuest { get; set; }
+        public DateTime? VerifiedDate { get; set; }
     }
 }

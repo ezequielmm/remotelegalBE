@@ -8,6 +8,7 @@ using PrecisionReporters.Platform.Data.Handlers.Interfaces;
 using PrecisionReporters.Platform.Data.Repositories.Interfaces;
 using PrecisionReporters.Platform.Domain.Configurations;
 using PrecisionReporters.Platform.Domain.Dtos;
+using PrecisionReporters.Platform.Domain.Mappers;
 using PrecisionReporters.Platform.Domain.Services;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using PrecisionReporters.Platform.Shared.Commons;
@@ -110,9 +111,9 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var verifyUser = VerifyUserFactory.GetVerifyUser(user);
 
             var userRepositoryMock = new Mock<IUserRepository>();
-            userRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>())).ReturnsAsync(user);           
+            userRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>())).ReturnsAsync(user);
             userRepositoryMock.Setup(x => x.Update(It.IsAny<User>())).ReturnsAsync(user);
-            
+
             var cognitoServiceMock = new Mock<ICognitoService>();
             cognitoServiceMock.Setup(x => x.CheckUserExists(It.IsAny<string>())).ReturnsAsync(Result.Ok());
             cognitoServiceMock.Setup(x => x.CreateAsync(It.IsAny<User>())).Verifiable();
@@ -478,7 +479,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                     await action();
                     return Result.Ok();
                 });
-            var service = InitializeService(userRepository: userRepositoryMock,verifyUserService: verifyUserServiceMock, awsEmailService: awsEmailServiceMock, transactionHandler: transactionHandlerMock);
+            var service = InitializeService(userRepository: userRepositoryMock, verifyUserService: verifyUserServiceMock, awsEmailService: awsEmailServiceMock, transactionHandler: transactionHandlerMock);
 
             // Act
             var result = await service.ForgotPassword(dto);
@@ -502,7 +503,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             awsEmailServiceMock.Setup(x => x.SetTemplateEmailRequest(It.IsAny<EmailTemplateInfo>(), null)).Verifiable();
             var logMock = new Mock<ILogger<UserService>>();
             var service = InitializeService(awsEmailService: awsEmailServiceMock, log: logMock, userRepository: userRepositoryMock);
-            
+
             // Act
             var result = await service.ForgotPassword(dto);
 
@@ -656,7 +657,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             Mock<ICognitoService> cognitoService = null,
             Mock<IAwsEmailService> awsEmailService = null,
             Mock<IVerifyUserService> verifyUserService = null,
-            Mock<ITransactionHandler> transactionHandler = null)
+            Mock<ITransactionHandler> transactionHandler = null,
+            Mock<IMapper<User, UserDto, CreateUserDto>> _userMapper = null)
         {
 
             var logMock = log ?? new Mock<ILogger<UserService>>();
@@ -667,6 +669,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var transactionHandlerMock = transactionHandler ?? new Mock<ITransactionHandler>();
             var urlPathConfigurationMock = new Mock<IOptions<UrlPathConfiguration>>();
             var verificationLinkConfigurationMock = new Mock<IOptions<VerificationLinkConfiguration>>();
+            var userMapperMock = _userMapper ?? new Mock<IMapper<User, UserDto, CreateUserDto>>();
             urlPathConfigurationMock.Setup(x => x.Value).Returns(_urlPathConfiguration);
             verificationLinkConfigurationMock.Setup(x => x.Value).Returns(_verificationLinkConfiguration);
 
@@ -679,7 +682,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 transactionHandlerMock.Object,
                 urlPathConfigurationMock.Object,
                 verificationLinkConfigurationMock.Object,
-                null);
+                null,
+                userMapperMock.Object);
         }
     }
 }
