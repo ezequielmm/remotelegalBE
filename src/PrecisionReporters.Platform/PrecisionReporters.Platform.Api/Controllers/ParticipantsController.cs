@@ -57,10 +57,14 @@ namespace PrecisionReporters.Platform.Api.Controllers
         /// <returns>Ok if succeeded</returns>
         [HttpDelete("Depositions/{id}/participants/{participantId}")]
         [UserAuthorize(ResourceType.Deposition, ResourceAction.Update)]
-        public async Task<ActionResult<Guid>> RemoveParticipantFromExistingDeposition([ResourceId(ResourceType.Deposition)] Guid id, Guid participantId)
+        public async Task<ActionResult> RemoveParticipantFromExistingDeposition([ResourceId(ResourceType.Deposition)] Guid id, Guid participantId)
         {
             var result = await _participantService.RemoveParticipantFromDeposition(id, participantId);
-            return Ok(result);
+
+            if (result.IsFailed)
+                return WebApiResponses.GetErrorResponse(result);
+
+            return Ok();
         }
 
         /// <summary>

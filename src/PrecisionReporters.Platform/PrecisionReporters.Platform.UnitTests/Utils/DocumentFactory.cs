@@ -25,6 +25,24 @@ namespace PrecisionReporters.Platform.UnitTests.Utils
             };
         }
 
+        public static DocumentDto GetDocumentDto()
+        {
+            return new DocumentDto
+            {
+                Id = Guid.NewGuid(),
+                CreationDate = new DateTimeOffset(DateTime.UtcNow, TimeSpan.Zero),
+                DisplayName = "Mock Display Name",
+                Size = 1088,
+                Name = "Mock Document",
+                AddedBy = new UserOutputDto
+                {
+                    Id = Guid.NewGuid(),
+                },
+                SharedAt = new DateTimeOffset(DateTime.UtcNow, TimeSpan.Zero),
+                DocumentType = DocumentType.Exhibit
+            };
+        }
+
         public static CreateDocumentDto GetCreateDocumentDtoByDocumentType()
         {
             return new CreateDocumentDto()
