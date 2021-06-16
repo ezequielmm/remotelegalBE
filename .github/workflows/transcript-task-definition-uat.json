@@ -135,7 +135,7 @@
         },
         {
           "name": "DD_SERVICE",
-          "value": "prp-be-uat"
+          "value": "prp-transcript-uat"
         },
         {
           "name": "DD_TRACE_AGENT_PORT",

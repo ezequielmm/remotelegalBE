@@ -135,7 +135,7 @@
         },
         {
           "name": "DD_SERVICE",
-          "value": "prp-be-prod"
+          "value": "prp-transcript-prod"
         },
         {
           "name": "DD_TRACE_AGENT_PORT",
