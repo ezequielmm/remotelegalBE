@@ -144,6 +144,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 UserSortField.FirstName => x => x.FirstName,
                 UserSortField.LastName => x => x.LastName,
                 UserSortField.Email => x => x.EmailAddress,
+                UserSortField.Company => x => x.CompanyName,
                 UserSortField.AccountCreationDate => x => x.CreationDate,
                 UserSortField.AccountVerifiedDate => x => x.VerifiedUsers.FirstOrDefault(y => y.VerificationType == VerificationType.VerifyUser),
                 _ => x => x.LastName,

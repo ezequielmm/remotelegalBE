@@ -5,6 +5,7 @@
         FirstName,
         LastName,
         Email,
+        Company,
         AccountCreationDate,
         AccountVerifiedDate
     }
