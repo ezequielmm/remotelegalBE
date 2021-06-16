@@ -755,7 +755,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         private int GetOnTheRecordTime(List<DepositionEvent> events)
         {
             int total = 0;
-            events
+            _ = events
                 .OrderBy(x => x.CreationDate)
                 .Where(x => x.EventType == EventType.OnTheRecord || x.EventType == EventType.OffTheRecord)
                 .Aggregate(new List<DateTime>(),
