@@ -4,9 +4,7 @@ using PrecisionReporters.Platform.Domain.Dtos;
 using PrecisionReporters.Platform.Domain.Mappers;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using PrecisionReporters.Platform.Shared.Helpers;
-using PrecisionReporters.Platform.Data.Enums;
 using System.Threading.Tasks;
-using PrecisionReporters.Platform.Domain.Authorization.Attributes;
 
 namespace PrecisionReporters.Platform.Api.Controllers
 {
@@ -98,8 +96,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
         }
 
         [HttpGet]
-        [Route("getUsers")]
-        [UserAuthorize(ResourceType.User, ResourceAction.List)]
+        [Route("users")]
         public async Task<ActionResult<UserFilterResponseDto>> GetUsers([FromQuery] UserFilterDto filter)
         {
             var userResponseResult = await _userService.GetUsersByFilter(filter);

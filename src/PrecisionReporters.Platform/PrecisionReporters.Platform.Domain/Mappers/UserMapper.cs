@@ -21,7 +21,7 @@ namespace PrecisionReporters.Platform.Domain.Mappers
                 CompanyAddress = model.CompanyAddress,
                 IsAdmin = model.IsAdmin,
                 IsGuest = model.IsGuest,
-                VerifiedDate = model.VerifiedUsers?.FirstOrDefault(y => y.VerificationType == VerificationType.VerifyUser).CreationDate  
+                VerifiedDate = model.VerifiedUsers?.FirstOrDefault(y => y.VerificationType == VerificationType.VerifyUser)?.CreationDate
             };
         }
 
