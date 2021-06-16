@@ -24,7 +24,7 @@ jobs:
         run: dotnet test --no-restore --verbosity normal /p:CollectCoverage=true /p:CoverletOutputFormat=opencover
         working-directory: ${{ env.work-dir }}
 
-  pack-deploy:
+  pack-deploy-api:
     runs-on: ubuntu-latest
     needs: [build-test]
     steps:
@@ -40,6 +40,7 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
+
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
@@ -52,18 +53,6 @@ jobs:
           BRANCH_IMAGE_TAG: ${{ steps.extract-branch.outputs.branch }}-${{ github.sha }}
         run: |
           docker build -f ./src/PrecisionReporters.Platform/PrecisionReporters.Platform.Api/Docker/Dockerfile -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY:$BRANCH_IMAGE_TAG .
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$BRANCH_IMAGE_TAG
-          echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
-      - name: Build, tag, and push Transcript Service image to Amazon ECR
-        id: build-transcript-image
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: prp-transcript
-          IMAGE_TAG: ${{ github.sha }}
-          BRANCH_IMAGE_TAG: ${{ steps.extract-branch.outputs.branch }}-${{ github.sha }}
-        run: |
-          docker build -f ./src/PrecisionReporters.Platform/PrecisionReporters.Platform.Transcript.Api/Docker/Dockerfile -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY:$BRANCH_IMAGE_TAG .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$BRANCH_IMAGE_TAG
           echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
@@ -82,6 +71,39 @@ jobs:
           service: prp-be-srv-develop
           cluster: prp-cluster-nonprod
           wait-for-service-stability: true
+
+  pack-deploy-transcript:
+    runs-on: ubuntu-latest
+    needs: [build-test]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Extract Branch Name
+        id: extract-branch
+        shell: bash
+        run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+      - name: Build, tag, and push Transcript Service image to Amazon ECR
+        id: build-transcript-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: prp-transcript
+          IMAGE_TAG: ${{ github.sha }}
+          BRANCH_IMAGE_TAG: ${{ steps.extract-branch.outputs.branch }}-${{ github.sha }}
+        run: |
+          docker build -f ./src/PrecisionReporters.Platform/PrecisionReporters.Platform.Transcript.Api/Docker/Dockerfile -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY:$BRANCH_IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$BRANCH_IMAGE_TAG
+          echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
 
       - name: Set New Transcript Service Image to Amazon ECS Task Definition
         id: transcript-task-def

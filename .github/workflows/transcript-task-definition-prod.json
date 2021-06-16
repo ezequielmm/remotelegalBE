@@ -106,10 +106,6 @@
           "value": "96"
         },
         {
-          "name": "CORECLR_ENABLE_PROFILING",
-          "value": "1"
-        },
-        {
           "name": "CORECLR_PROFILER",
           "value": "{846F5F1C-F9AE-4B07-969E-05C26BC060D8}"
         },
@@ -118,24 +114,44 @@
           "value": "/opt/datadog/Datadog.Trace.ClrProfiler.Native.so"
         },
         {
-          "name": "DD_INTEGRATIONS",
-          "value": "/opt/datadog/integrations.json"
+          "name": "DD_AGENT_HOST",
+          "value": "localhost"
         },
         {
           "name": "DD_DOTNET_TRACER_HOME",
           "value": "/opt/datadog"
         },
         {
-          "name": "DD_TRACE_AGENT_URL",
-          "value": "http://localhost:8126"
-        },
-        {
           "name": "DD_ENV",
           "value": "prod"
         },
         {
+          "name": "DD_INTEGRATIONS",
+          "value": "/opt/datadog/integrations.json"
+        },
+        {
+          "name": "DD_LOGS_INJECTION",
+          "value": "true"
+        },
+        {
           "name": "DD_SERVICE",
-          "value": "prp-transcript-prod"
+          "value": "prp-be-prod"
+        },
+        {
+          "name": "DD_TRACE_AGENT_PORT",
+          "value": "8126"
+        },
+        {
+          "name": "DD_TRACE_DEBUG",
+          "value": "true"
+        },
+        {
+          "name": "DD_TRACE_ENABLED",
+          "value": "true"
+        },
+        {
+          "name": "DD_RUNTIME_METRICS_ENABLED",
+          "value": "true"
         },
         {
           "name": "AppConfiguration__ConnectionStrings__RedisConnectionString",
@@ -182,6 +198,10 @@
         {
           "name": "AppConfiguration__DocumentConfiguration__PDFTronLicenseKey",
           "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:AppConfiguration__DocumentConfiguration__PDFTronLicenseKey-ZF4Gtw"
+        },
+        {
+          "name": "CORECLR_ENABLE_PROFILING",
+          "valueFrom": "arn:aws:secretsmanager:us-east-2:747865543072:secret:PROD/CORECLR_ENABLE_PROFILING-bdDvNH"
         }
       ],
       "dockerLabels": {
@@ -213,8 +233,16 @@
       "essential": true,
       "environment": [
         {
-          "name": "ECS_FARGATE",
+          "name": "DD_APM_NON_LOCAL_TRAFFIC",
           "value": "true"
+        },
+        {
+          "name": "DD_DOGSTATSD_NON_LOCAL_TRAFFIC",
+          "value": "true"
+        },
+        {
+          "name": "DD_DOGSTATSD_PORT",
+          "value": "8125"
         },
         {
           "name": "DD_LOGS_ENABLED",
@@ -225,18 +253,22 @@
           "value": "true"
         },
         {
-          "name": "DD_APM_ENABLED",
+          "name": "ECS_FARGATE",
           "value": "true"
         },
         {
-          "name": "DD_APM_NON_LOCAL_TRAFFIC",
-          "value": "true"
+          "name": "DD_ENV",
+          "value": "prod"
         }
       ],
       "secrets": [
         {
           "name": "DD_API_KEY",
           "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:DATADOG_API_KEY-9EoxaV"
+        },
+        {
+          "name": "DD_APM_ENABLED",
+          "valueFrom": "arn:aws:secretsmanager:us-east-2:747865543072:secret:PROD/DD_APM_ENABLED-23yrWS"
         }
       ],
       "mountPoints": [],
