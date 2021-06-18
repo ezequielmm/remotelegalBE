@@ -6,9 +6,6 @@ namespace PrecisionReporters.Platform.Domain.Mappers
 {
     public class DepositionEventMapper : IMapper<DepositionEvent, DepositionEventDto, CreateDepositionEventDto>
     {
-        public DepositionEventMapper()
-        {
-        }
 
         public DepositionEventDto ToDto(DepositionEvent model)
         {

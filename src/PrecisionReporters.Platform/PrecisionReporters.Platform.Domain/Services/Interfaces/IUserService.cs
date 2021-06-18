@@ -15,6 +15,7 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
         Task ResendVerificationEmailAsync(string email);
         Task<Result<User>> GetUserByEmail(string email);
         Task<List<User>> GetUsersByFilter(Expression<Func<User, bool>> filter = null, string[] include = null);
+        Task<Result<UserFilterResponseDto>> GetUsersByFilter(UserFilterDto filterDto);
         Task<User> GetCurrentUserAsync();
         Task<Result<GuestToken>> LoginGuestAsync(string emailAddress);
         Task<Result<User>> AddGuestUser(User user);

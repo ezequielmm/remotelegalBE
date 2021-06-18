@@ -29,6 +29,8 @@ namespace PrecisionReporters.Platform.Data.Entities
         public bool IsGuest { get; set; } = false;
         public string SId { get; set; }
 
+        public List<VerifyUser> VerifiedUsers { get; set; }
+
         public override void CopyFrom(User entity)
         {
             FirstName = entity.FirstName;

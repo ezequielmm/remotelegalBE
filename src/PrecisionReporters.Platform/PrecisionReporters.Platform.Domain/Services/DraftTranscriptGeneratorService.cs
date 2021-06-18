@@ -43,7 +43,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex.Message);
+                _logger.LogError(ex.Message,"Error generating file form stream of deposition id: {0}", draftTranscriptDto.DepositionId);
                 return Result.Fail(new ExceptionalError("Error generating file form stream.", ex));
             }
 

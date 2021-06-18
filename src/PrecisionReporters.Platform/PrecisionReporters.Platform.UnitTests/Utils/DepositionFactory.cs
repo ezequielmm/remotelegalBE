@@ -2,6 +2,7 @@
 using PrecisionReporters.Platform.Data.Enums;
 using System;
 using System.Collections.Generic;
+using PrecisionReporters.Platform.Domain.Dtos;
 
 namespace PrecisionReporters.Platform.UnitTests.Utils
 {
@@ -51,7 +52,15 @@ namespace PrecisionReporters.Platform.UnitTests.Utils
                 {
                     Id = Guid.NewGuid(),
                     Name = "DepositionDocument_1",
-                    FileKey = "fileKey"
+                    FileKey = "fileKey",
+                    AddedBy = new User
+                    {
+                        Id = Guid.NewGuid(),
+                        EmailAddress = "jbrown@email.com",
+                        FirstName = "John",
+                        LastName = "Brown",
+                        IsAdmin = true
+                    }
                 },
                 TimeZone = "America/New_York",
                 Participants = new List<Participant> { new Participant { Role = ParticipantType.Witness } }
@@ -211,6 +220,44 @@ namespace PrecisionReporters.Platform.UnitTests.Utils
                 {
                     EmailAddress = "requester@email.com"
                 }
+            };
+        }
+
+        public static DepositionDto GetDepositionDtoWithWitness(Guid depositionId, Guid caseId)
+        {
+            return new DepositionDto
+            {
+                Id = depositionId,
+                StartDate = DateTime.UtcNow,
+                EndDate = DateTime.UtcNow.AddHours(5),
+                CreationDate = DateTime.UtcNow,
+                Requester = new UserDto
+                {
+                    Id = Guid.NewGuid(),
+                    EmailAddress = "jbrown@email.com",
+                    FirstName = "John",
+                    LastName = "Brown",
+                    IsAdmin = true
+                },
+                Room = new RoomDto
+                {
+                    Id = Guid.NewGuid(),
+                    Name = $"{caseId}_{Guid.NewGuid()}",
+                    IsRecordingEnabled = true
+                },
+                Caption = DocumentFactory.GetDocumentDtoByDocumentType(DocumentType.Transcription),
+                TimeZone = "ET",
+                Participants = new List<ParticipantDto> 
+                    { ParticipantFactory.GetParticipantDtoByGivenRole(ParticipantType.CourtReporter) }
+            };
+        }
+
+        public static EditDepositionDto GetEditDepositionDto()
+        {
+            return new EditDepositionDto
+            {
+                Deposition = GetDepositionDtoWithWitness(Guid.NewGuid(), Guid.NewGuid()),
+                DeleteCaption = false
             };
         }
     }

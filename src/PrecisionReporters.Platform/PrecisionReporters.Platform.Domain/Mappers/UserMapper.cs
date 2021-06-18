@@ -1,5 +1,7 @@
 ﻿using PrecisionReporters.Platform.Data.Entities;
+using PrecisionReporters.Platform.Data.Enums;
 using PrecisionReporters.Platform.Domain.Dtos;
+using System.Linq;
 
 namespace PrecisionReporters.Platform.Domain.Mappers
 {
@@ -18,7 +20,8 @@ namespace PrecisionReporters.Platform.Domain.Mappers
                 CompanyName = model.CompanyName,
                 CompanyAddress = model.CompanyAddress,
                 IsAdmin = model.IsAdmin,
-                IsGuest = model.IsGuest
+                IsGuest = model.IsGuest,
+                VerifiedDate = model.VerifiedUsers?.FirstOrDefault(y => y.VerificationType == VerificationType.VerifyUser)?.CreationDate
             };
         }
 

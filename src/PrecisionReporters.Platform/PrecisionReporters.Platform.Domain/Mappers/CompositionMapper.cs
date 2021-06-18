@@ -18,7 +18,8 @@ namespace PrecisionReporters.Platform.Domain.Mappers
                 LastUpdated = model.LastUpdated,
                 SId = model.SId,
                 Url = model.Url,
-                MediaUrl = model.MediaUri
+                MediaUrl = model.MediaUri,
+                RoomId = model.RoomId
             };
         }
 

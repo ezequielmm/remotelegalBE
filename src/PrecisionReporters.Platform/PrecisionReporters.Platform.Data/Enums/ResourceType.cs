@@ -4,6 +4,7 @@
     {
         Deposition,
         Case,
-        Document
+        Document,
+        User
     }
 }

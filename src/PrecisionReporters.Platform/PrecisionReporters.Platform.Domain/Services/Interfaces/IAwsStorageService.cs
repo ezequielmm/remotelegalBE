@@ -16,5 +16,6 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
         Task<Stream> GetObjectAsync(string objectKey, string bucketName);
         Task<Result> UploadObjectFromStreamAsync(string keyName, Stream fileStream, string bucketName);
         Task<List<S3Object>> GetAllObjectInBucketAsync(string bucket);
+        Task<Result> UploadObjectFromFileAsync(string fileName, string documentKeyName, string bucketName);
     }
 }

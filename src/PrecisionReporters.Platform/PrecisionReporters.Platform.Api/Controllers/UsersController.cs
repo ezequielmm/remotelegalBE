@@ -95,6 +95,25 @@ namespace PrecisionReporters.Platform.Api.Controllers
             return Ok(_userMapper.ToDto(user));
         }
 
+        [HttpGet]
+        [Route("users")]
+        public async Task<ActionResult<UserFilterResponseDto>> GetUsers([FromQuery] UserFilterDto filter)
+        {
+            // TODO: Remove this block after Authorization decorator refactoring
+            var user = await _userService.GetCurrentUserAsync();
+            if (user == null)
+                return NotFound();
+            if (!user.IsAdmin)
+                return StatusCode(403);
+
+            var userResponseResult = await _userService.GetUsersByFilter(filter);
+
+            if (userResponseResult.IsFailed)
+                return WebApiResponses.GetErrorResponse(userResponseResult);
+
+            return Ok(userResponseResult.Value);
+        }
+
         [HttpPost]
         [Route("forgotPassword")]
         public async Task<ActionResult<bool>> ForgotPassword(ForgotPasswordDto forgotPasswordDto)

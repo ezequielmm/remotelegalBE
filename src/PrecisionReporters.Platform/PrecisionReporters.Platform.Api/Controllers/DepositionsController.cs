@@ -201,7 +201,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
         /// <param name="id">Deposition identifier</param>
         /// <returns>List of DepositionEvent of an existing Deposition</returns>
         [HttpGet("{id}/events")]
-        public async Task<ActionResult<DocumentWithSignedUrlDto>> GetDepositionEvents(Guid id)
+        public async Task<ActionResult<List<DepositionEventDto>>> GetDepositionEvents(Guid id)
         {
             var eventsResult = await _depositionService.GetDepositionEvents(id);
             if (eventsResult.IsFailed)
@@ -371,7 +371,9 @@ namespace PrecisionReporters.Platform.Api.Controllers
         [AllowAnonymous]
         public async Task<ActionResult<DepositionDto>> EditDepositionDetails([ResourceId(ResourceType.Deposition)] Guid id, EditDepositionDto editDepositionDto)
         {
-            var file = FileHandlerHelper.GetFilesFromRequest(Request.Form.Files).FirstOrDefault().Value;
+            var file = Request.HasFormContentType?
+                FileHandlerHelper.GetFilesFromRequest(Request.Form.Files).FirstOrDefault().Value 
+                : null;
             editDepositionDto.Deposition.Id = id;
             var deposition = _depositionMapper.ToModel(editDepositionDto.Deposition);
             var result = await _depositionService.EditDepositionDetails(deposition, file, editDepositionDto.DeleteCaption);
@@ -386,6 +388,9 @@ namespace PrecisionReporters.Platform.Api.Controllers
         public async Task<ActionResult> AdmitParticipant([ResourceId(ResourceType.Deposition)] Guid id, Guid participantId, [FromBody] JoinDepositionResponseDto admitParticipant)
         {
             var result = await _depositionService.AdmitDenyParticipant(participantId, admitParticipant.IsAdmitted);
+            if (result.IsFailed)
+                return WebApiResponses.GetErrorResponse(result);
+
             return Ok(result);
         }
 
@@ -421,7 +426,9 @@ namespace PrecisionReporters.Platform.Api.Controllers
         [UserAuthorize(ResourceType.Deposition, ResourceAction.Revert)]
         public async Task<ActionResult<DepositionDto>> RevertCancel([ResourceId(ResourceType.Deposition)] Guid id, EditDepositionDto editDepositionDto)
         {
-            var file = FileHandlerHelper.GetFilesFromRequest(Request.Form.Files).FirstOrDefault().Value;
+            var file = Request.HasFormContentType?
+                FileHandlerHelper.GetFilesFromRequest(Request.Form.Files).FirstOrDefault().Value 
+                : null;
             editDepositionDto.Deposition.Id = id;
             var deposition = _depositionMapper.ToModel(editDepositionDto.Deposition);
             var result = await _depositionService.RevertCancel(deposition, file, editDepositionDto.DeleteCaption);
@@ -435,7 +442,9 @@ namespace PrecisionReporters.Platform.Api.Controllers
         [UserAuthorize(ResourceType.Deposition, ResourceAction.ReSchedule)]
         public async Task<ActionResult<DepositionDto>> ReScheduleDeposition([ResourceId(ResourceType.Deposition)] Guid id, EditDepositionDto editDepositionDto)
         {
-            var file = FileHandlerHelper.GetFilesFromRequest(Request.Form.Files).FirstOrDefault().Value;
+            var file = Request.HasFormContentType?
+                FileHandlerHelper.GetFilesFromRequest(Request.Form.Files).FirstOrDefault().Value 
+                : null;
             editDepositionDto.Deposition.Id = id;
             var deposition = _depositionMapper.ToModel(editDepositionDto.Deposition);
             var result = await _depositionService.ReScheduleDeposition(deposition, file, editDepositionDto.DeleteCaption);

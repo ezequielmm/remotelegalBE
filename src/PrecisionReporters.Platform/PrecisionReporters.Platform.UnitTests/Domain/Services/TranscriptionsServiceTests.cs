@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using Xunit;
 using PrecisionReporters.Platform.UnitTests.Utils;
 using FluentResults;
+using Microsoft.Extensions.Logging;
 using PrecisionReporters.Platform.Domain.Mappers;
 using PrecisionReporters.Platform.Domain.Dtos;
 using PrecisionReporters.Platform.Domain.Helpers.Interfaces;
@@ -26,7 +27,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         private readonly Mock<IParticipantRepository> _participantRepositoryMock;
         private readonly Mock<IDepositionRepository> _depositionRepositoryMock;
         private readonly Mock<ICompositionHelper> _compositionHelperMock;
-        private readonly Mock<IMapper<Transcription, TranscriptionDto, object>> _transcriptionMapperMock;
+        private readonly Mock<ILogger<TranscriptionService>> _loggerMock;
 
         public TranscriptionsServiceTests()
         {
@@ -36,12 +37,14 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _participantRepositoryMock = new Mock<IParticipantRepository>();
             _depositionRepositoryMock = new Mock<IDepositionRepository>();
             _compositionHelperMock = new Mock<ICompositionHelper>();
+            _loggerMock = new Mock<ILogger<TranscriptionService>>();
             _transcriptionService = new TranscriptionService(_transcriptionRepositoryMock.Object,
                 _userRepositoryMock.Object,
                 _depositionDocumentRepositoryMock.Object,
                 _participantRepositoryMock.Object,
                 _depositionRepositoryMock.Object,
-                _compositionHelperMock.Object);
+                _compositionHelperMock.Object,
+                _loggerMock.Object);
         }
 
         [Fact]
@@ -116,6 +119,44 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             _participantRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Participant, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()))
                     .ReturnsAsync(participant);
+
+            //  Act
+            var result = await _transcriptionService.GetTranscriptionsFiles(depositionId, identity);
+            var documentResult = result.Value;
+
+            // Assert
+            _depositionDocumentRepositoryMock.Verify(mock => mock.GetByFilter(It.IsAny<Expression<Func<DepositionDocument, object>>>(), It.IsAny<SortDirection>(), It.IsAny<Expression<Func<DepositionDocument, bool>>>(), It.IsAny<string[]>()), Times.Once());
+            Assert.True(documentResult.Count.Equals(0));
+        }
+
+        [Fact]
+        public async Task GetTranscriptionsFiles_Test_WhenUserIsNotACourtReporter()
+        {
+            // Arrange
+            var depositionId = Guid.NewGuid();
+            var identity = "user@email.com";
+            var documentList = new List<DepositionDocument>();
+            var participant = new Participant
+            {
+                UserId = Guid.NewGuid(),
+                Role = ParticipantType.Attorney
+            };
+            var user = new User
+            {
+                FirstName = "UserName",
+                LastName = "LastName",
+                EmailAddress = "email@email.com"
+            };
+
+            _userRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()))
+                .ReturnsAsync(user);
+
+            _depositionDocumentRepositoryMock
+                .Setup(x => x.GetByFilter(It.IsAny<Expression<Func<DepositionDocument, object>>>(), It.IsAny<SortDirection>(), It.IsAny<Expression<Func<DepositionDocument, bool>>>(), It.IsAny<string[]>()))
+                .ReturnsAsync(documentList);
+
+            _participantRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Participant, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()))
+                .ReturnsAsync(participant);
 
             //  Act
             var result = await _transcriptionService.GetTranscriptionsFiles(depositionId, identity);

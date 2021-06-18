@@ -1,9 +1,10 @@
 ﻿using PrecisionReporters.Platform.Data.Entities;
 using System;
+using PrecisionReporters.Platform.Domain.Dtos;
 
 namespace PrecisionReporters.Platform.UnitTests.Utils
 {
-    public class RoomFactory
+    public static class RoomFactory
     {
         public static Room GetRoomById(Guid roomId)
         {
@@ -48,6 +49,24 @@ namespace PrecisionReporters.Platform.UnitTests.Utils
                 Name = "RoomTest",
                 Status = RoomStatus.InProgress,
                 SId = "12345"
+            };
+        }
+
+        public static CreateRoomDto GetCreateRoomDto()
+        {
+            return new CreateRoomDto
+            {
+                Name = "Mock Create Room",
+                IsRecordingEnabled = false
+            };
+        }
+
+        public static RoomDto GetRoomDto()
+        {
+            return new RoomDto
+            {
+                Name = "Mock Room Dto",
+                IsRecordingEnabled = true
             };
         }
     }

@@ -10,6 +10,7 @@ using PrecisionReporters.Platform.Data.Repositories.Interfaces;
 using PrecisionReporters.Platform.Domain.Configurations;
 using PrecisionReporters.Platform.Domain.Dtos;
 using PrecisionReporters.Platform.Domain.Extensions;
+using PrecisionReporters.Platform.Domain.Helpers.Interfaces;
 using PrecisionReporters.Platform.Domain.Mappers;
 using PrecisionReporters.Platform.Domain.Services;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
@@ -43,6 +44,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         private readonly Mock<IAnnotationEventRepository> _annotationEventRepositoryMock;
         private readonly Mock<ISignalRDepositionManager> _signalRNotificationManagerMock;
         private readonly Mock<IMapper<AnnotationEvent, AnnotationEventDto, CreateAnnotationEventDto>> _annotationEventMapperMock;
+        private readonly Mock<IFileHelper> _fileHelperMock;
         private readonly DocumentService _service;
         private readonly string[] includes = new[] { nameof(Deposition.Requester), nameof(Deposition.Participants),
                 nameof(Deposition.Case), nameof(Deposition.AddedBy),nameof(Deposition.Caption)};
@@ -71,6 +73,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _annotationEventRepositoryMock = new Mock<IAnnotationEventRepository>();
             _signalRNotificationManagerMock = new Mock<ISignalRDepositionManager>();
             _annotationEventMapperMock = new Mock<IMapper<AnnotationEvent, AnnotationEventDto, CreateAnnotationEventDto>>();
+            _fileHelperMock = new Mock<IFileHelper>();
 
             _service = new DocumentService(
                     _awsStorageServiceMock.Object,
@@ -85,7 +88,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                     _depositionRepositoryMock.Object,
                     _annotationEventRepositoryMock.Object,
                     _signalRNotificationManagerMock.Object,
-                    _annotationEventMapperMock.Object);
+                    _annotationEventMapperMock.Object,
+                    _fileHelperMock.Object);
         }
 
         [Fact]
@@ -922,7 +926,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             // Arrange
             var documentIds = new List<Guid> { Guid.NewGuid(), Guid.NewGuid() };
             var signedUrlList = new List<string> { "signedUrl1", "signedUrl1" };
-            var deposition = new Deposition { Id = Guid.NewGuid(), EndDate = DateTime.Now };
+            var deposition = DepositionFactory.GetDeposition(Guid.NewGuid(), Guid.NewGuid());
+            deposition.Case = new Case() { Name = "Test" };
             var depositionDocumentList = new List<DepositionDocument> {
                 new DepositionDocument {
                     Id = Guid.NewGuid(),
@@ -946,7 +951,13 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _depositionDocumentRepositoryMock
                 .Setup(x => x.GetByFilter(It.IsAny<Expression<Func<DepositionDocument, bool>>>(), It.IsAny<string[]>()))
                 .ReturnsAsync(depositionDocumentList);
+            
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), new[] { nameof(Deposition.Case), nameof(Deposition.Participants) })).ReturnsAsync(deposition);
 
+            _fileHelperMock.Setup(x => x.CreateFile(It.IsAny<FileTransferInfo>()));
+            _fileHelperMock.Setup(x => x.GenerateZipFile(It.IsAny<string>(), It.IsAny<List<string>>()));
+            
+            _awsStorageServiceMock.Setup(x => x.UploadObjectFromFileAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(Result.Ok());
             _awsStorageServiceMock.Setup(x => x.GetFilePublicUri(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<string>(), It.IsAny<bool>())).Returns(It.IsAny<string>());
 
             // Act
@@ -954,7 +965,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             // Assert
             _depositionDocumentRepositoryMock.Verify(x => x.GetByFilter(It.IsAny<Expression<Func<DepositionDocument, bool>>>(), It.IsAny<string[]>()), Times.Once);
-            _awsStorageServiceMock.Verify(x => x.GetFilePublicUri(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<string>(), It.IsAny<bool>()), Times.Exactly(documentIds.Count));
+            _awsStorageServiceMock.Verify(x => x.GetFilePublicUri(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<string>(), It.IsAny<bool>()), Times.Once);
             Assert.NotNull(result);
             Assert.True(result.IsSuccess);
         }

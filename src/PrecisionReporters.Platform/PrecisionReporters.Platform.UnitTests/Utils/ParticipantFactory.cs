@@ -33,6 +33,20 @@ namespace PrecisionReporters.Platform.UnitTests.Utils
             };
         }
 
+        public static ParticipantDto GetParticipantDto()
+        {
+            return new ParticipantDto
+            {
+                Id = Guid.NewGuid(),
+                CreationDate = DateTimeOffset.Now,
+                Email = "participant@mockEmail.Com",
+                Name = "Name",
+                Phone = "2105428027",
+                Role = ParticipantType.CourtReporter.ToString(),
+                User = new UserOutputDto { Id = Guid.NewGuid() }
+            };
+        }
+
         public static CreateParticipantDto GetCreateParticipantDtoByGivenRole(ParticipantType role)
         {
             return new CreateParticipantDto

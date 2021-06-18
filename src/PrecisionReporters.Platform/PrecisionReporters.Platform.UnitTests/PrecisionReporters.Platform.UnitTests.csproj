@@ -30,8 +30,4 @@
     <ProjectReference Include="..\PrecisionReporters.Platform.Domain\PrecisionReporters.Platform.Domain.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="01 Api\" />
-  </ItemGroup>
-
 </Project>

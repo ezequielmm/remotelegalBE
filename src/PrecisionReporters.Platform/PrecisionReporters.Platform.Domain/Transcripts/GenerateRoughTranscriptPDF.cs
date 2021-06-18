@@ -74,7 +74,7 @@ namespace PrecisionReporters.Platform.Domain.Transcripts
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex.Message);
+                _logger.LogError(ex.Message, "Error generating PDF file form stream of Deposition: {0}", deposition.Id);
                 return Result.Fail(new ExceptionalError("Error generating PDF file form stream.", ex));
             }
         }

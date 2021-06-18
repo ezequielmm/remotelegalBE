@@ -189,7 +189,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             catch (ObjectDisposedException ex)
             {
                 // TODO: Transcriptions may arrive after the WS is closed so objects would be disposed
-                _logger.LogError(ex, "Trying to process transcription when the websocket was already closed");
+                _logger.LogError(ex, "Trying to process transcription with Id: {0} when the websocket was already closed ", _currentId);
             }
         }
 

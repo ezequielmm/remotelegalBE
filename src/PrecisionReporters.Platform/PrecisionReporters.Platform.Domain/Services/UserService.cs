@@ -9,6 +9,7 @@ using PrecisionReporters.Platform.Data.Repositories.Interfaces;
 using PrecisionReporters.Platform.Domain.Configurations;
 using PrecisionReporters.Platform.Domain.Dtos;
 using PrecisionReporters.Platform.Domain.Extensions;
+using PrecisionReporters.Platform.Domain.Mappers;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using PrecisionReporters.Platform.Shared.Commons;
 using PrecisionReporters.Platform.Shared.Errors;
@@ -32,6 +33,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly UrlPathConfiguration _urlPathConfiguration;
         private readonly VerificationLinkConfiguration _verificationLinkConfiguration;
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IMapper<User, UserDto, CreateUserDto> _userMapper;
 
         public UserService(ILogger<UserService> log,
             IUserRepository userRepository,
@@ -41,7 +43,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             ITransactionHandler transactionHandler,
             IOptions<UrlPathConfiguration> urlPathConfiguration,
             IOptions<VerificationLinkConfiguration> verificationLinkConfiguration,
-            IHttpContextAccessor httpContextAccessor)
+            IHttpContextAccessor httpContextAccessor, IMapper<User, UserDto, CreateUserDto> userMapper)
         {
             _log = log;
             _userRepository = userRepository;
@@ -52,6 +54,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             _urlPathConfiguration = urlPathConfiguration.Value;
             _verificationLinkConfiguration = verificationLinkConfiguration.Value;
             _httpContextAccessor = httpContextAccessor;
+            _userMapper = userMapper;
         }
 
         public async Task<Result<User>> SignUpAsync(User user)
@@ -115,6 +118,49 @@ namespace PrecisionReporters.Platform.Domain.Services
         public async Task<List<User>> GetUsersByFilter(Expression<Func<User, bool>> filter = null, string[] include = null)
         {
             return await _userRepository.GetByFilter(filter, include);
+        }
+
+        public async Task<Result<UserFilterResponseDto>> GetUsersByFilter(UserFilterDto filterDto)
+        {
+            var includes = new[] { nameof(User.VerifiedUsers) };
+
+            var orderByQuery = GetUsersOrderBy(filterDto);
+            var paginationResult = await _userRepository.GetByFilterPagination(null, orderByQuery.Compile(), includes, filterDto.Page, filterDto.PageSize);
+
+            var response = new UserFilterResponseDto
+            {
+                Total = paginationResult.Item1,
+                Page = filterDto.Page,
+                NumberOfPages = (paginationResult.Item1 + filterDto.PageSize - 1) / filterDto.PageSize,
+                Users = paginationResult.Item2.Select(x => _userMapper.ToDto(x)).ToList()
+            };
+            return Result.Ok(response);
+        }
+
+        private Expression<Func<IQueryable<User>, IOrderedQueryable<User>>> GetUsersOrderBy(UserFilterDto filterDto)
+        {
+            Expression<Func<User, object>> orderBy = filterDto.SortedField switch
+            {
+                UserSortField.FirstName => x => x.FirstName,
+                UserSortField.LastName => x => x.LastName,
+                UserSortField.Email => x => x.EmailAddress,
+                UserSortField.Company => x => x.CompanyName,
+                UserSortField.AccountCreationDate => x => x.CreationDate,
+                UserSortField.AccountVerifiedDate => x => x.VerifiedUsers.FirstOrDefault(y => y.VerificationType == VerificationType.VerifyUser),
+                _ => x => x.LastName,
+            };
+            Expression<Func<User, object>> orderByThen = x => x.FirstName;
+            Expression<Func<IQueryable<User>, IOrderedQueryable<User>>> orderByQuery = null;
+
+                if (filterDto.SortDirection == null || filterDto.SortDirection == SortDirection.Ascend)
+                {
+                    orderByQuery = d => d.OrderBy(orderBy).ThenBy(orderByThen);
+                }
+                else
+                {
+                    orderByQuery = d => d.OrderByDescending(orderBy).ThenByDescending(orderByThen);
+                }
+            return orderByQuery;
         }
 
         private Result CheckVerification(VerifyUser verifyUser)

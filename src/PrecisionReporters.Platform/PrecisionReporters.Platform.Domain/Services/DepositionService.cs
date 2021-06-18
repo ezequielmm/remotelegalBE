@@ -113,7 +113,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<Deposition>> GetDepositionById(Guid id)
         {
-            var includes = new[] { nameof(Deposition.Requester), nameof(Deposition.Case), 
+            var includes = new[] { nameof(Deposition.Requester), nameof(Deposition.Case),
                 nameof(Deposition.AddedBy),nameof(Deposition.Caption), nameof(Deposition.Events)};
             return await GetByIdWithIncludesAndIsAdmitted(id, includes);
         }
@@ -530,7 +530,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<(Participant, bool)>> CheckParticipant(Guid id, string emailAddress)
         {
-            var include = new[] { nameof(Deposition.Participants)};
+            var include = new[] { nameof(Deposition.Participants) };
             var depositionResult = await GetByIdWithIncludes(id, include);
 
             if (depositionResult.IsFailed)
@@ -755,7 +755,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         private int GetOnTheRecordTime(List<DepositionEvent> events)
         {
             int total = 0;
-            events
+            _ = events
                 .OrderBy(x => x.CreationDate)
                 .Where(x => x.EventType == EventType.OnTheRecord || x.EventType == EventType.OffTheRecord)
                 .Aggregate(new List<DateTime>(),
@@ -802,9 +802,9 @@ namespace PrecisionReporters.Platform.Domain.Services
                 x => x.DepositionId == depositionId && x.IsAdmitted.HasValue && x.IsAdmitted.Value,
                 new string[] { nameof(Participant.User) });
 
-            if (lstParticipant.Count > 0 && !lstParticipant.Any(x => x.Role == ParticipantType.Witness)) 
+            if (lstParticipant.Count > 0 && !lstParticipant.Any(x => x.Role == ParticipantType.Witness))
             {
-                lstParticipant = lstParticipant.Prepend(new Participant { Role = ParticipantType.Witness}).ToList();
+                lstParticipant = lstParticipant.Prepend(new Participant { Role = ParticipantType.Witness }).ToList();
             }
 
             return Result.Ok(lstParticipant);
@@ -872,6 +872,9 @@ namespace PrecisionReporters.Platform.Domain.Services
             currentDeposition.IsVideoRecordingNeeded = deposition.IsVideoRecordingNeeded;
             currentDeposition.Status = deposition.Status;
             currentDeposition.Caption = caption ?? currentDeposition.Caption;
+            currentDeposition.StartDate = deposition.StartDate;
+            currentDeposition.EndDate = deposition.EndDate;
+            currentDeposition.TimeZone = deposition.TimeZone;
 
             return currentDeposition;
         }
@@ -1073,7 +1076,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (validateDatesResult.IsFailed)
                 return validateDatesResult;
 
-            var currentDepositionResult = await GetByIdWithIncludesAndIsAdmitted(deposition.Id, new[] { nameof(Deposition.Case), nameof(Deposition.Caption)});
+            var currentDepositionResult = await GetByIdWithIncludesAndIsAdmitted(deposition.Id, new[] { nameof(Deposition.Case), nameof(Deposition.Caption) });
             if (currentDepositionResult.IsFailed)
                 return currentDepositionResult;
 
@@ -1268,7 +1271,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             joinDepositionInfo.TimeZone = Enum.GetValues(typeof(USTimeZone)).Cast<USTimeZone>().FirstOrDefault(x => x.GetDescription() == deposition.TimeZone).ToString();
             joinDepositionInfo.IsOnTheRecord = deposition.IsOnTheRecord;
             joinDepositionInfo.IsSharing = deposition.SharingDocumentId.HasValue;
-            joinDepositionInfo.Participants = deposition.Participants.Where(x => x.HasJoined == true).Select(p => _participantMapper.ToDto(p)).ToList();
+            joinDepositionInfo.Participants = deposition.Participants.Select(p => _participantMapper.ToDto(p)).ToList();
             joinDepositionInfo.StartDate = deposition.StartDate;
             joinDepositionInfo.JobNumber = deposition.Job;
 
