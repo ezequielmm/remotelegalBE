@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace PrecisionReporters.Platform.Domain.Services
 {
@@ -21,6 +22,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly IParticipantRepository _participantRepository;
         private readonly IDepositionRepository _depositionRepository;
         private readonly ICompositionHelper _compositionHelper;
+        private readonly ILogger<TranscriptionService> _logger;
 
         public TranscriptionService(
             ITranscriptionRepository transcriptionRepository,
@@ -28,7 +30,8 @@ namespace PrecisionReporters.Platform.Domain.Services
             IDepositionDocumentRepository depositionDocumentRepository,
             IParticipantRepository participantRepository,
             IDepositionRepository depositionRepository,
-            ICompositionHelper compositionHelper)
+            ICompositionHelper compositionHelper,
+            ILogger<TranscriptionService> logger)
         {
             _transcriptionRepository = transcriptionRepository;
             _userRepository = userRepository;
@@ -36,6 +39,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             _participantRepository = participantRepository;
             _depositionRepository = depositionRepository;
             _compositionHelper = compositionHelper;
+            _logger = logger;
         }
 
         public async Task<Result<Transcription>> StoreTranscription(Transcription transcription, string depositionId, string userEmail)
@@ -43,11 +47,17 @@ namespace PrecisionReporters.Platform.Domain.Services
             var user = await _userRepository.GetFirstOrDefaultByFilter(x => x.EmailAddress == userEmail);
 
             if (user == null)
+            {
+                _logger.LogError("User with email address {0} was not found.",userEmail);
                 return Result.Fail("User with such email address was not found.");
+            }
 
             var newTranscription = await _transcriptionRepository.Create(transcription);
             if (newTranscription == null)
-                return Result.Fail("Fail to create new transcription.");           
+            {
+                _logger.LogError("Fail to create new transcription with Id:{0} Deposition Id:{1} User Id:{2}.", transcription.Id, depositionId, transcription.UserId);
+                return Result.Fail("Fail to create new transcription.");
+            }           
 
             return Result.Ok(transcription);
         }
@@ -93,11 +103,12 @@ namespace PrecisionReporters.Platform.Domain.Services
             var depositionResult = await _depositionRepository.GetById(depositionId, include);
 
             if (depositionResult == null)
+            {
+                _logger.LogError("Unable to find deposition with Id: {0}", depositionId);
                 return Result.Fail($"Unable to find deposition with Id {depositionId}");
+            }
 
             var transcriptionsResult = await GetTranscriptionsByDepositionId(depositionId);
-            if (transcriptionsResult.IsFailed)
-                return transcriptionsResult.ToResult<List<TranscriptionTimeDto>>();
 
             var deposition = depositionResult;
             var startedAt =  VideoStartDate(deposition.Events);

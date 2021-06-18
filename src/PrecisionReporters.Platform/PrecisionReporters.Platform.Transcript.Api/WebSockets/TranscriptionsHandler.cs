@@ -9,6 +9,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace PrecisionReporters.Platform.Transcript.Api.WebSockets
 {
@@ -16,10 +17,12 @@ namespace PrecisionReporters.Platform.Transcript.Api.WebSockets
     {
         private readonly ITranscriptionLiveService _transcriptionLiveService;
         private readonly Regex _jsonRegex = new Regex("(?:(?<b>{))(?<v>.*?)(?(p)%|})");
+        private readonly ILogger<TranscriptionsHandler> _logger;
 
-        public TranscriptionsHandler(ITranscriptionLiveService transcriptionLiveService)
+        public TranscriptionsHandler(ITranscriptionLiveService transcriptionLiveService, ILogger<TranscriptionsHandler> logger)
         {
             _transcriptionLiveService = transcriptionLiveService;
+            _logger = logger;
         }
 
         public async Task HandleConnection(HttpContext context, WebSocket webSocket)
@@ -48,7 +51,10 @@ namespace PrecisionReporters.Platform.Transcript.Api.WebSockets
         {
             var bufferFirstPosition = Encoding.UTF8.GetString(buffer, 0, 1);
             if (!bufferFirstPosition.StartsWith("{"))
+            {
+                _logger.LogError("Incorrect json format from buffer");
                 return false;
+            }
 
             var bufferString = Encoding.Default.GetString(buffer);
             var jsonResult = _jsonRegex.Match(bufferString).Value;
@@ -64,8 +70,9 @@ namespace PrecisionReporters.Platform.Transcript.Api.WebSockets
 
                 return true;
             }
-            catch (JsonReaderException)
+            catch (JsonReaderException ex)
             {
+                _logger.LogError(ex, "There was an error in Handle Json Message");
                 return false;
             }
         }

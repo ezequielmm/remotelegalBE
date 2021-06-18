@@ -35,7 +35,7 @@ namespace PrecisionReporters.Platform.Transcript.Api.Hubs
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"There was an error subscribing to Deposition {dto.DepositionId}");
+                _logger.LogError(ex, "There was an error subscribing to Deposition {0}",dto.DepositionId);
                 return Result.Fail($"Unable to add user to Group {ApplicationConstants.DepositionGroupName}{dto.DepositionId}.");
             }
         }

@@ -14,6 +14,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace PrecisionReporters.Platform.Domain.Transcripts
 {
@@ -25,18 +26,21 @@ namespace PrecisionReporters.Platform.Domain.Transcripts
         private readonly ITransactionHandler _transactionHandler;
         private readonly IAwsStorageService _awsStorageService;
         private readonly DocumentConfiguration _documentsConfigurations;
+        private readonly ILogger<RoughTranscriptHelper> _logger;
 
         private const int MAX_CHARACTERS_PER_LINE = 56;
 
         public RoughTranscriptHelper(IDepositionRepository depositionRepository, IDocumentRepository documentRepository, 
             IDepositionDocumentRepository depositionDocumentRepository, ITransactionHandler transactionHandler, 
-            IAwsStorageService awsStorageService, IOptions<DocumentConfiguration> documentConfigurations) 
+            IAwsStorageService awsStorageService, IOptions<DocumentConfiguration> documentConfigurations,
+            ILogger<RoughTranscriptHelper> logger) 
         {
             _depositionRepository = depositionRepository;
             _documentRepository = documentRepository;
             _depositionDocumentRepository = depositionDocumentRepository;
             _transactionHandler = transactionHandler;
             _awsStorageService = awsStorageService;
+            _logger = logger;
             _documentsConfigurations = documentConfigurations.Value;
         }
 
@@ -149,7 +153,10 @@ namespace PrecisionReporters.Platform.Domain.Transcripts
             });
 
             if (transactionResult.IsFailed)
+            {
+                _logger.LogError("Error saving draft transcription of deposition id: {0} and user id: {1} ", draftTranscriptDto.DepositionId, draftTranscriptDto.CurrentUserId);
                 return transactionResult;
+            }
 
             return Result.Ok();
         }
@@ -165,6 +172,7 @@ namespace PrecisionReporters.Platform.Domain.Transcripts
             }
             catch (Exception ex)
             {
+                _logger.LogError("Error saving on S3 final draft of deposition id: {0} and case id: {1} ", deposition.Id, deposition.CaseId);
                 return Result.Fail(new ExceptionalError("Error executing transaction operation in S3.", ex));
             }
         }

@@ -81,7 +81,7 @@ namespace PrecisionReporters.Platform.Domain.Transcripts
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex.Message);
+                _logger.LogError(ex.Message, "Error generating Word file form stream of deposition id: {0}", deposition.Id);
                 return Result.Fail(new ExceptionalError("Error generating Word file form stream.", ex));
             }
             return Result.Ok();
