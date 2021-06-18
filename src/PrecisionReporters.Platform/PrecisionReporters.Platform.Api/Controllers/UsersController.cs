@@ -99,6 +99,13 @@ namespace PrecisionReporters.Platform.Api.Controllers
         [Route("users")]
         public async Task<ActionResult<UserFilterResponseDto>> GetUsers([FromQuery] UserFilterDto filter)
         {
+            // TODO: Remove this block after Authorization decorator refactoring
+            var user = await _userService.GetCurrentUserAsync();
+            if (user == null)
+                return NotFound();
+            if (!user.IsAdmin)
+                return StatusCode(403);
+
             var userResponseResult = await _userService.GetUsersByFilter(filter);
 
             if (userResponseResult.IsFailed)
