@@ -233,10 +233,6 @@
       "essential": true,
       "environment": [
         {
-          "name": "DD_APM_ENABLED",
-          "value": "true"
-        },
-        {
           "name": "DD_APM_NON_LOCAL_TRAFFIC",
           "value": "true"
         },
