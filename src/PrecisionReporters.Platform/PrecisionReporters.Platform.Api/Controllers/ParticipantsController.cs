@@ -46,7 +46,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
             if (participantResult.IsFailed)
                 return WebApiResponses.GetErrorResponse(participantResult);
             
-            return Ok(participantResult);
+            return Ok(participantResult.Value);
         }
 
         /// <summary>

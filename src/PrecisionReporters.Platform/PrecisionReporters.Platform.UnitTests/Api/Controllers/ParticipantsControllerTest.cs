@@ -46,9 +46,9 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
             Assert.NotNull(result);
             Assert.IsType<ActionResult<ParticipantStatusDto>>(result);
             var okResult = Assert.IsType<OkObjectResult>(result.Result);
-            var resultValue = Assert.IsAssignableFrom<Result<ParticipantStatusDto>>(okResult.Value);
-            Assert.Equal(participantStatus.Email, resultValue.Value.Email);
-            Assert.Equal(participantStatus.IsMuted, resultValue.Value.IsMuted);
+            var resultValue = Assert.IsAssignableFrom<ParticipantStatusDto>(okResult.Value);
+            Assert.Equal(participantStatus.Email, resultValue.Email);
+            Assert.Equal(participantStatus.IsMuted, resultValue.IsMuted);
             _participantService.Verify(mock=>mock.UpdateParticipantStatus(It.IsAny<ParticipantStatusDto>(), It.IsAny<Guid>()),Times.Once);
         }
 
