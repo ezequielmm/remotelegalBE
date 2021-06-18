@@ -119,6 +119,26 @@ namespace PrecisionReporters.Platform.Domain.Services
             return Result.Ok();
         }
 
+        public async Task<Result> UploadObjectFromFileAsync(string fileName, string documentKeyName, string bucketName)
+        {
+            try
+            {
+                using (var file = File.OpenRead(fileName))
+                {
+                    var uploadedDocument = await UploadObjectFromStreamAsync(documentKeyName, file, bucketName);
+                    if (uploadedDocument.IsFailed)
+                        return uploadedDocument;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex.Message);
+                return Result.Fail(new Error(ex.Message));
+            }
+
+            return Result.Ok();
+        }
+
         public async Task<Result> DeleteObjectAsync(string bucketName, string key)
         {
             var response = await _fileTransferUtility.S3Client.DeleteObjectAsync(bucketName, key);

@@ -11,6 +11,7 @@ using PrecisionReporters.Platform.Data.Repositories.Interfaces;
 using PrecisionReporters.Platform.Domain.Configurations;
 using PrecisionReporters.Platform.Domain.Dtos;
 using PrecisionReporters.Platform.Domain.Extensions;
+using PrecisionReporters.Platform.Domain.Helpers.Interfaces;
 using PrecisionReporters.Platform.Domain.Mappers;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using PrecisionReporters.Platform.Shared.Commons;
@@ -18,6 +19,7 @@ using PrecisionReporters.Platform.Shared.Errors;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
@@ -39,6 +41,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly IAnnotationEventRepository _annotationEventRepository;
         private readonly ISignalRDepositionManager _signalRNotificationManager;
         private readonly IMapper<AnnotationEvent, AnnotationEventDto, CreateAnnotationEventDto> _annotationEventMapper;
+        private readonly IFileHelper _fileHelper;
 
         public DocumentService(IAwsStorageService awsStorageService, IOptions<DocumentConfiguration> documentConfigurations, ILogger<DocumentService> logger,
             IUserService userService, IDocumentUserDepositionRepository documentUserDepositionRepository,
@@ -46,7 +49,8 @@ namespace PrecisionReporters.Platform.Domain.Services
             IDocumentRepository documentRepository, IDepositionDocumentRepository depositionDocumentRepository,
             IDepositionRepository depositionRepository, IAnnotationEventRepository annotationEventRepository,
             ISignalRDepositionManager signalRNotificationManager,
-            IMapper<AnnotationEvent, AnnotationEventDto, CreateAnnotationEventDto> annotationEventMapper)
+            IMapper<AnnotationEvent, AnnotationEventDto, CreateAnnotationEventDto> annotationEventMapper,
+            IFileHelper fileHelper)
         {
             _awsStorageService = awsStorageService;
             _documentsConfiguration = documentConfigurations.Value ?? throw new ArgumentException(nameof(documentConfigurations));
@@ -61,6 +65,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             _annotationEventRepository = annotationEventRepository;
             _signalRNotificationManager = signalRNotificationManager;
             _annotationEventMapper = annotationEventMapper;
+            _fileHelper = fileHelper;
         }
 
         public async Task<Result<Document>> UploadDocumentFile(KeyValuePair<string, FileTransferInfo> file, User user, string parentPath, DocumentType documentType)
@@ -73,6 +78,29 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             document.Value.FileKey = file.Key;
             return document;
+        }
+
+        public async Task<Result<string>> GenerateZipFile(List<DepositionDocument> depositionDocuments)
+        {
+            var zipName = $"{Guid.NewGuid()}{ApplicationConstants.ZipExtension}";
+            var documents = depositionDocuments.Select(x => x.Document).ToList();
+
+            try
+            {
+                foreach (var doc in documents)
+                {
+                    using var fileStr = await _awsStorageService.GetObjectAsync(doc.FilePath, _documentsConfiguration.BucketName);
+                    await _fileHelper.CreateFile(new FileTransferInfo() { FileStream = fileStr, Name = doc.DisplayName });
+                }
+
+                _fileHelper.GenerateZipFile(zipName, documents.Select(x => x.DisplayName).ToList());
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex.Message);
+            }
+            
+            return Result.Ok(zipName);
         }
 
         public async Task<Result<Document>> UploadDocumentFile(FileTransferInfo file, User user, string parentPath, DocumentType documentType)
@@ -291,13 +319,23 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (depositionDocument == null)
                 return Result.Fail(new ResourceNotFoundError($"Could not find any document for deposition {depositionId}"));
 
-            foreach (var dd in depositionDocument)
+            if (depositionDocument.Count > 1)
             {
-                var signedUrl = GetFileSignedUrl(dd.Document);
-                signedUrlList.Add(signedUrl.Value);
+                var deposition = await _depositionRepository.GetById(depositionId, new[] { nameof(Deposition.Case), nameof(Deposition.Participants) });
+                
+                var parentPath = $"{deposition.CaseId}/{deposition.Id}";
+                var generateZipFileResult = await GenerateZipFile(depositionDocument);
+                var documents = depositionDocument.Select(x => x.Document).ToList();
+                var documentType = documents.FirstOrDefault()?.DocumentType;
+
+                var uploadZipFileToStorageResult = await UploadZipFileToStorage(parentPath, generateZipFileResult.Value, deposition, documentType);
+
+                var signedZipFileUrl = GetFileSignedUrl(uploadZipFileToStorageResult.Value);
+                return Result.Ok(new List<string>() { signedZipFileUrl.Value });
             }
 
-            return Result.Ok(signedUrlList);
+            var signedUrl = await GetFileSignedUrl(depositionId, documentIds.FirstOrDefault());
+            return Result.Ok(new List<string>() { signedUrl.Value });
         }
 
         public async Task<Result<string>> GetFileSignedUrl(Guid depositionId, Guid documentId)
@@ -427,6 +465,30 @@ namespace PrecisionReporters.Platform.Domain.Services
                 Size = file.Length,
                 DocumentType = documentType
             };
+
+            return Result.Ok(document);
+        }
+
+        private async Task<Result<Document>> UploadZipFileToStorage(string parentPath, string zipName, Deposition deposition, DocumentType? documentType)
+        {
+            var documentKeyName = $"/{parentPath}/{zipName}";
+            var witness = deposition.Participants.FirstOrDefault(x => x.Role == ParticipantType.Witness);
+            var uploadZipFileResult = await _awsStorageService.UploadObjectFromFileAsync(zipName, documentKeyName, _documentsConfiguration.BucketName);
+            if (uploadZipFileResult.IsFailed)
+                return uploadZipFileResult;
+
+            var displayName = $"{deposition.Case.Name}-{witness.Name}{ApplicationConstants.ZipExtension}";
+            if (documentType != null)
+            {
+                var documentTypeDescription = documentType == DocumentType.Transcription ? "Transcripts" : "Exhibits";
+
+                displayName = $"{deposition.Case.Name}-{witness.Name}-{documentTypeDescription}{ApplicationConstants.ZipExtension}"; 
+            }
+
+            var document = new Document() { FilePath = documentKeyName, Name = zipName, DisplayName =  displayName};
+            
+            if (File.Exists(zipName))
+                File.Delete(zipName);
 
             return Result.Ok(document);
         }

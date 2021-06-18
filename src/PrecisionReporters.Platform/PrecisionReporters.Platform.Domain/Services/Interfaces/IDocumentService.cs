@@ -32,5 +32,6 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
         Task<Result> RemoveDepositionDocument(Guid depositionId, Guid documentId);
         Task<Result<List<string>>> GetFileSignedUrl(Guid depositionId, List<Guid> documentIds);
         Task<Result<List<FileSignedDto>>> GetFrontEndContent();
+        Task<Result<string>> GenerateZipFile(List<DepositionDocument> depositionDocuments);
     }
 }
