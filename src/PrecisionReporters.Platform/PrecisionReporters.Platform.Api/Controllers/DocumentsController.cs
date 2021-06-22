@@ -44,7 +44,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
         public async Task<IActionResult> UploadFiles(Guid depositionId)
         {
             var identity = HttpContext.User.FindFirstValue(ClaimTypes.Email);
-            if (Request.Form.Files.Count == 0)
+            if (!Request.HasFormContentType || Request.Form.Files.Count == 0)
                 return BadRequest("No files to upload");
 
             var files = new List<FileTransferInfo>();
@@ -173,10 +173,10 @@ namespace PrecisionReporters.Platform.Api.Controllers
         [Route("{depositionId}/Files")]
         public async Task<IActionResult> UploadTranscriptionsFiles(Guid depositionId)
         {
-            var files = FileHandlerHelper.GetFilesFromRequest(Request);
-
-            if (files.Count == 0)
+            if (!Request.HasFormContentType || Request.Form.Files.Count == 0)
                 return BadRequest("No files to upload");
+
+            var files = FileHandlerHelper.GetFilesFromRequest(Request);
 
             var uploadTranscriptionsFilesResult = await _documentService.UploadTranscriptions(depositionId, files);
 
