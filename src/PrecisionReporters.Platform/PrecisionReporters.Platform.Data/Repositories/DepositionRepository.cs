@@ -56,7 +56,6 @@ namespace PrecisionReporters.Platform.Data.Repositories
         public async Task<Deposition> GetByIdWithAdmittedParticipants(Guid id, string[] include = null)
         {
             IQueryable<Deposition> depositions = _dbContext.Set<Deposition>();
-            IQueryable<Participant> participants = _dbContext.Set<Participant>();
 
             if (include != null)
             {

@@ -22,7 +22,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly IRoomService _roomService;
         private readonly IMapper<BreakRoom, BreakRoomDto, object> _breakRoomMapper;
         private readonly ISignalRDepositionManager _signalRNotificationManager;
-        private JsonSerializerSettings _serializeOptions;
+        private readonly JsonSerializerSettings _serializeOptions;
 
         public BreakRoomService(IBreakRoomRepository breakRoomRepository, IUserService userService, IRoomService roomService, IMapper<BreakRoom, BreakRoomDto, object> breakRoomMapper, ISignalRDepositionManager signalRNotificationManager)
         {

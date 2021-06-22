@@ -140,7 +140,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
         [Route("changePassword")]
         public async Task<ActionResult<bool>> ResetPassword(ResetPasswordDto resetPasswordDto)
         {
-            var resetPasswordResult = await _userService.ResetPassword(resetPasswordDto); ;
+            var resetPasswordResult = await _userService.ResetPassword(resetPasswordDto);
             if (resetPasswordResult.IsFailed)
                 return WebApiResponses.GetErrorResponse(resetPasswordResult);
 

@@ -42,13 +42,13 @@ namespace PrecisionReporters.Platform.Domain.Helpers
                 {
                     foreach (var fileName in filesName)
                     {
-                        var entry = archive.CreateEntryFromFile(fileName, fileName, CompressionLevel.Optimal);
+                        archive.CreateEntryFromFile(fileName, fileName, CompressionLevel.Optimal);
                     }
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                throw ex;
+                throw;
             }
             finally
             {

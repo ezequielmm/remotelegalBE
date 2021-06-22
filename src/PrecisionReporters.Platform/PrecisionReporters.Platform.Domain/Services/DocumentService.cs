@@ -1,5 +1,4 @@
 ﻿using FluentResults;
-using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using pdftron.FDF;
@@ -19,7 +18,6 @@ using PrecisionReporters.Platform.Shared.Errors;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.IO.Compression;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
@@ -99,7 +97,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             {
                 _logger.LogError(ex.Message);
             }
-            
+
             return Result.Ok(zipName);
         }
 
@@ -264,7 +262,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 uploadedDocuments.Add(new DepositionDocument { Deposition = depositionResult, Document = documentResult.Value });
             }
             var documentCreationResult = Result.Ok();
-            var transactionResult = await _transactionHandler.RunAsync(async () =>
+            await _transactionHandler.RunAsync(async () =>
             {
                 try
                 {
@@ -312,7 +310,6 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<List<string>>> GetFileSignedUrl(Guid depositionId, List<Guid> documentIds)
         {
-            var signedUrlList = new List<string>();
             Expression<Func<DepositionDocument, bool>> filter = x => x.DepositionId == depositionId && documentIds.Contains(x.DocumentId);
 
             var depositionDocument = await _depositionDocumentRepository.GetByFilter(filter, new[] { nameof(DepositionDocument.Document) });
@@ -322,7 +319,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (depositionDocument.Count > 1)
             {
                 var deposition = await _depositionRepository.GetById(depositionId, new[] { nameof(Deposition.Case), nameof(Deposition.Participants) });
-                
+
                 var parentPath = $"{deposition.CaseId}/{deposition.Id}";
                 var generateZipFileResult = await GenerateZipFile(depositionDocument);
                 var documents = depositionDocument.Select(x => x.Document).ToList();
@@ -407,7 +404,6 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (depositionResult == null)
                 return Result.Fail(new ResourceNotFoundError($"Deposition with id {depositionDocument.DepositionId} not found."));
 
-            var deposition = depositionResult;
             var documentResult = await SaveDocumentWithAnnotationsToS3(document, temporalPath);
             if (documentResult.IsFailed)
             {
@@ -482,11 +478,11 @@ namespace PrecisionReporters.Platform.Domain.Services
             {
                 var documentTypeDescription = documentType == DocumentType.Transcription ? "Transcripts" : "Exhibits";
 
-                displayName = $"{deposition.Case.Name}-{witness.Name}-{documentTypeDescription}{ApplicationConstants.ZipExtension}"; 
+                displayName = $"{deposition.Case.Name}-{witness.Name}-{documentTypeDescription}{ApplicationConstants.ZipExtension}";
             }
 
-            var document = new Document() { FilePath = documentKeyName, Name = zipName, DisplayName =  displayName};
-            
+            var document = new Document() { FilePath = documentKeyName, Name = zipName, DisplayName = displayName };
+
             if (File.Exists(zipName))
                 File.Delete(zipName);
 
@@ -688,7 +684,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 _logger.LogError($"Error getting files fromt bucket: {_documentsConfiguration.FrontEndContentBucket}");
                 return Result.Fail(new ExceptionalError("Unable to get frontend files", ex));
             }
-            
+
         }
 
         private FileSignedDto GetFileDto(string key, string bucketName)
@@ -697,7 +693,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             return new FileSignedDto
             {
                 Name = Path.GetFileNameWithoutExtension(key),
-                Url = _awsStorageService.GetFilePublicUri(key, bucketName, expirationDate,null, true)
+                Url = _awsStorageService.GetFilePublicUri(key, bucketName, expirationDate, null, true)
             };
         }
     }

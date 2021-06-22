@@ -357,7 +357,6 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var result = await _participantService.EditParticipantDetails(depositionId, editedParticipant);
 
             // Assert
-            _userServiceMock.Verify(x => x.GetCurrentUserAsync(), Times.Once);
             _depositionRepositoryMock.Verify(mock=>mock.GetById(It.IsAny<Guid>(), It.Is<string[]>(a => a.SequenceEqual(new[] { nameof(Deposition.Participants), nameof(Deposition.Case)}))), Times.Once);
             _participantRepositoryMock.Verify(x => x.Update(It.IsAny<Participant>()), Times.Once);
             Assert.NotNull(result);
@@ -419,7 +418,6 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var result = await _participantService.EditParticipantDetails(depositionId, editedParticipant);
 
             // Assert
-            _userServiceMock.Verify(x => x.GetCurrentUserAsync(), Times.Once);
             _depositionRepositoryMock.Verify(mock=>mock.GetById(It.IsAny<Guid>(), It.Is<string[]>(a => a.SequenceEqual(new[] { nameof(Deposition.Participants), nameof(Deposition.Case)}))), Times.Once);
             _participantRepositoryMock.Verify(x => x.Update(It.IsAny<Participant>()), Times.Never);
 
@@ -451,7 +449,6 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var result = await _participantService.EditParticipantDetails(depositionId, editedParticipant);
 
             // Assert
-            _userServiceMock.Verify(x => x.GetCurrentUserAsync(), Times.Once);
             _depositionRepositoryMock.Verify(mock=>mock.GetById(It.IsAny<Guid>(), It.Is<string[]>(a => a.SequenceEqual(new[] { nameof(Deposition.Participants), nameof(Deposition.Case)}))), Times.Once);
             _participantRepositoryMock.Verify(x => x.Update(It.IsAny<Participant>()), Times.Once);
 
@@ -480,7 +477,6 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var result = await _participantService.EditParticipantDetails(depositionId, editedParticipant);
 
             // Assert
-            _userServiceMock.Verify(x => x.GetCurrentUserAsync(), Times.Once);
             _depositionRepositoryMock.Verify(mock=>mock.GetById(It.IsAny<Guid>(), It.Is<string[]>(a => a.SequenceEqual(new[] { nameof(Deposition.Participants), nameof(Deposition.Case)}))), Times.Once);
             _participantRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Participant, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()), Times.Never);
             Assert.True(result.IsFailed);
@@ -512,7 +508,6 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var result = await _participantService.EditParticipantDetails(depositionId, editedParticipant);
 
             // Assert
-            _userServiceMock.Verify(x => x.GetCurrentUserAsync(), Times.Once);
             _depositionRepositoryMock.Verify(mock=>mock.GetById(It.IsAny<Guid>(), It.Is<string[]>(a => a.SequenceEqual(new[] { nameof(Deposition.Participants), nameof(Deposition.Case)}))), Times.Once);
 
             Assert.True(result.IsFailed);

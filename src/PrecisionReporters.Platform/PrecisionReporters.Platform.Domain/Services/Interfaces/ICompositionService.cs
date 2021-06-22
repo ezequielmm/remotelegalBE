@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using FluentResults;
 using PrecisionReporters.Platform.Data.Entities;
@@ -13,7 +12,7 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
         Task<Result<Composition>> GetCompositionByRoom(Guid roomSid);
         Task<Result> StoreCompositionMediaAsync(Composition composition);
         Task<Result<Composition>> UpdateCompositionCallback(Composition composition);
-        Task<Result> PostDepoCompositionCallback(PostDepositionEditionDto payload);        
+        Task<Result> PostDepoCompositionCallback(PostDepositionEditionDto message);        
         Task<Result> DeleteTwilioCompositionAndRecordings(DeleteTwilioRecordingsDto deleteTwilioRecordings);
     }
 }

@@ -29,7 +29,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly TwilioAccountConfiguration _twilioAccountConfiguration;
         private readonly ILogger<TwilioService> _log;
         private readonly IAwsStorageService _awsStorageService;
-        private JsonSerializerSettings _serializeOptions;
+        private readonly JsonSerializerSettings _serializeOptions;
 
         public TwilioService(Microsoft.Extensions.Options.IOptions<TwilioAccountConfiguration> twilioAccountConfiguration,
             ILogger<TwilioService> log, IAwsStorageService awsStorageService)

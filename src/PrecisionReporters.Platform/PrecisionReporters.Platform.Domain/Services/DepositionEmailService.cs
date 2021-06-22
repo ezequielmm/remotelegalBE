@@ -19,7 +19,6 @@ namespace PrecisionReporters.Platform.Domain.Services
     public class DepositionEmailService : IDepositionEmailService
     {
         private readonly IAwsEmailService _awsEmailService;
-        private readonly UrlPathConfiguration _urlPathConfiguration;
         private readonly EmailConfiguration _emailConfiguration;
 
         public DepositionEmailService(IAwsEmailService awsEmailService,
@@ -27,7 +26,6 @@ namespace PrecisionReporters.Platform.Domain.Services
             IOptions<EmailConfiguration> emailConfiguration)
         {
             _awsEmailService = awsEmailService;
-            _urlPathConfiguration = urlPathConfiguration.Value;
             _emailConfiguration = emailConfiguration.Value;
         }
         public async Task SendJoinDepositionEmailNotification(Deposition deposition)

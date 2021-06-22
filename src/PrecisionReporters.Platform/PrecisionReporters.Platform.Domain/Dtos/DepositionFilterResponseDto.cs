@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using PrecisionReporters.Platform.Data.Entities;
 
 namespace PrecisionReporters.Platform.Domain.Dtos
 {

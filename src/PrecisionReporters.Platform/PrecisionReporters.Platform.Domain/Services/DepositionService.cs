@@ -1,7 +1,4 @@
 ﻿using FluentResults;
-using Ical.Net;
-using Ical.Net.CalendarComponents;
-using Ical.Net.DataTypes;
 using LinqKit;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -554,16 +551,6 @@ namespace PrecisionReporters.Platform.Domain.Services
             var depositionResult = await _depositionRepository.GetById(depositionId);
             depositionResult.SharingDocumentId = null;
             return Result.Ok(await _depositionRepository.Update(depositionResult));
-        }
-
-        private Participant GetParticipantByEmail(Deposition deposition, string emailAddress)
-        {
-            Participant participant = null;
-
-            if (participant == null)
-                participant = deposition.Participants.FirstOrDefault(p => p.Email == emailAddress);
-
-            return participant;
         }
 
         public async Task<Result<GuestToken>> JoinGuestParticipant(Guid depositionId, Participant guest, ActivityHistory activityHistory)
@@ -1134,8 +1121,6 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (witness == null)
                 return Result.Fail(new ResourceConflictError($"The Deposition {depositionId} must have a witness"));
 
-            var startDate = depositionResult.Value.GetActualStartDate() ?? depositionResult.Value.StartDate;
-
             try
             {
                 foreach (var participant in participants.Where(p => !string.IsNullOrWhiteSpace(p.Email)))
@@ -1178,7 +1163,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             var role = currentParticipant?.Role ?? ParticipantType.Admin;
             var courtReporters = deposition.Participants.Where(x => x.Role == ParticipantType.CourtReporter).ToList();
             var isCourtReporterUser = courtReporters.Any(x => x.User?.Id == user.Id);
-            var isCourtReporterJoined = courtReporters.Any(x => x.HasJoined == true);
+            var isCourtReporterJoined = courtReporters.Any(x => x.HasJoined);
             var joinDepositionInfo = new JoinDepositionDto();
 
             // Check if we need to Start a Deposition. Only start it if current user is a Court Reporter and also any other court reporter hasn't joined yet.

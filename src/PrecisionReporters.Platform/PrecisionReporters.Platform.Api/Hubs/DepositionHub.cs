@@ -34,10 +34,9 @@ namespace PrecisionReporters.Platform.Api.Hubs
             {
                 await Groups.AddToGroupAsync(Context.ConnectionId, dto.DepositionId.GetDepositionSignalRGroupName());
                 var currentUserParticipant = await _depositionService.GetUserParticipant(dto.DepositionId);
-                if (currentUserParticipant.IsSuccess)
+                if (currentUserParticipant.IsSuccess && (currentUserParticipant.Value.User.IsAdmin || currentUserParticipant.Value.Role == ParticipantType.CourtReporter))
                 {
-                    if(currentUserParticipant.Value.User.IsAdmin|| currentUserParticipant.Value.Role == ParticipantType.CourtReporter)
-                        await Groups.AddToGroupAsync(Context.ConnectionId, dto.DepositionId.GetDepositionSignalRAdminsGroupName());
+                    await Groups.AddToGroupAsync(Context.ConnectionId, dto.DepositionId.GetDepositionSignalRAdminsGroupName());
                 }
                 return Result.Ok();
             }

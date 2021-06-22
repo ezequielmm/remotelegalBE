@@ -7,7 +7,6 @@ using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using PrecisionReporters.Platform.Domain.Transcripts.Interfaces;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace PrecisionReporters.Platform.Domain.Services

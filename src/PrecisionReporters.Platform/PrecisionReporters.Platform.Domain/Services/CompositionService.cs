@@ -23,9 +23,9 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly ITwilioService _twilioService;
         private readonly IRoomService _roomService;
         private readonly IDepositionService _depositionService;
-        private readonly ILogger<CompositionService> _logger;
         private readonly IBackgroundTaskQueue _backgroundTaskQueue;
         private readonly ICompositionHelper _compositionHelper;
+        private readonly ILogger<CompositionService> _logger;
 
         public CompositionService(ICompositionRepository compositionRepository,
             ITwilioService twilioService, IRoomService roomService, IDepositionService depositionService,
@@ -36,9 +36,9 @@ namespace PrecisionReporters.Platform.Domain.Services
             _twilioService = twilioService;
             _roomService = roomService;
             _depositionService = depositionService;
-            _logger = logger;
             _backgroundTaskQueue = backgroundTaskQueue;
             _compositionHelper = compositionHelper;
+            _logger = logger;
         }
 
         public async Task<Result> StoreCompositionMediaAsync(Composition composition)
@@ -100,7 +100,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             }
 
             compositionToUpdate.Status = depositionResult.Value.Events.Any(x => x.EventType == EventType.OnTheRecord) ? composition.Status : CompositionStatus.Empty;
-                
+
             if (compositionToUpdate.Status == CompositionStatus.Available)
             {
                 compositionToUpdate.MediaUri = composition.MediaUri;
@@ -153,7 +153,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             return await _twilioService.UploadCompositionMetadata(metadata);
 
         }
-        
+
         public async Task<Result> PostDepoCompositionCallback(PostDepositionEditionDto message)
         {
             var includes = new[] { nameof(Composition.Room) };

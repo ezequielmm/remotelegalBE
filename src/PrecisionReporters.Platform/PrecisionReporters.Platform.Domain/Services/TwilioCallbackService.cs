@@ -69,7 +69,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                             var breakRoom = await _breakRoomService.GetByRoomId(room.Id);
                             if (breakRoom.IsSuccess)
                             {
-                                var result = await _breakRoomService.RemoveAttendeeCallback(breakRoom.Value, roomEvent.ParticipantIdentity);
+                                await _breakRoomService.RemoveAttendeeCallback(breakRoom.Value, roomEvent.ParticipantIdentity);
                             }
                             return Result.Ok();
                         }

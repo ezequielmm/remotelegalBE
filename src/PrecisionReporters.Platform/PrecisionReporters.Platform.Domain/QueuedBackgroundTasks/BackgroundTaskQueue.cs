@@ -9,9 +9,9 @@ namespace PrecisionReporters.Platform.Domain.QueuedBackgroundTasks
 {
     public class BackgroundTaskQueue : IBackgroundTaskQueue
     {
-        private ConcurrentQueue<BackgroundTaskDto> _backgroundTaskDto =
+        private readonly ConcurrentQueue<BackgroundTaskDto> _backgroundTaskDto =
         new ConcurrentQueue<BackgroundTaskDto>();
-        private SemaphoreSlim _signal = new SemaphoreSlim(0);
+        private readonly SemaphoreSlim _signal = new SemaphoreSlim(0);
 
         public void QueueBackgroundWorkItem(
             BackgroundTaskDto backgroundTaskDto)

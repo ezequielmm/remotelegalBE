@@ -1,6 +1,5 @@
 ﻿using FluentResults;
 using PrecisionReporters.Platform.Data.Entities;
-using PrecisionReporters.Platform.Domain.Dtos;
 using System.Threading.Tasks;
 
 namespace PrecisionReporters.Platform.Domain.Services.Interfaces

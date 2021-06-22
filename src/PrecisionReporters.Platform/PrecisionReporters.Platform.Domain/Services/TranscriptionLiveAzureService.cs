@@ -140,7 +140,6 @@ namespace PrecisionReporters.Platform.Domain.Services
             {
                 var bestTranscription = e.Result.Best().FirstOrDefault();
                 var durationInMilliseconds = e.Result.Duration.Milliseconds;
-                var offset = TimeSpan.FromTicks(e.Result.OffsetInTicks).TotalSeconds;
 
                 await _fluentTranscriptionSemaphore.WaitAsync();
                 int latency;

@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 
 namespace PrecisionReporters.Platform.Domain.Services
 {
-    public class TranscriptionLiveGCPService : ITranscriptionLiveService
+    public class TranscriptionLiveGcpService : ITranscriptionLiveService
     {
         private string _depositionId;
         private string _userEmail;
@@ -40,7 +40,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         private bool _isClosed = true;
         private static readonly SemaphoreSlim _isClosedSemaphore = new SemaphoreSlim(1);       
 
-        public TranscriptionLiveGCPService(IOptions<GcpConfiguration> gcpConfiguration, ITranscriptionService transcriptionService)
+        public TranscriptionLiveGcpService(IOptions<GcpConfiguration> gcpConfiguration, ITranscriptionService transcriptionService)
         {
             _transcriptionService = transcriptionService;
             _gcpConfiguration = gcpConfiguration.Value;

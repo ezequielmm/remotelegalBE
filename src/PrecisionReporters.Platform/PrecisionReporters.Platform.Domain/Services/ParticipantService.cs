@@ -94,7 +94,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         public async Task<Result<List<Participant>>> GetWaitParticipants(Guid depositionId)
         {
             var includes = new[] { nameof(Participant.User) };
-            return Result.Ok(await _participantRepository.GetByFilter(x => x.DepositionId == depositionId && x.HasJoined == false && x.IsAdmitted == null, includes));
+            return Result.Ok(await _participantRepository.GetByFilter(x => x.DepositionId == depositionId && !x.HasJoined && x.IsAdmitted == null, includes));
         }
 
         public async Task<Result> RemoveParticipantFromDeposition(Guid id, Guid participantId)
@@ -119,7 +119,6 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<Participant>> EditParticipantDetails(Guid depositionId, Participant participant)
         {
-            var user = await _userService.GetCurrentUserAsync();
             var deposition = await _depositionRepository.GetById(depositionId, include: new[] {nameof(Deposition.Participants), nameof(Deposition.Case)});
             if (deposition == null)
                 return Result.Fail(new ResourceNotFoundError($"Deposition not found with ID: {depositionId}"));

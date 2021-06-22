@@ -72,11 +72,11 @@ namespace PrecisionReporters.Platform.Domain.Services
             }
         }
 
-        public override async Task StopAsync(CancellationToken stoppingToken)
+        public override async Task StopAsync(CancellationToken cancellationToken)
         {
             _logger.LogInformation("Queued Hosted Service is stopping.");
 
-            await base.StopAsync(stoppingToken);
+            await base.StopAsync(cancellationToken);
         }
     }
 }
