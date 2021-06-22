@@ -12,7 +12,6 @@ using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using PrecisionReporters.Platform.Shared.Commons;
 using PrecisionReporters.Platform.Shared.Errors;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -47,7 +46,10 @@ namespace PrecisionReporters.Platform.Domain.Services
             composition.EndDate = DateTime.UtcNow;
             var couldDownloadComposition = await _twilioService.GetCompositionMediaAsync(composition);
             if (!couldDownloadComposition)
-                return Result.Fail(new ExceptionalError("Could now download composition media.", null));
+            {
+                _logger.LogError("Could not download composition media.");
+                return Result.Fail(new ExceptionalError("Could not download composition media.", null));
+            }
 
             composition.Status = CompositionStatus.Uploading;
             var updatedComposition = await UpdateComposition(composition);
@@ -60,7 +62,10 @@ namespace PrecisionReporters.Platform.Domain.Services
         {
             var composition = await _compositionRepository.GetFirstOrDefaultByFilter(x => x.RoomId == roomSid);
             if (composition == null)
+            {
+                _logger.LogError("There was an error trying to get composition of room SId: {0}", roomSid);
                 return Result.Fail(new ResourceNotFoundError());
+            }
 
             return Result.Ok(composition);
         }
@@ -74,16 +79,25 @@ namespace PrecisionReporters.Platform.Domain.Services
         public async Task<Result<Composition>> UpdateCompositionCallback(Composition composition)
         {
             var roomResult = await _roomService.GetRoomBySId(composition.Room.SId);
-            if (roomResult.IsFailed)
+            if (roomResult.Value == null)
+            {
+                _logger.LogError("Room with Sid: {0} not found", composition.Room.SId);
                 return roomResult.ToResult<Composition>();
+            }
 
             var compositionToUpdate = await _compositionRepository.GetFirstOrDefaultByFilter(x => x.SId == composition.SId);
             if (compositionToUpdate == null)
+            {
+                _logger.LogError("Composition with Sid: {0} not found", composition.SId);
                 return Result.Fail(new ResourceNotFoundError());
+            }
 
             var depositionResult = await _depositionService.GetDepositionByRoomId(roomResult.Value.Id);
             if (depositionResult.IsFailed)
+            {
+                _logger.LogError("Deposition with RoomId = {0} not found", roomResult.Value.Id);
                 return depositionResult.ToResult<Composition>();
+            }
 
             compositionToUpdate.Status = depositionResult.Value.Events.Any(x => x.EventType == EventType.OnTheRecord) ? composition.Status : CompositionStatus.Empty;
                 
@@ -93,7 +107,10 @@ namespace PrecisionReporters.Platform.Domain.Services
 
                 var uploadMetadataResult = await UploadCompositionMetadata(depositionResult.Value);
                 if (uploadMetadataResult.IsFailed)
+                {
+                    _logger.LogError("Error uploading composition metadata file from composition SId: {0}", composition.SId);
                     return uploadMetadataResult.ToResult<Composition>();
+                }
 
                 var storeCompositionResult = await StoreCompositionMediaAsync(compositionToUpdate);
                 compositionToUpdate.Status = storeCompositionResult.IsSuccess
@@ -113,7 +130,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             return Result.Ok(updatedComposition);
         }
 
-        private CompositionRecordingMetadata CreateCompositioMetadata(Deposition deposition)
+        private CompositionRecordingMetadata CreateCompositionMetadata(Deposition deposition)
         {
             var startDateTime = _twilioService.GetVideoStartTimeStamp(deposition.Room.SId);
             return new CompositionRecordingMetadata
@@ -132,7 +149,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         private async Task<Result> UploadCompositionMetadata(Deposition deposition)
         {
-            var metadata = CreateCompositioMetadata(deposition);
+            var metadata = CreateCompositionMetadata(deposition);
             return await _twilioService.UploadCompositionMetadata(metadata);
 
         }
@@ -142,7 +159,10 @@ namespace PrecisionReporters.Platform.Domain.Services
             var includes = new[] { nameof(Composition.Room) };
             var composition = await _compositionRepository.GetFirstOrDefaultByFilter(x => x.SId == message.GetCompositionId(), includes);
             if (composition == null)
+            {
+                _logger.LogError("Composition not found from payload: {0}", message);
                 return Result.Fail(new ResourceNotFoundError());
+            }
 
             composition.Status = message.IsComplete()
                 ? CompositionStatus.Completed

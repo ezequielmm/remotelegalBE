@@ -42,7 +42,10 @@ namespace PrecisionReporters.Platform.Api.Controllers
             var compositionModel = _compositionMapper.ToModel(compositionDto);
             var updateCompositionResult = await _compositionService.UpdateCompositionCallback(compositionModel);
             if (updateCompositionResult.IsFailed)
+            {
+                _logger.LogError("There was an error updating the composition with SId: {0} from the room SId: {1}", compositionDto.CompositionSid, compositionDto.RoomSid);
                 return WebApiResponses.GetErrorResponse(updateCompositionResult);
+            }
 
             return Ok();
         }
@@ -71,13 +74,16 @@ namespace PrecisionReporters.Platform.Api.Controllers
             var message = Message.ParseMessage(content);
 
             if (!message.IsMessageSignatureValid())
+            {
+                _logger.LogError("There was an error verifying the authenticity of a message sent by Amazon SNS.");
                 return BadRequest();
+            }
 
             if (message.IsSubscriptionType)
             {
                 var result = await SnsHelper.SubscribeEndpoint(message.SubscribeURL);
                 if (result.IsFailed)
-                    _logger.LogError($"There was an error subscribing URL, {result}");
+                    _logger.LogError("Error on validate and confirm the endpoint added as a valid destination to receive messages from aws notification service, {0}", result);
             }
 
             if (message.IsNotificationType)

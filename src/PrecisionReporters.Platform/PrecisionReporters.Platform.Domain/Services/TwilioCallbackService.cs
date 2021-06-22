@@ -8,6 +8,7 @@ using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using PrecisionReporters.Platform.Shared.Errors;
 
 namespace PrecisionReporters.Platform.Domain.Services
 {
@@ -30,15 +31,18 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<Room>> UpdateStatusCallback(RoomCallbackDto roomEvent)
         {
-            _logger.LogDebug($"Handling Twilio's Room Status callback, RoomSId: {roomEvent.RoomSid}, Event: {roomEvent.StatusCallbackEvent}");
+            _logger.LogDebug("Handling Twilio's Room Status callback, RoomSId: {0}, Event: {1}", roomEvent.RoomSid, roomEvent.StatusCallbackEvent);
 
             try
             {
                 var status = EnumHandler.GetEnumValue<RoomStatusCallback>(roomEvent.StatusCallbackEvent);
 
                 var roomResult = await _roomService.GetRoomBySId(roomEvent.RoomSid);
-                if (roomResult.IsFailed)
-                    return roomResult;
+                if (roomResult == null)
+                {
+                    _logger.LogDebug("There was an error trying to get room with SId: {0}.", roomEvent.RoomSid);
+                    return Result.Fail(new ResourceNotFoundError("Room not found"));
+                }
 
                 var room = roomResult.Value;
 
@@ -48,7 +52,10 @@ namespace PrecisionReporters.Platform.Domain.Services
                         {
                             var depositionResult = await _depositionService.GetDepositionByRoomId(room.Id);
                             if (depositionResult.IsFailed)
+                            {
+                                _logger.LogDebug("Deposition of room id: {0} not found", room.Id);
                                 return depositionResult.ToResult<Room>();
+                            }
 
                             var witness = depositionResult.Value.Participants.FirstOrDefault(x => x.Role == ParticipantType.Witness);
                             //TODO: If the Deposition never went OnRecord, we don't have to create a composition
@@ -58,7 +65,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                         }
                     case RoomStatusCallback.ParticipantDisconnected:
                         {
-                            //Verify if this room is a break room for remove attende
+                            //Verify if this room is a break room for remove attendees
                             var breakRoom = await _breakRoomService.GetByRoomId(room.Id);
                             if (breakRoom.IsSuccess)
                             {
@@ -72,12 +79,12 @@ namespace PrecisionReporters.Platform.Domain.Services
             }
             catch (ArgumentException e)
             {
-                _logger.LogDebug($"Skipping Room Status Callback event {roomEvent.StatusCallbackEvent}");
+                _logger.LogDebug(e,"Skipping Room Status Callback event {0}", roomEvent.StatusCallbackEvent);
                 return Result.Ok();
             }
             catch (Exception e)
             {
-                _logger.LogError($"Error handling Twilio's room callback {e.Message}");
+                _logger.LogError(e,"Error handling Twilio's room callback {0}",e.Message);
                 return Result.Fail(new Error(e.Message));
             }
         }

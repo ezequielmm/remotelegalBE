@@ -145,7 +145,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         // TODO: move this code to a FileService? 
         public async Task<bool> GetCompositionMediaAsync(Composition composition)
         {
-            _log.LogDebug($"Downloading composition - SId: {composition.SId}");
+            _log.LogDebug("Downloading composition - SId: {0}", composition.SId);
             var request = (HttpWebRequest)WebRequest.Create($"https://video.twilio.com{composition.MediaUri}?Ttl=3600");
 
             request.Headers.Add("Authorization", "Basic " + Convert.ToBase64String(
@@ -173,7 +173,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 await client.DownloadFileTaskAsync(new Uri(mediaLocation), $"{composition.SId}.{ApplicationConstants.Mp4}");
             }
 
-            _log.LogDebug($"Composition downloaded - SId: {composition.SId}");
+            _log.LogDebug("Composition downloaded - SId: {0}", composition.SId);
 
             return true;
 
@@ -186,7 +186,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             var file = new FileInfo(filePath);
             var keyName = $"videos/{composition.SId}.{ApplicationConstants.Mp4}";
 
-            _log.LogDebug($"Uploading composition - SId: {composition.SId} - keyName: {keyName}");
+            _log.LogDebug("Uploading composition - SId: {0} - keyName: {1}", composition.SId, keyName);
 
             if (file.Exists)
             {
@@ -194,20 +194,20 @@ namespace PrecisionReporters.Platform.Domain.Services
 
                 if (result.IsFailed)
                 {
-                    _log.LogDebug($"Upload failed. Deleting local file {filePath}");
+                    _log.LogDebug("Upload failed. Deleting local file {0}", filePath);
                     file.Delete();
-                    _log.LogDebug($"File {filePath} deleted");
+                    _log.LogDebug("File {0} deleted", filePath);
 
                     return false;
                 }
 
-                _log.LogDebug($"Successful upload. Deleting local file {filePath}");
+                _log.LogDebug("Successful upload. Deleting local file {0}", filePath);
                 file.Delete();
-                _log.LogDebug($"File {filePath} deleted");
+                _log.LogDebug("File {0} deleted", filePath);
                 return true;
 
             }
-            _log.LogError($"File Not found - path: {filePath}");
+            _log.LogError("File Not found - path: {0}", filePath);
             return false;
         }
 
@@ -253,7 +253,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             }
             catch (Exception e)
             {
-                _log.LogError($"Error uploading composition metadata file : {e.Message}");
+                _log.LogError(e, "Error uploading composition metadata file : {0}", e.Message);
                 return Result.Fail(new Error("Error uploading CompositionRecordingMetadata"));
             }
 
@@ -262,15 +262,15 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result> DeleteCompositionAndRecordings(DeleteTwilioRecordingsDto deleteTwilioRecordings)
         {
-            _log.LogDebug($"Start method to Delete composition and recordings - Composition SId: {deleteTwilioRecordings.CompositionSid}");
+            _log.LogDebug("Start method to Delete composition and recordings - Composition SId: {0}", deleteTwilioRecordings.CompositionSid);
             var recordings = await RoomRecordingResource.ReadAsync(deleteTwilioRecordings.RoomSid);
             foreach (var recording in recordings)
             {
                 await RecordingResource.DeleteAsync(recording.Sid);
-                _log.LogDebug($"Deleted recording - SId: {recording.Sid}");
+                _log.LogDebug("Deleted recording - SId: {0}", recording.Sid);
             }
             await CompositionResource.DeleteAsync(deleteTwilioRecordings.CompositionSid);
-            _log.LogDebug($"Deleted composition - SId: {deleteTwilioRecordings.CompositionSid}");
+            _log.LogDebug("Deleted composition - SId: {0}", deleteTwilioRecordings.CompositionSid);
             return Result.Ok();
         }
 
@@ -285,12 +285,13 @@ namespace PrecisionReporters.Platform.Domain.Services
                 );
                 if (chatRoomResource != null)
                     return Result.Ok(chatRoomResource.Sid);
-                else
-                    return Result.Fail(new Error($"Error creating chat with name: {chatName}"));
+
+                _log.LogError("Error creating chat with name: {0}", chatName);
+                return Result.Fail(new Error($"Error creating chat with name: {chatName}"));
             }
             catch (Exception ex)
             {
-                _log.LogError($"Error creating chat with name: {chatName}", ex);
+                _log.LogError(ex,"Error creating chat with name: {}", chatName);
                 return Result.Fail(new Error($"Error creating chat with name: {chatName}"));
             }
         }
@@ -306,12 +307,13 @@ namespace PrecisionReporters.Platform.Domain.Services
                     identity: strIdentity);
                 if (user != null)
                     return Result.Ok(user.Sid);
-                else
-                    return Result.Fail(new Error($"Error creating user with identity: {identity.Email}"));
+                
+                _log.LogError("Error creating user with identity: {0}", identity.Email);
+                return Result.Fail(new Error($"Error creating user with identity: {identity.Email}"));
             }
             catch (Exception ex)
             {
-                _log.LogError($"Error creating user with identity: {identity.Email}", ex);
+                _log.LogError(ex, "Error creating user with identity: {0}", identity.Email);
                 return Result.Fail(new Error($"Error creating user with identity: {identity.Email}"));
             }
 
@@ -329,7 +331,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 }
                 catch (Exception ex)
                 {
-                    _log.LogError($"Error getting user info: {identity.Email}", ex);
+                    _log.LogError(ex, "Error getting user info: {0}", identity.Email);
                 }
             }
 
@@ -343,12 +345,13 @@ namespace PrecisionReporters.Platform.Domain.Services
                         identity: strIdentity);
                     return Result.Ok(chatParticipant?.Sid);
                 }
-                else
-                    return Result.Fail(new Error($"Error adding user to chat, user identity: {identity.Email}"));
+                
+                _log.LogError("Error adding user to chat, user identity: {0}", identity.Email);
+                return Result.Fail(new Error($"Error adding user to chat, user identity: {identity.Email}"));
             }
             catch (Exception ex)
             {
-                _log.LogError($"Error adding user to chat, user identity: {identity.Email}", ex);
+                _log.LogError(ex, "Error adding user to chat, user identity: {0}", identity.Email);
                 return Result.Fail(new Error($"Error adding user to chat, user identity: {identity.Email}"));
             }
 
