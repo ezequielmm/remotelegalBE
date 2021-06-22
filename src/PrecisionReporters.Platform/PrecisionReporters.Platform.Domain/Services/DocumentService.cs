@@ -476,7 +476,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             var displayName = $"{deposition.Case.Name}-{witness.Name}{ApplicationConstants.ZipExtension}";
             if (documentType != null)
             {
-                var documentTypeDescription = documentType == DocumentType.Transcription ? "Transcripts" : "Exhibits";
+                var documentTypeDescription = documentType == DocumentType.Exhibit ? "Exhibits" : "Transcripts";
 
                 displayName = $"{deposition.Case.Name}-{witness.Name}-{documentTypeDescription}{ApplicationConstants.ZipExtension}";
             }
