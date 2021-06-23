@@ -83,7 +83,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
 
             // Assert
             Assert.NotNull(result);
-            Assert.IsType<OkResult>(result);
+            Assert.IsType<OkObjectResult>(result.Result);
             _participantService.Verify(mock=>mock.RemoveParticipantFromDeposition(It.IsAny<Guid>(), It.IsAny<Guid>()),Times.Once);
         }
         
@@ -100,7 +100,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
 
             // Assert
             Assert.NotNull(result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result);
+            var errorResult = Assert.IsType<StatusCodeResult>(result.Result);
             Assert.Equal((int) HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _participantService.Verify(mock=>mock.RemoveParticipantFromDeposition(It.IsAny<Guid>(), It.IsAny<Guid>()),Times.Once);
         }
