@@ -1,6 +1,7 @@
 ﻿using PrecisionReporters.Platform.Data.Entities;
 using System;
 using PrecisionReporters.Platform.Domain.Dtos;
+using System.Collections.Generic;
 
 namespace PrecisionReporters.Platform.UnitTests.Utils
 {
@@ -78,6 +79,38 @@ namespace PrecisionReporters.Platform.UnitTests.Utils
                 CompanyName = "Mock & Co",
                 IsAdmin = false,
                 IsGuest = false
+            };
+        }
+
+        public static List<User> GetUserList()
+        {
+            return new List<User> {
+                new User
+                {
+                    FirstName = "John",
+                    LastName = "Doe",
+                    CompanyAddress = "Fake street 1234",
+                    CompanyName = "Fake company name LLC",
+                    EmailAddress = "testUser@mail.com",
+                    PhoneNumber = "2233222333",
+                    IsAdmin = false,
+                    IsGuest = false,
+                    Password = "1234abcD",
+                    SId = "testId"
+                },
+                new User
+                {
+                    FirstName = "Mock",
+                    LastName = "Mockium",
+                    CompanyAddress = "Fake street 5678",
+                    CompanyName = "Mock company name LLC",
+                    EmailAddress = "testUser2@mail.com",
+                    PhoneNumber = "2233222334",
+                    IsAdmin = false,
+                    IsGuest = false,
+                    Password = "1234abcD",
+                    SId = "testId2"
+                }
             };
         }
     }

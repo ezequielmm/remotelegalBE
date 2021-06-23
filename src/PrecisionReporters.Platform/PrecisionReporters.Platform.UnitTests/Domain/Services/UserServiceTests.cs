@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 using PrecisionReporters.Platform.Data.Entities;
+using PrecisionReporters.Platform.Data.Enums;
 using PrecisionReporters.Platform.Data.Handlers.Interfaces;
 using PrecisionReporters.Platform.Data.Repositories.Interfaces;
 using PrecisionReporters.Platform.Domain.Configurations;
@@ -16,6 +17,7 @@ using PrecisionReporters.Platform.Shared.Errors;
 using PrecisionReporters.Platform.UnitTests.Utils;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Net;
 using System.Threading.Tasks;
@@ -292,6 +294,203 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             Assert.NotNull(result);
             Assert.IsType<List<User>>(result);
             Assert.NotEmpty(result);
+        }
+
+        [Fact]
+        public async Task GetUsersByFilter_ShouldReturnAllUsers_WhenFilterParameterIsNull()
+        {
+            var users = new List<User>();
+            users.AddRange(UserFactory.GetUserList());
+            var upcomingList = users.FindAll(x => x.IsGuest == false );
+            var usersResult = new Tuple<int, IEnumerable<User>>(upcomingList.Count, upcomingList.AsQueryable());
+
+            var filter = new UserFilterDto
+            {
+                SortDirection = SortDirection.Ascend,
+                SortedField = UserSortField.Company,
+                Page = 1,
+                PageSize = 20
+            };
+
+            // Arrange
+            var userRepositoryMock = new Mock<IUserRepository>();
+
+            userRepositoryMock
+                .Setup(mock => mock.GetByFilterPagination(
+                   null,
+                   It.IsAny<Func<IQueryable<User>,
+                   IOrderedQueryable<User>>>(),
+                   It.IsAny<string[]>(),
+                   It.IsAny<int>(),
+                   It.IsAny<int>()
+                   ))
+                .ReturnsAsync(usersResult);
+
+            var service = InitializeService(userRepository: userRepositoryMock);
+
+            // Act
+            var result = await service.GetUsersByFilter(filter);
+
+            // Assert
+            Assert.NotNull(result);
+            userRepositoryMock.Verify(mock => mock.GetByFilterPagination(
+               null,
+               It.IsAny<Func<IQueryable<User>,
+               IOrderedQueryable<User>>>(),
+               It.IsAny<string[]>(),
+               It.IsAny<int>(),
+               It.IsAny<int>()
+                ),Times.Once);
+        }
+
+        [Fact]
+        public async Task GetUsersByFilter_ShouldReturnAdmin_WhenFilterParameterIsNull()
+        {
+            var users = new List<User>();
+            users.AddRange(UserFactory.GetUserList());
+            var upcomingList = users.FindAll(x => x.IsAdmin == true);
+            var usersResult = new Tuple<int, IEnumerable<User>>(upcomingList.Count, upcomingList.AsQueryable());
+
+            var filter = new UserFilterDto
+            {
+                SortDirection = SortDirection.Ascend,
+                SortedField = UserSortField.Company,
+                Page = 1,
+                PageSize = 20
+            };
+
+            // Arrange
+            var userRepositoryMock = new Mock<IUserRepository>();
+            var userServiceMock = new Mock<IUserService>();
+         
+            userRepositoryMock
+                .Setup(mock => mock.GetByFilterPagination(
+                   null,
+                   It.IsAny<Func<IQueryable<User>,
+                   IOrderedQueryable<User>>>(),
+                   It.IsAny<string[]>(),
+                   It.IsAny<int>(),
+                   It.IsAny<int>()
+                   ))
+                .ReturnsAsync(usersResult);
+
+            userServiceMock.Setup(mock => mock.GetCurrentUserAsync()).ReturnsAsync(new User { IsAdmin = true });
+
+            var service = InitializeService(userRepository: userRepositoryMock);
+
+            // Act
+            var result = await service.GetUsersByFilter(filter);
+
+            // Assert
+            Assert.NotNull(result);
+            userRepositoryMock.Verify(mock => mock.GetByFilterPagination(
+               null,
+               It.IsAny<Func<IQueryable<User>,
+               IOrderedQueryable<User>>>(),
+               It.IsAny<string[]>(),
+               It.IsAny<int>(),
+               It.IsAny<int>()
+                ), Times.Once);
+        }
+
+        [Fact]
+        public async Task GetUsersByFilter_ShouldReturnOrderedUsersListByLastName_WhenSortDirectionIsAscendAndSortedFieldIsLastName()
+        {
+            // Arrange
+            var sortedList = UserFactory.GetUserList().OrderBy(x => x.LastName).ThenBy(x => x.FirstName);
+            var users = new List<User>();
+            users.AddRange(sortedList);
+            var upcomingList = users.OrderBy(x => x.LastName).ThenBy(x => x.FirstName).ToList();
+            var usersResult = new Tuple<int, IEnumerable<User>>(upcomingList.Count, upcomingList.AsQueryable());
+            var userRepositoryMock = new Mock<IUserRepository>();
+
+            userRepositoryMock
+                .Setup(mock => mock.GetByFilterPagination(
+                   It.IsAny<Expression<Func<User, bool>>>(),
+                   It.IsAny<Func<IQueryable<User>,
+                   IOrderedQueryable<User>>>(),
+                   It.IsAny<string[]>(),
+                   It.IsAny<int>(),
+                   It.IsAny<int>()
+                   ))
+                .ReturnsAsync(usersResult);
+
+            var filter = new UserFilterDto
+            {
+                SortDirection = SortDirection.Ascend,
+                SortedField = UserSortField.LastName,
+                Page = 1,
+                PageSize = 20
+            };
+
+            var service = InitializeService(userRepository: userRepositoryMock);
+
+            // Act
+            var result = await service.GetUsersByFilter(filter);
+
+            // Assert
+            Assert.NotNull(result);
+            userRepositoryMock.Verify(mock => mock.GetByFilterPagination(
+               It.IsAny<Expression<Func<User, bool>>>(),
+               It.IsAny<Func<IQueryable<User>,
+               IOrderedQueryable<User>>>(),
+               It.IsAny<string[]>(),
+               It.IsAny<int>(),
+               It.IsAny<int>()
+                ), Times.Once);
+            Assert.True(result.Value.Users.Any());
+            Assert.True(result.Value.Users.Count == 2);
+            Assert.True(result.Value.Total == 2);
+        }
+
+        [Fact]
+        public async Task GetUsersByFilter_ShouldOrderByThen_WhenSortedFieldIsCompanyName()
+        {
+            // Arrange
+            var sortedList = UserFactory.GetUserList().OrderBy(x => x.CompanyName).ThenBy(x => x.FirstName);
+            var users = new List<User>();
+            users.AddRange(sortedList);
+            var upcomingList = users.OrderBy(x => x.CompanyName).ThenBy(x => x.FirstName).ToList();
+            var usersResult = new Tuple<int, IEnumerable<User>>(upcomingList.Count, upcomingList.AsQueryable());
+            var userRepositoryMock = new Mock<IUserRepository>();
+
+            userRepositoryMock
+                .Setup(mock => mock.GetByFilterPagination(
+                   It.IsAny<Expression<Func<User, bool>>>(),
+                   It.IsAny<Func<IQueryable<User>,
+                   IOrderedQueryable<User>>>(),
+                   It.IsAny<string[]>(),
+                   It.IsAny<int>(),
+                   It.IsAny<int>()
+                   ))
+                .ReturnsAsync(usersResult);
+
+            var filter = new UserFilterDto
+            {
+                SortDirection = SortDirection.Ascend,
+                SortedField = UserSortField.Company,
+                Page = 1,
+                PageSize = 20
+            };
+
+            var service = InitializeService(userRepository: userRepositoryMock);
+
+            // Act
+            var result = await service.GetUsersByFilter(filter);
+
+            // Assert
+            Assert.NotNull(result);
+            userRepositoryMock.Verify(mock => mock.GetByFilterPagination(
+               It.IsAny<Expression<Func<User, bool>>>(),
+               It.IsAny<Func<IQueryable<User>,
+               IOrderedQueryable<User>>>(),
+               It.IsAny<string[]>(),
+               It.IsAny<int>(),
+               It.IsAny<int>()
+                ), Times.Once);
+            Assert.True(result.Value.Users.Any());
+            Assert.True(result.Value.Users.Count == 2);
+            Assert.True(result.Value.Total == 2);
         }
 
         [Fact]
