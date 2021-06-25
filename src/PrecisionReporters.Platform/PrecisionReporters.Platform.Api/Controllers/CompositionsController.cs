@@ -8,6 +8,7 @@ using PrecisionReporters.Platform.Domain.Dtos;
 using PrecisionReporters.Platform.Domain.Mappers;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using PrecisionReporters.Platform.Shared.Helpers;
+using PrecisionReporters.Platform.Shared.Helpers.Interfaces;
 using System;
 using System.IO;
 using System.Threading.Tasks;
@@ -22,16 +23,19 @@ namespace PrecisionReporters.Platform.Api.Controllers
         private readonly ILogger<CompositionsController> _logger;
         private readonly IMapper<Composition, CompositionDto, CallbackCompositionDto> _compositionMapper;
         private readonly ITwilioCallbackService _twilioCallbackService;
+        private readonly ISnsHelper _snsHelper;
 
         public CompositionsController(ICompositionService compositionService,
             IMapper<Composition, CompositionDto, CallbackCompositionDto> compositionMapper,
-            ILogger<CompositionsController> logger, 
-            ITwilioCallbackService twilioCallbackService)
+            ILogger<CompositionsController> logger,
+            ITwilioCallbackService twilioCallbackService, 
+            ISnsHelper snsHelper)
         {
             _compositionService = compositionService;
             _compositionMapper = compositionMapper;
             _logger = logger;
             _twilioCallbackService = twilioCallbackService;
+            _snsHelper = snsHelper;
         }
 
         [ServiceFilter(typeof(ValidateTwilioRequestFilterAttribute))]
@@ -81,7 +85,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
 
             if (message.IsSubscriptionType)
             {
-                var result = await SnsHelper.SubscribeEndpoint(message.SubscribeURL);
+                var result = await _snsHelper.SubscribeEndpoint(message.SubscribeURL);
                 if (result.IsFailed)
                     _logger.LogError("Error on validate and confirm the endpoint added as a valid destination to receive messages from aws notification service, {0}", result);
             }
@@ -96,7 +100,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
                 catch (Exception e)
                 {
                     _logger.LogError(e.Message);
-                    return BadRequest(e.Message);
+                    return BadRequest(e.Message);   
                 }
             }
 

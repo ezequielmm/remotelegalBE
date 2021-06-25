@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Primitives;
+using Newtonsoft.Json;
 
 namespace PrecisionReporters.Platform.UnitTests.Utils
 {
@@ -27,7 +28,7 @@ namespace PrecisionReporters.Platform.UnitTests.Utils
             {
                 HttpContext = new DefaultHttpContext
                 {
-                    Connection = { RemoteIpAddress = new IPAddress(16885952)}
+                    Connection = { RemoteIpAddress = new IPAddress(16885952) }
                 }
             };
         }
@@ -44,7 +45,7 @@ namespace PrecisionReporters.Platform.UnitTests.Utils
                 fileName: "mock.pdf");
             httpContext.Request.Form = new FormCollection(new Dictionary<string, StringValues>(), new FormFileCollection { file });
             var actionContext = new ActionContext(httpContext, new RouteData(), new ControllerActionDescriptor());
-            
+
             return new ControllerContext(actionContext);
         }
 
@@ -57,6 +58,35 @@ namespace PrecisionReporters.Platform.UnitTests.Utils
             }));
 
             context.User = userPrincipal;
+        }
+
+        public static ControllerContext GetControllerContextWithSnsRequestBody()
+        {
+            var httpContext = new DefaultHttpContext();
+            var reason = GetContextRequestBody();
+            // Create the stream to house our content
+            var stream = new MemoryStream(Encoding.UTF8.GetBytes(reason));
+            httpContext.Request.Body = stream;
+            httpContext.Request.ContentLength = stream.Length;
+            var actionContext = new ActionContext(httpContext, new RouteData(), new ControllerActionDescriptor());
+            return new ControllerContext(actionContext);
+        }
+
+        public static string GetContextRequestBody()
+        {
+            return JsonConvert.SerializeObject(new
+            {
+                Type = "SubscriptionConfirmation",
+                MessageId = "22b80b92-fdea-4c2c-8f9d-bdfb0c7bf324",
+                TopicArn = "arn:aws:sns:us-west-2:123456789012:MyTopic",
+                Subject = "My First Message",
+                Message = "Hello world!",
+                Timestamp = "2012-05-02T00:54:06.655Z",
+                SignatureVersion = "1",
+                Signature = "EXAMPLEw6JRN...",
+                SigningCertURL = "https://sns.us-west-2.amazonaws.com/SimpleNotificationService-f3ecfb7224c7233fe7bb5f59f96de52f.pem",
+                UnsubscribeURL = "https://sns.us-west-2.amazonaws.com/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:us-west-2:123456789012:MyTopic:c9135db0-26c4-47ec-8998-413945fb5a96"
+            }, Formatting.None);
         }
     }
 }

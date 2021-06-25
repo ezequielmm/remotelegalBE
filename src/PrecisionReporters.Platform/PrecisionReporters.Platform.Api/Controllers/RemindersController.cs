@@ -2,7 +2,9 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
+using PrecisionReporters.Platform.Domain.Wrappers.Interfaces;
 using PrecisionReporters.Platform.Shared.Helpers;
+using PrecisionReporters.Platform.Shared.Helpers.Interfaces;
 using System;
 using System.IO;
 using System.Threading.Tasks;
@@ -15,13 +17,19 @@ namespace PrecisionReporters.Platform.Api.Controllers
     {
         private readonly ILogger<RemindersController> _logger;
         private readonly IReminderService _reminderService;
+        private readonly IAwsSnsWrapper _awsSnsWrapper;
+        private readonly ISnsHelper _snsHelper;
 
         public RemindersController(
             ILogger<RemindersController> logger,
-            IReminderService reminderService)
+            IReminderService reminderService,
+            IAwsSnsWrapper awsSnsWrapper,
+            ISnsHelper snsHelper)
         {
             _logger = logger;
             _reminderService = reminderService;
+            _awsSnsWrapper = awsSnsWrapper;
+            _snsHelper = snsHelper;
         }
 
         [HttpPost]
@@ -33,14 +41,14 @@ namespace PrecisionReporters.Platform.Api.Controllers
             string content;
             using (var reader = new StreamReader(Request.Body)) { content = await reader.ReadToEndAsync(); }
 
-            var message = Message.ParseMessage(content);
+            var message = _awsSnsWrapper.ParseMessage(content);
 
-            if (!message.IsMessageSignatureValid())
+            if (!_awsSnsWrapper.IsMessageSignatureValid(message))
                 return BadRequest();
 
             if (message.IsSubscriptionType)
             {
-                var result = await SnsHelper.SubscribeEndpoint(message.SubscribeURL);
+                var result = await _snsHelper.SubscribeEndpoint(message.SubscribeURL);
                 if (result.IsFailed)
                     _logger.LogError($"There was an error subscribing URL, {result}");
             }
@@ -66,14 +74,14 @@ namespace PrecisionReporters.Platform.Api.Controllers
             string content;
             using (var reader = new StreamReader(Request.Body)) { content = await reader.ReadToEndAsync(); }
 
-            var message = Message.ParseMessage(content);
+            var message = _awsSnsWrapper.ParseMessage(content);
 
-            if (!message.IsMessageSignatureValid())
+            if (!_awsSnsWrapper.IsMessageSignatureValid(message))
                 return BadRequest();
 
             if (message.IsSubscriptionType)
             {
-                var result = await SnsHelper.SubscribeEndpoint(message.SubscribeURL);
+                var result = await _snsHelper.SubscribeEndpoint(message.SubscribeURL);
                 if (result.IsFailed)
                     _logger.LogError($"There was an error subscribing URL, {result}");
             }

@@ -16,6 +16,10 @@ using PrecisionReporters.Platform.Domain.AppConfigurations;
 using PrecisionReporters.Platform.Domain.Configurations;
 using PrecisionReporters.Platform.Domain.Services;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
+using PrecisionReporters.Platform.Domain.Wrappers;
+using PrecisionReporters.Platform.Domain.Wrappers.Interfaces;
+using PrecisionReporters.Platform.Shared.Helpers;
+using PrecisionReporters.Platform.Shared.Helpers.Interfaces;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
@@ -78,7 +82,8 @@ namespace PrecisionReporters.Platform.Api
                 x.EnvironmentFilesBucket = appConfiguration.DocumentConfiguration.EnvironmentFilesBucket;
                 x.FrontEndContentBucket = appConfiguration.DocumentConfiguration.FrontEndContentBucket;
             });
-
+            services.AddScoped<IAwsSnsWrapper, AwsSnsWrapper>();
+            services.AddScoped<ISnsHelper, SnsHelper>();
             services.Configure<KestrelServerOptions>(options =>
             {
                 // TODO: Check how to return a valid error message with this validation and reduce the value to MaxFileSize only
