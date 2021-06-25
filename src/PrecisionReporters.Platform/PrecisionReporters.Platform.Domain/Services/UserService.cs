@@ -95,6 +95,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             await _cognitoService.ConfirmUserAsync(verifyUser.User.EmailAddress);
 
             verifyUser.IsUsed = true;
+            verifyUser.VerificationDate = DateTime.UtcNow;
             var result = await _verifyUserService.UpdateVerifyUser(verifyUser);
 
             return Result.Ok(result);

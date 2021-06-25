@@ -7,5 +7,6 @@ namespace PrecisionReporters.Platform.Domain.Dtos
         public Guid UserId { get; set; }
         public bool IsUsed { get; set; }
         public DateTime CreationDate { get; set; }
+        public DateTime? VerificationDate { get; set; }
     }
 }
