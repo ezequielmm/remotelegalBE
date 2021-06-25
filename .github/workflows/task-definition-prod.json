@@ -281,8 +281,8 @@
                     "awslogs-stream-prefix": "ecs"
                 }
             },
-            "memoryReservation": 256,
-            "cpu": 256
+            "memoryReservation": 1024,
+            "cpu": 512
         }
     ],
     "family": "prp-be-task-prod",
@@ -294,6 +294,6 @@
     "requiresCompatibilities": [
         "FARGATE"
     ],
-    "cpu": "1024",
-    "memory": "2048"
+    "cpu": "4096",
+    "memory": "8192"
 }
