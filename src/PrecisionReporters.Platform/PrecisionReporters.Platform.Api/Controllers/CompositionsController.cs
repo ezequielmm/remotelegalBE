@@ -1,5 +1,4 @@
-﻿using Amazon.SimpleNotificationService.Util;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using PrecisionReporters.Platform.Api.Filters;
@@ -12,6 +11,7 @@ using PrecisionReporters.Platform.Shared.Helpers.Interfaces;
 using System;
 using System.IO;
 using System.Threading.Tasks;
+using PrecisionReporters.Platform.Domain.Wrappers.Interfaces;
 
 namespace PrecisionReporters.Platform.Api.Controllers
 {
@@ -24,18 +24,21 @@ namespace PrecisionReporters.Platform.Api.Controllers
         private readonly IMapper<Composition, CompositionDto, CallbackCompositionDto> _compositionMapper;
         private readonly ITwilioCallbackService _twilioCallbackService;
         private readonly ISnsHelper _snsHelper;
+        private readonly IAwsSnsWrapper _awsSnsWrapper;
 
         public CompositionsController(ICompositionService compositionService,
             IMapper<Composition, CompositionDto, CallbackCompositionDto> compositionMapper,
             ILogger<CompositionsController> logger,
             ITwilioCallbackService twilioCallbackService, 
-            ISnsHelper snsHelper)
+            ISnsHelper snsHelper,
+            IAwsSnsWrapper awsSnsWrapper)
         {
             _compositionService = compositionService;
             _compositionMapper = compositionMapper;
             _logger = logger;
             _twilioCallbackService = twilioCallbackService;
             _snsHelper = snsHelper;
+            _awsSnsWrapper = awsSnsWrapper;
         }
 
         [ServiceFilter(typeof(ValidateTwilioRequestFilterAttribute))]
@@ -75,9 +78,9 @@ namespace PrecisionReporters.Platform.Api.Controllers
             string content;
             using (var reader = new StreamReader(Request.Body)) { content = await reader.ReadToEndAsync(); }
 
-            var message = Message.ParseMessage(content);
+            var message = _awsSnsWrapper.ParseMessage(content);
 
-            if (!message.IsMessageSignatureValid())
+            if (!_awsSnsWrapper.IsMessageSignatureValid(message))
             {
                 _logger.LogError("There was an error verifying the authenticity of a message sent by Amazon SNS.");
                 return BadRequest();
