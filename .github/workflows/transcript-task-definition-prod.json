@@ -95,7 +95,7 @@
         },
         {
           "name": "AppConfiguration__CorsConfiguration__Origins",
-          "value": "https://app.remotelegal.com"
+          "value": "https://*.remotelegal.com"
         },
         {
           "name": "AppConfiguration__CloudServicesConfiguration__TranscriptionProvider",
