@@ -10,6 +10,7 @@ using PrecisionReporters.Platform.Domain.Dtos;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using PrecisionReporters.Platform.Shared.Commons;
 using PrecisionReporters.Platform.Shared.Errors;
+using PrecisionReporters.Platform.Shared.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -64,7 +65,10 @@ namespace PrecisionReporters.Platform.Domain.Services
         {
             var canCloseDocument = await ParticipantCanCloseDocument(document, depositionDocument.DepositionId);
             if (!canCloseDocument)
+            {
+                _logger.LogError($"{nameof(DepositionDocumentService)}.{nameof(CloseStampedDepositionDocument)}: Current user cannot close document with Id '{document.Id}' on deposition '{depositionDocument.DepositionId}'");
                 return Result.Fail(new ForbiddenError());
+            }
 
             DepositionDocument newDepositionDocument = null;
             var transactionResult = await _transactionHandler.RunAsync(async () =>
@@ -75,40 +79,73 @@ namespace PrecisionReporters.Platform.Domain.Services
                 {
                     var uploadResult = await _documentService.UpdateDocument(document, newDepositionDocument, identity, temporalPath);
                     if (uploadResult.IsFailed)
+                    {
+                        _logger.LogError($"{nameof(DepositionDocumentService)}.{nameof(CloseStampedDepositionDocument)}: Failed updating document '{document.Id}': {uploadResult.GetErrorMessage()}");
                         return uploadResult.ToResult<bool>();
+                    }
                 }
                 var removeUserDocumentResult = await _documentService.RemoveDepositionUserDocuments(depositionDocument.DocumentId);
                 if (removeUserDocumentResult.IsFailed)
+                {
+                    _logger.LogError($"{nameof(DepositionDocumentService)}.{nameof(CloseStampedDepositionDocument)}: Failed removing document '{depositionDocument.DocumentId}': {removeUserDocumentResult.GetErrorMessage()}");
                     return removeUserDocumentResult.ToResult<bool>();
+                }
 
-                await RemoveAnnotationEvents(depositionDocument.DocumentId);
-                await ClearDepositionDocumentSharingId(depositionDocument.DepositionId);
+                var removeAnnotationsResult = await _annotationEventService.RemoveUserDocumentAnnotations(depositionDocument.DocumentId);
+                if (removeAnnotationsResult.IsFailed)
+                {
+                    _logger.LogError($"{nameof(DepositionDocumentService)}.{nameof(CloseStampedDepositionDocument)}: Failed removing annotations on document '{depositionDocument.DocumentId}': {removeAnnotationsResult.GetErrorMessage()}");
+                    return removeAnnotationsResult.ToResult<bool>();
+                }
+
+                var clearSharingIdResult = await _depositionService.ClearDepositionDocumentSharingId(depositionDocument.DepositionId);
+                if (clearSharingIdResult.IsFailed)
+                {
+                    _logger.LogError($"{nameof(DepositionDocumentService)}.{nameof(CloseStampedDepositionDocument)}: Failed clearing SharingId on deposition '{depositionDocument.DepositionId}': {clearSharingIdResult.GetErrorMessage()}");
+                    return clearSharingIdResult.ToResult<bool>();
+                }
 
                 return Result.Ok(true);
             });
 
             if (transactionResult.IsFailed)
-                return transactionResult;
+            {
+                _logger.LogError($"{nameof(DepositionDocumentService)}.{nameof(CloseStampedDepositionDocument)}: Failed for document with Id '{document.Id}' on deposition '{depositionDocument.DepositionId}': {transactionResult.GetErrorMessage()}");
+            }
 
-            return Result.Ok();
+            return transactionResult;
         }
 
-        public async Task<Result> CloseDepositionDocument(Document document, Guid depostionId)
+        public async Task<Result> CloseDepositionDocument(Document document, Guid depositionId)
         {
-            var canCloseDocument = await ParticipantCanCloseDocument(document, depostionId);
+            var canCloseDocument = await ParticipantCanCloseDocument(document, depositionId);
             if (!canCloseDocument)
+            {
+                _logger.LogError($"{nameof(DepositionDocumentService)}.{nameof(CloseDepositionDocument)}: Current user cannot close document with Id '{document.Id}' on deposition '{depositionId}'");
                 return Result.Fail(new ForbiddenError());
+            }
 
-            var removedAnnotations = await RemoveAnnotationEvents(document.Id);
-            var removedSharingId = await ClearDepositionDocumentSharingId(depostionId);
+            return await _transactionHandler.RunAsync<Deposition>(async () =>
+            {
+                var removedAnnotationsResult = await _annotationEventService.RemoveUserDocumentAnnotations(document.Id);
+                if (removedAnnotationsResult.IsFailed)
+                {
+                    _logger.LogError($"{nameof(DepositionDocumentService)}.{nameof(CloseDepositionDocument)}: Failed removing annotations on document '{document.Id}': {removedAnnotationsResult.GetErrorMessage()}");
+                    return Result.Fail("Cannot close Document Successfully.");
+                }
 
-            if (removedAnnotations.IsFailed || removedSharingId.IsFailed)
-                return Result.Fail("Cannot close Document Successfully.");
+                var removedSharingIdResult = await _depositionService.ClearDepositionDocumentSharingId(depositionId);
+                if (removedSharingIdResult.IsFailed)
+                {
+                    _logger.LogError($"{nameof(DepositionDocumentService)}.{nameof(CloseDepositionDocument)}: Failed clearing SharingId on deposition '{depositionId}': {removedSharingIdResult.GetErrorMessage()}");
+                    return Result.Fail("Cannot close Document Successfully.");
+                }
 
-            return Result.Ok();
+                return Result.Ok();
+            });
         }
 
-        public async Task<Result<List<DepositionDocument>>> GetEnteredExhibits(Guid depostionId, ExhibitSortField? sortedField = null, SortDirection? sortDirection = null)
+        public async Task<Result<List<DepositionDocument>>> GetEnteredExhibits(Guid depositionId, ExhibitSortField? sortedField = null, SortDirection? sortDirection = null)
         {
             var includes = new[] { $"{ nameof(DepositionDocument.Document) }.{ nameof(Document.AddedBy) }" };
             Expression<Func<DepositionDocument, object>> orderBy = sortedField switch
@@ -124,7 +161,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             var depositionDocuments = await _depositionDocumentRepository.GetByFilterOrderByThen(
                 orderBy,
                 sortDirection ?? SortDirection.Descend,
-                x => x.DepositionId == depostionId && x.Document.DocumentType == DocumentType.Exhibit,
+                x => x.DepositionId == depositionId && x.Document.DocumentType == DocumentType.Exhibit,
                 includes,
                 sortedField == ExhibitSortField.Owner ? orderByThen : null);
 
@@ -152,16 +189,6 @@ namespace PrecisionReporters.Platform.Domain.Services
         {
             var depositionDocument = await _depositionDocumentRepository.GetFirstOrDefaultByFilter(x => x.DepositionId == depositionId && x.DocumentId == documentId);
             return depositionDocument != null;
-        }
-
-        private async Task<Result> RemoveAnnotationEvents(Guid documentId)
-        {
-            return await _annotationEventService.RemoveUserDocumentAnnotations(documentId);
-        }
-
-        private async Task<Result> ClearDepositionDocumentSharingId(Guid depositionId)
-        {
-            return await _depositionService.ClearDepositionDocumentSharingId(depositionId);
         }
 
         public async Task<Result> RemoveDepositionTranscript(Guid depositionId, Guid documentId)

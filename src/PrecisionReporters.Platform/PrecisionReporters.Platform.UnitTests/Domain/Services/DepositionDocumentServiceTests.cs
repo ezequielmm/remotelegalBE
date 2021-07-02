@@ -293,6 +293,10 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _userServiceMock.Setup(x => x.GetCurrentUserAsync()).ReturnsAsync(user);
             _annotationEventServiceMock.Setup(x => x.RemoveUserDocumentAnnotations(document.Id)).ReturnsAsync(Result.Ok());
             _depositionServiceMock.Setup(x => x.ClearDepositionDocumentSharingId(depositionId)).ReturnsAsync(Result.Ok());
+            _transactionHandlerMock.Setup(x => x.RunAsync(It.IsAny<Func<Task<Result<Deposition>>>>())).Returns(async (Func<Task<Result<Deposition>>> action) =>
+            {
+                return await action();
+            });
 
             // Act
             var result = await _depositionDocumentService.CloseDepositionDocument(document, depositionId);
@@ -305,7 +309,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         }
 
         [Fact]
-        public async Task CloseDepositionDocument_CanCloseDocument_ReturnFail()
+        public async Task CloseDepositionDocument_ShouldFail_WhenRemoveAnnotationsFails()
         {
             var depositionId = Guid.NewGuid();
             var document = new Document
@@ -323,6 +327,46 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _userServiceMock.Setup(x => x.GetCurrentUserAsync()).ReturnsAsync(user);
             _annotationEventServiceMock.Setup(x => x.RemoveUserDocumentAnnotations(document.Id)).ReturnsAsync(Result.Fail(errorMessage));
             _depositionServiceMock.Setup(x => x.ClearDepositionDocumentSharingId(depositionId)).ReturnsAsync(Result.Ok());
+            _transactionHandlerMock.Setup(x => x.RunAsync(It.IsAny<Func<Task<Result<Deposition>>>>())).Returns(async (Func<Task<Result<Deposition>>> action) =>
+            {
+                return await action();
+            });
+
+            // Act
+            var result = await _depositionDocumentService.CloseDepositionDocument(document, depositionId);
+
+            // Assert
+            _userServiceMock.Verify(x => x.GetCurrentUserAsync(), Times.Once());
+            _annotationEventServiceMock.Verify(x => x.RemoveUserDocumentAnnotations(document.Id), Times.Once());
+            _depositionServiceMock.Verify(x => x.ClearDepositionDocumentSharingId(depositionId), Times.Never());
+            Assert.True(result.IsFailed);
+            Assert.True(result.Errors[0].Message.Equals(errorMessage));
+        }
+
+
+        [Fact]
+        public async Task CloseDepositionDocument_ShouldFail_WhenCleanSharingIdFails()
+        {
+            var depositionId = Guid.NewGuid();
+            var document = new Document
+            {
+                Id = Guid.NewGuid(),
+                AddedBy = new User { EmailAddress = "newuser@email.com" },
+            };
+            var user = new User
+            {
+                Id = Guid.NewGuid(),
+                EmailAddress = "test@email.com",
+                IsAdmin = true,
+            };
+            var errorMessage = "Cannot close Document Successfully.";
+            _userServiceMock.Setup(x => x.GetCurrentUserAsync()).ReturnsAsync(user);
+            _annotationEventServiceMock.Setup(x => x.RemoveUserDocumentAnnotations(document.Id)).ReturnsAsync(Result.Ok());
+            _depositionServiceMock.Setup(x => x.ClearDepositionDocumentSharingId(depositionId)).ReturnsAsync(Result.Fail(errorMessage));
+            _transactionHandlerMock.Setup(x => x.RunAsync(It.IsAny<Func<Task<Result<Deposition>>>>())).Returns(async (Func<Task<Result<Deposition>>> action) =>
+            {
+                return await action();
+            });
 
             // Act
             var result = await _depositionDocumentService.CloseDepositionDocument(document, depositionId);

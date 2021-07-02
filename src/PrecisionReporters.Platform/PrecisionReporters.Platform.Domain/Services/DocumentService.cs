@@ -560,11 +560,24 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (document == null)
                 return Result.Fail(new Error($"Could not find any document with Id {documentId}"));
 
-            depositionResult.SharingDocumentId = document.Id;
-            document.SharedAt = DateTime.UtcNow;
-            await _documentRepository.Update(document);
+            return await _transactionHandler.RunAsync<Deposition>(async () =>
+            {
+                try
+                {
+                    depositionResult.SharingDocumentId = document.Id;
+                    document.SharedAt = DateTime.UtcNow;
+                    _logger.LogDebug($"{nameof(DocumentService)}.{nameof(ShareEnteredExhibit)}: Updating document with Id '{documentId}'");
+                    await _documentRepository.Update(document);
 
-            return Result.Ok(await _depositionRepository.Update(depositionResult));
+                    _logger.LogDebug($"{nameof(DocumentService)}.{nameof(ShareEnteredExhibit)}: Updating deposition with Id '{depositionId}'");
+                    return Result.Ok(await _depositionRepository.Update(depositionResult));
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Unable to share exhibit with Id '{0}' for deposition '{1}'", documentId, depositionId);
+                    return Result.Fail(new ExceptionalError("Unable to share exhibit", ex));
+                }
+            });
         }
 
         public async Task<Result> RemoveDepositionDocument(Guid depositionId, Guid documentId)

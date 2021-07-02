@@ -332,9 +332,9 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _loggerMock.Verify(x => x.Log(
                     LogLevel.Error,
                     It.IsAny<EventId>(),
-                    It.Is<It.IsAnyType>((v,t) => true),
+                    It.Is<It.IsAnyType>((v, t) => true),
                     It.IsAny<Exception>(),
-                    It.Is<Func<It.IsAnyType, Exception, string>>((v,t) => true)));
+                    It.Is<Func<It.IsAnyType, Exception, string>>((v, t) => true)));
             Assert.IsType<Result>(result);
             Assert.True(result.IsFailed);
         }
@@ -444,9 +444,9 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _loggerMock.Verify(x => x.Log(
                     LogLevel.Error,
                     It.IsAny<EventId>(),
-                    It.Is<It.IsAnyType>((v,t) => true),
+                    It.Is<It.IsAnyType>((v, t) => true),
                     It.IsAny<Exception>(),
-                    It.Is<Func<It.IsAnyType, Exception, string>>((v,t) => true)));
+                    It.Is<Func<It.IsAnyType, Exception, string>>((v, t) => true)));
         }
 
         [Fact]
@@ -470,9 +470,9 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _loggerMock.Verify(x => x.Log(
                     LogLevel.Error,
                     It.IsAny<EventId>(),
-                    It.Is<It.IsAnyType>((v,t) => true),
+                    It.Is<It.IsAnyType>((v, t) => true),
                     It.IsAny<Exception>(),
-                    It.Is<Func<It.IsAnyType, Exception, string>>((v,t) => true)));
+                    It.Is<Func<It.IsAnyType, Exception, string>>((v, t) => true)));
         }
 
         [Fact]
@@ -951,12 +951,12 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _depositionDocumentRepositoryMock
                 .Setup(x => x.GetByFilter(It.IsAny<Expression<Func<DepositionDocument, bool>>>(), It.IsAny<string[]>()))
                 .ReturnsAsync(depositionDocumentList);
-            
+
             _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), new[] { nameof(Deposition.Case), nameof(Deposition.Participants) })).ReturnsAsync(deposition);
 
             _fileHelperMock.Setup(x => x.CreateFile(It.IsAny<FileTransferInfo>()));
             _fileHelperMock.Setup(x => x.GenerateZipFile(It.IsAny<string>(), It.IsAny<List<string>>()));
-            
+
             _awsStorageServiceMock.Setup(x => x.UploadObjectFromFileAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(Result.Ok());
             _awsStorageServiceMock.Setup(x => x.GetFilePublicUri(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<string>(), It.IsAny<bool>())).Returns(It.IsAny<string>());
 
@@ -1363,7 +1363,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             };
             _userServiceMock.Setup(x => x.GetCurrentUserAsync()).ReturnsAsync(new User());
             _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(new Deposition());
-            
+
             var folder = DocumentType.Transcription.GetDescription();
 
             // Act
@@ -1377,9 +1377,9 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _loggerMock.Verify(x => x.Log(
                     LogLevel.Error,
                     It.IsAny<EventId>(),
-                    It.Is<It.IsAnyType>((v,t) => true),
+                    It.Is<It.IsAnyType>((v, t) => true),
                     It.IsAny<Exception>(),
-                    It.Is<Func<It.IsAnyType, Exception, string>>((v,t) => true)));
+                    It.Is<Func<It.IsAnyType, Exception, string>>((v, t) => true)));
         }
 
         [Fact]
@@ -1850,6 +1850,133 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             Assert.True(result.IsSuccess);
             Assert.True(result.Value.Any());
             Assert.Equal(s3ObjectsList.Count, result.Value.Count);
+        }
+
+        [Fact]
+        public async Task ShareEnteredExhibit_ShouldWork()
+        {
+            //Arrange
+            var depoId = Guid.NewGuid();
+            var deposition = new Deposition
+            {
+                Id = depoId
+            };
+
+            var docId = Guid.NewGuid();
+            var document = new Document
+            {
+                Id = docId
+            };
+
+            _depositionRepositoryMock.Setup(r => r.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
+            _documentRepositoryMock.Setup(r => r.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(document);
+            _transactionHandlerMock.Setup(x => x.RunAsync(It.IsAny<Func<Task<Result<Deposition>>>>())).Returns(async (Func<Task<Result<Deposition>>> action) =>
+            {
+                return await action();
+            });
+
+            //Act
+            var result = await _service.ShareEnteredExhibit(depoId, docId);
+
+            //Assert
+            Assert.True(result.IsSuccess);
+            _documentRepositoryMock.Verify(r => r.Update(It.Is<Document>(d => d.Id == docId && d.SharedAt.HasValue)), Times.Once);
+            _depositionRepositoryMock.Verify(r => r.Update(It.Is<Deposition>(d => d.Id == depoId && d.SharingDocumentId.HasValue)), Times.Once);
+        }
+
+        [Fact]
+        public async Task ShareEnteredExhibit_ShouldFail_IfDepositionUpdateFails()
+        {
+            //Arrange
+            var depoId = Guid.NewGuid();
+            var deposition = new Deposition
+            {
+                Id = depoId
+            };
+
+            var docId = Guid.NewGuid();
+            var document = new Document
+            {
+                Id = docId
+            };
+
+            _depositionRepositoryMock.Setup(r => r.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
+            _documentRepositoryMock.Setup(r => r.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(document);
+            _transactionHandlerMock.Setup(x => x.RunAsync(It.IsAny<Func<Task<Result<Deposition>>>>())).Returns(async (Func<Task<Result<Deposition>>> action) =>
+            {
+                return await action();
+            });
+            _depositionRepositoryMock.Setup(r => r.Update(It.IsAny<Deposition>())).Throws(new Exception());
+
+            //Act
+            var result = await _service.ShareEnteredExhibit(depoId, docId);
+
+            //Assert
+            Assert.True(result.IsFailed);
+            _documentRepositoryMock.Verify(r => r.Update(It.Is<Document>(d => d.Id == docId && d.SharedAt.HasValue)), Times.Once);
+            _depositionRepositoryMock.Verify(r => r.Update(It.Is<Deposition>(d => d.Id == depoId && d.SharingDocumentId.HasValue)), Times.Once);
+        }
+
+        [Fact]
+        public async Task ShareEnteredExhibit_ShouldFail_IfDocumentUpdateFails()
+        {
+            //Arrange
+            var depoId = Guid.NewGuid();
+            var deposition = new Deposition
+            {
+                Id = depoId
+            };
+
+            var docId = Guid.NewGuid();
+            var document = new Document
+            {
+                Id = docId
+            };
+
+            _depositionRepositoryMock.Setup(r => r.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
+            _documentRepositoryMock.Setup(r => r.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(document);
+            _transactionHandlerMock.Setup(x => x.RunAsync(It.IsAny<Func<Task<Result<Deposition>>>>())).Returns(async (Func<Task<Result<Deposition>>> action) =>
+            {
+                return await action();
+            });
+            _documentRepositoryMock.Setup(r => r.Update(It.IsAny<Document>())).Throws(new Exception());
+
+            //Act
+            var result = await _service.ShareEnteredExhibit(depoId, docId);
+
+            //Assert
+            Assert.True(result.IsFailed);
+            _documentRepositoryMock.Verify(r => r.Update(It.Is<Document>(d => d.Id == docId && d.SharedAt.HasValue)), Times.Once);
+            _depositionRepositoryMock.Verify(r => r.Update(It.Is<Deposition>(d => d.Id == depoId && d.SharingDocumentId.HasValue)), Times.Never);
+        }
+
+        [Fact]
+        public async Task ShareEnteredExhibit_ShouldFail_IfAnotherDocumentIsBeingShared()
+        {
+            //Arrange
+            var depoId = Guid.NewGuid();
+            var deposition = new Deposition
+            {
+                Id = depoId,
+                SharingDocumentId = Guid.NewGuid()
+            };
+
+            var docId = Guid.NewGuid();
+            var document = new Document
+            {
+                Id = docId
+            };
+
+            _depositionRepositoryMock.Setup(r => r.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
+            _documentRepositoryMock.Setup(r => r.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(document);            
+
+            //Act
+            var result = await _service.ShareEnteredExhibit(depoId, docId);
+
+            //Assert
+            Assert.True(result.IsFailed);
+            _documentRepositoryMock.Verify(r => r.Update(It.Is<Document>(d => d.Id == docId && d.SharedAt.HasValue)), Times.Never);
+            _depositionRepositoryMock.Verify(r => r.Update(It.Is<Deposition>(d => d.Id == depoId && d.SharingDocumentId.HasValue)), Times.Never);
         }
     }
 }
