@@ -569,8 +569,8 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             var participant = deposition.Participants.FirstOrDefault(p => p.Email == guest.Email);
             var witnessParticipant = deposition.Participants.FirstOrDefault(w => w.Role == ParticipantType.Witness && w.IsAdmitted == true);
-            if (guest.Role == ParticipantType.Witness 
-                && witnessParticipant?.Email != null 
+            if (guest.Role == ParticipantType.Witness
+                && witnessParticipant?.Email != null
                 && guest.Email != witnessParticipant?.Email)
                 return Result.Fail(new InvalidInputError("The deposition already has a participant as witness"));
 
@@ -725,7 +725,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             }
             var depoStartDate = deposition.GetActualStartDate() ?? deposition.Room.RecordingStartDate;
             var depoTotalTime = (int)(deposition.Room.EndDate.Value - depoStartDate.Value).TotalSeconds;
-            var onTheRecordTime = GetOnTheRecordTime(deposition.Events);
+            var onTheRecordTime = GetOnTheRecordTime(deposition.Events, depoTotalTime);
             var depositionVideo = new DepositionVideoDto
             {
                 PublicUrl = url,
@@ -739,9 +739,9 @@ namespace PrecisionReporters.Platform.Domain.Services
             return Result.Ok(depositionVideo);
         }
 
-        private int GetOnTheRecordTime(List<DepositionEvent> events)
+        private int GetOnTheRecordTime(List<DepositionEvent> events, int depoTotalTime)
         {
-            int total = 0;
+            int onTheRecordTotal = 0;
             _ = events
                 .OrderBy(x => x.CreationDate)
                 .Where(x => x.EventType == EventType.OnTheRecord || x.EventType == EventType.OffTheRecord)
@@ -752,13 +752,18 @@ namespace PrecisionReporters.Platform.Domain.Services
                         list.Add(x.CreationDate);
                     if (x.EventType == EventType.OffTheRecord)
                     {
-                        total += (int)(x.CreationDate - list.Last()).TotalSeconds;
+                        onTheRecordTotal += (int)(x.CreationDate - list.Last()).TotalSeconds;
                         list.Add(x.CreationDate);
                     }
 
                     return list;
                 });
-            return total;
+
+            // Avoid On the Record time be greater that Total deposition time
+            if (onTheRecordTotal > depoTotalTime)
+                return depoTotalTime;
+
+            return onTheRecordTotal;
         }
 
         public async Task<Result<Document>> GetDepositionCaption(Guid id)
