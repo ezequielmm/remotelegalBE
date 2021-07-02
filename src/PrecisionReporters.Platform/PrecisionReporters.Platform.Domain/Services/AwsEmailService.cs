@@ -128,6 +128,9 @@ namespace PrecisionReporters.Platform.Domain.Services
             mixed.Add(alternative);
 
             var calendar = emailTemplateInfo.Calendar;
+
+            if (calendar == null) return mixed;
+
             var iCalSerializer = new CalendarSerializer();
             var ical = new TextPart("calendar")
             {

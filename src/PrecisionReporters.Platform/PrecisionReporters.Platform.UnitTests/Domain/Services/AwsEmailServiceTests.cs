@@ -89,5 +89,22 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                
         }
 
+        [Fact]
+        public async Task SendRawEmailNotification_WithoutCalendarInvite_ShouldSendEmail()
+        {
+            // Arrange
+            var emailTemplateInfo = new EmailTemplateInfo();
+            emailTemplateInfo.AdditionalText = "";
+            emailTemplateInfo.TemplateData = new Dictionary<string, string>() { { "test", "test" } };
+            emailTemplateInfo.TemplateName = "";
+            emailTemplateInfo.Subject = "";
+            emailTemplateInfo.EmailTo = new List<string> { "test@test.com" };
+
+            // Act
+            await _service.SendRawEmailNotification(emailTemplateInfo);
+
+            // Assert
+            _awsSESMock.Verify(x => x.SendRawEmailAsync(It.IsAny<SendRawEmailRequest>(), It.IsAny<CancellationToken>()), Times.Exactly(1));
+        }
     }
 }

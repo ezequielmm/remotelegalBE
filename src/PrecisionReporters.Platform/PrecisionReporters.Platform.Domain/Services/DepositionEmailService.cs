@@ -143,11 +143,9 @@ namespace PrecisionReporters.Platform.Domain.Services
                                 { "name", participant.Name ?? string.Empty },
                                 { "case", GetDescriptionCase(deposition) },
                                 { "imageUrl",  GetImageUrl(_emailConfiguration.LogoImageName) },
-                                { "calendar", GetImageUrl(_emailConfiguration.CalendarImageName) },
                                 { "depositionJoinLink", $"{_emailConfiguration.PreDepositionLink}{deposition.Id}"}
                             },
                 TemplateName = ApplicationConstants.DepositionReminderEmailTemplate,
-                Calendar = CreateCalendar(deposition, CalendarAction.Add.GetDescription()),
                 AdditionalText = $"You can join by clicking the link: {_emailConfiguration.PreDepositionLink}{deposition.Id}",
                 Subject = $"Invitation reminder: Remote Legal - {GetSubject(deposition)}"
             };
