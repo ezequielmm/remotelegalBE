@@ -52,7 +52,10 @@ namespace PrecisionReporters.Platform.Domain.Services
                 return Result.Fail("User with such email address was not found.");
             }
 
+            _logger.LogInformation("Start Create Transcription");
             var newTranscription = await _transcriptionRepository.Create(transcription);
+            _logger.LogInformation("End Create Transcription");
+
             if (newTranscription == null)
             {
                 _logger.LogError("Fail to create new transcription with Id:{0} Deposition Id:{1} User Id:{2}.", transcription.Id, depositionId, transcription.UserId);

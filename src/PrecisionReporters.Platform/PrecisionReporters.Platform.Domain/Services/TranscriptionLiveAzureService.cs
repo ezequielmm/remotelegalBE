@@ -176,13 +176,23 @@ namespace PrecisionReporters.Platform.Domain.Services
 
                 if (isFinalTranscript)
                 {
+                    _logger.LogInformation("Create Final Transcript Copy");
                     // Create a copy in order to avoid trying to persist the untracked User entity
                     var transcriptionToStore = new Transcription();
                     transcriptionToStore.CopyFrom(transcription);
+                    _logger.LogInformation("End Create Final Transcript Copy");
 
-                    await _storeTranscriptionSemaphore.WaitAsync();
+
+                    _logger.LogInformation("Semaphore. Count {0}", _storeTranscriptionSemaphore.CurrentCount);
+                    await _storeTranscriptionSemaphore.WaitAsync(); 
+
+                    _logger.LogInformation("Store Transcription. Text {0}, DepositionId {1}, userEmail {2}", transcriptionToStore, _depositionId, _userEmail);
                     await _transcriptionService.StoreTranscription(transcriptionToStore, _depositionId, _userEmail);
+                    _logger.LogInformation("End Store Transcription. Text {0}, DepositionId {1}, userEmail {2}", transcriptionToStore, _depositionId, _userEmail);
+                    
+                    _logger.LogInformation("Release Semaphore.");
                     _storeTranscriptionSemaphore.Release();
+                    _logger.LogInformation("Semaphore Released.");
                 }
             }
             catch (ObjectDisposedException ex)
