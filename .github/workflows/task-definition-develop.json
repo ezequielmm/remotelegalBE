@@ -1,19 +1,15 @@
 {
-    "containerDefinitions": [
-        {
+    "containerDefinitions": [{
             "name": "prp-be-container-develop",
             "image": "747865543072.dkr.ecr.us-east-1.amazonaws.com/prp-be:latest",
             "cpu": 0,
-            "portMappings": [
-                {
-                    "containerPort": 80,
-                    "hostPort": 80,
-                    "protocol": "tcp"
-                }
-            ],
+            "portMappings": [{
+                "containerPort": 80,
+                "hostPort": 80,
+                "protocol": "tcp"
+            }],
             "essential": true,
-            "environment": [
-                {
+            "environment": [{
                     "name": "AppConfiguration__AwsStorageConfiguration__S3BucketRegion",
                     "value": "us-east-1"
                 },
@@ -166,8 +162,7 @@
                     "value": "Debug"
                 }
             ],
-            "secrets": [
-                {
+            "secrets": [{
                     "name": "AppConfiguration__ConnectionStrings__MySqlConnection",
                     "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:DEV/AppConfiguration__ConnectionStrings__MySqlConnection-lbkpap"
                 },
@@ -204,6 +199,14 @@
                     "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:AppConfiguration__DocumentConfiguration__PDFTronLicenseKey-ZF4Gtw"
                 },
                 {
+                    "name": "AppConfiguration__DocumentConfiguration__CloudfrontXmlKey",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:DEV/AppConfiguration__DocumentConfiguration__CloudfrontXmlKey-RxoGYe"
+                },
+                {
+                    "name": "AppConfiguration__DocumentConfiguration__CloudfrontPrivateKey",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:DEV/AppConfiguration__DocumentConfiguration__CloudfrontPrivateKey-St5lGD"
+                },
+                {
                     "name": "CORECLR_ENABLE_PROFILING",
                     "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:DEV/CORECLR_ENABLE_PROFILING-yb4Y4h"
                 }
@@ -227,16 +230,13 @@
         {
             "name": "datadog-agent",
             "image": "datadog/agent:latest",
-            "portMappings": [
-                {
-                    "containerPort": 8126,
-                    "hostPort": 8126,
-                    "protocol": "tcp"
-                }
-            ],
+            "portMappings": [{
+                "containerPort": 8126,
+                "hostPort": 8126,
+                "protocol": "tcp"
+            }],
             "essential": true,
-            "environment": [
-                {
+            "environment": [{
                     "name": "DD_APM_NON_LOCAL_TRAFFIC",
                     "value": "true"
                 },
@@ -265,8 +265,7 @@
                     "value": "develop"
                 }
             ],
-            "secrets": [
-                {
+            "secrets": [{
                     "name": "DD_API_KEY",
                     "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:DATADOG_API_KEY-9EoxaV"
                 },

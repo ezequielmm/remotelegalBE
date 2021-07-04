@@ -65,7 +65,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
             var document = documentResult.Value;
             var close = await _depositionDocumentService.ParticipantCanCloseDocument(document, id);
 
-            var fileSignedUrlResult = _documentService.GetFileSignedUrl(document);
+            var fileSignedUrlResult = _documentService.GetCannedPrivateURL(document);
             if (fileSignedUrlResult.IsFailed)
                 return WebApiResponses.GetErrorResponse(fileSignedUrlResult);
 
@@ -191,7 +191,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
         [UserAuthorize(ResourceType.Deposition, ResourceAction.ViewSharedDocument)]
         public async Task<ActionResult<FileSignedDto>> GetFileSignedUrl([ResourceId(ResourceType.Deposition)] Guid depositionId, Guid documentId)
         {
-            var fileSignedUrlResult = await _documentService.GetFileSignedUrl(depositionId, documentId);
+            var fileSignedUrlResult = await _documentService.GetCannedPrivateURL(depositionId, documentId);
             if (fileSignedUrlResult.IsFailed)
                 return WebApiResponses.GetErrorResponse(fileSignedUrlResult);
 

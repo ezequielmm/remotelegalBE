@@ -147,7 +147,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
             var fileURL = "testing.com";
             _documentsController.ControllerContext = context;
             _documentService
-                .Setup(mock => mock.GetFileSignedUrl(It.IsAny<Guid>()))
+                .Setup(mock => mock.GetCannedPrivateURL(It.IsAny<Guid>()))
                 .ReturnsAsync(Result.Ok(fileURL));
             // Act
             var result = await _documentsController.GetFileSignedUrl(It.IsAny<Guid>());
@@ -155,7 +155,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
             Assert.NotNull(result);
             // Dentro hay objecto
             Assert.IsType<ActionResult<FileSignedDto>>(result);
-            _documentService.Verify(mock => mock.GetFileSignedUrl(It.IsAny<Guid>()), Times.Once);
+            _documentService.Verify(mock => mock.GetCannedPrivateURL(It.IsAny<Guid>()), Times.Once);
         }
 
         [Fact]
@@ -165,7 +165,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
             var context = ContextFactory.GetControllerContext();
             _documentsController.ControllerContext = context;
             _documentService
-                .Setup(mock => mock.GetFileSignedUrl(It.IsAny<Guid>()))
+                .Setup(mock => mock.GetCannedPrivateURL(It.IsAny<Guid>()))
                 .ReturnsAsync(Result.Fail(new Error()));
             // Act
             var result = await _documentsController.GetFileSignedUrl(It.IsAny<Guid>());
@@ -173,7 +173,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
             Assert.NotNull(result);
             var errorResult = Assert.IsType<StatusCodeResult>(result.Result);
             Assert.Equal((int)HttpStatusCode.InternalServerError, errorResult.StatusCode);
-            _documentService.Verify(mock => mock.GetFileSignedUrl(It.IsAny<Guid>()), Times.Once);
+            _documentService.Verify(mock => mock.GetCannedPrivateURL(It.IsAny<Guid>()), Times.Once);
         }
 
         [Fact]

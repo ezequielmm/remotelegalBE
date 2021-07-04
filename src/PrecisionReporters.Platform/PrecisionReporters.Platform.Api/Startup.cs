@@ -81,6 +81,9 @@ namespace PrecisionReporters.Platform.Api
                 x.PostDepoVideoBucket = appConfiguration.DocumentConfiguration.PostDepoVideoBucket;
                 x.EnvironmentFilesBucket = appConfiguration.DocumentConfiguration.EnvironmentFilesBucket;
                 x.FrontEndContentBucket = appConfiguration.DocumentConfiguration.FrontEndContentBucket;
+                x.CloudfrontPrivateKey = appConfiguration.DocumentConfiguration.CloudfrontPrivateKey;
+                x.CloudfrontXmlKey = appConfiguration.DocumentConfiguration.CloudfrontXmlKey;
+                x.CloudfrontPolicyStatement = appConfiguration.DocumentConfiguration.CloudfrontPolicyStatement;
             });
             services.AddScoped<IAwsSnsWrapper, AwsSnsWrapper>();
             services.AddScoped<ISnsHelper, SnsHelper>();

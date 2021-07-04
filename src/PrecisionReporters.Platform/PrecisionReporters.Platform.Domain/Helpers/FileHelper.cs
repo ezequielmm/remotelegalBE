@@ -5,6 +5,9 @@ using System.IO;
 using System.IO.Compression;
 using System.Threading.Tasks;
 using PrecisionReporters.Platform.Domain.Helpers.Interfaces;
+using pdftron.PDF;
+using pdftron.SDF;
+using PrecisionReporters.Platform.Data.Enums;
 
 namespace PrecisionReporters.Platform.Domain.Helpers
 {
@@ -58,6 +61,65 @@ namespace PrecisionReporters.Platform.Domain.Helpers
                         File.Delete(fileName);
                 }
             }
+        }
+
+        public string CompressFile(string path)
+        {
+            var pathCompressedFile = path + ".gz";
+
+            using (FileStream originalFileStream = File.OpenRead(path))
+            {
+                using (FileStream compressedFileStream = File.Create(pathCompressedFile))
+                {
+                    using (GZipStream compressionStream = new GZipStream(compressedFileStream,
+                       CompressionMode.Compress))
+                    {
+                        originalFileStream.CopyTo(compressionStream);
+                    }
+                }
+            }
+
+            return pathCompressedFile;
+        }
+
+        public async Task<string> ConvertFileToPDF(FileTransferInfo file)
+        {
+            var type = Path.GetExtension(file.Name);
+            var fileName = $"fileToConvert_{Guid.NewGuid()}{type}";
+
+            using (var newFile = File.Create(fileName))
+            {
+                await CopyStream(file.FileStream, newFile);
+            }
+
+            using var doc = new PDFDoc();
+            if (type != null && Enum.IsDefined(typeof(OfficeDocumentExtensions), type.Remove(0, 1)))
+            {
+                pdftron.PDF.Convert.OfficeToPDF(doc, fileName, null);
+            }
+            else
+            {
+                pdftron.PDF.Convert.ToPdf(doc, fileName);
+            }
+
+            var filePath = Path.ChangeExtension(fileName, ApplicationConstants.PDFExtension);
+            doc.Save(filePath, SDFDoc.SaveOptions.e_remove_unused);
+
+            return filePath;
+        }
+
+        public string OptimizePDF(string path)
+        {
+            var type = Path.GetExtension(path);
+            var pathOptimizedFile = $"optimizedPDF_{Guid.NewGuid()}{ApplicationConstants.PDFExtension}";
+
+            if (type != ApplicationConstants.PDFExtension)
+                return path;
+
+            using var doc = new PDFDoc(path);
+            doc.Save(pathOptimizedFile, SDFDoc.SaveOptions.e_linearized);
+
+            return pathOptimizedFile;
         }
     }
 }

@@ -7,6 +7,7 @@ using PrecisionReporters.Platform.Data.Handlers.Interfaces;
 using PrecisionReporters.Platform.Data.Repositories.Interfaces;
 using PrecisionReporters.Platform.Domain.Configurations;
 using PrecisionReporters.Platform.Domain.Dtos;
+using PrecisionReporters.Platform.Domain.Extensions;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using PrecisionReporters.Platform.Shared.Commons;
 using PrecisionReporters.Platform.Shared.Errors;
@@ -77,7 +78,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 // Update document in S3 and Delete entry from DocumentUserDepositions table
                 if (document.Type != ApplicationConstants.Mp4Extension)
                 {
-                    var uploadResult = await _documentService.UpdateDocument(document, newDepositionDocument, identity, temporalPath);
+                    var uploadResult = await _documentService.UpdateDocument(document, newDepositionDocument, identity, temporalPath, DocumentType.Exhibit.GetDescription());
                     if (uploadResult.IsFailed)
                     {
                         _logger.LogError($"{nameof(DepositionDocumentService)}.{nameof(CloseStampedDepositionDocument)}: Failed updating document '{document.Id}': {uploadResult.GetErrorMessage()}");

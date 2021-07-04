@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using pdftron.FDF;
 using pdftron.PDF;
+using pdftron.SDF;
 using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Data.Enums;
 using PrecisionReporters.Platform.Data.Handlers.Interfaces;
@@ -109,6 +110,14 @@ namespace PrecisionReporters.Platform.Domain.Services
             return document;
         }
 
+        public async Task<Result<Document>> UploadExhibit(FileTransferInfo file, User user, string parentPath, DocumentType documentType)
+        {
+            var fileName = $"{Guid.NewGuid()}{Path.GetExtension(file.Name)}";
+
+            var document = await UploadExhibitToStorage(file, user, fileName, parentPath, documentType);
+            return document;
+        }
+
         public async Task DeleteUploadedFiles(List<Document> uploadedDocuments)
         {
             foreach (var document in uploadedDocuments)
@@ -188,7 +197,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             foreach (var file in files)
             {
                 // TODO: Use depositionId for bucket folder
-                var documentResult = await UploadDocumentFile(file, userResult.Value, $"{depositionResult.CaseId}/{depositionResult.Id}/{folder}", documentType);
+                var documentResult = await UploadExhibit(file, userResult.Value, $"{depositionResult.CaseId}/{depositionResult.Id}/{folder}", documentType);
                 if (documentResult.IsFailed)
                 {
                     _logger.LogError(new Exception(documentResult.Errors.First().Message), "Unable to load one or more documents to storage");
@@ -308,6 +317,15 @@ namespace PrecisionReporters.Platform.Domain.Services
             return Result.Ok(signedUrl.Value);
         }
 
+        public Result<string> GetFileSignedUrl(Document document)
+        {
+            var expirationDate = DateTime.UtcNow.AddHours(_documentsConfiguration.PreSignedUrlValidHours);
+            var signedUrl = _awsStorageService.GetFilePublicUri(document.FilePath,
+                _documentsConfiguration.BucketName, expirationDate, document.DisplayName);
+
+            return Result.Ok(signedUrl);
+        }
+
         public async Task<Result<List<string>>> GetFileSignedUrl(Guid depositionId, List<Guid> documentIds)
         {
             Expression<Func<DepositionDocument, bool>> filter = x => x.DepositionId == depositionId && documentIds.Contains(x.DocumentId);
@@ -331,26 +349,36 @@ namespace PrecisionReporters.Platform.Domain.Services
                 return Result.Ok(new List<string>() { signedZipFileUrl.Value });
             }
 
-            var signedUrl = await GetFileSignedUrl(depositionId, documentIds.FirstOrDefault());
+            var signedUrl = await GetFileSignedUrl(documentIds.FirstOrDefault());
             return Result.Ok(new List<string>() { signedUrl.Value });
         }
 
-        public async Task<Result<string>> GetFileSignedUrl(Guid depositionId, Guid documentId)
+        public async Task<Result<string>> GetCannedPrivateURL(Guid depositionId, Guid documentId)
         {
             var depositionDocument = await _depositionDocumentRepository.GetFirstOrDefaultByFilter(x => x.DepositionId == depositionId && x.DocumentId == documentId, new[] { nameof(DepositionDocument.Document) });
             if (depositionDocument == null)
                 return Result.Fail(new ResourceNotFoundError($"Could not find any document with Id {documentId}"));
 
-            var signedUrl = GetFileSignedUrl(depositionDocument.Document);
+            var signedUrl = GetCannedPrivateURL(depositionDocument.Document);
+
+            return Result.Ok(signedUrl.Value);
+        }
+        
+        public async Task<Result<string>> GetCannedPrivateURL(Guid documentId)
+        {
+            var document = await _documentRepository.GetFirstOrDefaultByFilter(x => x.Id == documentId);
+            if (document == null)
+                return Result.Fail(new ResourceNotFoundError($"Could not find any document with Id {documentId}"));
+
+            var signedUrl = GetCannedPrivateURL(document);
 
             return Result.Ok(signedUrl.Value);
         }
 
-        public Result<string> GetFileSignedUrl(Document document)
+        public Result<string> GetCannedPrivateURL(Document document)
         {
             var expirationDate = DateTime.UtcNow.AddHours(_documentsConfiguration.PreSignedUrlValidHours);
-            var signedUrl = _awsStorageService.GetFilePublicUri(document.FilePath,
-                _documentsConfiguration.BucketName, expirationDate, document.DisplayName);
+            var signedUrl = _awsStorageService.GetCannedPrivateURL(document.FilePath, expirationDate, _documentsConfiguration.CloudfrontPrivateKey, _documentsConfiguration.CloudfrontXmlKey, _documentsConfiguration.CloudfrontPolicyStatement);
 
             return Result.Ok(signedUrl);
         }
@@ -393,7 +421,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             return Result.Ok(document);
         }
 
-        public async Task<Result> UpdateDocument(Document document, DepositionDocument depositionDocument, string identity, string temporalPath)
+        public async Task<Result> UpdateDocument(Document document, DepositionDocument depositionDocument, string identity, string temporalPath, string folder)
         {
             var userResult = await _userService.GetUserByEmail(identity);
             if (userResult.IsFailed)
@@ -403,8 +431,9 @@ namespace PrecisionReporters.Platform.Domain.Services
             var depositionResult = await _depositionRepository.GetById(depositionDocument.DepositionId, include);
             if (depositionResult == null)
                 return Result.Fail(new ResourceNotFoundError($"Deposition with id {depositionDocument.DepositionId} not found."));
-
-            var documentResult = await SaveDocumentWithAnnotationsToS3(document, temporalPath);
+            
+            var parentPath = $"{depositionResult.CaseId}/{depositionResult.Id}/{folder}";
+            var documentResult = await SaveDocumentWithAnnotationsToS3(document, temporalPath, parentPath);
             if (documentResult.IsFailed)
             {
                 _logger.LogError(new Exception(documentResult.Errors.First().Message), "Unable to update the document to storage");
@@ -423,9 +452,11 @@ namespace PrecisionReporters.Platform.Domain.Services
                 {
                     // Update document file Name and Path with the PDF extension that PDFTron response
                     var updateDocument = await _documentRepository.GetById(depositionDocument.DocumentId);
-                    updateDocument.Name = $"{Path.GetFileNameWithoutExtension(document.Name)}{ApplicationConstants.PDFExtension}";
+                    var fileName = $"{Path.GetFileNameWithoutExtension(document.FilePath)}_Entered{ApplicationConstants.PDFExtension}";
+                    updateDocument.Name = fileName;
                     updateDocument.DisplayName = $"{Path.GetFileNameWithoutExtension(document.DisplayName)}{ApplicationConstants.PDFExtension}";
-                    updateDocument.FilePath = Path.ChangeExtension(document.FilePath, ApplicationConstants.PDFExtension);
+                    
+                    updateDocument.FilePath = $"files/{parentPath}/{fileName}";
                     updateDocument.Type = ApplicationConstants.PDFExtension;
                     await _documentRepository.Update(updateDocument);
                 }
@@ -467,7 +498,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         private async Task<Result<Document>> UploadZipFileToStorage(string parentPath, string zipName, Deposition deposition, DocumentType? documentType)
         {
-            var documentKeyName = $"/{parentPath}/{zipName}";
+            var documentKeyName = $"files/{parentPath}/{zipName}";
             var witness = deposition.Participants.FirstOrDefault(x => x.Role == ParticipantType.Witness);
             var uploadZipFileResult = await _awsStorageService.UploadObjectFromFileAsync(zipName, documentKeyName, _documentsConfiguration.BucketName);
             if (uploadZipFileResult.IsFailed)
@@ -621,7 +652,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             return Result.Ok();
         }
 
-        private async Task<Result> SaveDocumentWithAnnotationsToS3(Document document, string temporalPath)
+        private async Task<Result> SaveDocumentWithAnnotationsToS3(Document document, string temporalPath, string parentPath)
         {
             using var pdfDoc = new PDFDoc();
             using var fdfDoc = new FDFDoc();
@@ -631,7 +662,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             using (Stream file = File.Create(filePath))
             {
-                await CopyStream(fileStr, file);
+                await _fileHelper.CopyStream(fileStr, file);
             }
 
             //If is an office file type we will need a special office convert.
@@ -654,28 +685,17 @@ namespace PrecisionReporters.Platform.Domain.Services
             using var streamDoc = new MemoryStream();
             try
             {
-                pdfDoc.Save(streamDoc, 0);
-                var s3FilePath = Path.ChangeExtension(document.FilePath, ApplicationConstants.PDFExtension);
+                pdfDoc.Save(streamDoc, SDFDoc.SaveOptions.e_linearized);
+                var fileName = $"{Path.GetFileNameWithoutExtension(document.FilePath)}_Entered{ApplicationConstants.PDFExtension}";
+                var s3FilePath = $"files/{parentPath}/{fileName}";
                 var result = await _awsStorageService.UploadObjectFromStreamAsync(s3FilePath, streamDoc, _documentsConfiguration.BucketName);
+                await _awsStorageService.DeleteObjectAsync(_documentsConfiguration.BucketName, document.FilePath);
                 File.Delete(filePath);
                 return result;
             }
             catch (Exception ex)
             {
                 return Result.Fail(new UnexpectedError($"Fail to save document file into S3 storage with exception: {ex}"));
-            }
-        }
-
-        /// <summary>
-        /// Copies the contents of input into a new file.
-        /// </summary>
-        private async Task CopyStream(Stream input, Stream output)
-        {
-            byte[] buffer = new byte[8 * 1024];
-            int len;
-            while ((len = await input.ReadAsync(buffer, 0, buffer.Length)) > 0)
-            {
-                await output.WriteAsync(buffer, 0, len);
             }
         }
 
@@ -708,6 +728,52 @@ namespace PrecisionReporters.Platform.Domain.Services
                 Name = Path.GetFileNameWithoutExtension(key),
                 Url = _awsStorageService.GetFilePublicUri(key, bucketName, expirationDate, null, true)
             };
+        }
+
+        private async Task<Result<Document>> UploadExhibitToStorage(FileTransferInfo file, User user, string fileName, string parentPath, DocumentType documentType)
+        {
+            var documentKeyName = $"files/{parentPath}/{fileName}";
+            var pathFiles = new List<string> { file.Name };
+            var type = Path.GetExtension(file.Name);
+
+            try
+            {
+                var pathPDF = _fileHelper.ConvertFileToPDF(file).Result;
+                pathFiles.Add(pathPDF);
+                var pathOptimizedPDF = _fileHelper.OptimizePDF(pathPDF);
+                pathFiles.Add(pathOptimizedPDF);
+
+                var uploadedDocument = await _awsStorageService.UploadMultipartAsync(documentKeyName, pathOptimizedPDF, _documentsConfiguration.BucketName);
+                if (uploadedDocument.IsFailed)
+                    return uploadedDocument.ToResult<Document>();
+
+                var document = new Document
+                {
+                    Type = type,
+                    AddedBy = user,
+                    Name = fileName,
+                    DisplayName = file.Name,
+                    FilePath = documentKeyName,
+                    Size = uploadedDocument.Value.Length,
+                    DocumentType = documentType
+                };
+
+                return Result.Ok(document);
+
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex.Message);
+                return Result.Fail(new Error(ex.Message));
+            }
+            finally
+            {
+                foreach (var path in pathFiles)
+                {
+                    if (File.Exists(path))
+                        File.Delete(path);
+                }
+            }
         }
     }
 }

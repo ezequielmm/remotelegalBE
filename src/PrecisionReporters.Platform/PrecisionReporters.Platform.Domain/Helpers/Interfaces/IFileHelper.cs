@@ -10,5 +10,8 @@ namespace PrecisionReporters.Platform.Domain.Helpers.Interfaces
         Task CreateFile(FileTransferInfo file);
         Task CopyStream(Stream input, Stream output);
         void GenerateZipFile(string zipName, List<string> filesName);
+        string CompressFile(string path);
+        Task<string> ConvertFileToPDF(FileTransferInfo file);
+        string OptimizePDF(string path);
     }
 }

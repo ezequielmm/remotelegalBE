@@ -16,5 +16,8 @@ namespace PrecisionReporters.Platform.Domain.Configurations
         public IReadOnlyList<string> AcceptedTranscriptionExtensions { get; set; }
         public string FrontEndContentBucket { get; set; }
         public string PDFTronLicenseKey { get; set; }
+        public string CloudfrontPrivateKey { get; set; }
+        public string CloudfrontXmlKey { get; set; }
+        public string CloudfrontPolicyStatement { get; set; }
     }
 }

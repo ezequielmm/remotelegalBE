@@ -148,7 +148,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
                 .Setup(mock => mock.ParticipantCanCloseDocument(document, It.IsAny<Guid>()))
                 .ReturnsAsync(true);
             _documentService
-                .Setup(mock => mock.GetFileSignedUrl(document))
+                .Setup(mock => mock.GetCannedPrivateURL(document))
                 .Returns(Result.Ok(signedPublicUrl));
             _depositionDocumentService
                 .Setup(mock => mock.IsPublicDocument(It.IsAny<Guid>(), document.Id))
@@ -171,7 +171,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
             Assert.Equal(document.AddedBy.Id, resultValue.AddedBy.Id);
             _depositionService.Verify(mock => mock.GetSharedDocument(It.IsAny<Guid>()), Times.Once);
             _depositionDocumentService.Verify(mock => mock.ParticipantCanCloseDocument(document, It.IsAny<Guid>()), Times.Once);
-            _documentService.Verify(mock => mock.GetFileSignedUrl(document), Times.Once);
+            _documentService.Verify(mock => mock.GetCannedPrivateURL(document), Times.Once);
             _depositionDocumentService.Verify(mock => mock.IsPublicDocument(It.IsAny<Guid>(), document.Id), Times.Once);
         }
 
@@ -187,7 +187,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
                 .Setup(mock => mock.ParticipantCanCloseDocument(document, It.IsAny<Guid>()))
                 .ReturnsAsync(true);
             _documentService
-                .Setup(mock => mock.GetFileSignedUrl(document))
+                .Setup(mock => mock.GetCannedPrivateURL(document))
                 .Returns(Result.Fail(new Error()));
 
             // Act
@@ -199,7 +199,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
             Assert.Equal((int) HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _depositionService.Verify(mock => mock.GetSharedDocument(It.IsAny<Guid>()), Times.Once);
             _depositionDocumentService.Verify(mock => mock.ParticipantCanCloseDocument(document, It.IsAny<Guid>()), Times.Once);
-            _documentService.Verify(mock => mock.GetFileSignedUrl(document), Times.Once);
+            _documentService.Verify(mock => mock.GetCannedPrivateURL(document), Times.Once);
             _depositionDocumentService.Verify(mock => mock.IsPublicDocument(It.IsAny<Guid>(), document.Id), Times.Never);
         }
 
@@ -406,7 +406,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
             // Arrange
             var signedPublicUrl = "http://mock.signed.public.url";
             _documentService
-                .Setup(mock => mock.GetFileSignedUrl(It.IsAny<Guid>(), It.IsAny<Guid>()))
+                .Setup(mock => mock.GetCannedPrivateURL(It.IsAny<Guid>(), It.IsAny<Guid>()))
                 .ReturnsAsync(Result.Ok(signedPublicUrl));
 
             // Act
@@ -419,7 +419,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
             var resultValue = Assert.IsAssignableFrom<FileSignedDto>(okResult.Value);
             Assert.Equal(signedPublicUrl, resultValue.Url);
             Assert.True(resultValue.IsPublic);
-            _documentService.Verify(mock => mock.GetFileSignedUrl(It.IsAny<Guid>(), It.IsAny<Guid>()), Times.Once);
+            _documentService.Verify(mock => mock.GetCannedPrivateURL(It.IsAny<Guid>(), It.IsAny<Guid>()), Times.Once);
         }
 
         [Fact]
@@ -427,7 +427,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
         {
             // Arrange
             _documentService
-                .Setup(mock => mock.GetFileSignedUrl(It.IsAny<Guid>(), It.IsAny<Guid>()))
+                .Setup(mock => mock.GetCannedPrivateURL(It.IsAny<Guid>(), It.IsAny<Guid>()))
                 .ReturnsAsync(Result.Fail(new Error()));
 
             // Act
@@ -438,7 +438,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
             Assert.IsType<ActionResult<FileSignedDto>>(result);
             var errorResult = Assert.IsType<StatusCodeResult>(result.Result);
             Assert.Equal((int) HttpStatusCode.InternalServerError, errorResult.StatusCode);
-            _documentService.Verify(mock => mock.GetFileSignedUrl(It.IsAny<Guid>(), It.IsAny<Guid>()), Times.Once);
+            _documentService.Verify(mock => mock.GetCannedPrivateURL(It.IsAny<Guid>(), It.IsAny<Guid>()), Times.Once);
         }
 
         [Fact]

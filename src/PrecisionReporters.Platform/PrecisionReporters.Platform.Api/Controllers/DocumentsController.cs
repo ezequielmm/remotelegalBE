@@ -90,7 +90,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
         [UserAuthorize(ResourceType.Document, ResourceAction.View)]
         public async Task<ActionResult<FileSignedDto>> GetFileSignedUrl([ResourceId(ResourceType.Document)] Guid id)
         {
-            var fileSignedUrlResult = await _documentService.GetFileSignedUrl(id);
+            var fileSignedUrlResult = await _documentService.GetCannedPrivateURL(id);
             if (fileSignedUrlResult.IsFailed)
                 return WebApiResponses.GetErrorResponse(fileSignedUrlResult);
 

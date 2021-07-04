@@ -17,10 +17,11 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
         Result ValidateFiles(List<FileTransferInfo> files);
         Result ValidateFile(FileTransferInfo file);
         Task<Result> UploadDocuments(Guid id, string identity, List<FileTransferInfo> files, string folder, DocumentType documentType);
-        Task<Result> UpdateDocument(Document document, DepositionDocument depositionDocument, string identity, string temporalPath);
+        Task<Result> UpdateDocument(Document document, DepositionDocument depositionDocument, string identity, string temporalPath, string folder);
         Task<Result<List<Document>>> GetExhibitsForUser(Guid depositionId, string identity);
         Task<Result<string>> GetFileSignedUrl(Guid documentId);
-        Task<Result<string>> GetFileSignedUrl(Guid depositionId, Guid documentId);
+        Result<string> GetCannedPrivateURL(Document document);
+        Task<Result<string>> GetCannedPrivateURL(Guid depositionId, Guid documentId);
         Task<Result<Document>> GetDocumentById(Guid documentId, string[] include = null);
         Task<Result<Document>> AddAnnotation(Guid depositionId, AnnotationEvent annotation);
         Task<Result> Share(Guid id, string userEmail);
@@ -33,5 +34,6 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
         Task<Result<List<string>>> GetFileSignedUrl(Guid depositionId, List<Guid> documentIds);
         Task<Result<List<FileSignedDto>>> GetFrontEndContent();
         Task<Result<string>> GenerateZipFile(List<DepositionDocument> depositionDocuments);
+        Task<Result<string>> GetCannedPrivateURL(Guid documentId);
     }
 }

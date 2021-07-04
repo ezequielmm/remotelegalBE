@@ -599,7 +599,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var expectedError = $"Error loading file {file.Name}";
             _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(user));
             _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(new Deposition());
-            _awsStorageServiceMock.Setup(x => x.UploadMultipartAsync(It.IsAny<string>(), It.IsAny<FileTransferInfo>(), It.IsAny<string>())).ReturnsAsync(Result.Fail(new Error(expectedError)));
+            _awsStorageServiceMock.Setup(x => x.UploadMultipartAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(Result.Fail(new Error(expectedError)));
             _awsStorageServiceMock.Setup(x => x.DeleteObjectAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(Result.Ok());
             var folder = DocumentType.Exhibit.GetDescription();
 
@@ -609,7 +609,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             // Assert
             _userServiceMock.Verify(x => x.GetUserByEmail(It.Is<string>(a => a == userEmail)), Times.Once);
             _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(a => a == depositionId), It.Is<string[]>(i => i.SequenceEqual(new[] { $"{nameof(Deposition.DocumentUserDepositions)}" }))), Times.Once);
-            _awsStorageServiceMock.Verify(x => x.UploadMultipartAsync(It.Is<string>(a => a.Contains("/exhibits")), It.Is<FileTransferInfo>(a => a == file), It.IsAny<string>()), Times.Once);
+            _awsStorageServiceMock.Verify(x => x.UploadMultipartAsync(It.Is<string>(a => a.Contains("/exhibits")), It.IsAny<string>(), It.IsAny<string>()), Times.Once);
             _loggerMock.Verify(x => x.Log(
                 It.Is<LogLevel>(l => l == LogLevel.Error),
                 It.IsAny<EventId>(),
@@ -641,7 +641,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var expectedError = "Unable to add documents to deposition";
             _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(user));
             _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
-            _awsStorageServiceMock.Setup(x => x.UploadMultipartAsync(It.IsAny<string>(), It.IsAny<FileTransferInfo>(), It.IsAny<string>())).ReturnsAsync(Result.Ok());
+            _awsStorageServiceMock.Setup(x => x.UploadMultipartAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(Result.Ok(new FileTransferInfo()));
             _awsStorageServiceMock.Setup(x => x.DeleteObjectAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(Result.Ok());
             _documentUserDepositionRepositoryMock.Setup(x => x.CreateRange(It.IsAny<List<DocumentUserDeposition>>())).ThrowsAsync(new Exception("Testing Exception"));
             _transactionHandlerMock
@@ -659,7 +659,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             // Assert
             _userServiceMock.Verify(x => x.GetUserByEmail(It.Is<string>(a => a == userEmail)), Times.Once);
             _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(a => a == depositionId), It.Is<string[]>(i => i.SequenceEqual(new[] { $"{nameof(Deposition.DocumentUserDepositions)}" }))), Times.Once);
-            _awsStorageServiceMock.Verify(x => x.UploadMultipartAsync(It.Is<string>(a => a.Contains("/exhibits")), It.Is<FileTransferInfo>(a => a == file), It.IsAny<string>()), Times.Once);
+            _awsStorageServiceMock.Verify(x => x.UploadMultipartAsync(It.Is<string>(a => a.Contains("/exhibits")), It.IsAny<string>(), It.IsAny<string>()), Times.Once);
             _documentUserDepositionRepositoryMock.Verify(x => x.CreateRange(It.Is<List<DocumentUserDeposition>>(a => a.Any(d => d.Deposition == deposition))), Times.Once);
             _loggerMock.Verify(x => x.Log(
                 It.Is<LogLevel>(l => l == LogLevel.Error),
@@ -687,7 +687,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var documentUserDeposition = new DocumentUserDeposition { Document = new Document { Id = Guid.NewGuid() }, UserId = user.Id };
             _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(user));
             _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
-            _awsStorageServiceMock.Setup(x => x.UploadMultipartAsync(It.IsAny<string>(), It.IsAny<FileTransferInfo>(), It.IsAny<string>())).ReturnsAsync(Result.Ok());
+            _awsStorageServiceMock.Setup(x => x.UploadMultipartAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(Result.Ok(new FileTransferInfo()));
             _awsStorageServiceMock.Setup(x => x.DeleteObjectAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(Result.Ok());
             _documentUserDepositionRepositoryMock.Setup(x => x.CreateRange(It.IsAny<List<DocumentUserDeposition>>())).ReturnsAsync(new List<DocumentUserDeposition> { documentUserDeposition });
             _permissionServiceMock.Setup(x => x.AddUserRole(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<ResourceType>(), It.IsAny<RoleName>())).ReturnsAsync(Result.Fail(new ResourceNotFoundError()));
@@ -706,7 +706,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             // Assert
             _userServiceMock.Verify(x => x.GetUserByEmail(It.Is<string>(a => a == userEmail)), Times.Once);
             _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(a => a == depositionId), It.Is<string[]>(i => i.SequenceEqual(new[] { $"{nameof(Deposition.DocumentUserDepositions)}" }))), Times.Once);
-            _awsStorageServiceMock.Verify(x => x.UploadMultipartAsync(It.Is<string>(a => a.Contains("/exhibits")), It.Is<FileTransferInfo>(a => a == file), It.IsAny<string>()), Times.Once);
+            _awsStorageServiceMock.Verify(x => x.UploadMultipartAsync(It.Is<string>(a => a.Contains("/exhibits")), It.IsAny<string>(), It.IsAny<string>()), Times.Once);
             _documentUserDepositionRepositoryMock.Verify(x => x.CreateRange(It.Is<List<DocumentUserDeposition>>(a => a.Any(d => d.Deposition == deposition))), Times.Once);
             _permissionServiceMock.Verify(x => x.AddUserRole(
                 It.Is<Guid>(a => a == documentUserDeposition.UserId),
@@ -739,7 +739,9 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var documentUserDeposition = new DocumentUserDeposition { DocumentId = Guid.NewGuid(), UserId = user.Id };
             _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(user));
             _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
-            _awsStorageServiceMock.Setup(x => x.UploadMultipartAsync(It.IsAny<string>(), It.IsAny<FileTransferInfo>(), It.IsAny<string>())).ReturnsAsync(Result.Ok());
+            _fileHelperMock.Setup(x => x.ConvertFileToPDF(It.IsAny<FileTransferInfo>())).ReturnsAsync(It.IsAny<string>());
+            _fileHelperMock.Setup(x => x.OptimizePDF(It.IsAny<string>())).Returns(It.IsAny<string>());
+            _awsStorageServiceMock.Setup(x => x.UploadMultipartAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(Result.Ok(new FileTransferInfo()));
             _documentUserDepositionRepositoryMock.Setup(x => x.CreateRange(It.IsAny<List<DocumentUserDeposition>>())).ReturnsAsync(new List<DocumentUserDeposition> { documentUserDeposition });
             _permissionServiceMock.Setup(x => x.AddUserRole(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<ResourceType>(), It.IsAny<RoleName>())).ReturnsAsync(Result.Ok());
             _transactionHandlerMock
@@ -757,7 +759,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             // Assert
             _userServiceMock.Verify(x => x.GetUserByEmail(It.Is<string>(a => a == userEmail)), Times.Once);
             _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(a => a == depositionId), It.Is<string[]>(i => i.SequenceEqual(new[] { $"{nameof(Deposition.DocumentUserDepositions)}" }))), Times.Once);
-            _awsStorageServiceMock.Verify(x => x.UploadMultipartAsync(It.Is<string>(a => a.Contains("/exhibits")), It.Is<FileTransferInfo>(a => a == file), It.IsAny<string>()), Times.Once);
+            _awsStorageServiceMock.Verify(x => x.UploadMultipartAsync(It.Is<string>(a => a.Contains("/exhibits")), It.IsAny<string>(), It.IsAny<string>()), Times.Once);
             _transactionHandlerMock.Verify(x => x.RunAsync(It.IsAny<Func<Task>>()), Times.Once);
             _documentUserDepositionRepositoryMock.Verify(x => x.CreateRange(It.Is<List<DocumentUserDeposition>>(a => a.Any(d => d.Deposition == deposition))), Times.Once);
             _permissionServiceMock.Verify(x => x.AddUserRole(
@@ -861,7 +863,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                     .ReturnsAsync((DepositionDocument)null);
 
             // Act
-            var result = await _service.GetFileSignedUrl(depositionId, documentId);
+            var result = await _service.GetCannedPrivateURL(depositionId, documentId);
 
             // Assert
             _depositionDocumentRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<DepositionDocument, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()), Times.Once);
@@ -885,15 +887,15 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 .Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<DepositionDocument, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()))
                 .ReturnsAsync(new DepositionDocument { Id = documentId, Document = new Document { Id = documentId, DisplayName = "testName.pdf" } });
 
-            _awsStorageServiceMock.Setup(x => x.GetFilePublicUri(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<string>(), It.IsAny<bool>())).Returns(signedUrl);
+            _awsStorageServiceMock.Setup(x => x.GetCannedPrivateURL(It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).Returns(signedUrl);
 
             // Act
-            var result = await _service.GetFileSignedUrl(depositionId, documentId);
+            var result = await _service.GetCannedPrivateURL(depositionId, documentId);
 
             // Assert
 
             _depositionDocumentRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<DepositionDocument, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()), Times.Once);
-            _awsStorageServiceMock.Verify(x => x.GetFilePublicUri(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<string>(), It.IsAny<bool>()), Times.Once);
+            _awsStorageServiceMock.Verify(x => x.GetCannedPrivateURL(It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Once);
             Assert.NotNull(result);
             Assert.IsType<Result<string>>(result);
             Assert.True(result.IsSuccess);
@@ -947,12 +949,12 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 }
             };
             _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(new User()));
-
+            
             _depositionDocumentRepositoryMock
                 .Setup(x => x.GetByFilter(It.IsAny<Expression<Func<DepositionDocument, bool>>>(), It.IsAny<string[]>()))
                 .ReturnsAsync(depositionDocumentList);
 
-            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), new[] { nameof(Deposition.Case), nameof(Deposition.Participants) })).ReturnsAsync(deposition);
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
 
             _fileHelperMock.Setup(x => x.CreateFile(It.IsAny<FileTransferInfo>()));
             _fileHelperMock.Setup(x => x.GenerateZipFile(It.IsAny<string>(), It.IsAny<List<string>>()));

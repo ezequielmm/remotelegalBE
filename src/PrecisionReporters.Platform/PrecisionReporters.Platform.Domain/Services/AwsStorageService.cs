@@ -3,6 +3,9 @@ using Amazon.S3.Model;
 using Amazon.S3.Transfer;
 using FluentResults;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using PrecisionReporters.Platform.Domain.Configurations;
+using PrecisionReporters.Platform.Domain.Helpers;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using PrecisionReporters.Platform.Shared.Commons;
 using System;
@@ -18,11 +21,27 @@ namespace PrecisionReporters.Platform.Domain.Services
     {
         private readonly ITransferUtility _fileTransferUtility;
         private readonly ILogger<AwsStorageService> _logger;
+        private readonly UrlPathConfiguration _urlPathConfiguration;
 
-        public AwsStorageService(ITransferUtility transferUtility, ILogger<AwsStorageService> logger)
+        public AwsStorageService(ITransferUtility transferUtility, ILogger<AwsStorageService> logger, IOptions<UrlPathConfiguration> urlPathConfiguration)
         {
             _fileTransferUtility = transferUtility;
             _logger = logger;
+            _urlPathConfiguration = urlPathConfiguration.Value;
+        }
+        public async Task<Result<FileTransferInfo>> UploadMultipartAsync(string keyName, string pathFile, string bucketName)
+        {
+            var file = new FileTransferInfo();
+            using var stream = File.OpenRead(pathFile);
+            file.FileStream = stream;
+            file.Length = stream.Length;
+
+            var result = await UploadMultipartAsync(keyName, file, bucketName);
+
+            if(result.IsFailed)
+                return result;
+
+            return Result.Ok(file);
         }
 
         public async Task<Result> UploadMultipartAsync(string keyName, FileTransferInfo file, string bucketName)
@@ -189,6 +208,16 @@ namespace PrecisionReporters.Platform.Domain.Services
         {
             var result = await _fileTransferUtility.S3Client.ListObjectsAsync(bucket);
             return result.S3Objects;
+        }
+
+        public string GetCannedPrivateURL(string key, DateTime expirationDate, string privateKeyId, string xmlKey, string policyStatement)
+        {
+            var filePublicUri = $"{_urlPathConfiguration.FrontendBaseUrl}{key}";
+            var duration = (expirationDate - DateTime.UtcNow);
+            var durationNumber = (int)duration.TotalSeconds;
+
+            var uriSignature = StorageHelper.CreateCannedPrivateURL(filePublicUri, "seconds", durationNumber.ToString(), privateKeyId, xmlKey, policyStatement);
+            return uriSignature;
         }
     }
 }
