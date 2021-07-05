@@ -119,7 +119,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<Participant>> EditParticipantDetails(Guid depositionId, Participant participant)
         {
-            var deposition = await _depositionRepository.GetById(depositionId, include: new[] {nameof(Deposition.Participants), nameof(Deposition.Case)});
+            var deposition = await _depositionRepository.GetById(depositionId, include: new[] { $"{nameof(Deposition.Participants)}.{nameof(Participant.User)}", nameof(Deposition.Case)});
             if (deposition == null)
                 return Result.Fail(new ResourceNotFoundError($"Deposition not found with ID: {depositionId}"));
 
@@ -136,6 +136,12 @@ namespace PrecisionReporters.Platform.Domain.Services
             currentParticipant.Name = participant.Name;
             currentParticipant.Role = participant.Role;
             currentParticipant.Phone = participant.Phone;
+
+            if (currentParticipant.User.IsGuest)
+            {
+                currentParticipant.User.FirstName = participant.Name;
+                currentParticipant.Phone = participant.Phone;
+            }
 
             var updatedParticipant = await _participantRepository.Update(currentParticipant);
             if (updatedParticipant == null)

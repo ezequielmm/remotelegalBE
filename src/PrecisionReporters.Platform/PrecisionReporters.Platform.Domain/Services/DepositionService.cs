@@ -171,7 +171,15 @@ namespace PrecisionReporters.Platform.Domain.Services
                     if (user != null)
                     {
                         participant.User = user;
-                        participant.Name = user.IsGuest ? user.FirstName : $"{user.FirstName} {user.LastName}";
+                        if (user.IsGuest)
+                        {
+                            user.FirstName = participant.Name;
+                            user.PhoneNumber = participant.Phone;
+                        }
+                        else
+                        {
+                            participant.Name = $"{user.FirstName} {user.LastName}";
+                        }
                         await _permissionService.AddUserRole(participant.User.Id, deposition.Id, ResourceType.Deposition, ParticipantType.CourtReporter == participant.Role ? RoleName.DepositionCourtReporter : RoleName.DepositionAttendee);
                     }
                 }

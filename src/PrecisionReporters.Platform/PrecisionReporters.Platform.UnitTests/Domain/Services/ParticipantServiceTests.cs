@@ -339,6 +339,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             // Arrange
             var depositionId = Guid.NewGuid();
             var baseParticipant = ParticipantFactory.GetParticipant(depositionId);
+            baseParticipant.User = new User { IsGuest = false };
             var editedParticipant = new Participant { Id = baseParticipant.Id, Email = "newparticipant@mail.com", Name = "Participant Name", Role = baseParticipant.Role };
             var user = ParticipantFactory.GetAdminUser();
 
@@ -357,7 +358,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var result = await _participantService.EditParticipantDetails(depositionId, editedParticipant);
 
             // Assert
-            _depositionRepositoryMock.Verify(mock=>mock.GetById(It.IsAny<Guid>(), It.Is<string[]>(a => a.SequenceEqual(new[] { nameof(Deposition.Participants), nameof(Deposition.Case)}))), Times.Once);
+            _depositionRepositoryMock.Verify(mock=>mock.GetById(It.IsAny<Guid>(), It.Is<string[]>(a => a.SequenceEqual(new[] {$"{nameof(Deposition.Participants)}.{nameof(Participant.User)}", nameof(Deposition.Case) }))), Times.Once);
             _participantRepositoryMock.Verify(x => x.Update(It.IsAny<Participant>()), Times.Once);
             Assert.NotNull(result);
             Assert.True(result.IsSuccess);
@@ -406,6 +407,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var errorMessage = "There are no participant available with ID:";
             var user = ParticipantFactory.GetNotAdminUser();
             var editedParticipant = ParticipantFactory.GetParticipant(depositionId);
+            editedParticipant.User = new User { IsGuest = false };
 
             _userServiceMock
                 .Setup(x => x.GetCurrentUserAsync())
@@ -418,7 +420,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var result = await _participantService.EditParticipantDetails(depositionId, editedParticipant);
 
             // Assert
-            _depositionRepositoryMock.Verify(mock=>mock.GetById(It.IsAny<Guid>(), It.Is<string[]>(a => a.SequenceEqual(new[] { nameof(Deposition.Participants), nameof(Deposition.Case)}))), Times.Once);
+            _depositionRepositoryMock.Verify(mock=>mock.GetById(It.IsAny<Guid>(), It.Is<string[]>(a => a.SequenceEqual(new[] { $"{nameof(Deposition.Participants)}.{nameof(Participant.User)}", nameof(Deposition.Case) }))), Times.Once);
             _participantRepositoryMock.Verify(x => x.Update(It.IsAny<Participant>()), Times.Never);
 
             Assert.True(result.IsFailed);
@@ -431,6 +433,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             // Arrange
             var depositionId = Guid.NewGuid();
             var baseParticipant = ParticipantFactory.GetParticipant(depositionId);
+            baseParticipant.User = new User { IsGuest = false };
+
             var editedParticipant = new Participant { Id = baseParticipant.Id, Email = null, Name = null, Role = baseParticipant.Role };
             var errorMessage = $"There was an error updating Participant with Id:";
             var user = ParticipantFactory.GetNotAdminUser();
@@ -449,7 +453,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var result = await _participantService.EditParticipantDetails(depositionId, editedParticipant);
 
             // Assert
-            _depositionRepositoryMock.Verify(mock=>mock.GetById(It.IsAny<Guid>(), It.Is<string[]>(a => a.SequenceEqual(new[] { nameof(Deposition.Participants), nameof(Deposition.Case)}))), Times.Once);
+            _depositionRepositoryMock.Verify(mock=>mock.GetById(It.IsAny<Guid>(), It.Is<string[]>(a => a.SequenceEqual(new[] { $"{nameof(Deposition.Participants)}.{nameof(Participant.User)}", nameof(Deposition.Case) }))), Times.Once);
             _participantRepositoryMock.Verify(x => x.Update(It.IsAny<Participant>()), Times.Once);
 
             Assert.True(result.IsFailed);
@@ -477,7 +481,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var result = await _participantService.EditParticipantDetails(depositionId, editedParticipant);
 
             // Assert
-            _depositionRepositoryMock.Verify(mock=>mock.GetById(It.IsAny<Guid>(), It.Is<string[]>(a => a.SequenceEqual(new[] { nameof(Deposition.Participants), nameof(Deposition.Case)}))), Times.Once);
+            _depositionRepositoryMock.Verify(mock=>mock.GetById(It.IsAny<Guid>(), It.Is<string[]>(a => a.SequenceEqual(new[] { $"{nameof(Deposition.Participants)}.{nameof(Participant.User)}", nameof(Deposition.Case) }))), Times.Once);
             _participantRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Participant, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()), Times.Never);
             Assert.True(result.IsFailed);
             Assert.Contains(errorMessage, result.Errors[0].Message);
@@ -508,7 +512,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var result = await _participantService.EditParticipantDetails(depositionId, editedParticipant);
 
             // Assert
-            _depositionRepositoryMock.Verify(mock=>mock.GetById(It.IsAny<Guid>(), It.Is<string[]>(a => a.SequenceEqual(new[] { nameof(Deposition.Participants), nameof(Deposition.Case)}))), Times.Once);
+            _depositionRepositoryMock.Verify(mock=>mock.GetById(It.IsAny<Guid>(), It.Is<string[]>(a => a.SequenceEqual(new[] { $"{nameof(Deposition.Participants)}.{nameof(Participant.User)}", nameof(Deposition.Case) }))), Times.Once);
 
             Assert.True(result.IsFailed);
             Assert.Equal(errorMessage, result.Errors[0].Message);
