@@ -200,6 +200,14 @@
                     "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:AppConfiguration__DocumentConfiguration__PDFTronLicenseKey-ZF4Gtw"
                 },
                 {
+                    "name": "AppConfiguration__DocumentConfiguration__CloudfrontXmlKey",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:UAT/AppConfiguration__DocumentConfiguration__CloudfrontXmlKey-1AXIgw"
+                },
+                {
+                    "name": "AppConfiguration__DocumentConfiguration__CloudfrontPrivateKey",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:UAT/AppConfiguration__DocumentConfiguration__CloudfrontPrivateKey-VcI3xx"
+                },
+                {
                     "name": "CORECLR_ENABLE_PROFILING",
                     "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:UAT/CORECLR_ENABLE_PROFILING-ev8cdp"
                 }

@@ -204,9 +204,17 @@
                     "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:AppConfiguration__DocumentConfiguration__PDFTronLicenseKey-ZF4Gtw"
                 },
                 {
+                    "name": "AppConfiguration__DocumentConfiguration__CloudfrontXmlKey",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:DEV/AppConfiguration__DocumentConfiguration__CloudfrontXmlKey-RxoGYe"
+                },
+                {
+                    "name": "AppConfiguration__DocumentConfiguration__CloudfrontPrivateKey",
+                    "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:DEV/AppConfiguration__DocumentConfiguration__CloudfrontPrivateKey-St5lGD"
+                },
+                {
                     "name": "CORECLR_ENABLE_PROFILING",
                     "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:DEV/CORECLR_ENABLE_PROFILING-yb4Y4h"
-                }                
+                }
             ],
             "dockerLabels": {
                 "com.datadoghq.ad.instances": "[{\"host\": \"%%host%%\", \"port\": 80}]",
