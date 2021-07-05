@@ -143,6 +143,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                                 { "name", participant.Name ?? string.Empty },
                                 { "case", GetDescriptionCase(deposition) },
                                 { "imageUrl",  GetImageUrl(_emailConfiguration.LogoImageName) },
+                                { "calendar", GetImageUrl(_emailConfiguration.CalendarImageName) },
                                 { "depositionJoinLink", $"{_emailConfiguration.PreDepositionLink}{deposition.Id}"}
                             },
                 TemplateName = ApplicationConstants.DepositionReminderEmailTemplate,
