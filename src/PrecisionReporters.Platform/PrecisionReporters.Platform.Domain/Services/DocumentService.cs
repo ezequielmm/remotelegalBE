@@ -112,7 +112,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<Document>> UploadExhibit(FileTransferInfo file, User user, string parentPath, DocumentType documentType)
         {
-            var fileName = $"{Guid.NewGuid()}{Path.GetExtension(file.Name)}";
+            var fileName = $"{Guid.NewGuid()}{ApplicationConstants.PDFExtension}";
 
             var document = await UploadExhibitToStorage(file, user, fileName, parentPath, documentType);
             return document;
