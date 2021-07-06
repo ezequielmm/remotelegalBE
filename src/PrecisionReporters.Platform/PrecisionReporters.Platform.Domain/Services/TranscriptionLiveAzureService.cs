@@ -64,6 +64,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 await _recognizer.StartContinuousRecognitionAsync()
                  .ConfigureAwait(false);
                 _isClosed = false;
+                _logger.LogDebug("TranscriptionLiveAzureService: Resuming transcriptions for user {0} on deposition {1}", _userEmail, _depositionId);
             }
             _isClosedSemaphore.Release();
 
@@ -132,6 +133,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             await _isClosedSemaphore.WaitAsync();
             _isClosed = true;
             _isClosedSemaphore.Release();
+            _logger.LogDebug("TranscriptionLiveAzureService: Stopped transcriptions for user {0} on deposition {1}", _userEmail, _depositionId);
         }
 
         private async Task HandleRecognizedSpeech(SpeechRecognitionEventArgs e, bool isFinalTranscript = false)
@@ -204,6 +206,8 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public void StopTranscriptStream()
         {
+            _logger.LogDebug("TranscriptionLiveAzureService: Stopping transcriptions for user {0} on deposition {1}", _userEmail, _depositionId);
+
             _shouldClose = true;
 
             var silenceBuffer = new byte[1024 * 512]; // 500kb

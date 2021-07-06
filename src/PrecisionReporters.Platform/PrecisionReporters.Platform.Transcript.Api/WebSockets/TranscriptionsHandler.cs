@@ -33,6 +33,8 @@ namespace PrecisionReporters.Platform.Transcript.Api.WebSockets
             var sampleRate = int.Parse(context.Request.Query["sampleRate"]);
             var incomingMessage = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
 
+            _logger.LogDebug("Initializing transcriptions web socket for {0} on deposition {1} with sample rate {2}", userEmail, depositionId, sampleRate);
+
             await _transcriptionLiveService.InitializeRecognition(userEmail, depositionId, sampleRate);
 
             while (!incomingMessage.CloseStatus.HasValue)
@@ -44,7 +46,11 @@ namespace PrecisionReporters.Platform.Transcript.Api.WebSockets
                 incomingMessage = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
             }
 
+            _logger.LogDebug("Closing transcriptions web socket for {0} on deposition {1} with sample rate {2}", userEmail, depositionId, sampleRate);
+
             await webSocket.CloseAsync(incomingMessage.CloseStatus.Value, incomingMessage.CloseStatusDescription, CancellationToken.None);
+
+            _logger.LogDebug("Closed transcriptions web socket for {0} on deposition {1} with sample rate {2}", userEmail, depositionId, sampleRate);
         }
 
         private bool HandleJsonMessage(byte[] buffer)
@@ -52,7 +58,6 @@ namespace PrecisionReporters.Platform.Transcript.Api.WebSockets
             var bufferFirstPosition = Encoding.UTF8.GetString(buffer, 0, 1);
             if (!bufferFirstPosition.StartsWith("{"))
             {
-                _logger.LogError("Incorrect json format from buffer");
                 return false;
             }
 
