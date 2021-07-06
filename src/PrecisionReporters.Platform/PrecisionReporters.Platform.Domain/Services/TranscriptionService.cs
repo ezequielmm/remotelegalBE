@@ -11,6 +11,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using PrecisionReporters.Platform.Shared.Errors;
 
 namespace PrecisionReporters.Platform.Domain.Services
 {
@@ -44,25 +45,33 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<Transcription>> StoreTranscription(Transcription transcription, string depositionId, string userEmail)
         {
-            var user = await _userRepository.GetFirstOrDefaultByFilter(x => x.EmailAddress == userEmail);
-
-            if (user == null)
+            try
             {
-                _logger.LogError("User with email address {0} was not found.",userEmail);
-                return Result.Fail("User with such email address was not found.");
+                var user = await _userRepository.GetFirstOrDefaultByFilter(x => x.EmailAddress == userEmail);
+
+                if (user == null)
+                {
+                    _logger.LogError("User with email address {0} was not found.", userEmail);
+                    return Result.Fail("User with such email address was not found.");
+                }
+
+                _logger.LogInformation("Start Create Transcription");
+                var newTranscription = await _transcriptionRepository.Create(transcription);
+                _logger.LogInformation("End Create Transcription");
+
+                if (newTranscription == null)
+                {
+                    _logger.LogError("Fail to create new transcription with Id:{0} Deposition Id:{1} User Id:{2}.", transcription.Id, depositionId, transcription.UserId);
+                    return Result.Fail("Fail to create new transcription.");
+                }
+
+                return Result.Ok(transcription);
             }
-
-            _logger.LogInformation("Start Create Transcription");
-            var newTranscription = await _transcriptionRepository.Create(transcription);
-            _logger.LogInformation("End Create Transcription");
-
-            if (newTranscription == null)
+            catch (Exception ex)
             {
-                _logger.LogError("Fail to create new transcription with Id:{0} Deposition Id:{1} User Id:{2}.", transcription.Id, depositionId, transcription.UserId);
-                return Result.Fail("Fail to create new transcription.");
-            }           
-
-            return Result.Ok(transcription);
+                _logger.LogError($"An was found while storing transcriptons. {ex}");
+                throw;
+            }
         }
 
         public async Task<Result<List<Transcription>>> GetTranscriptionsByDepositionId(Guid depositionId)

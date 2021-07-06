@@ -57,17 +57,29 @@ namespace PrecisionReporters.Platform.Domain.Services
         public async Task RecognizeAsync(byte[] audioChunk)
         {
             _lastSentTimestamp = DateTime.UtcNow;
-            await _isClosedSemaphore.WaitAsync();
-            if (_isClosed)
+            try
             {
-                // If recognition was stopped it needs to start again
-                await _recognizer.StartContinuousRecognitionAsync()
-                 .ConfigureAwait(false);
-                _isClosed = false;
-                _logger.LogDebug("TranscriptionLiveAzureService: Resuming transcriptions for user {0} on deposition {1}", _userEmail, _depositionId);
+                await _isClosedSemaphore.WaitAsync();
+                if (_isClosed)
+                {
+                    // If recognition was stopped it needs to start again
+                    await _recognizer.StartContinuousRecognitionAsync()
+                     .ConfigureAwait(false);
+                    _isClosed = false;
+                    _logger.LogDebug("TranscriptionLiveAzureService: Resuming transcriptions for user {0} on deposition {1}", _userEmail, _depositionId);
+                }
             }
-            _isClosedSemaphore.Release();
-
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An was found while executions StartContinuousRecognitionAsync.", _currentId);
+                throw;
+            }
+            finally 
+            {
+                if(_isClosedSemaphore.CurrentCount > 0)
+                    _isClosedSemaphore.Release();
+            }
+                        
             await _shouldCloseSemaphore.WaitAsync();
             if (_shouldClose)
             {
@@ -112,13 +124,24 @@ namespace PrecisionReporters.Platform.Domain.Services
                     await HandleRecognizedSpeech(e, true);
                 }
 
-                await _shouldCloseSemaphore.WaitAsync();
-                if (_shouldClose)
+                try
                 {
-                    await _recognizer.StopContinuousRecognitionAsync();
-                    _shouldClose = false;
+                    await _shouldCloseSemaphore.WaitAsync();
+                    if (_shouldClose)
+                    {
+                        await _recognizer.StopContinuousRecognitionAsync();
+                        _shouldClose = false;
+                    }
                 }
-                _shouldCloseSemaphore.Release();
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "An was found while executions StartContinuousRecognitionAsync.", _currentId);
+                    throw;
+                }
+                finally 
+                {
+                    _shouldCloseSemaphore.Release();
+                }
             };
 
             _recognizer.SessionStopped += _recognizer_SessionStopped;
@@ -179,28 +202,36 @@ namespace PrecisionReporters.Platform.Domain.Services
                 if (isFinalTranscript)
                 {
                     _logger.LogInformation("Create Final Transcript Copy");
+
                     // Create a copy in order to avoid trying to persist the untracked User entity
                     var transcriptionToStore = new Transcription();
                     transcriptionToStore.CopyFrom(transcription);
+
                     _logger.LogInformation("End Create Final Transcript Copy");
-
-
                     _logger.LogInformation("Semaphore. Count {0}", _storeTranscriptionSemaphore.CurrentCount);
-                    await _storeTranscriptionSemaphore.WaitAsync(); 
+
+                    await _storeTranscriptionSemaphore.WaitAsync();
 
                     _logger.LogInformation("Store Transcription. Text {0}, DepositionId {1}, userEmail {2}", transcriptionToStore, _depositionId, _userEmail);
+
                     await _transcriptionService.StoreTranscription(transcriptionToStore, _depositionId, _userEmail);
-                    _logger.LogInformation("End Store Transcription. Text {0}, DepositionId {1}, userEmail {2}", transcriptionToStore, _depositionId, _userEmail);
-                    
-                    _logger.LogInformation("Release Semaphore.");
-                    _storeTranscriptionSemaphore.Release();
-                    _logger.LogInformation("Semaphore Released.");
+
+                    _logger.LogInformation("End Store Transcription. Text {0}, DepositionId {1}, userEmail {2}", transcriptionToStore, _depositionId, _userEmail);                    
                 }
             }
             catch (ObjectDisposedException ex)
             {
                 // TODO: Transcriptions may arrive after the WS is closed so objects would be disposed
                 _logger.LogError(ex, "Trying to process transcription with Id: {0} when the websocket was already closed ", _currentId);
+            }
+            finally 
+            {
+                _logger.LogInformation("Release Semaphore.");
+
+                if(_storeTranscriptionSemaphore.CurrentCount > 0)
+                    _storeTranscriptionSemaphore.Release();
+
+                _logger.LogInformation("Semaphore Released.");
             }
         }
 
