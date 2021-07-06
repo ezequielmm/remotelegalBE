@@ -36,7 +36,7 @@ namespace PrecisionReporters.Platform.Domain.Helpers
             {
                 bufferPolicy = cryptoSHA1.ComputeHash(bufferPolicy);
 
-                RSACryptoServiceProvider providerRSA = new RSACryptoServiceProvider();
+                RSACryptoServiceProvider providerRSA = new RSACryptoServiceProvider(2048);
                 providerRSA.FromXmlString(xmlKey);
                 RSAPKCS1SignatureFormatter rsaFormatter = new RSAPKCS1SignatureFormatter(providerRSA);
                 rsaFormatter.SetHashAlgorithm("SHA1");
