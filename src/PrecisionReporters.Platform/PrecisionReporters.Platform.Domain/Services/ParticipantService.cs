@@ -137,9 +137,9 @@ namespace PrecisionReporters.Platform.Domain.Services
             currentParticipant.Role = participant.Role;
             currentParticipant.Phone = participant.Phone;
 
-            if (currentParticipant.User.IsGuest)
+            if (currentParticipant?.User?.IsGuest == null)
             {
-                currentParticipant.User.FirstName = participant.Name;
+                currentParticipant.Name = participant.Name;
                 currentParticipant.Phone = participant.Phone;
             }
 

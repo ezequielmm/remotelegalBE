@@ -174,8 +174,8 @@ namespace PrecisionReporters.Platform.Domain.Services
                         participant.User = user;
                         if (user.IsGuest)
                         {
-                            user.FirstName = participant.Name;
-                            user.PhoneNumber = participant.Phone;
+                            user.FirstName = string.IsNullOrEmpty(participant.Name) ? user.FirstName : participant.Name;
+                            user.PhoneNumber = string.IsNullOrEmpty(participant.Phone) ? user.PhoneNumber : participant.Phone;
                         }
                         else
                         {
