@@ -22,5 +22,7 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
         Task<Result<Room>> Update(Room room);
         Task<Result<Composition>> CreateComposition(Room room, string witnessEmail);
         Task<List<RoomResource>> GetTwilioRoomByNameAndStatus(string uniqueName, RoomStatusEnum status);
+        Task<bool> RemoveRecordingRules(string roomSid);
+        Task<bool> AddRecordingRules(string roomSid, TwilioIdentity witnessIdentity, bool IsVideoRecordingNeeded);
     }
 }

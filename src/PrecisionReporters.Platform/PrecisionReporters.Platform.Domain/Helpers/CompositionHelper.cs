@@ -36,7 +36,7 @@ namespace PrecisionReporters.Platform.Domain.Helpers
 
         public long GetDateTimestamp(DateTime date)
         {
-            return new DateTimeOffset(date, TimeSpan.Zero).ToUnixTimeSeconds();
+            return new DateTimeOffset(date, TimeSpan.Zero).ToUnixTimeMilliseconds();
         }
 
         private int CalculateSeconds(long startTime, long splitTime)

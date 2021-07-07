@@ -3,6 +3,7 @@ using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Domain.Dtos;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Twilio.Rest.Conversations.V1.Service;
 using Twilio.Rest.Video.V1;
 using static Twilio.Rest.Video.V1.RoomResource;
 
@@ -24,5 +25,8 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
         Task<Result> AddUserToChat(string conversationSid, TwilioIdentity identity, string userSid);
         Task<List<RoomResource>> GetRoomsByUniqueNameAndStatus(string uniqueName, RoomStatusEnum status = null);
         Task<Result<long>> GetVideoStartTimeStamp(string roomSid);
+        Task<bool> RemoveRecordingRules(string roomSid);
+        Task<bool> AddRecordingRules(string roomSid, TwilioIdentity witnessIdentity, bool IsVideoRecordingNeeded);
+        Task<UserResource> GetExistingChatUser(TwilioIdentity identity);
     }
 }

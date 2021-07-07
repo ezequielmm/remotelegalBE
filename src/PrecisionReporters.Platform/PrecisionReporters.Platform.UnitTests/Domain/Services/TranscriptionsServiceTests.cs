@@ -199,10 +199,10 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var result = await _transcriptionService.GetTranscriptionsWithTimeOffset(depositionId);
 
             Assert.True(result.IsSuccess);
-            Assert.True(result.Value[0].TranscriptionVideoTime == 1);
-            Assert.True(result.Value[1].TranscriptionVideoTime == 10);
-            Assert.True(result.Value[2].TranscriptionVideoTime == 60);
-            Assert.True(result.Value[3].TranscriptionVideoTime == 65);
+            Assert.True(result.Value[0].TranscriptionVideoTime > 900);
+            Assert.True(result.Value[1].TranscriptionVideoTime > 9900);
+            Assert.True(result.Value[2].TranscriptionVideoTime > 59900);
+            Assert.True(result.Value[3].TranscriptionVideoTime > 64900);
         }
 
         [Fact]
@@ -233,10 +233,10 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             // Assert
             Assert.True(result.IsSuccess);
-            Assert.True(result.Value[0].TranscriptionVideoTime == 1);
-            Assert.True(result.Value[1].TranscriptionVideoTime == 10);
-            Assert.True(result.Value[2].TranscriptionVideoTime == 30);
-            Assert.True(result.Value[3].TranscriptionVideoTime == 35);
+            Assert.True(result.Value[0].TranscriptionVideoTime > 900);
+            Assert.True(result.Value[1].TranscriptionVideoTime > 9900);
+            Assert.True(result.Value[2].TranscriptionVideoTime > 59900);
+            Assert.True(result.Value[3].TranscriptionVideoTime > 64900);
         }
 
         [Fact]
