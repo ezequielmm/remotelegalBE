@@ -74,12 +74,11 @@ namespace PrecisionReporters.Platform.Domain.Services
                 _logger.LogError(ex, "An was found while executions StartContinuousRecognitionAsync.", _currentId);
                 throw;
             }
-            finally 
+            finally
             {
-                if(_isClosedSemaphore.CurrentCount > 0)
-                    _isClosedSemaphore.Release();
+                _isClosedSemaphore.Release();
             }
-                        
+
             await _shouldCloseSemaphore.WaitAsync();
             if (_shouldClose)
             {
@@ -138,7 +137,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                     _logger.LogError(ex, "An was found while executions StartContinuousRecognitionAsync.", _currentId);
                     throw;
                 }
-                finally 
+                finally
                 {
                     _shouldCloseSemaphore.Release();
                 }
@@ -216,7 +215,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
                     await _transcriptionService.StoreTranscription(transcriptionToStore, _depositionId, _userEmail);
 
-                    _logger.LogInformation("End Store Transcription. Text {0}, DepositionId {1}, userEmail {2}", transcriptionToStore, _depositionId, _userEmail);                    
+                    _logger.LogInformation("End Store Transcription. Text {0}, DepositionId {1}, userEmail {2}", transcriptionToStore, _depositionId, _userEmail);
                 }
             }
             catch (ObjectDisposedException ex)
@@ -224,12 +223,11 @@ namespace PrecisionReporters.Platform.Domain.Services
                 // TODO: Transcriptions may arrive after the WS is closed so objects would be disposed
                 _logger.LogError(ex, "Trying to process transcription with Id: {0} when the websocket was already closed ", _currentId);
             }
-            finally 
+            finally
             {
                 _logger.LogInformation("Release Semaphore.");
 
-                if(_storeTranscriptionSemaphore.CurrentCount > 0)
-                    _storeTranscriptionSemaphore.Release();
+                _storeTranscriptionSemaphore.Release();
 
                 _logger.LogInformation("Semaphore Released.");
             }
