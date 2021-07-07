@@ -665,15 +665,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 await _fileHelper.CopyStream(fileStr, file);
             }
 
-            //If is an office file type we will need a special office convert.
-            if (document.Type != null && Enum.IsDefined(typeof(OfficeDocumentExtensions), document.Type.Remove(0, 1)))
-            {
-                pdftron.PDF.Convert.OfficeToPDF(pdfDoc, filePath, null);
-            }
-            else
-            {
-                pdftron.PDF.Convert.ToPdf(pdfDoc, filePath);
-            }
+            pdftron.PDF.Convert.ToPdf(pdfDoc, filePath);
 
             // Merge annotation into FDFDoc and then save into the new PDF
             foreach (var annotation in annotations)
