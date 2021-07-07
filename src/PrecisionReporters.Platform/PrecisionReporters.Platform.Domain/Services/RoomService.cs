@@ -173,6 +173,14 @@ namespace PrecisionReporters.Platform.Domain.Services
                 await _depositionRepository.Update(deposition);
             }
 
+            var chatUsers = await _twilioService.GetExistingChatUser(twilioIdentity);
+            if (chatUsers != null)
+            {
+                user.SId = chatUsers.Sid;
+                await _userRepository.Update(user);
+            }
+
+
             if (string.IsNullOrWhiteSpace(user.SId))
             {
                 var result = await _twilioService.CreateChatUser(twilioIdentity);
@@ -194,6 +202,17 @@ namespace PrecisionReporters.Platform.Domain.Services
         public async Task<List<RoomResource>> GetTwilioRoomByNameAndStatus(string uniqueName, RoomStatusEnum status)
         {
             return await _twilioService.GetRoomsByUniqueNameAndStatus(uniqueName, status);
+        }
+
+        public async Task<bool> RemoveRecordingRules(string roomSid)
+        {
+            return await _twilioService.RemoveRecordingRules(roomSid);
+
+        }
+
+        public async Task<bool> AddRecordingRules(string roomSid, TwilioIdentity witnessIdentity, bool IsVideoRecordingNeeded)
+        {
+            return await _twilioService.AddRecordingRules(roomSid, witnessIdentity, IsVideoRecordingNeeded);
         }
     }
 }

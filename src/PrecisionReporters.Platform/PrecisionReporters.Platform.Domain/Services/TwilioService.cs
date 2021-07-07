@@ -20,6 +20,7 @@ using Twilio.Rest.Chat.V2.Service.User;
 using Twilio.Rest.Conversations.V1.Service;
 using Twilio.Rest.Video.V1;
 using Twilio.Rest.Video.V1.Room;
+using Twilio.Types;
 using static Twilio.Rest.Video.V1.RoomResource;
 
 namespace PrecisionReporters.Platform.Domain.Services
@@ -48,7 +49,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         {
             var roomResource = await RoomResource.CreateAsync(
                 uniqueName: room.Name,
-                recordParticipantsOnConnect: true,
+                recordParticipantsOnConnect: false,
                 type: RoomResource.RoomTypeEnum.Group,
                 statusCallback: configureCallbacks ? new Uri($"{_twilioAccountConfiguration.StatusCallbackUrl}/recordings/addEvent") : null
                 );
@@ -101,7 +102,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             options.AudioSources = new List<string> { "*" };
             options.StatusCallback = new Uri(_twilioAccountConfiguration.StatusCallbackUrl);
             options.Format = CompositionResource.FormatEnum.Mp4;
-            options.Trim = false;
+            options.Trim = true;
 
             if (room.IsRecordingEnabled)
             {
@@ -291,7 +292,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             }
             catch (Exception ex)
             {
-                _log.LogError(ex,"Error creating chat with name: {}", chatName);
+                _log.LogError(ex, "Error creating chat with name: {}", chatName);
                 return Result.Fail(new Error($"Error creating chat with name: {chatName}"));
             }
         }
@@ -307,7 +308,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                     identity: strIdentity);
                 if (user != null)
                     return Result.Ok(user.Sid);
-                
+
                 _log.LogError("Error creating user with identity: {0}", identity.Email);
                 return Result.Fail(new Error($"Error creating user with identity: {identity.Email}"));
             }
@@ -345,7 +346,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                         identity: strIdentity);
                     return Result.Ok(chatParticipant?.Sid);
                 }
-                
+
                 _log.LogError("Error adding user to chat, user identity: {0}", identity.Email);
                 return Result.Fail(new Error($"Error adding user to chat, user identity: {identity.Email}"));
             }
@@ -361,8 +362,44 @@ namespace PrecisionReporters.Platform.Domain.Services
         {
             var recordings = await RoomRecordingResource.ReadAsync(roomSid);
             var firstRecording = recordings.OrderBy(x => x.DateCreated).First();
-            var date= DateTimeOffset.FromUnixTimeMilliseconds(long.Parse(_twilioAccountConfiguration.TwilioStartedDateReference) + firstRecording.Offset.Value);
-            return Result.Ok(date.ToUnixTimeSeconds());
+            var date = DateTimeOffset.FromUnixTimeMilliseconds(long.Parse(_twilioAccountConfiguration.TwilioStartedDateReference) + firstRecording.Offset.Value);
+            return Result.Ok(date.ToUnixTimeMilliseconds());
+        }
+
+        public async Task<bool> RemoveRecordingRules(string roomSid)
+        {
+            var recordingRules = await RecordingRulesResource.UpdateAsync(
+                    rules: new List<RecordingRule>(){
+                        new RecordingRule(RecordingRule.TypeEnum.Exclude,true,null,null,null)
+                    },
+                    pathRoomSid: roomSid
+                );
+            return true;
+        }
+
+        public async Task<bool> AddRecordingRules(string roomSid, TwilioIdentity witnessIdentity, bool IsVideoRecordingNeeded)
+        {
+            var stringIdentity = SerializeObject(witnessIdentity);
+            var rules = new List<RecordingRule>(){
+                        new RecordingRule(RecordingRule.TypeEnum.Include,null,stringIdentity,null,null),
+                        new RecordingRule(RecordingRule.TypeEnum.Include,null,null,null,RecordingRule.KindEnum.Audio)
+            };
+
+            if (IsVideoRecordingNeeded)
+                rules.Add(new RecordingRule(RecordingRule.TypeEnum.Include, null, null, null, RecordingRule.KindEnum.Video));
+
+            var recordingRules = await RecordingRulesResource.UpdateAsync(
+                    rules: rules,
+                    pathRoomSid: roomSid
+                );
+            return true;
+        }
+
+        public async Task<UserResource> GetExistingChatUser(TwilioIdentity identity)
+        {
+            var users = await UserResource.ReadAsync(_twilioAccountConfiguration.ConversationServiceId);
+            var existingUser = users.FirstOrDefault(u => u.Identity == SerializeObject(identity));
+            return existingUser;
         }
     }
 }

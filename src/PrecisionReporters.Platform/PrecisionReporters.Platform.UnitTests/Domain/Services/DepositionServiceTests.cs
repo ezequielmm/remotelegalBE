@@ -20,6 +20,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
+using Twilio.Rest.Video.V1;
 using Xunit;
 
 namespace PrecisionReporters.Platform.UnitTests.Domain.Services
@@ -27,6 +28,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
     public class DepositionServiceTests : IDisposable
     {
         // TODO: we need to refactor this file to have the test setup on the constructor
+        private const RoomResource roomMock = null;
         private readonly DepositionService _depositionService;
         private readonly Mock<IDepositionRepository> _depositionRepositoryMock;
         private readonly Mock<IParticipantRepository> _participantRepositoryMock;
@@ -96,7 +98,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _depositionConfigurationMock = new Mock<IOptions<DepositionConfiguration>>();
             _depositionConfigurationMock.Setup(x => x.Value).Returns(_depositionconfiguration);
 
-            _emailConfiguration = new EmailConfiguration { EmailNotification = "notifications@remotelegal.com", PreDepositionLink="", LogoImageName="", ImagesUrl="" };
+            _emailConfiguration = new EmailConfiguration { EmailNotification = "notifications@remotelegal.com", PreDepositionLink = "", LogoImageName = "", ImagesUrl = "" };
             _emailConfigurationMock = new Mock<IOptions<EmailConfiguration>>();
             _emailConfigurationMock.Setup(x => x.Value).Returns(_emailConfiguration);
 
@@ -585,10 +587,12 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 IsOnTheRecord = true,
                 Job = "Test123"
             };
+            var roomList = new List<RoomResource> { roomMock };
             _depositions.Add(deposition);
             _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(user));
             _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(() => _depositions.FirstOrDefault());
             _roomServiceMock.Setup(x => x.GenerateRoomToken(It.IsAny<string>(), It.IsAny<User>(), It.IsAny<ParticipantType>(), It.IsAny<string>(), It.IsAny<ChatDto>())).ReturnsAsync(Result.Ok(token));
+            _roomServiceMock.Setup(x => x.GetTwilioRoomByNameAndStatus(It.IsAny<string>(), It.IsAny<RoomResource.RoomStatusEnum>())).ReturnsAsync(roomList);
 
             // Act
             var result = await _depositionService.JoinDeposition(depositionId, userEmail);
@@ -693,10 +697,14 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 IsOnTheRecord = true,
                 Job = "Test123"
             };
+
+            var roomList = new List<RoomResource> { roomMock };
+
             _depositions.Add(deposition);
             _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(user));
             _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(() => _depositions.FirstOrDefault());
             _roomServiceMock.Setup(x => x.GenerateRoomToken(It.IsAny<string>(), It.IsAny<User>(), It.IsAny<ParticipantType>(), It.IsAny<string>(), It.IsAny<ChatDto>())).ReturnsAsync(Result.Ok(token));
+            _roomServiceMock.Setup(x => x.GetTwilioRoomByNameAndStatus(It.IsAny<string>(), It.IsAny<RoomResource.RoomStatusEnum>())).ReturnsAsync(roomList);
 
             // Act
             var result = await _depositionService.JoinDeposition(depositionId, userEmail);
@@ -746,10 +754,12 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 IsOnTheRecord = true,
                 Job = "Test123"
             };
+            var roomList = new List<RoomResource> { roomMock };
             _depositions.Add(deposition);
             _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(courtReporter2));
             _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(() => _depositions.FirstOrDefault());
             _roomServiceMock.Setup(x => x.GenerateRoomToken(It.IsAny<string>(), It.IsAny<User>(), It.IsAny<ParticipantType>(), It.IsAny<string>(), It.IsAny<ChatDto>())).ReturnsAsync(Result.Ok(token));
+            _roomServiceMock.Setup(x => x.GetTwilioRoomByNameAndStatus(It.IsAny<string>(), It.IsAny<RoomResource.RoomStatusEnum>())).ReturnsAsync(roomList);
 
             // Act
             var result = await _depositionService.JoinDeposition(depositionId, "courtreporter2@email.com");
@@ -2229,7 +2239,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var result = await _depositionService.EditDepositionDetails(depositionMock, null, true);
 
             //Assert
-            _userServiceMock.Verify(u => u.GetCurrentUserAsync(), Times.Once); 
+            _userServiceMock.Verify(u => u.GetCurrentUserAsync(), Times.Once);
             _depositionRepositoryMock.Verify(d => d.GetByIdWithAdmittedParticipants(It.Is<Guid>(i => i == depositionMock.Id), It.IsAny<string[]>()));
             _documentServiceMock.Verify(dc => dc.DeleteUploadedFiles(It.IsAny<List<Document>>()), Times.AtLeastOnce);
             _depositionRepositoryMock.Verify(d => d.Update(It.IsAny<Deposition>()), Times.Once);
@@ -2497,7 +2507,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             //Assert
             _userServiceMock.Verify(u => u.GetCurrentUserAsync(), Times.Once);
-            _depositionRepositoryMock.Verify(d => d.GetByIdWithAdmittedParticipants(It.Is<Guid>(i => i == depositionMock.Id), It.Is<string[]>(i => i.SequenceEqual(new[] {nameof(Deposition.Caption), nameof(Deposition.Case), nameof(Deposition.Participants) }))));
+            _depositionRepositoryMock.Verify(d => d.GetByIdWithAdmittedParticipants(It.Is<Guid>(i => i == depositionMock.Id), It.Is<string[]>(i => i.SequenceEqual(new[] { nameof(Deposition.Caption), nameof(Deposition.Case), nameof(Deposition.Participants) }))));
             _documentServiceMock.Verify(dc => dc.UploadDocumentFile(
                 It.IsAny<FileTransferInfo>(),
                 It.Is<User>(u => u == userMock),
@@ -2619,8 +2629,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         public async Task ReScheduleDeposition_ShouldReturnOk_IfStartDateIsValid()
         {
             // Arrange
-            var depositionMock = new Deposition() { Id = Guid.NewGuid(), StartDate = DateTime.UtcNow.AddSeconds(400), EndDate = DateTime.UtcNow.AddSeconds(600), Status = DepositionStatus.Pending, CaseId = Guid.NewGuid(), Caption = new Document() , Case = new Case { Name="test"} };
-            var currentDepositionMock = new Deposition() { Id = Guid.NewGuid(), StartDate= DateTime.UtcNow.AddDays(-1), TimeZone= "America/New_York", Status = DepositionStatus.Canceled, CaseId = Guid.NewGuid(), Caption = new Document(), Case = new Case { Name = "test" } };
+            var depositionMock = new Deposition() { Id = Guid.NewGuid(), StartDate = DateTime.UtcNow.AddSeconds(400), EndDate = DateTime.UtcNow.AddSeconds(600), Status = DepositionStatus.Pending, CaseId = Guid.NewGuid(), Caption = new Document(), Case = new Case { Name = "test" } };
+            var currentDepositionMock = new Deposition() { Id = Guid.NewGuid(), StartDate = DateTime.UtcNow.AddDays(-1), TimeZone = "America/New_York", Status = DepositionStatus.Canceled, CaseId = Guid.NewGuid(), Caption = new Document(), Case = new Case { Name = "test" } };
             var participant = new Participant { Name = "Jhon", Email = "test@test.com" };
             currentDepositionMock.Participants = new List<Participant> { participant };
             depositionMock.Participants = currentDepositionMock.Participants;
@@ -2795,6 +2805,6 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             Assert.True(result.IsFailed);
             Assert.NotNull(result);
             Assert.Contains(expectedError, result.Errors.Select(e => e.Message));
-        }        
+        }
     }
 }

@@ -20,6 +20,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
+using Twilio.Rest.Video.V1;
 
 namespace PrecisionReporters.Platform.Domain.Services
 {
@@ -397,7 +398,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<DepositionEvent>> GoOnTheRecord(Guid id, bool onTheRecord, string userEmail)
         {
-            var includes = new[] { nameof(Deposition.Requester), nameof(Deposition.Case), nameof(Deposition.Events) };
+            var includes = new[] { nameof(Deposition.Requester), nameof(Deposition.Case), nameof(Deposition.Events), nameof(Deposition.Room), nameof(Deposition.Events) };
 
             var depositionResult = await GetByIdWithIncludesAndIsAdmitted(id, includes);
             if (depositionResult.IsFailed)
@@ -422,6 +423,22 @@ namespace PrecisionReporters.Platform.Domain.Services
             deposition.Events.Add(depositionEvent);
             deposition.IsOnTheRecord = onTheRecord;
             await _depositionRepository.Update(deposition);
+
+            if (onTheRecord)
+            {
+                var witness = deposition.Participants.FirstOrDefault(p => p.Role == ParticipantType.Witness);
+                var identity = new TwilioIdentity
+                {
+                    Email = witness?.Email,
+                    Name = witness?.Name,
+                    Role = Enum.GetName(typeof(ParticipantType), witness?.Role)
+                };
+                await _roomService.AddRecordingRules(deposition.Room.SId, identity, deposition.IsVideoRecordingNeeded);
+            }
+            else
+            {
+                await _roomService.RemoveRecordingRules(deposition.Room.SId);
+            }
 
             return Result.Ok(depositionEvent);
         }
@@ -1180,6 +1197,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             var joinDepositionInfo = new JoinDepositionDto();
 
             // Check if we need to Start a Deposition. Only start it if current user is a Court Reporter and also any other court reporter hasn't joined yet.
+            
             if (isCourtReporterUser && !isCourtReporterJoined)
             {
                 // Court Reporter Flow
@@ -1228,6 +1246,14 @@ namespace PrecisionReporters.Platform.Domain.Services
                             ChatName = deposition.Id.ToString(),
                             SId = deposition.ChatSid
                         };
+
+                        var twilioRoom = await _roomService.GetTwilioRoomByNameAndStatus(deposition.Id.ToString(), RoomResource.RoomStatusEnum.InProgress);
+
+                        if (!twilioRoom.Any())
+                        {
+                            var room = await _roomService.StartRoom(deposition.Room, true);
+                        }
+
                         var token = await _roomService.GenerateRoomToken(deposition.Room.Name, user, role, identity, chatInfo);
                         if (token.IsFailed)
                             return token.ToResult<JoinDepositionDto>();
