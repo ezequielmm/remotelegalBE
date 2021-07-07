@@ -207,7 +207,6 @@ namespace PrecisionReporters.Platform.Domain.Services
         public async Task<bool> RemoveRecordingRules(string roomSid)
         {
             return await _twilioService.RemoveRecordingRules(roomSid);
-
         }
 
         public async Task<bool> AddRecordingRules(string roomSid, TwilioIdentity witnessIdentity, bool IsVideoRecordingNeeded)

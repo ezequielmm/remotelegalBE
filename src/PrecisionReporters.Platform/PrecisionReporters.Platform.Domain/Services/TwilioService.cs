@@ -368,12 +368,24 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<bool> RemoveRecordingRules(string roomSid)
         {
-            var recordingRules = await RecordingRulesResource.UpdateAsync(
-                    rules: new List<RecordingRule>(){
+            RoomResource room;
+            try
+            {
+                room = await RoomResource.FetchAsync(pathSid: roomSid);
+            }
+            catch (Exception)
+            {
+                room = null;
+            }
+            if (room == null || room.Status == RoomStatusEnum.Completed)
+                return true;
+
+            await RecordingRulesResource.UpdateAsync(
+                rules: new List<RecordingRule>(){
                         new RecordingRule(RecordingRule.TypeEnum.Exclude,true,null,null,null)
-                    },
-                    pathRoomSid: roomSid
-                );
+                },
+                pathRoomSid: roomSid
+            );
             return true;
         }
 
