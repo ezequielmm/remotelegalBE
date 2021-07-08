@@ -359,9 +359,10 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (depositionDocument == null)
                 return Result.Fail(new ResourceNotFoundError($"Could not find any document with Id {documentId}"));
 
-            var signedUrl = GetCannedPrivateURL(depositionDocument.Document);
+            if (depositionDocument.Document.DocumentType == DocumentType.DraftTranscription)
+                return GetFileSignedUrl(depositionDocument.Document);
 
-            return Result.Ok(signedUrl.Value);
+            return GetCannedPrivateURL(depositionDocument.Document);
         }
         
         public async Task<Result<string>> GetCannedPrivateURL(Guid documentId)
