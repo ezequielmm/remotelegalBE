@@ -363,7 +363,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             var recordings = await RoomRecordingResource.ReadAsync(roomSid);
             var firstRecording = recordings.OrderBy(x => x.DateCreated).First();
             var date = DateTimeOffset.FromUnixTimeMilliseconds(long.Parse(_twilioAccountConfiguration.TwilioStartedDateReference) + firstRecording.Offset.Value);
-            return Result.Ok(date.ToUnixTimeMilliseconds());
+            return Result.Ok(date.ToUnixTimeSeconds());
         }
 
         public async Task<bool> RemoveRecordingRules(string roomSid)
