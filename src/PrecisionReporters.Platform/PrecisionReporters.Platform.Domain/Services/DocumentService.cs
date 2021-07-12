@@ -112,8 +112,9 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<Document>> UploadExhibit(FileTransferInfo file, User user, string parentPath, DocumentType documentType)
         {
-            var fileName = $"{Guid.NewGuid()}{ApplicationConstants.PDFExtension}";
-
+            var extension = Path.GetExtension(file.Name) == ApplicationConstants.Mp4Extension ? ApplicationConstants.Mp4Extension : ApplicationConstants.PDFExtension;
+            var fileName = $"{Guid.NewGuid()}{extension}";
+            
             var document = await UploadExhibitToStorage(file, user, fileName, parentPath, documentType);
             return document;
         }
@@ -731,14 +732,25 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             try
             {
-                var pathPDF = _fileHelper.ConvertFileToPDF(file).Result;
-                pathFiles.Add(pathPDF);
-                var pathOptimizedPDF = _fileHelper.OptimizePDF(pathPDF);
-                pathFiles.Add(pathOptimizedPDF);
+                if (type != ApplicationConstants.Mp4Extension)
+                {
+                    var pathPDF = _fileHelper.ConvertFileToPDF(file).Result;
+                    pathFiles.Add(pathPDF);
+                    var pathOptimizedPDF = _fileHelper.OptimizePDF(pathPDF);
+                    pathFiles.Add(pathOptimizedPDF);
 
-                var uploadedDocument = await _awsStorageService.UploadMultipartAsync(documentKeyName, pathOptimizedPDF, _documentsConfiguration.BucketName);
-                if (uploadedDocument.IsFailed)
-                    return uploadedDocument.ToResult<Document>();
+                    var uploadedDocumentFromPath = await _awsStorageService.UploadMultipartAsync(documentKeyName, pathOptimizedPDF, _documentsConfiguration.BucketName);
+                    if (uploadedDocumentFromPath.IsFailed)
+                        return uploadedDocumentFromPath.ToResult<Document>();
+
+                    file.Length = uploadedDocumentFromPath.Value.Length;
+                }
+                else
+                {
+                    var uploadedDocumentFromFile = await _awsStorageService.UploadMultipartAsync(documentKeyName, file, _documentsConfiguration.BucketName);
+                    if (uploadedDocumentFromFile.IsFailed)
+                        return uploadedDocumentFromFile.ToResult<Document>();
+                }
 
                 var document = new Document
                 {
@@ -747,7 +759,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                     Name = fileName,
                     DisplayName = file.Name,
                     FilePath = documentKeyName,
-                    Size = uploadedDocument.Value.Length,
+                    Size = file.Length,
                     DocumentType = documentType
                 };
 
