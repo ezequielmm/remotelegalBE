@@ -1,4 +1,5 @@
 ﻿using FluentResults;
+using Microsoft.Extensions.Logging;
 using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Data.Enums;
 using PrecisionReporters.Platform.Data.Repositories.Interfaces;
@@ -22,17 +23,20 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly IRoomRepository _roomRepository;
         private readonly IUserRepository _userRepository;
         private readonly IDepositionRepository _depositionRepository;
+        private readonly ILogger<RoomService> _logger;
 
         public RoomService(
             ITwilioService twilioService,
             IRoomRepository roomRepository,
             IUserRepository userRepository,
-            IDepositionRepository depositionRepository)
+            IDepositionRepository depositionRepository,
+            ILogger<RoomService> logger)
         {
             _twilioService = twilioService;
             _roomRepository = roomRepository;
             _userRepository = userRepository;
             _depositionRepository = depositionRepository;
+            _logger = logger;
         }
 
         public async Task<Result<Room>> Create(Room room)
@@ -63,12 +67,12 @@ namespace PrecisionReporters.Platform.Domain.Services
         public async Task<Result<string>> GenerateRoomToken(string roomName, User user, ParticipantType role, string email, ChatDto chatDto = null)
         {
             var room = await _roomRepository.GetFirstOrDefaultByFilter(x => x.Name == roomName);
-
+            _logger.LogInformation($"{nameof(RoomService)}.{nameof(RoomService.GenerateRoomToken)} Room SID: {room?.SId}");
             if (room == null)
                 return Result.Fail(new ResourceNotFoundError($"Room {roomName} not found"));
 
             if (room.Status != RoomStatus.InProgress)
-                return Result.Fail(new InvalidInputError($"There was an error ending the the Room '{room.Name}'. It's not in progress. Current state: {room.Status}"));
+                return Result.Fail(new InvalidInputError($"There was an error ending the the Room '{room?.Name}'. It's not in progress. Current state: {room?.Status}"));
 
             var twilioIdentity = new TwilioIdentity
             {
@@ -77,15 +81,18 @@ namespace PrecisionReporters.Platform.Domain.Services
                 Email = email
             };
 
+            _logger.LogInformation($"{nameof(RoomService)}.{nameof(RoomService.GenerateRoomToken)} User Email: {email}");
+
             var grantChat = false;
             if (chatDto != null)
             {
+                _logger.LogInformation($"{nameof(RoomService)}.{nameof(RoomService.GenerateRoomToken)} Add Participant to Chat: {email}");
                 var result = await AddChatParticipant(chatDto, twilioIdentity, user);
                 grantChat = result.IsSuccess;
             }
 
-
             var twilioToken = _twilioService.GenerateToken(roomName, twilioIdentity, grantChat);
+            _logger.LogInformation($"{nameof(RoomService)}.{nameof(RoomService.GenerateRoomToken)} Twilio Token: {twilioToken}");
 
             return Result.Ok(twilioToken);
         }
@@ -114,7 +121,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         public async Task<Result<Composition>> CreateComposition(Room room, string witnessEmail)
         {
             var compositionResource = await _twilioService.CreateComposition(room, witnessEmail);
-
+            _logger.LogInformation($"{nameof(RoomService)}.{nameof(RoomService.CreateComposition)} Twilio Composition Created: {compositionResource.Sid}");
             var composition = new Composition
             {
                 SId = compositionResource?.Sid,
@@ -126,7 +133,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             room.Composition = composition;
             await _roomRepository.Update(room);
-
+            _logger.LogInformation($"{nameof(RoomService)}.{nameof(RoomService.CreateComposition)} BD Composition Created: {composition.Id}");
             return Result.Ok(composition);
         }
 
@@ -134,12 +141,16 @@ namespace PrecisionReporters.Platform.Domain.Services
         {
             try
             {
+                _logger.LogInformation($"{nameof(RoomService)}.{nameof(RoomService.StartRoom)} Room Name: {room?.Name}");
                 room = await _twilioService.CreateRoom(room, configureCallbacks);
                 room.Status = RoomStatus.InProgress;
                 room.StartDate = DateTime.UtcNow;
 
+                _logger.LogInformation($"{nameof(RoomService)}.{nameof(RoomService.StartRoom)} Room Sid: {room?.SId}");
                 // TODO: Review possible failures from repository, return Result<T>
                 var updatedRoom = await _roomRepository.Update(room);
+
+                _logger.LogInformation($"{nameof(RoomService)}.{nameof(RoomService.StartRoom)} Room Updated: {room?.Id}");
                 return Result.Ok(updatedRoom);
             }
             catch (ApiException ex) when (ex.Message == ApplicationConstants.RoomExistError)

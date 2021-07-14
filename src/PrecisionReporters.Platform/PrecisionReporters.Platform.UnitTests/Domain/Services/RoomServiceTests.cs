@@ -1,4 +1,5 @@
 ﻿using FluentResults;
+using Microsoft.Extensions.Logging;
 using Moq;
 using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Data.Enums;
@@ -28,13 +29,14 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         private readonly RoomService _service;
         private readonly Mock<IUserRepository> _userRepositoryMock = new Mock<IUserRepository>();
         private readonly Mock<IDepositionRepository> _depositionRepositoryMock = new Mock<IDepositionRepository>();
+        private readonly Mock<ILogger<RoomService>> _mockLogger = new Mock<ILogger<RoomService>>();
 
         public RoomServiceTests()
         {
             _twilioServiceMock = new Mock<ITwilioService>();
             _roomRepositoryMock = new Mock<IRoomRepository>();
 
-            _service = new RoomService(_twilioServiceMock.Object, _roomRepositoryMock.Object, _userRepositoryMock.Object, _depositionRepositoryMock.Object);
+            _service = new RoomService(_twilioServiceMock.Object, _roomRepositoryMock.Object, _userRepositoryMock.Object, _depositionRepositoryMock.Object, _mockLogger.Object);
         }
 
         public void Dispose()
@@ -152,7 +154,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var twilioServiceMock = new Mock<ITwilioService>();
             var roomRepositoryMock = new Mock<IRoomRepository>();
             twilioServiceMock.Setup(x => x.EndRoom(It.IsAny<Room>())).ReturnsAsync(Result.Ok());
-            twilioServiceMock.Setup(x => x.CreateComposition(It.IsAny<Room>(), It.IsAny<string>())).ReturnsAsync((CompositionResource) null);
+            twilioServiceMock.Setup(x => x.CreateComposition(It.IsAny<Room>(), It.IsAny<string>())).ReturnsAsync((CompositionResource)null);
             var roomService = InitializeService(twilioService: twilioServiceMock, roomRepository: roomRepositoryMock);
 
             // Act
@@ -196,8 +198,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             var roomService = InitializeService(twilioService: twilioServiceMock, roomRepository: roomRepositoryMock);
 
-            twilioServiceMock.Setup(x=>x.CreateRoom(It.IsAny<Room>(),It.IsAny<bool>())).ReturnsAsync(room);
-            
+            twilioServiceMock.Setup(x => x.CreateRoom(It.IsAny<Room>(), It.IsAny<bool>())).ReturnsAsync(room);
+
             // Act
             var result = await roomService.StartRoom(room, true);
 
@@ -334,7 +336,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 twilioServiceMock.Object,
                 roomRepositoryMock.Object,
                 userRepositoryMock.Object,
-                depositionRepositoryMock.Object
+                depositionRepositoryMock.Object,
+                _mockLogger.Object
                 );
         }
     }
