@@ -292,9 +292,13 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (userResult.IsFailed)
                 return userResult.ToResult<JoinDepositionDto>();
 
+            _logger.LogInformation($"{nameof(DepositionService)}.{nameof(DepositionService.JoinDeposition)} User Identity: {userResult.Value.EmailAddress}");
+
             var deposition = await _depositionRepository.GetById(id, new[] { nameof(Deposition.Room), nameof(Deposition.PreRoom), nameof(Deposition.Participants) });
             if (deposition == null)
                 return Result.Fail(new ResourceNotFoundError($"Deposition with id {id} not found."));
+
+            _logger.LogInformation($"{nameof(DepositionService)}.{nameof(DepositionService.JoinDeposition)} Deposition ID: {deposition.Id}");
 
             var joinDepositionInfo = await GetJoinDepositionInfoDto(userResult.Value, deposition, identity);
 
@@ -1190,16 +1194,19 @@ namespace PrecisionReporters.Platform.Domain.Services
         private async Task<Result<JoinDepositionDto>> GetJoinDepositionInfoDto(User user, Deposition deposition, string identity)
         {
             var currentParticipant = deposition.Participants.FirstOrDefault(p => p.User == user);
+            _logger.LogInformation($"{nameof(DepositionService)}.{nameof(DepositionService.GetJoinDepositionInfoDto)} CurrentParticipant: {currentParticipant?.Id}");
             var role = currentParticipant?.Role ?? ParticipantType.Admin;
+            _logger.LogInformation($"{nameof(DepositionService)}.{nameof(DepositionService.GetJoinDepositionInfoDto)} CurrentParticipant Role: {role}");
             var courtReporters = deposition.Participants.Where(x => x.Role == ParticipantType.CourtReporter).ToList();
             var isCourtReporterUser = courtReporters.Any(x => x.User?.Id == user.Id);
             var isCourtReporterJoined = courtReporters.Any(x => x.HasJoined);
             var joinDepositionInfo = new JoinDepositionDto();
 
             // Check if we need to Start a Deposition. Only start it if current user is a Court Reporter and also any other court reporter hasn't joined yet.
-            
+
             if (isCourtReporterUser && !isCourtReporterJoined)
             {
+                _logger.LogInformation($"{nameof(DepositionService)}.{nameof(DepositionService.GetJoinDepositionInfoDto)} Joining CR Flow, start real deposition room: {currentParticipant?.Email}");
                 // Court Reporter Flow
                 await StartDepositionRoom(deposition.Room, true);
                 var chatInfo = new ChatDto()
@@ -1209,14 +1216,18 @@ namespace PrecisionReporters.Platform.Domain.Services
                     SId = deposition.ChatSid,
                     CreateChat = true
                 };
+                _logger.LogInformation($"{nameof(DepositionService)}.{nameof(DepositionService.GetJoinDepositionInfoDto)} Chat SID CR Flow: {chatInfo?.SId}");
                 var token = await _roomService.GenerateRoomToken(deposition.Room.Name, user, role, identity, chatInfo);
                 if (token.IsFailed)
                     return token.ToResult<JoinDepositionDto>();
+
+                _logger.LogInformation($"{nameof(DepositionService)}.{nameof(DepositionService.GetJoinDepositionInfoDto)} CR User Token: {token?.Value}");
 
                 joinDepositionInfo = SetJoinDepositionInfo(token.Value, deposition, joinDepositionInfo, false);
 
                 if (currentParticipant != null)
                 {
+                    _logger.LogInformation($"{nameof(DepositionService)}.{nameof(DepositionService.GetJoinDepositionInfoDto)} Update CurrentParticipant CR flow: {currentParticipant?.Id}");
                     await UpdateCurrentParticipant(currentParticipant);
                 }
 
@@ -1225,10 +1236,12 @@ namespace PrecisionReporters.Platform.Domain.Services
             else
             {
                 // Participants Flow
+                _logger.LogInformation($"{nameof(DepositionService)}.{nameof(DepositionService.GetJoinDepositionInfoDto)} Participant Flow");
                 if (isCourtReporterJoined)
                 {
                     if (currentParticipant != null && !currentParticipant.IsAdmitted.HasValue && !user.IsAdmin)
                     {
+                        _logger.LogInformation($"{nameof(DepositionService)}.{nameof(DepositionService.GetJoinDepositionInfoDto)} CurrentParticipant SetJoinDepositionInfo: {currentParticipant?.Id}");
                         joinDepositionInfo = SetJoinDepositionInfo(null, deposition, joinDepositionInfo, false);
                     }
                     else
@@ -1238,6 +1251,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
                         if (currentParticipant != null)
                         {
+                            _logger.LogInformation($"{nameof(DepositionService)}.{nameof(DepositionService.GetJoinDepositionInfoDto)} Update CurrentParticipant Participant flow: {currentParticipant?.Id}");
                             await UpdateCurrentParticipant(currentParticipant);
                         }
                         var chatInfo = new ChatDto()
@@ -1247,27 +1261,35 @@ namespace PrecisionReporters.Platform.Domain.Services
                             SId = deposition.ChatSid
                         };
 
+                        _logger.LogInformation($"{nameof(DepositionService)}.{nameof(DepositionService.GetJoinDepositionInfoDto)} Chat SID Participant Flow: {chatInfo?.SId}");
+
                         var twilioRoom = await _roomService.GetTwilioRoomByNameAndStatus(deposition.Id.ToString(), RoomResource.RoomStatusEnum.InProgress);
 
                         if (!twilioRoom.Any())
                         {
                             var room = await _roomService.StartRoom(deposition.Room, true);
+                            _logger.LogInformation($"{nameof(DepositionService)}.{nameof(DepositionService.GetJoinDepositionInfoDto)} No active twilio room, started new one: {room?.Value?.SId}");
                         }
 
-                        var token = await _roomService.GenerateRoomToken(deposition.Room.Name, user, role, identity, chatInfo);
+                        var token = await _roomService.GenerateRoomToken(deposition?.Room?.Name, user, role, identity, chatInfo);
                         if (token.IsFailed)
                             return token.ToResult<JoinDepositionDto>();
+
+                        _logger.LogInformation($"{nameof(DepositionService)}.{nameof(DepositionService.GetJoinDepositionInfoDto)} Paticipant User Token: {token?.Value}");
 
                         joinDepositionInfo = SetJoinDepositionInfo(token.Value, deposition, joinDepositionInfo, false);
                     }
                 }
                 else
                 {
+                    _logger.LogInformation($"{nameof(DepositionService)}.{nameof(DepositionService.GetJoinDepositionInfoDto)} Start PreRoom");
                     await StartDepositionRoom(deposition.PreRoom, false);
 
                     var preRoomToken = await _roomService.GenerateRoomToken(deposition.PreRoom.Name, user, role, identity);
                     if (preRoomToken.IsFailed)
                         return preRoomToken.ToResult<JoinDepositionDto>();
+
+                    _logger.LogInformation($"{nameof(DepositionService)}.{nameof(DepositionService.GetJoinDepositionInfoDto)} PreRoomToken: {preRoomToken?.Value}");
 
                     joinDepositionInfo = SetJoinDepositionInfo(preRoomToken.Value, deposition, joinDepositionInfo, true);
                 }
@@ -1282,6 +1304,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         private async Task StartDepositionRoom(Room room, bool configureCallBacks)
         {
             // TODO: Add distributed lock when our infra allows it
+            _logger.LogInformation($"{nameof(DepositionService)}.{nameof(DepositionService.StartDepositionRoom)} Chat SID CR Flow: {room?.Status}");
             if (room.Status == RoomStatus.Created)
             {
                 await _roomService.StartRoom(room, configureCallBacks);
@@ -1304,6 +1327,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         private async Task SendNotification(Deposition deposition)
         {
+            _logger.LogInformation($"{nameof(DepositionService)}.{nameof(DepositionService.SendNotification)} Send SignalR notification: {deposition.Id}");
             var notificationDto = new NotificationDto
             {
                 EntityType = NotificationEntity.Deposition,

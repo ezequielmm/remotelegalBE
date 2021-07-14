@@ -67,17 +67,19 @@ namespace PrecisionReporters.Platform.Domain.Services
         public string GenerateToken(string roomName, TwilioIdentity identity, bool grantChat)
         {
             //TODO: Change identity from JSON string to User Email
+            var stringIdentity = SerializeObject(identity);
             var grant = new VideoGrant();
             grant.Room = roomName;
+            _log.LogInformation($"{nameof(TwilioService)}.{nameof(TwilioService.GenerateToken)} Generating Token Room Name: {roomName}, User Identity: {stringIdentity}");
             var grants = new HashSet<IGrant> { grant };
             if (grantChat)
                 grants.Add(new ChatGrant { ServiceSid = _twilioAccountConfiguration.ConversationServiceId });
 
-            var stringIdentity = SerializeObject(identity);
             var expirationOffset = Convert.ToInt32(_twilioAccountConfiguration.ClientTokenExpirationMinutes);
             var token = new Token(_twilioAccountConfiguration.AccountSid, _twilioAccountConfiguration.ApiKeySid,
                 _twilioAccountConfiguration.ApiKeySecret, identity: stringIdentity, expiration: DateTime.UtcNow.AddMinutes(expirationOffset), grants: grants);
 
+            _log.LogInformation($"{nameof(TwilioService)}.{nameof(TwilioService.GenerateToken)} Token: {token.ToJwt()}");
             return token.ToJwt();
         }
 
@@ -102,11 +104,12 @@ namespace PrecisionReporters.Platform.Domain.Services
             options.AudioSources = new List<string> { "*" };
             options.StatusCallback = new Uri(_twilioAccountConfiguration.StatusCallbackUrl);
             options.Format = CompositionResource.FormatEnum.Mp4;
-            options.Trim = true;
-
+            options.Trim = true;            
             if (room.IsRecordingEnabled)
             {
                 var witnessSid = await GetWitnessSid(room.SId, witnessEmail);
+                var joinedWitnessSid = string.Join(",", witnessSid);
+                _log.LogInformation($"{nameof(TwilioService)}.{nameof(TwilioService.CreateComposition)} - Create Composition Room Sid: {room?.SId} - Array Witness SID: {joinedWitnessSid}");
                 options.VideoLayout = new
                 {
                     grid = new
