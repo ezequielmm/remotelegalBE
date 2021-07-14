@@ -1,4 +1,5 @@
-﻿using PrecisionReporters.Platform.Data.Entities;
+﻿using System;
+using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Data.Enums;
 using PrecisionReporters.Platform.Domain.Dtos;
 using System.Linq;
@@ -16,7 +17,7 @@ namespace PrecisionReporters.Platform.Domain.Mappers
                 LastName = model.LastName,
                 EmailAddress = model.EmailAddress,
                 PhoneNumber = model.PhoneNumber,
-                CreationDate = model.CreationDate,
+                CreationDate = new DateTimeOffset(model.CreationDate, TimeSpan.Zero),
                 CompanyName = model.CompanyName,
                 CompanyAddress = model.CompanyAddress,
                 IsAdmin = model.IsAdmin,
@@ -34,7 +35,7 @@ namespace PrecisionReporters.Platform.Domain.Mappers
                 LastName = dto.LastName,
                 EmailAddress = dto.EmailAddress.ToLower(),
                 PhoneNumber = dto.PhoneNumber,
-                CreationDate = dto.CreationDate,
+                CreationDate = dto.CreationDate.UtcDateTime,
                 CompanyName = dto.CompanyName,
                 CompanyAddress = dto.CompanyAddress
             };
