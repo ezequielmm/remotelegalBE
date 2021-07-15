@@ -879,6 +879,22 @@ namespace PrecisionReporters.Platform.Domain.Services
             return Result.Ok(newParticipant);
         }
 
+        public async Task<Result<List<Deposition>>> UpdateParticipantOnExistingDepositions(User user)
+        {
+            var depositions = await GetDepositions(d => d.Participants.Any(u => u.Email == user.EmailAddress), new[] { nameof(Deposition.Participants) });
+            
+            foreach (var deposition in depositions)
+            {
+                var participant = deposition.Participants.FirstOrDefault(u => u.Email == user.EmailAddress);
+                participant.User = user;
+                participant.UserId = user.Id;
+                await _permissionService.AddParticipantPermissions(participant);
+                await _depositionRepository.Update(deposition);
+            }
+            
+            return Result.Ok(depositions);
+        }
+
         private async Task<Result<Document>> UpdateDepositionFiles(FileTransferInfo file, Deposition currentDeposition, bool deleteCaption)
         {
             var currentUser = await _userService.GetCurrentUserAsync();

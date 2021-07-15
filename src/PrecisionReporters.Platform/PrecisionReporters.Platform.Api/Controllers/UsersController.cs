@@ -13,12 +13,14 @@ namespace PrecisionReporters.Platform.Api.Controllers
     public class UsersController : ControllerBase
     {
         private readonly IUserService _userService;
+        private readonly IDepositionService _depositionService;
         private readonly IMapper<User, UserDto, CreateUserDto> _userMapper;
 
-        public UsersController(IUserService userService, IMapper<User, UserDto, CreateUserDto> userMapper)
+        public UsersController(IUserService userService, IDepositionService depositionService, IMapper<User, UserDto, CreateUserDto> userMapper)
         {
             _userService = userService;
             _userMapper = userMapper;
+            _depositionService = depositionService;
         }
 
         /// <summary>
@@ -32,8 +34,14 @@ namespace PrecisionReporters.Platform.Api.Controllers
             var user = _userMapper.ToModel(createUserDto);
 
             var result = await _userService.SignUpAsync(user);
+
             if (result.IsFailed)
                 return WebApiResponses.GetErrorResponse(result);
+
+            var depositionResult = await _depositionService.UpdateParticipantOnExistingDepositions(result.Value);
+
+            if (depositionResult.IsFailed)
+                return WebApiResponses.GetErrorResponse(depositionResult);
 
             return Ok(_userMapper.ToDto(result.Value));
         }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
 using FluentResults;
@@ -18,13 +19,15 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
     {
         private readonly IMapper<User, UserDto, CreateUserDto> _userMapper;
         private readonly Mock<IUserService> _userService;
+        private readonly Mock<IDepositionService> _depositionService;
         private readonly UsersController _classUnderTest;
 
         public UsersControllerTest()
         {
             _userService = new Mock<IUserService>();
+            _depositionService = new Mock<IDepositionService>();
             _userMapper = new UserMapper();
-            _classUnderTest = new UsersController(_userService.Object, _userMapper);
+            _classUnderTest = new UsersController(_userService.Object, _depositionService.Object, _userMapper);
         }
 
         [Fact]
@@ -45,6 +48,10 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
                 .Setup(mock => mock.SignUpAsync(It.IsAny<User>()))
                 .ReturnsAsync(Result.Ok(user));
 
+            _depositionService
+                .Setup(mock => mock.UpdateParticipantOnExistingDepositions(It.IsAny<User>()))
+                .ReturnsAsync(Result.Ok(new List<Deposition>()));
+
             // Act
             var result = await _classUnderTest.SignUpAsync(createUserDto);
 
@@ -53,6 +60,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
             var objectResult = Assert.IsType<OkObjectResult>(result.Result);
             Assert.IsType<UserDto>(objectResult.Value);
             _userService.Verify(mock => mock.SignUpAsync(It.IsAny<User>()), Times.Once);
+            _depositionService.Verify(mock => mock.UpdateParticipantOnExistingDepositions(It.IsAny<User>()), Times.Once);
         }
 
         [Fact]
