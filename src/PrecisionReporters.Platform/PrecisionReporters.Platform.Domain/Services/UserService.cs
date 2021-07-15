@@ -34,6 +34,8 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly VerificationLinkConfiguration _verificationLinkConfiguration;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IMapper<User, UserDto, CreateUserDto> _userMapper;
+        private readonly ILogger<UserService> _logger;
+
 
         public UserService(ILogger<UserService> log,
             IUserRepository userRepository,
@@ -43,7 +45,8 @@ namespace PrecisionReporters.Platform.Domain.Services
             ITransactionHandler transactionHandler,
             IOptions<UrlPathConfiguration> urlPathConfiguration,
             IOptions<VerificationLinkConfiguration> verificationLinkConfiguration,
-            IHttpContextAccessor httpContextAccessor, IMapper<User, UserDto, CreateUserDto> userMapper)
+            IHttpContextAccessor httpContextAccessor, IMapper<User, UserDto, CreateUserDto> userMapper,
+            ILogger<UserService> logger)
         {
             _log = log;
             _userRepository = userRepository;
@@ -55,6 +58,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             _verificationLinkConfiguration = verificationLinkConfiguration.Value;
             _httpContextAccessor = httpContextAccessor;
             _userMapper = userMapper;
+            _logger = logger;
         }
 
         public async Task<Result<User>> SignUpAsync(User user)
@@ -259,13 +263,17 @@ namespace PrecisionReporters.Platform.Domain.Services
         public async Task<Result<User>> AddGuestUser(User user)
         {
             var userData = await _userRepository.GetFirstOrDefaultByFilter(x => x.EmailAddress.Equals(user.EmailAddress));
+
             var cognitoUser = await _cognitoService.CheckUserExists(user.EmailAddress);
 
             var transactionResult = await _transactionHandler.RunAsync(async () =>
             {
                 if (userData == null)
+                {
                     userData = await _userRepository.Create(user);
 
+                    _logger.LogInformation($"{nameof(UserService)}.{nameof(UserService.AddGuestUser)} User data null: {user.EmailAddress}");
+                }
                 if (cognitoUser.IsFailed)
                     await _cognitoService.CreateAsync(userData);
             });

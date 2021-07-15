@@ -1499,6 +1499,12 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var depositionId = Guid.NewGuid();
             var deposition = DepositionFactory.GetDepositionWithParticipantEmail("foo@mail.com");
             deposition.Id = depositionId;
+            deposition.Participants.Add(new Participant
+            {
+                Id = Guid.NewGuid(),
+                Role = ParticipantType.Witness,
+                IsAdmitted = true
+            });
 
             var participant = new Participant
             {
@@ -1534,6 +1540,12 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var depositionId = Guid.NewGuid();
             var deposition = DepositionFactory.GetDepositionWithParticipantEmail(guestEmail);
             deposition.Id = depositionId;
+            deposition.Participants.Add(new Participant
+            {
+                Id = Guid.NewGuid(),
+                Role = ParticipantType.Witness,
+                IsAdmitted = true
+            });
 
             var participant = new Participant
             {
@@ -1573,6 +1585,12 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var depositionId = Guid.NewGuid();
             var deposition = DepositionFactory.GetDepositionWithParticipantEmail("participant@mail.com", false);
             deposition.Id = depositionId;
+            deposition.Participants.Add(new Participant
+            {
+                Id = Guid.NewGuid(),
+                Role = ParticipantType.Witness,
+                IsAdmitted = true
+            });
 
             var participant = new Participant
             {
