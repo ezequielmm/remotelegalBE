@@ -8,6 +8,8 @@ using Microsoft.Extensions.DependencyInjection;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using PrecisionReporters.Platform.Domain.Dtos;
 using PrecisionReporters.Platform.Data.Enums;
+using PrecisionReporters.Platform.Domain.Configurations;
+using Microsoft.Extensions.Options;
 
 namespace PrecisionReporters.Platform.Domain.Services
 {
@@ -15,13 +17,16 @@ namespace PrecisionReporters.Platform.Domain.Services
     {
         private readonly ILogger<BackgroundHostedService> _logger;
         private readonly IServiceProvider _serviceProvider;
+        private readonly TwilioAccountConfiguration _twilioAccountConfiguration;
+
 
         public BackgroundHostedService(IBackgroundTaskQueue taskQueue,
-            ILogger<BackgroundHostedService> logger, IServiceProvider serviceProvider)
+            ILogger<BackgroundHostedService> logger, IServiceProvider serviceProvider, IOptions<TwilioAccountConfiguration> twilioAccountConfiguration)
         {
             TaskQueue = taskQueue;
             _logger = logger;
             _serviceProvider = serviceProvider;
+            _twilioAccountConfiguration = twilioAccountConfiguration.Value;
         }
 
         public IBackgroundTaskQueue TaskQueue { get; }
@@ -56,11 +61,15 @@ namespace PrecisionReporters.Platform.Domain.Services
                                 await scopedDraftTranscription.GenerateDraftTranscription(draftTranscriptDto);
                                 break;
                             case BackgroundTaskType.DeleteTwilioComposition:
-                                processType = Enum.GetName(typeof(BackgroundTaskType), BackgroundTaskType.DeleteTwilioComposition);
-                                var deleteTwilioRecordings = dequeResult.Content as DeleteTwilioRecordingsDto;
-                                var scopedDeleteRecordings = scope.ServiceProvider.GetRequiredService<ICompositionService>();
-                                await scopedDeleteRecordings.DeleteTwilioCompositionAndRecordings(deleteTwilioRecordings);
+                                if (_twilioAccountConfiguration.DeleteRecordingsEnabled)
+                                {
+                                    processType = Enum.GetName(typeof(BackgroundTaskType), BackgroundTaskType.DeleteTwilioComposition);
+                                    var deleteTwilioRecordings = dequeResult.Content as DeleteTwilioRecordingsDto;
+                                    var scopedDeleteRecordings = scope.ServiceProvider.GetRequiredService<ICompositionService>();
+                                    await scopedDeleteRecordings.DeleteTwilioCompositionAndRecordings(deleteTwilioRecordings);
+                                }
                                 break;
+                                
                         }
                     }
                     catch (Exception ex)

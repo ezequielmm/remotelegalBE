@@ -105,6 +105,7 @@ namespace PrecisionReporters.Platform.Domain
                 x.ConversationServiceId = appConfiguration.TwilioAccountConfiguration.ConversationServiceId;
                 x.TwilioStartedDateReference = appConfiguration.TwilioAccountConfiguration.TwilioStartedDateReference;
                 x.ClientTokenExpirationMinutes = appConfiguration.TwilioAccountConfiguration.ClientTokenExpirationMinutes;
+                x.DeleteRecordingsEnabled = appConfiguration.TwilioAccountConfiguration.DeleteRecordingsEnabled;
             });
 
             services.AddScoped<IRoomService, RoomService>();
