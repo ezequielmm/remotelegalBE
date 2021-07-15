@@ -2154,6 +2154,55 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         }
 
         [Fact]
+        public async Task UpdateParticipantOnExistingDepositions_ShouldUpdateParticipantPermissions_WhenANewUserIsGiven()
+        {
+            //Arrange
+            var email = "test@user.com";
+            var user = UserFactory.GetUserByGivenEmail(email);
+            var deposition = DepositionFactory.GetDepositionWithParticipantEmail(email, false);
+            var depositions = new List<Deposition> { deposition };
+            _depositionRepositoryMock.Setup(s => s.GetByFilter(d => d.Participants.Any(u => 
+                                                    u.Email == user.EmailAddress), new[] { nameof(Deposition.Participants) }))
+                                    .ReturnsAsync(depositions);
+
+            _permissionServiceMock.Setup(s => s.AddParticipantPermissions(It.IsAny<Participant>()));
+
+            //Act
+            var result = await _depositionService.UpdateParticipantOnExistingDepositions(user);
+
+            //Assert
+            _depositionRepositoryMock.Verify(s => s.GetByFilter(It.IsAny<Expression<Func<Deposition, bool>>>(), It.IsAny<string[]>()), Times.Once);
+            _depositionRepositoryMock.Verify(s => s.Update(It.IsAny<Deposition>()), Times.Once);
+            _permissionServiceMock.Verify(s => s.AddParticipantPermissions(It.IsAny<Participant>()), Times.Once);
+            Assert.IsType<Result<List<Deposition>>>(result);
+            var updatedParticipants = result.Value.FirstOrDefault(d => d.Participants.Any(p => p.Email == email)).Participants;
+            Assert.True(!updatedParticipants.Any(p => p.UserId != user.Id));
+            Assert.True(!updatedParticipants.Any(p => p.User == null));
+        }
+
+        [Fact]
+        public async Task UpdateParticipantOnExistingDepositions_ShouldReturnOkWithAnEmptyListOfDepositions_WhenNoDepositionsAreFound()
+        {
+            //Arrange
+            var email = "test@user.com";
+            var user = UserFactory.GetUserByGivenEmail(email);
+
+            _depositionRepositoryMock.Setup(s => s.GetByFilter(d => d.Participants.Any(u =>
+                                                    u.Email == user.EmailAddress), new[] { nameof(Deposition.Participants) }))
+                                    .ReturnsAsync(new List<Deposition>());
+
+            //Act
+            var result = await _depositionService.UpdateParticipantOnExistingDepositions(user);
+
+            //Assert
+            _depositionRepositoryMock.Verify(s => s.GetByFilter(It.IsAny<Expression<Func<Deposition, bool>>>(), It.IsAny<string[]>()), Times.Once);
+            _depositionRepositoryMock.Verify(s => s.Update(It.IsAny<Deposition>()), Times.Never);
+            _permissionServiceMock.Verify(s => s.AddParticipantPermissions(It.IsAny<Participant>()), Times.Never);
+            Assert.IsType<Result<List<Deposition>>>(result);
+            Assert.True(result.Value.Count == 0);
+        }
+
+        [Fact]
         public async Task EditDepositionDetails_ShouldFail_DepositionNotFound()
         {
             //Arrange
