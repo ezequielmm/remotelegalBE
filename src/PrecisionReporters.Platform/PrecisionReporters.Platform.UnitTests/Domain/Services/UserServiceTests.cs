@@ -507,6 +507,9 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             cognitoServiceMock.Setup(x => x.CheckUserExists(It.IsAny<string>())).ReturnsAsync(Result.Fail(new Error()));
 
             var transactionHandlerMock = new Mock<ITransactionHandler>();
+
+            var loggerMock = new Mock<ILogger<UserService>>();
+
             transactionHandlerMock
                 .Setup(x => x.RunAsync(It.IsAny<Func<Task>>()))
                 .Returns(async (Func<Task> action) =>
@@ -516,7 +519,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 });
 
             var service = InitializeService(userRepository: userRepositoryMock, cognitoService: cognitoServiceMock
-                , transactionHandler: transactionHandlerMock);
+                , transactionHandler: transactionHandlerMock, _userLogger : loggerMock);
 
             // Act
             var result = await service.AddGuestUser(user);
@@ -857,7 +860,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             Mock<IAwsEmailService> awsEmailService = null,
             Mock<IVerifyUserService> verifyUserService = null,
             Mock<ITransactionHandler> transactionHandler = null,
-            Mock<IMapper<User, UserDto, CreateUserDto>> _userMapper = null)
+            Mock<IMapper<User, UserDto, CreateUserDto>> _userMapper = null,
+            Mock<ILogger<UserService>> _userLogger = null)
         {
 
             var logMock = log ?? new Mock<ILogger<UserService>>();
@@ -869,6 +873,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var urlPathConfigurationMock = new Mock<IOptions<UrlPathConfiguration>>();
             var verificationLinkConfigurationMock = new Mock<IOptions<VerificationLinkConfiguration>>();
             var userMapperMock = _userMapper ?? new Mock<IMapper<User, UserDto, CreateUserDto>>();
+            var userLogger = _userLogger ?? new Mock<ILogger<UserService>>();
             urlPathConfigurationMock.Setup(x => x.Value).Returns(_urlPathConfiguration);
             verificationLinkConfigurationMock.Setup(x => x.Value).Returns(_verificationLinkConfiguration);
 
@@ -882,7 +887,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 urlPathConfigurationMock.Object,
                 verificationLinkConfigurationMock.Object,
                 null,
-                userMapperMock.Object);
+                userMapperMock.Object,
+                userLogger.Object);
         }
     }
 }
