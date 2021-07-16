@@ -39,7 +39,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         private static readonly SemaphoreSlim _shouldCloseSemaphore = new SemaphoreSlim(1);
         private bool _isClosed = true;
         private static readonly SemaphoreSlim _isClosedSemaphore = new SemaphoreSlim(1);       
-
+        
         public TranscriptionLiveGcpService(IOptions<GcpConfiguration> gcpConfiguration, ITranscriptionService transcriptionService)
         {
             _transcriptionService = transcriptionService;
@@ -242,6 +242,11 @@ namespace PrecisionReporters.Platform.Domain.Services
             };
 
             return speechClient.Build();
+        }
+
+        public void Dispose()
+        {
+            _audioBuffer?.Dispose();
         }
     }
 }

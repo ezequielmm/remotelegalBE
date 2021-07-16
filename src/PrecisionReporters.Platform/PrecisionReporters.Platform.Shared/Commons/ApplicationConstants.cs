@@ -26,5 +26,6 @@
         public const string ReScheduleDepositionEmailTemplate = "ReScheduleDepositionEmailTemplate";
         public const string DepositionReminderEmailTemplate = "DepositionReminderEmailTemplate";
         public const string ZipExtension = ".zip";
+        public const int DefaultSampleRate = 48000;
     }
 }

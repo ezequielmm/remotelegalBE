@@ -5,7 +5,6 @@ using PrecisionReporters.Platform.Domain.Dtos;
 using PrecisionReporters.Platform.Domain.Mappers;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using PrecisionReporters.Platform.Shared.Helpers;
-using PrecisionReporters.Platform.Transcript.Api.WebSockets;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,32 +18,20 @@ namespace PrecisionReporters.Platform.Transcript.Api.Controllers
     [Authorize]
     public class TranscriptionsController : Controller
     {
-        private readonly ITranscriptionsHandler _transcriptionsHandler;
         private readonly ITranscriptionService _transcriptionService;
         private readonly IMapper<Transcription, TranscriptionDto, object> _transcriptionMapper;
         private readonly IMapper<Document, DocumentDto, CreateDocumentDto> _documentMapper;
 
-        public TranscriptionsController(ITranscriptionsHandler transcriptionsHandler, ITranscriptionService transcriptionService,
+        public TranscriptionsController(ITranscriptionService transcriptionService,
             IMapper<Transcription, TranscriptionDto, object> transcriptionMapper, IMapper<Document, DocumentDto, CreateDocumentDto> documentMapper)
         {
-            _transcriptionsHandler = transcriptionsHandler;
             _transcriptionService = transcriptionService;
             _transcriptionMapper = transcriptionMapper;
             _documentMapper = documentMapper;
         }
 
-        [HttpGet]
-        public async Task Get()
-        {
-            if (HttpContext.WebSockets.IsWebSocketRequest)
-            {
-                var webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
-                await _transcriptionsHandler.HandleConnection(HttpContext, webSocket);
-            }
-        }
-
         [HttpGet("{depositionId}")]
-        public async Task<ActionResult<List<TranscriptionDto>>> GetTranscrpitions(Guid depositionId)
+        public async Task<ActionResult<List<TranscriptionDto>>> GetTranscriptions(Guid depositionId)
         {
             var transcriptionsResult = await _transcriptionService.GetTranscriptionsByDepositionId(depositionId);
             if (transcriptionsResult.IsFailed)
@@ -55,7 +42,7 @@ namespace PrecisionReporters.Platform.Transcript.Api.Controllers
         }
 
         [HttpGet("{depositionId}/Files")]
-        public async Task<ActionResult<List<DocumentDto>>> GetTranscrpitionsFiles(Guid depositionId)
+        public async Task<ActionResult<List<DocumentDto>>> GetTranscriptionsFiles(Guid depositionId)
         {
             var identity = HttpContext.User.FindFirstValue(ClaimTypes.Email);
             var transcriptionsResult = await _transcriptionService.GetTranscriptionsFiles(depositionId, identity);
@@ -67,7 +54,7 @@ namespace PrecisionReporters.Platform.Transcript.Api.Controllers
         }
 
         [HttpGet("{depositionId}/offsets")]
-        public async Task<ActionResult<List<TranscriptionTimeDto>>> GetTranscrpitionsTime(Guid depositionId)
+        public async Task<ActionResult<List<TranscriptionTimeDto>>> GetTranscriptionsTime(Guid depositionId)
         {
             var transcriptionsResult = await _transcriptionService.GetTranscriptionsWithTimeOffset(depositionId);
             if (transcriptionsResult.IsFailed)

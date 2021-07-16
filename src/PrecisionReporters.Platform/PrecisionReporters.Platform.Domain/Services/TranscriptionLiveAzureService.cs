@@ -41,17 +41,21 @@ namespace PrecisionReporters.Platform.Domain.Services
         private static readonly SemaphoreSlim _isClosedSemaphore = new SemaphoreSlim(1);
         private static readonly SemaphoreSlim _fluentTranscriptionSemaphore = new SemaphoreSlim(1);
         private static readonly SemaphoreSlim _storeTranscriptionSemaphore = new SemaphoreSlim(1);
+        private bool _isDisposed = false;
 
-        public TranscriptionLiveAzureService(IOptions<AzureCognitiveServiceConfiguration> azureConfiguration, ITranscriptionService transcriptionService,
-            ILogger<TranscriptionLiveAzureService> logger, ISignalRTranscriptionManager signalRTranscriptionManager, IMapper<Transcription, TranscriptionDto, object> transcriptionMapper,
-            IUserRepository userRepository)
+        public TranscriptionLiveAzureService(IOptions<AzureCognitiveServiceConfiguration> azureConfiguration,
+            ILogger<TranscriptionLiveAzureService> logger,
+            ISignalRTranscriptionManager signalRTranscriptionManager,
+            IMapper<Transcription, TranscriptionDto, object> transcriptionMapper,
+            IUserRepository userRepository,
+            ITranscriptionService transcriptionService)
         {
             _azureConfiguration = azureConfiguration.Value;
-            _transcriptionService = transcriptionService;
             _logger = logger;
             _signalRTranscriptionManager = signalRTranscriptionManager;
             _transcriptionMapper = transcriptionMapper;
             _userRepository = userRepository;
+            _transcriptionService = transcriptionService;
         }
 
         public async Task RecognizeAsync(byte[] audioChunk)
@@ -92,6 +96,8 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task InitializeRecognition(string userEmail, string depositionId, int sampleRate)
         {
+            _logger.LogInformation("Initializing transcriptions connection for {0} on deposition {1} with sample rate {2}", userEmail, depositionId, sampleRate);
+
             _userEmail = userEmail;
             _depositionId = depositionId;
             _user = await _userRepository.GetFirstOrDefaultByFilter(x => x.EmailAddress == _userEmail, tracking: false);
@@ -100,8 +106,10 @@ namespace PrecisionReporters.Platform.Domain.Services
             _audioInputStream = AudioInputStream.CreatePushStream(AudioStreamFormat.GetWaveFormatPCM(Convert.ToUInt16(sampleRate), BitsPerSample, ChannelCount));
             var audioConfig = AudioConfig.FromStreamInput(_audioInputStream);
             speechConfig.SetProperty(PropertyId.SpeechServiceResponse_OutputFormatOption, "1"); // Enable detailed results, needed for getting the confidence level
+            speechConfig.SetProperty("format", "detailed");
+            speechConfig.EnableDictation();
 
-            _recognizer = new SpeechRecognizer(speechConfig, audioConfig);
+            _recognizer = new SpeechRecognizer(speechConfig,"en-US" ,audioConfig);
 
             _recognizer.Recognizing += async (s, e) =>
             {
@@ -181,7 +189,8 @@ namespace PrecisionReporters.Platform.Domain.Services
                     Confidence = bestTranscription != null ? bestTranscription.Confidence : 0.0,
                     DepositionId = new Guid(_depositionId),
                     UserId = _user.Id,
-                    User = _user
+                    User = _user,
+                    CreationDate = DateTime.UtcNow
                 };
 
                 _currentId = isFinalTranscript ? null : _currentId;
@@ -189,14 +198,14 @@ namespace PrecisionReporters.Platform.Domain.Services
 
                 var transcriptionDto = _transcriptionMapper.ToDto(transcription);
 
-                var notificationtDto = new NotificationDto
+                var notificationDto = new NotificationDto
                 {
                     Action = NotificationAction.Create,
                     EntityType = NotificationEntity.Transcript,
                     Content = transcriptionDto
                 };
 
-                await _signalRTranscriptionManager.SendNotificationToDepositionMembers(transcriptionDto.DepositionId, notificationtDto);
+                await _signalRTranscriptionManager.SendNotificationToDepositionMembers(transcriptionDto.DepositionId, notificationDto);
 
                 if (isFinalTranscript)
                 {
@@ -241,6 +250,36 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             var silenceBuffer = new byte[1024 * 512]; // 500kb
             _audioInputStream.Write(silenceBuffer, silenceBuffer.Length);
+        }
+
+        // Dispose Pattern
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (_isDisposed)
+                return;
+
+            if (disposing)
+            {
+                _logger.LogInformation("Disposing transcriptionLiveService on deposition {0} of user {1}", _depositionId, _userEmail);
+                _recognizer?.Dispose();
+                _audioInputStream?.Dispose();
+                _fluentTranscriptionSemaphore.Release();
+                _storeTranscriptionSemaphore.Release();
+                _isClosedSemaphore.Release();
+            }
+
+            _isDisposed = true;
+        }
+
+        ~TranscriptionLiveAzureService()
+        {
+            Dispose(false);
         }
     }
 }
