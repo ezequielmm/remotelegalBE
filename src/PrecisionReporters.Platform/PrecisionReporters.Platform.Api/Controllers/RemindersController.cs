@@ -1,9 +1,7 @@
-﻿using Amazon.SimpleNotificationService.Util;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using PrecisionReporters.Platform.Domain.Wrappers.Interfaces;
-using PrecisionReporters.Platform.Shared.Helpers;
 using PrecisionReporters.Platform.Shared.Helpers.Interfaces;
 using System;
 using System.IO;

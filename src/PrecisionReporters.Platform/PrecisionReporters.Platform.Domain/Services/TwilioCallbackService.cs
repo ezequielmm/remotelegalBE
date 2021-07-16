@@ -62,7 +62,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
                             _logger.LogInformation($"{nameof(TwilioCallbackService)}.{nameof(TwilioCallbackService.UpdateStatusCallback)} Create COMPOSIION event Room Sid: {room?.SId}, Witness Email: {witness?.Email}");
 
-                            await _roomService.CreateComposition(room, witness.Email);
+                            await _roomService.CreateComposition(room, witness?.Email);
 
                             return Result.Ok();
                         }

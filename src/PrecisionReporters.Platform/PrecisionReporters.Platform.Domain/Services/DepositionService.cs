@@ -1331,7 +1331,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         {
             // TODO: Add distributed lock when our infra allows it
             _logger.LogInformation($"{nameof(DepositionService)}.{nameof(DepositionService.StartDepositionRoom)} Chat SID CR Flow: {room?.Status}");
-            if (room.Status == RoomStatus.Created)
+            if (room?.Status == RoomStatus.Created)
             {
                 await _roomService.StartRoom(room, configureCallBacks);
             }
