@@ -1,3 +1,4 @@
+using System;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
@@ -5,16 +6,16 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json.Converters;
 using PrecisionReporters.Platform.Data;
 using PrecisionReporters.Platform.Domain;
 using PrecisionReporters.Platform.Domain.AppConfigurations;
 using PrecisionReporters.Platform.Domain.Services;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using PrecisionReporters.Platform.Transcript.Api.Hubs;
-using PrecisionReporters.Platform.Transcript.Api.WebSockets;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using PrecisionReporters.Platform.Transcript.Api.Utils;
+using PrecisionReporters.Platform.Transcript.Api.Utils.Interfaces;
 
 namespace PrecisionReporters.Platform.Transcript.Api
 {
@@ -47,6 +48,9 @@ namespace PrecisionReporters.Platform.Transcript.Api
 
             var domain = new StartupDomainConfiguration();
             domain.DomainConfigureServices(services, appConfiguration);
+            
+            // Transcription Service Factory
+            services.AddSingleton<ISignalRTranscriptionFactory, SignalRTranscriptionFactory>();
 
             // Services
             services.AddScoped<ITranscriptionService, TranscriptionService>();
@@ -61,9 +65,6 @@ namespace PrecisionReporters.Platform.Transcript.Api
             }
 
             services.AddScoped<ISignalRTranscriptionManager, SignalRTranscriptionManager>();
-
-            // Websockets
-            services.AddTransient<ITranscriptionsHandler, TranscriptionsHandler>();
 
             // Repositories
             services.AddDbContext<ApplicationDbContext>(options =>
@@ -109,8 +110,16 @@ namespace PrecisionReporters.Platform.Transcript.Api
 
             services.AddMvc()
                 .AddJsonOptions(opts => opts.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
-            services.AddSignalR()
-                .AddNewtonsoftJsonProtocol(opt => opt.PayloadSerializerSettings.Converters.Add(new StringEnumConverter()))
+
+            services.AddSignalR(hubOptions =>
+                {
+                    hubOptions.EnableDetailedErrors = true;
+                    hubOptions.KeepAliveInterval = TimeSpan.FromSeconds(10);
+                    hubOptions.MaximumReceiveMessageSize = 102400000;
+                    hubOptions.ClientTimeoutInterval = TimeSpan.FromSeconds(20);
+                    hubOptions.HandshakeTimeout = TimeSpan.FromSeconds(60);
+                })
+                .AddMessagePackProtocol()
                 .AddStackExchangeRedis(appConfiguration.ConnectionStrings.RedisConnectionString);
 
             services.AddCors(options =>
@@ -163,7 +172,12 @@ namespace PrecisionReporters.Platform.Transcript.Api
 
             app.UseAuthorization();
             app.UseHealthChecks("/healthcheck");
-            app.UseWebSockets();
+
+            var webSocketOptions = new WebSocketOptions() 
+            {
+                KeepAliveInterval = TimeSpan.FromSeconds(15)
+            };
+            app.UseWebSockets(webSocketOptions);
 
             app.UseEndpoints(endpoints =>
             {
@@ -182,7 +196,7 @@ namespace PrecisionReporters.Platform.Transcript.Api
                 context.Token = accessToken;
             }
 
-            // Trasncriptions WS sends it like this
+            // Transcriptions WS sends it like this
             accessToken = context.Request.Query["token"];
             if (!string.IsNullOrEmpty(accessToken))
             {
