@@ -1,12 +1,7 @@
-﻿using Microsoft.IdentityModel.Tokens;
-using Org.BouncyCastle.OpenSsl;
-using PrecisionReporters.Platform.Domain.Configurations;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Security.Cryptography;
 using System.Text;
-using System.Xml;
 
 namespace PrecisionReporters.Platform.Domain.Helpers
 {
