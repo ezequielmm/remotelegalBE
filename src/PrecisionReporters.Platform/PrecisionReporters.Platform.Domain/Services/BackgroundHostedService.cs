@@ -67,6 +67,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                                     var deleteTwilioRecordings = dequeResult.Content as DeleteTwilioRecordingsDto;
                                     var scopedDeleteRecordings = scope.ServiceProvider.GetRequiredService<ICompositionService>();
                                     await scopedDeleteRecordings.DeleteTwilioCompositionAndRecordings(deleteTwilioRecordings);
+                                    _logger.LogInformation("Flag to delete recordings is active - Value: ", _twilioAccountConfiguration.DeleteRecordingsEnabled);
                                 }
                                 break;
                                 

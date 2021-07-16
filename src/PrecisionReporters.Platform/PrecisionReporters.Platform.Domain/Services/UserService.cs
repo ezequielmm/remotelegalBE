@@ -272,7 +272,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 {
                     userData = await _userRepository.Create(user);
 
-                    _logger.LogInformation($"{nameof(UserService)}.{nameof(UserService.AddGuestUser)} User data null: {user.EmailAddress}");
+                    _logger.LogInformation($"{nameof(UserService)}.{nameof(UserService.AddGuestUser)} User data null: {user?.EmailAddress}");
                 }
                 if (cognitoUser.IsFailed)
                     await _cognitoService.CreateAsync(userData);
