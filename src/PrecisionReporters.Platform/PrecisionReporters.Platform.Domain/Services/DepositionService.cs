@@ -596,7 +596,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 || deposition.Status == DepositionStatus.Canceled)
                 return Result.Fail(new InvalidInputError("The deposition is not longer available"));
 
-            _logger.LogInformation($"{nameof(DepositionService)}.{nameof(DepositionService.JoinGuestParticipant)} Deposition ID: {deposition.Id}");
+            _logger.LogInformation($"{nameof(DepositionService)}.{nameof(DepositionService.JoinGuestParticipant)} Deposition ID: {deposition?.Id}");
 
             var participant = deposition.Participants.FirstOrDefault(p => p.Email == guest.Email);
             var witnessParticipant = deposition.Participants.FirstOrDefault(w => w.Role == ParticipantType.Witness && w.IsAdmitted == true);
@@ -605,13 +605,13 @@ namespace PrecisionReporters.Platform.Domain.Services
                 && guest.Email != witnessParticipant?.Email)
                 return Result.Fail(new InvalidInputError("The deposition already has a participant as witness"));
 
-            _logger.LogInformation($"{nameof(DepositionService)}.{nameof(DepositionService.JoinGuestParticipant)} Witness: {witnessParticipant.Role}");
+            _logger.LogInformation($"{nameof(DepositionService)}.{nameof(DepositionService.JoinGuestParticipant)} Witness: {witnessParticipant?.Role}");
 
             var userResult = await _userService.AddGuestUser(guest.User);
             if (userResult.IsFailed)
                 return userResult.ToResult<GuestToken>();
 
-            _logger.LogInformation($"{nameof(DepositionService)}.{nameof(DepositionService.JoinGuestParticipant)} user : {userResult.Value.Id}");
+            _logger.LogInformation($"{nameof(DepositionService)}.{nameof(DepositionService.JoinGuestParticipant)} user : {userResult?.Value.Id}");
 
             bool shouldAddPermissions;
             bool shouldSendAdminsNotifications = false;
@@ -628,7 +628,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 }
                 guest = await _participantRepository.Update(participant);
 
-                _logger.LogInformation($"{nameof(DepositionService)}.{nameof(DepositionService.JoinGuestParticipant)} user guest: {guest.Id}");
+                _logger.LogInformation($"{nameof(DepositionService)}.{nameof(DepositionService.JoinGuestParticipant)} user guest: {guest?.Id}");
             }
             else
             {
@@ -643,7 +643,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 shouldSendAdminsNotifications = true;
                 await _depositionRepository.Update(deposition);
 
-                _logger.LogInformation($"{nameof(DepositionService)}.{nameof(DepositionService.JoinGuestParticipant)} participant null: {guest.Id}");
+                _logger.LogInformation($"{nameof(DepositionService)}.{nameof(DepositionService.JoinGuestParticipant)} participant null: {guest?.Id}");
             }
 
             if (shouldAddPermissions)
