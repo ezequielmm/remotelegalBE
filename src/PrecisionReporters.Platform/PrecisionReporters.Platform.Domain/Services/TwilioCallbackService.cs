@@ -31,7 +31,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<Room>> UpdateStatusCallback(RoomCallbackDto roomEvent)
         {
-            _logger.LogDebug("Handling Twilio's Room Status callback, RoomSId: {0}, Event: {1}", roomEvent.RoomSid, roomEvent.StatusCallbackEvent);
+            _logger.LogInformation("Handling Twilio's Room Status callback, RoomSId: {0}, Event: {1}", roomEvent.RoomSid, roomEvent.StatusCallbackEvent);
 
             try
             {
@@ -40,7 +40,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 var roomResult = await _roomService.GetRoomBySId(roomEvent.RoomSid);
                 if (roomResult == null)
                 {
-                    _logger.LogDebug("There was an error trying to get room with SId: {0}.", roomEvent.RoomSid);
+                    _logger.LogInformation("There was an error trying to get room with SId: {0}.", roomEvent.RoomSid);
                     return Result.Fail(new ResourceNotFoundError("Room not found"));
                 }
 
@@ -53,7 +53,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                             var depositionResult = await _depositionService.GetDepositionByRoomId(room.Id);
                             if (depositionResult.IsFailed)
                             {
-                                _logger.LogDebug("Deposition of room id: {0} not found", room.Id);
+                                _logger.LogInformation("Deposition of room id: {0} not found", room.Id);
                                 return depositionResult.ToResult<Room>();
                             }
 
@@ -82,7 +82,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             }
             catch (ArgumentException e)
             {
-                _logger.LogDebug(e,"Skipping Room Status Callback event {0}", roomEvent.StatusCallbackEvent);
+                _logger.LogInformation(e,"Skipping Room Status Callback event {0}", roomEvent.StatusCallbackEvent);
                 return Result.Ok();
             }
             catch (Exception e)
