@@ -44,15 +44,15 @@ namespace PrecisionReporters.Platform.Api.Filters
             var parameters = request.Form.ToDictionary(x => x.Key, x => x.Value.ToString());
             var signature = request.Headers["X-Twilio-Signature"];
 
-            _log.LogDebug("Validating Twilio callback");
-            _log.LogDebug($"requestUrl: {requestUrl}");
-            _log.LogDebug($"signature: {signature}");
-            _log.LogDebug($"parameters: {string.Join(",", parameters.Select(kv => kv.Key + "=" + kv.Value).ToArray())}");
-            _log.LogDebug($"Headers: {string.Join(", ", request.Headers.Select(kv => kv.Key + " = " + kv.Value).ToArray())}");
+            _log.LogInformation("Validating Twilio callback");
+            _log.LogInformation($"requestUrl: {requestUrl}");
+            _log.LogInformation($"signature: {signature}");
+            _log.LogInformation($"parameters: {string.Join(",", parameters.Select(kv => kv.Key + "=" + kv.Value).ToArray())}");
+            _log.LogInformation($"Headers: {string.Join(", ", request.Headers.Select(kv => kv.Key + " = " + kv.Value).ToArray())}");
 
             var result = _requestValidator.Validate(requestUrl, parameters, signature);
 
-            _log.LogDebug($"Request validation result: {result}");
+            _log.LogInformation($"Request validation result: {result}");
 
             return result;
         }
