@@ -3,6 +3,7 @@ using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Data.Enums;
 using PrecisionReporters.Platform.Data.Repositories.Interfaces;
 using PrecisionReporters.Platform.Domain.Dtos;
+using PrecisionReporters.Platform.Domain.Mappers;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using PrecisionReporters.Platform.Shared.Errors;
 using System;
@@ -20,13 +21,14 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly IUserService _userService;
         private readonly IPermissionService _permissionService;
         private readonly IDepositionEmailService _depositionEmailService;
-
+        private readonly IMapper<Participant, ParticipantDto, CreateParticipantDto> _participantMapper;
         public ParticipantService(IParticipantRepository participantRepository,
             ISignalRDepositionManager signalRNotificationManager,
             IUserService userService,
             IDepositionRepository depositionRepository,
             IPermissionService permissionService,
-            IDepositionEmailService depositionEmailService)
+            IDepositionEmailService depositionEmailService,
+            IMapper<Participant, ParticipantDto, CreateParticipantDto> participantMapper)
         {
             _participantRepository = participantRepository;
             _signalRNotificationManager = signalRNotificationManager;
@@ -34,6 +36,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             _depositionRepository = depositionRepository;
             _permissionService = permissionService;
             _depositionEmailService = depositionEmailService;
+            _participantMapper = participantMapper;
         }
 
         public async Task<Result<ParticipantStatusDto>> UpdateParticipantStatus(ParticipantStatusDto participantStatusDto, Guid depositionId)
@@ -41,37 +44,14 @@ namespace PrecisionReporters.Platform.Domain.Services
             try
             {
                 var user = await _userService.GetCurrentUserAsync();
-                var participant = await _participantRepository.GetFirstOrDefaultByFilter(x => x.UserId == user.Id && x.DepositionId == depositionId);
-                if (participant == null)
-                {
-                    if (!user.IsAdmin)
-                    {
-                        return Result.Fail(new ResourceNotFoundError("There are no participant available with such userId and depositionId combination."));
-                    }
+                var participantToUpdateStatus = await GetParticipantToUpdate(depositionId, user);
+                if (participantToUpdateStatus.IsFailed)
+                    return participantToUpdateStatus.ToResult();
 
-                    var newParticipantAdmin = new Participant
-                    {
-                        CreationDate = DateTime.UtcNow,
-                        DepositionId = depositionId,
-                        Email = user.EmailAddress,
-                        IsMuted = participantStatusDto.IsMuted,
-                        Name = $"{user.FirstName} {user.LastName}",
-                        Phone = user.PhoneNumber,
-                        Role = ParticipantType.Admin,
-                        UserId = user.Id
-                    };
-
-                    var result = await _participantRepository.Create(newParticipantAdmin);
-                    if (result == null)
-                        return Result.Fail(new UnexpectedError("There was an error creating a new Participant."));
-                }
-                else
-                {
-                    participant.IsMuted = participantStatusDto.IsMuted;
-                    var updatedParticipant = await _participantRepository.Update(participant);
-                    if (updatedParticipant == null)
-                        return Result.Fail(new ResourceNotFoundError($"There was an error updating Participant with Id: {participant.Id}"));
-                }
+                participantToUpdateStatus.Value.IsMuted = participantStatusDto.IsMuted;
+                var updatedParticipant = await _participantRepository.Update(participantToUpdateStatus.Value);
+                if (updatedParticipant == null)
+                    return Result.Fail(new ResourceNotFoundError($"There was an error updating Participant with Id: {participantToUpdateStatus.Value.Id}"));
 
                 participantStatusDto.Email = user.EmailAddress;
                 var notificationDto = new NotificationDto
@@ -89,6 +69,73 @@ namespace PrecisionReporters.Platform.Domain.Services
             {
                 return Result.Fail(new UnexpectedError(ex.Message));
             }
+        }
+
+        private async Task<Result<Participant>> GetParticipantToUpdate(Guid depositionId, User user)
+        {
+            var participant = await _participantRepository.GetFirstOrDefaultByFilter(x => x.UserId == user.Id && x.DepositionId == depositionId);
+            if (participant == null)
+            {
+                if (!user.IsAdmin)
+                {
+                    return Result.Fail(new ResourceNotFoundError("There are no participant available with such userId and depositionId combination."));
+                }
+
+                var newParticipantAdmin = new Participant
+                {
+                    CreationDate = DateTime.UtcNow,
+                    DepositionId = depositionId,
+                    Email = user.EmailAddress,
+                    Name = $"{user.FirstName} {user.LastName}",
+                    Phone = user.PhoneNumber,
+                    Role = ParticipantType.Admin,
+                    UserId = user.Id
+                };
+
+                var createParticipantResult = await _participantRepository.Create(newParticipantAdmin);
+                if (createParticipantResult == null)
+                    return Result.Fail(new UnexpectedError("There was an error creating a new Participant."));
+
+                return Result.Ok(createParticipantResult);
+            }
+
+            return Result.Ok(participant);
+        } 
+
+        public async Task<Result<ParticipantStatusDto>> NotifyParticipantPresence(ParticipantStatusDto participantStatusDto, Guid depositionId)
+        {
+            var user = await _userService.GetCurrentUserAsync();
+            var participantResult = await GetParticipantToUpdate(depositionId, user);
+
+            var shouldSendAdminsNotifications = !participantResult.Value.IsAdmitted.HasValue ||
+                (participantResult.Value.IsAdmitted.HasValue && !participantResult.Value.IsAdmitted.Value);
+
+            if (shouldSendAdminsNotifications)
+            {
+                participantResult.Value.HasJoined = false;
+                var notificationtDto = new NotificationDto
+                {
+                    Action = NotificationAction.Create,
+                    EntityType = NotificationEntity.JoinRequest,
+                    Content = _participantMapper.ToDto(participantResult.Value)
+                };
+                await _signalRNotificationManager.SendNotificationToDepositionAdmins(depositionId, notificationtDto);
+            }
+
+            participantResult.Value.IsMuted = participantStatusDto.IsMuted;
+            await _participantRepository.Update(participantResult.Value);
+            
+            participantStatusDto.Email = user.EmailAddress;
+            
+            var notificationDto = new NotificationDto
+            {
+                Action = NotificationAction.Update,
+                EntityType = NotificationEntity.ParticipantStatus,
+                Content = participantStatusDto
+            };
+            await _signalRNotificationManager.SendNotificationToDepositionMembers(depositionId, notificationDto);
+            
+            return Result.Ok(participantStatusDto);
         }
 
         public async Task<Result<List<Participant>>> GetWaitParticipants(Guid depositionId)

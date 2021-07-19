@@ -109,7 +109,6 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _participantMapperMock = new Mock<IMapper<Participant, ParticipantDto, CreateParticipantDto>>();
             _depositionMapperMock = new Mock<IMapper<Deposition, DepositionDto, CreateDepositionDto>>();
             _breakRoomMapperMock = new Mock<IMapper<BreakRoom, BreakRoomDto, object>>();
-            _participantMapperMock = new Mock<IMapper<Participant, ParticipantDto, CreateParticipantDto>>();
 
             _signalRNotificationManagerMock = new Mock<ISignalRDepositionManager>();
 
@@ -1568,7 +1567,6 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             // Assert
             _depositionRepositoryMock.Verify(x => x.Update(It.Is<Deposition>(x => x.Id == depositionId)), Times.Never);
             _permissionServiceMock.Verify(x => x.AddParticipantPermissions(It.Is<Participant>(x => x.Email == guestEmail)), Times.Never);
-            _signalRNotificationManagerMock.Verify(x => x.SendNotificationToDepositionAdmins(It.Is<Guid>(s => s == depositionId), It.IsAny<NotificationDto>()), Times.Once);
             _activityHistoryServiceMock.Verify(x => x.AddActivity(It.IsAny<ActivityHistory>(), It.IsAny<User>(), It.IsAny<Deposition>()), Times.Once);
             Assert.True(result.IsSuccess);
         }
@@ -1612,7 +1610,6 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             // Assert
             _participantRepositoryMock.Verify(x => x.Update(It.Is<Participant>(x => x.Email == guestEmail)), Times.Once);
-            _signalRNotificationManagerMock.Verify(x => x.SendNotificationToDepositionAdmins(It.Is<Guid>(s => s == depositionId), It.IsAny<NotificationDto>()), Times.Once);
             Assert.True(result.IsSuccess);
             _permissionServiceMock.Verify(x => x.AddParticipantPermissions(It.Is<Participant>(x => x.Email == guestEmail)), Times.Once);
             _activityHistoryServiceMock.Verify(x => x.AddActivity(It.IsAny<ActivityHistory>(), It.IsAny<User>(), It.IsAny<Deposition>()), Times.Once);
@@ -1641,7 +1638,6 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             // Assert
             _depositionRepositoryMock.Verify(x => x.Update(It.Is<Deposition>(x => x.Id == depositionId)), Times.Once);
             _permissionServiceMock.Verify(x => x.AddParticipantPermissions(It.Is<Participant>(x => x.Email == participantEmail)), Times.Once);
-            _signalRNotificationManagerMock.Verify(x => x.SendNotificationToDepositionAdmins(It.Is<Guid>(s => s == depositionId), It.IsAny<NotificationDto>()));
             Assert.True(result.IsSuccess);
         }
 

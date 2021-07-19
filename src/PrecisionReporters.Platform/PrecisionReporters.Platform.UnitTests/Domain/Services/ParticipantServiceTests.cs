@@ -13,6 +13,7 @@ using System.Linq.Expressions;
 using System.Threading.Tasks;
 using PrecisionReporters.Platform.Data.Enums;
 using Xunit;
+using PrecisionReporters.Platform.Domain.Mappers;
 
 namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 {
@@ -25,6 +26,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         private readonly Mock<IUserService> _userServiceMock;
         private readonly Mock<IPermissionService> _permissionServiceMock;
         private readonly Mock<IDepositionEmailService> _depositionEmailServiceMock;
+        private readonly Mock<IMapper<Participant, ParticipantDto, CreateParticipantDto>> _participantMapperMock;
         public ParticipantServiceTests()
         {
             _participantRepositoryMock = new Mock<IParticipantRepository>();
@@ -33,13 +35,15 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _depositionRepositoryMock = new Mock<IDepositionRepository>();
             _permissionServiceMock = new Mock<IPermissionService>();
             _depositionEmailServiceMock = new Mock<IDepositionEmailService>();
+            _participantMapperMock = new Mock<IMapper<Participant, ParticipantDto, CreateParticipantDto>>();
 
             _participantService = new ParticipantService(_participantRepositoryMock.Object,
                 _signalRNotificationManagerMock.Object,
                 _userServiceMock.Object,
                 _depositionRepositoryMock.Object,
                 _permissionServiceMock.Object,
-                _depositionEmailServiceMock.Object);
+                _depositionEmailServiceMock.Object,
+                _participantMapperMock.Object);
         }
 
         [Fact]
@@ -146,6 +150,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 .ReturnsAsync((Participant)null);
             _participantRepositoryMock.Setup(x => x.Create(It.IsAny<Participant>()))
                  .ReturnsAsync(participant);
+            _participantRepositoryMock.Setup(x => x.Update(It.IsAny<Participant>()))
+                 .ReturnsAsync(participant);
 
             //Act
             var result = await _participantService.UpdateParticipantStatus(participantStatus, depositionId);
@@ -154,7 +160,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _userServiceMock.Verify(x => x.GetCurrentUserAsync(), Times.Once);
             _participantRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Participant, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()), Times.Once);
             _participantRepositoryMock.Verify(x => x.Create(It.IsAny<Participant>()), Times.Once);
-            _participantRepositoryMock.Verify(x => x.Update(It.IsAny<Participant>()), Times.Never);
+            _participantRepositoryMock.Verify(x => x.Update(It.IsAny<Participant>()), Times.Once);
 
             Assert.True(result.IsSuccess);
             Assert.NotNull(result);
