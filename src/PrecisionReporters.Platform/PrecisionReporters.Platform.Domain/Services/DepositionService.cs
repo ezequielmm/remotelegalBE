@@ -614,7 +614,6 @@ namespace PrecisionReporters.Platform.Domain.Services
             _logger.LogInformation($"{nameof(DepositionService)}.{nameof(DepositionService.JoinGuestParticipant)} user : {userResult?.Value.Id}");
 
             bool shouldAddPermissions;
-            bool shouldSendAdminsNotifications = false;
             if (participant != null)
             {
                 shouldAddPermissions = participant.UserId == null;
@@ -624,7 +623,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 if (participant.IsAdmitted.HasValue && !participant.IsAdmitted.Value)
                 {
                     participant.IsAdmitted = null;
-                    shouldSendAdminsNotifications = true;
+                    participant.HasJoined = true;
                 }
                 guest = await _participantRepository.Update(participant);
 
@@ -635,12 +634,14 @@ namespace PrecisionReporters.Platform.Domain.Services
                 shouldAddPermissions = true;
                 guest.User = userResult.Value;
                 if (guest.Role == ParticipantType.Witness && deposition.Participants.Any(x => x.Role == ParticipantType.Witness))
-                    deposition.Participants[deposition.Participants.FindIndex(x => x.Role == ParticipantType.Witness)] = guest;
+                { 
+                    deposition.Participants[deposition.Participants.FindIndex(x => x.Role == ParticipantType.Witness)] = guest; 
+                }
                 else
                 {
                     deposition.Participants.Add(guest);
                 }
-                shouldSendAdminsNotifications = true;
+                guest.HasJoined = true;
                 await _depositionRepository.Update(deposition);
 
                 _logger.LogInformation($"{nameof(DepositionService)}.{nameof(DepositionService.JoinGuestParticipant)} participant null: {guest?.Id}");
@@ -649,16 +650,6 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (shouldAddPermissions)
             {
                 await _permissionService.AddParticipantPermissions(guest);
-            }
-            if (shouldSendAdminsNotifications)
-            {
-                var notificationtDto = new NotificationDto
-                {
-                    Action = NotificationAction.Create,
-                    EntityType = NotificationEntity.JoinRequest,
-                    Content = _participantMapper.ToDto(guest)
-                };
-                await _signalRNotificationManager.SendNotificationToDepositionAdmins(depositionId, notificationtDto);
             }
 
             await _activityHistoryService.AddActivity(activityHistory, userResult.Value, deposition);
@@ -682,20 +673,12 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (userResult.IsFailed)
                 return userResult.ToResult();
 
-            var notificationtDto = new NotificationDto
-            {
-                Action = NotificationAction.Create,
-                EntityType = NotificationEntity.JoinRequest
-            };
-
             var participantResult = await _participantRepository.GetFirstOrDefaultByFilter(x => x.Email == participant.Email && x.DepositionId == depositionId);
             if (participantResult != null)
             {
                 if (participantResult.IsAdmitted.HasValue && !participantResult.IsAdmitted.Value && !userResult.Value.IsAdmin)
                 {
                     participantResult.IsAdmitted = null;
-                    notificationtDto.Content = _participantMapper.ToDto(participantResult);
-                    await _signalRNotificationManager.SendNotificationToDepositionAdmins(depositionId, notificationtDto);
                 }
                 if (userResult.Value.IsAdmin)
                     participantResult.IsAdmitted = true;
@@ -709,6 +692,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             participant.Name = userResult.Value.IsGuest ? userResult.Value.FirstName : $"{userResult.Value.FirstName} {userResult.Value.LastName}";
             participant.Phone = userResult.Value.PhoneNumber;
             participant.User = userResult.Value;
+            participant.HasJoined = true;
 
             if (participant.Role == ParticipantType.Witness && deposition.Participants.Single(x => x.Role == ParticipantType.Witness).UserId != null)
                 return Result.Fail(new InvalidInputError("The deposition already has a participant as witness"));
@@ -721,8 +705,6 @@ namespace PrecisionReporters.Platform.Domain.Services
             await _depositionRepository.Update(deposition);
 
             await _permissionService.AddParticipantPermissions(participant);
-            notificationtDto.Content = _participantMapper.ToDto(participant);
-            await _signalRNotificationManager.SendNotificationToDepositionAdmins(depositionId, notificationtDto);
 
             return Result.Ok(participant.Id);
         }
