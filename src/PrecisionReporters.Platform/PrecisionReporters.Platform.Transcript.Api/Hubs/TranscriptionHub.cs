@@ -52,12 +52,14 @@ namespace PrecisionReporters.Platform.Transcript.Api.Hubs
                 if (dto.Audio.Length == 0)
                 {
                     _signalRTranscriptionFactory.Unsubscribe(Context.ConnectionId);
+                    _logger.LogInformation("The user {0} has been muted", Context.UserIdentifier);
                     return;
                 }
 
                 var transcriptionLiveService = _signalRTranscriptionFactory.GetTranscriptionLiveService(Context.ConnectionId);
                 if (transcriptionLiveService == null)
                 {
+                    _logger.LogInformation("The user {0} has been unmuted", Context.UserIdentifier);
                     await _signalRTranscriptionFactory.TryInitializeRecognition(Context.ConnectionId, Context.UserIdentifier, dto.DepositionId, dto.SampleRate);
                     var currentTranscriptionLiveService = _signalRTranscriptionFactory.GetTranscriptionLiveService(Context.ConnectionId);
                     await currentTranscriptionLiveService.RecognizeAsync(dto.Audio);
@@ -69,7 +71,7 @@ namespace PrecisionReporters.Platform.Transcript.Api.Hubs
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "There was an error uploading transcription of connectionId {0} on Deposition {0}}", Context.ConnectionId, dto.DepositionId);
+                _logger.LogError(ex, "There was an error uploading transcription of connectionId {0} on Deposition {0}", Context.ConnectionId, dto.DepositionId);
                 throw;
             }
         }
@@ -81,12 +83,13 @@ namespace PrecisionReporters.Platform.Transcript.Api.Hubs
             {
                 if (dto.OffRecord)
                 {
-                    _logger.LogInformation("Going OFF Record: transcriptions of {0} on deposition {1} with sample rate {2}", Context.UserIdentifier ,transcriptionHubQuery.DepositionId, transcriptionHubQuery.SampleRate);
+                    _logger.LogInformation("Going OFF Record: transcriptions of {0} on deposition {1}", Context.UserIdentifier ,transcriptionHubQuery.DepositionId);
 
                     _signalRTranscriptionFactory.Unsubscribe(Context.ConnectionId);
                 }
                 else
                 {
+                    _logger.LogInformation("Going ON Record: transcriptions of {0} on deposition {1}", Context.UserIdentifier ,transcriptionHubQuery.DepositionId);
                     await _signalRTranscriptionFactory.TryInitializeRecognition(Context.ConnectionId, Context.UserIdentifier, transcriptionHubQuery.DepositionId, transcriptionHubQuery.SampleRate);
                 }
             }
@@ -104,7 +107,7 @@ namespace PrecisionReporters.Platform.Transcript.Api.Hubs
             await _signalRTranscriptionFactory.TryInitializeRecognition(Context.ConnectionId, Context.UserIdentifier, transcriptionHubQuery.DepositionId, transcriptionHubQuery.SampleRate);
             await base.OnConnectedAsync();
         }
-
+        
         public override async Task OnDisconnectedAsync(Exception exception)
         {
             if (exception != null)

@@ -75,7 +75,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "An was found while executions StartContinuousRecognitionAsync.", _currentId);
+                _logger.LogError(ex, "An error was found while executions StartContinuousRecognitionAsync.", _currentId);
                 throw;
             }
             finally
@@ -267,8 +267,14 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (disposing)
             {
                 _logger.LogInformation("Disposing transcriptionLiveService on deposition {0} of user {1}", _depositionId, _userEmail);
-                _recognizer?.Dispose();
-                _audioInputStream?.Dispose();
+                Task.Run(() =>
+                {
+                    // This takes too long so we are using fire and forget
+                    _recognizer?.Dispose();
+                    _audioInputStream?.Dispose();
+                    _logger.LogInformation("Disposed successfully transcriptionLiveService on deposition {0} of user {1}", _depositionId, _userEmail);
+                });
+                
                 _fluentTranscriptionSemaphore.Release();
                 _storeTranscriptionSemaphore.Release();
                 _isClosedSemaphore.Release();

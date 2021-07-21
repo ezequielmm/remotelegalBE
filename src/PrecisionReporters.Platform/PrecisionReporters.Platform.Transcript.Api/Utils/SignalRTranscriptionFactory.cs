@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
@@ -42,8 +41,10 @@ namespace PrecisionReporters.Platform.Transcript.Api.Utils
         {
             if (_multitonSignalRTranscriptions.TryRemove(connectionId, out var signalRTranscriptionLiveService))
             {
-                signalRTranscriptionLiveService.StopTranscriptStream();
-                signalRTranscriptionLiveService.Dispose();
+                using (signalRTranscriptionLiveService)
+                { 
+                    signalRTranscriptionLiveService.StopTranscriptStream();
+                }
             }
         }
     }
