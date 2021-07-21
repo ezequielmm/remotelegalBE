@@ -201,7 +201,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 var documentResult = await UploadExhibit(file, userResult.Value, $"{depositionResult.CaseId}/{depositionResult.Id}/{folder}", documentType);
                 if (documentResult.IsFailed)
                 {
-                    _logger.LogError(new Exception(documentResult.Errors.First().Message), "Unable to load one or more documents to storage");
+                    _logger.LogError(new Exception(documentResult.Errors.First().Message), "Unable to load one or more documents to storage for user: {0}", userResult.Value.EmailAddress);
                     _logger.LogInformation("Removing uploaded documents");
                     await DeleteUploadedFiles(uploadedDocuments.Select(d => d.Document).ToList());
                     return documentResult.ToResult();
@@ -581,6 +581,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result> ShareEnteredExhibit(Guid depositionId, Guid documentId)
         {
+            var userResult = await _userService.GetCurrentUserAsync();
             var includes = new[] { nameof(Deposition.Requester), nameof(Deposition.Participants),
                 nameof(Deposition.Case), nameof(Deposition.AddedBy),nameof(Deposition.Caption)};
             var depositionResult = await _depositionRepository.GetById(depositionId, includes);
@@ -607,7 +608,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Unable to share exhibit with Id '{0}' for deposition '{1}'", documentId, depositionId);
+                    _logger.LogError(ex, "Unable to share exhibit with Id '{0}' for deposition '{1}' for user '{2}'", documentId, depositionId, userResult.EmailAddress);
                     return Result.Fail(new ExceptionalError("Unable to share exhibit", ex));
                 }
             });

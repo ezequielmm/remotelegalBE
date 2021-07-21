@@ -1902,8 +1902,15 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 Id = docId
             };
 
+            var user = new User 
+            {
+                 Id = Guid.NewGuid(),
+                 EmailAddress = "test@test.com"
+            };
+
             _depositionRepositoryMock.Setup(r => r.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
             _documentRepositoryMock.Setup(r => r.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(document);
+            _userServiceMock.Setup(r => r.GetCurrentUserAsync()).ReturnsAsync(user);
             _transactionHandlerMock.Setup(x => x.RunAsync(It.IsAny<Func<Task<Result<Deposition>>>>())).Returns(async (Func<Task<Result<Deposition>>> action) =>
             {
                 return await action();
@@ -1917,6 +1924,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             Assert.True(result.IsFailed);
             _documentRepositoryMock.Verify(r => r.Update(It.Is<Document>(d => d.Id == docId && d.SharedAt.HasValue)), Times.Once);
             _depositionRepositoryMock.Verify(r => r.Update(It.Is<Deposition>(d => d.Id == depoId && d.SharingDocumentId.HasValue)), Times.Once);
+            _userServiceMock.Verify(mock => mock.GetCurrentUserAsync(), Times.Once);
         }
 
         [Fact]
@@ -1935,8 +1943,15 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 Id = docId
             };
 
+            var user = new User
+            {
+                Id = Guid.NewGuid(),
+                EmailAddress = "test@test.com"
+            };
+
             _depositionRepositoryMock.Setup(r => r.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
             _documentRepositoryMock.Setup(r => r.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(document);
+            _userServiceMock.Setup(r => r.GetCurrentUserAsync()).ReturnsAsync(user);
             _transactionHandlerMock.Setup(x => x.RunAsync(It.IsAny<Func<Task<Result<Deposition>>>>())).Returns(async (Func<Task<Result<Deposition>>> action) =>
             {
                 return await action();
@@ -1950,6 +1965,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             Assert.True(result.IsFailed);
             _documentRepositoryMock.Verify(r => r.Update(It.Is<Document>(d => d.Id == docId && d.SharedAt.HasValue)), Times.Once);
             _depositionRepositoryMock.Verify(r => r.Update(It.Is<Deposition>(d => d.Id == depoId && d.SharingDocumentId.HasValue)), Times.Never);
+            _userServiceMock.Verify(mock => mock.GetCurrentUserAsync(), Times.Once);
         }
 
         [Fact]

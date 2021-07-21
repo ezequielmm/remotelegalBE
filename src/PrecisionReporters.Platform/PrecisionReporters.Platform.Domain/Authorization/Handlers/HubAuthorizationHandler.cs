@@ -32,7 +32,7 @@ namespace PrecisionReporters.Platform.Domain.Authorization.Handlers
                 }
                 else
                 {
-                    _logger.LogError($"User does not have '{requirement.ResourceAction}' permissions on '{requirement.ResourceType}.{resource}'");
+                    _logger.LogError("User does not have {0} permissions on {1}.{2} for user's email: {3}", requirement.ResourceAction, requirement.ResourceType, resource, currentUserEmail);
                     context.Fail();
                 }
             }
