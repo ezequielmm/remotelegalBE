@@ -6,6 +6,7 @@
         DepositionCourtReporter,
         DepositionAttendee,
         DocumentOwner,
-        DepositionAdmin
+        DepositionAdmin,
+        DepositionTechExpert
     }
 }

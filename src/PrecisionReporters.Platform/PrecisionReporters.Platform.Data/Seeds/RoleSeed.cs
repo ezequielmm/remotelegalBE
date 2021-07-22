@@ -33,6 +33,19 @@ namespace PrecisionReporters.Platform.Data.Seeds
             modelBuilder.Entity<RolePermission>().HasData(new RolePermission { RoleId = courtReporterRoleId, Action = ResourceAction.StampExhibit });
             modelBuilder.Entity<RolePermission>().HasData(new RolePermission { RoleId = courtReporterRoleId, Action = ResourceAction.View });
             modelBuilder.Entity<RolePermission>().HasData(new RolePermission { RoleId = courtReporterRoleId, Action = ResourceAction.AdmitParticipants });
+            modelBuilder.Entity<RolePermission>().HasData(new RolePermission { RoleId = courtReporterRoleId, Action = ResourceAction.ViewDepositionStatus });
+
+            // TechExpert
+            var techExpertRoleId = Guid.Parse("ee816afa-0399-472d-947f-73bfcb17775e");
+            modelBuilder.Entity<Role>().HasData(new Role { Id = techExpertRoleId, Name = RoleName.DepositionTechExpert });
+            modelBuilder.Entity<RolePermission>().HasData(new RolePermission { RoleId = techExpertRoleId, Action = ResourceAction.EndDeposition });
+            modelBuilder.Entity<RolePermission>().HasData(new RolePermission { RoleId = techExpertRoleId, Action = ResourceAction.Recording });
+            modelBuilder.Entity<RolePermission>().HasData(new RolePermission { RoleId = techExpertRoleId, Action = ResourceAction.ViewSharedDocument });
+            modelBuilder.Entity<RolePermission>().HasData(new RolePermission { RoleId = techExpertRoleId, Action = ResourceAction.StampExhibit });
+            modelBuilder.Entity<RolePermission>().HasData(new RolePermission { RoleId = techExpertRoleId, Action = ResourceAction.View });
+            modelBuilder.Entity<RolePermission>().HasData(new RolePermission { RoleId = techExpertRoleId, Action = ResourceAction.AdmitParticipants });
+            modelBuilder.Entity<RolePermission>().HasData(new RolePermission { RoleId = techExpertRoleId, Action = ResourceAction.ViewDepositionStatus});
+
 
             // deposition attendee
             var depositionAttendeeRoleId = Guid.Parse("997d199c-3b9a-4103-a320-130b02890a5b");
