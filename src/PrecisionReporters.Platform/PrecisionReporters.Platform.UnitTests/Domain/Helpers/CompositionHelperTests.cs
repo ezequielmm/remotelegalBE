@@ -31,7 +31,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Helpers
             events.Add(new DepositionEvent { CreationDate = DateTime.UtcNow.AddSeconds(56), EventType = EventType.OnTheRecord });
             events.Add(new DepositionEvent { CreationDate = DateTime.UtcNow, EventType = EventType.StartDeposition });
             events.Add(new DepositionEvent { CreationDate = DateTime.UtcNow.AddSeconds(125), EventType = EventType.OffTheRecord });
-            var result = _compositionHelper.GetDepositionRecordingIntervals(events, new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds());
+            var result = _compositionHelper.GetDepositionRecordingIntervals(events, DateTime.UtcNow);
             
 
             Assert.Equal(2, result.Count);

@@ -9,7 +9,7 @@ namespace PrecisionReporters.Platform.Domain.Helpers
 {
     public class CompositionHelper : ICompositionHelper
     {
-        public List<CompositionInterval> GetDepositionRecordingIntervals(List<DepositionEvent> events, long startTime)
+        public List<CompositionInterval> GetDepositionRecordingIntervals(List<DepositionEvent> events, DateTime startTime)
         {
             var result = events
                 .OrderBy(x => x.CreationDate)
@@ -21,12 +21,12 @@ namespace PrecisionReporters.Platform.Domain.Helpers
                     {
                         var compositionInterval = new CompositionInterval
                         {
-                            Start = CalculateSeconds(startTime, GetDateTimestamp(x.CreationDate))
+                            Start = CalculateSeconds(startTime, x.CreationDate)
                         };
                         list.Add(compositionInterval);
                     }
                     if (x.EventType == EventType.OffTheRecord)
-                        list.Last().Stop = CalculateSeconds(startTime, GetDateTimestamp(x.CreationDate));
+                        list.Last().Stop = CalculateSeconds(startTime, x.CreationDate);
 
                     return list;
                 });
@@ -39,9 +39,9 @@ namespace PrecisionReporters.Platform.Domain.Helpers
             return new DateTimeOffset(date, TimeSpan.Zero).ToUnixTimeMilliseconds();
         }
 
-        private int CalculateSeconds(long startTime, long splitTime)
+        private int CalculateSeconds(DateTime startTime, DateTime splitTime)
         {
-            return (int)(splitTime - startTime);
+            return (int)(splitTime - startTime).TotalMilliseconds;
         }        
     }
 }

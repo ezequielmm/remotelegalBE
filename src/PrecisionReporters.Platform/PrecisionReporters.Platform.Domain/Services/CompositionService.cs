@@ -141,7 +141,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 TimeZone = Enum.GetValues(typeof(USTimeZone)).Cast<USTimeZone>().FirstOrDefault(x => x.GetDescription() == deposition.TimeZone).ToString(),
                 TimeZoneDescription = deposition.TimeZone,
                 OutputFormat = deposition.Room.Composition.FileType,
-                StartDate = startDateTime.Result.Value,
+                StartDate = startDateTime.Result.Value.GetDateTimeToSeconds(),
                 EndDate = _compositionHelper.GetDateTimestamp(deposition.Room.EndDate.Value),
                 Intervals = _compositionHelper.GetDepositionRecordingIntervals(deposition.Events, startDateTime.Result.Value)
             };

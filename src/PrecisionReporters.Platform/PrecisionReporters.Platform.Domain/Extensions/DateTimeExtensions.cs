@@ -42,5 +42,10 @@ namespace PrecisionReporters.Platform.Domain.Extensions
             var timeZoneInfo = TZConvert.GetTimeZoneInfo(timeZone);
             return TimeZoneInfo.ConvertTime(dateTime, TimeZoneInfo.FindSystemTimeZoneById(timeZoneInfo.Id));
         }
+
+        public static long GetDateTimeToSeconds(this DateTime dateTime)
+        {
+            return new DateTimeOffset(dateTime.Year, dateTime.Month, dateTime.Day, dateTime.Hour, dateTime.Minute, dateTime.Second, TimeSpan.Zero).ToUnixTimeSeconds();
+        }
     }
 }

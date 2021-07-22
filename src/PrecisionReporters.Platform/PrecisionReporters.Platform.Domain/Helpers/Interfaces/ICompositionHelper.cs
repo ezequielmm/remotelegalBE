@@ -6,7 +6,7 @@ namespace PrecisionReporters.Platform.Domain.Helpers.Interfaces
 {
     public interface ICompositionHelper
     {
-        List<CompositionInterval> GetDepositionRecordingIntervals(List<DepositionEvent> events, long startTime);
+        List<CompositionInterval> GetDepositionRecordingIntervals(List<DepositionEvent> events, DateTime startTime);
 
         long GetDateTimestamp(DateTime date);
     }
