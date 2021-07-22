@@ -124,7 +124,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             var deposition = depositionResult;
             var startedAt =  VideoStartDate(deposition.Events);
-            var compositionIntervals = _compositionHelper.GetDepositionRecordingIntervals(deposition.Events, startedAt);
+            var compositionIntervals = _compositionHelper.GetDepositionRecordingIntervals(deposition.Events, new DateTime(startedAt));
 
             var resultList = transcriptionsResult.Value
                 .OrderBy(x => x.CreationDate)

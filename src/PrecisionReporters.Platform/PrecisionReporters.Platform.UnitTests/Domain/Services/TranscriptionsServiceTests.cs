@@ -194,7 +194,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             _compositionHelperMock.Setup(x => x.GetDepositionRecordingIntervals(
                 It.IsAny<List<DepositionEvent>>(),
-                It.IsAny<long>())).Returns(interval);
+                It.IsAny<DateTime>())).Returns(interval);
 
             var result = await _transcriptionService.GetTranscriptionsWithTimeOffset(depositionId);
 
@@ -226,7 +226,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             _compositionHelperMock.Setup(x => x.GetDepositionRecordingIntervals(
                 It.IsAny<List<DepositionEvent>>(),
-                It.IsAny<long>())).Returns(GetCompositionIntervals());
+                It.IsAny<DateTime>())).Returns(GetCompositionIntervals());
 
             // Act
             var result = await _transcriptionService.GetTranscriptionsWithTimeOffset(depositionId);

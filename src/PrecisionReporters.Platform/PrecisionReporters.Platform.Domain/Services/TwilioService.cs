@@ -361,12 +361,12 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         }
 
-        public async Task<Result<long>> GetVideoStartTimeStamp(string roomSid)
+        public async Task<Result<DateTime>> GetVideoStartTimeStamp(string roomSid)
         {
             var recordings = await RoomRecordingResource.ReadAsync(roomSid);
             var firstRecording = recordings.OrderBy(x => x.DateCreated).First();
             var date = DateTimeOffset.FromUnixTimeMilliseconds(long.Parse(_twilioAccountConfiguration.TwilioStartedDateReference) + firstRecording.Offset.Value);
-            return Result.Ok(date.ToUnixTimeSeconds());
+            return Result.Ok(date.UtcDateTime);
         }
 
         public async Task<bool> RemoveRecordingRules(string roomSid)
