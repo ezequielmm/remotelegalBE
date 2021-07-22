@@ -16,6 +16,7 @@
         AdmitParticipants,
         ReSchedule, 
         Notify,
-        List
+        List,
+        ViewDepositionStatus
     }
 }
