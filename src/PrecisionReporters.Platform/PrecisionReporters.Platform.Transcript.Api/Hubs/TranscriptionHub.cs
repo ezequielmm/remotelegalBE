@@ -45,6 +45,7 @@ namespace PrecisionReporters.Platform.Transcript.Api.Hubs
             }
         }
 
+        [UserAuthorize(ResourceType.Deposition, ResourceAction.View)]
         public async Task UploadTranscription(TranscriptionsHubDto dto)
         {
             try
@@ -53,7 +54,7 @@ namespace PrecisionReporters.Platform.Transcript.Api.Hubs
                 if (transcriptionLiveService == null)
                 {
                     _logger.LogInformation("Initializing transcription reconnection for user {0} on deposition {1}", Context.UserIdentifier, dto.DepositionId);
-                    await _signalRTranscriptionFactory.TryInitializeRecognition(Context.ConnectionId, Context.UserIdentifier, dto.DepositionId, dto.SampleRate);
+                    await _signalRTranscriptionFactory.TryInitializeRecognition(Context.ConnectionId, Context.UserIdentifier, dto.DepositionId.ToString(), dto.SampleRate);
                     var currentTranscriptionLiveService = _signalRTranscriptionFactory.GetTranscriptionLiveService(Context.ConnectionId);
                     await currentTranscriptionLiveService.RecognizeAsync(dto.Audio);
                 }
@@ -69,6 +70,7 @@ namespace PrecisionReporters.Platform.Transcript.Api.Hubs
             }
         }
 
+        [UserAuthorize(ResourceType.Deposition, ResourceAction.View)]
         public async Task ChangeTranscriptionStatus(TranscriptionsChangeStatusDto dto)
         {
             var transcriptionHubQuery = ExtractTranscriptionHubQuery(Context.GetHttpContext());

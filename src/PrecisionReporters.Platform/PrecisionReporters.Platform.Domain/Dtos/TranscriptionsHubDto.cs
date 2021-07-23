@@ -1,4 +1,7 @@
-﻿using MessagePack;
+﻿using System;
+using MessagePack;
+using PrecisionReporters.Platform.Data.Enums;
+using PrecisionReporters.Platform.Domain.Attributes;
 
 namespace PrecisionReporters.Platform.Domain.Dtos
 {
@@ -6,7 +9,8 @@ namespace PrecisionReporters.Platform.Domain.Dtos
     public class TranscriptionsHubDto
     {
         [Key("depositionId")]
-        public string DepositionId { get; set; }
+        [ResourceId(ResourceType.Deposition)]
+        public Guid DepositionId { get; set; }
         [Key("sampleRate")]
         public int SampleRate { get; set; }
         [Key("audio")]
