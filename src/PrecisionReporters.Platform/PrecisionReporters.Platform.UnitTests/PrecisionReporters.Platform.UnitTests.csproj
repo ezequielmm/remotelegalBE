@@ -28,6 +28,7 @@
   <ItemGroup>
     <ProjectReference Include="..\PrecisionReporters.Platform.Api\PrecisionReporters.Platform.Api.csproj" />
     <ProjectReference Include="..\PrecisionReporters.Platform.Domain\PrecisionReporters.Platform.Domain.csproj" />
+    <ProjectReference Include="..\PrecisionReporters.Platform.Transcript.Api\PrecisionReporters.Platform.Transcript.Api.csproj" />
   </ItemGroup>
 
 </Project>
