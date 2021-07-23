@@ -49,17 +49,10 @@ namespace PrecisionReporters.Platform.Transcript.Api.Hubs
         {
             try
             {
-                if (dto.Audio.Length == 0)
-                {
-                    _signalRTranscriptionFactory.Unsubscribe(Context.ConnectionId);
-                    _logger.LogInformation("The user {0} has been muted", Context.UserIdentifier);
-                    return;
-                }
-
                 var transcriptionLiveService = _signalRTranscriptionFactory.GetTranscriptionLiveService(Context.ConnectionId);
                 if (transcriptionLiveService == null)
                 {
-                    _logger.LogInformation("The user {0} has been unmuted", Context.UserIdentifier);
+                    _logger.LogInformation("Initializing transcription reconnection for user {0} on deposition {1}", Context.UserIdentifier, dto.DepositionId);
                     await _signalRTranscriptionFactory.TryInitializeRecognition(Context.ConnectionId, Context.UserIdentifier, dto.DepositionId, dto.SampleRate);
                     var currentTranscriptionLiveService = _signalRTranscriptionFactory.GetTranscriptionLiveService(Context.ConnectionId);
                     await currentTranscriptionLiveService.RecognizeAsync(dto.Audio);
