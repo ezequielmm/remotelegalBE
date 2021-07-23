@@ -1530,6 +1530,44 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         }
 
         [Fact]
+        public async Task JoinGuestParticipant_ShouldSaveNewUserAndCallCognitoApi_ForNoUserAndNoParticipantAsWitness()
+        {
+            // Arrange
+            var depositionId = Guid.NewGuid();
+            var deposition = DepositionFactory.GetDeposition(depositionId, new Guid());
+
+            var witnessParticipant = deposition.Participants.FirstOrDefault(w => w.Role == ParticipantType.Witness);
+            witnessParticipant.Email = string.Empty;
+            witnessParticipant.IsAdmitted = true;
+
+            var guestEmail = "participant@mail.com";
+            var user = new User { Id = Guid.NewGuid(), EmailAddress = guestEmail };
+            var activity = new ActivityHistory() { Device = "IPhone", Browser = "Safari", IPAddress = "10.10.10.10" };
+            var participant = new Participant
+            {
+                User = user,
+                UserId = user.Id,
+                Email = guestEmail,
+                DepositionId = depositionId,
+                Role = ParticipantType.Witness
+            };
+
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
+            _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Fail(new Error()));
+            _userServiceMock.Setup(x => x.AddGuestUser(It.IsAny<User>())).ReturnsAsync(Result.Ok(user));
+            _userServiceMock.Setup(x => x.LoginGuestAsync(It.IsAny<string>())).ReturnsAsync(Result.Ok(new GuestToken()));
+            _activityHistoryServiceMock.Setup(x => x.AddActivity(It.IsAny<ActivityHistory>(), It.IsAny<User>(), It.IsAny<Deposition>()));
+            // Act
+            var result = await _depositionService.JoinGuestParticipant(depositionId, participant, activity);
+
+            // Assert
+            _depositionRepositoryMock.Verify(x => x.Update(It.Is<Deposition>(x => x.Id == depositionId)), Times.Once);
+            _permissionServiceMock.Verify(x => x.AddParticipantPermissions(It.Is<Participant>(x => x.Email == guestEmail)), Times.Once);
+            _activityHistoryServiceMock.Verify(x => x.AddActivity(It.IsAny<ActivityHistory>(), It.IsAny<User>(), It.IsAny<Deposition>()), Times.Once);
+            Assert.True(result.IsSuccess);
+        }
+
+        [Fact]
         public async Task JoinGuestParticipant_ShouldReturnAToken_ForARegisterUserAndParticipant()
         {
             // Arrange

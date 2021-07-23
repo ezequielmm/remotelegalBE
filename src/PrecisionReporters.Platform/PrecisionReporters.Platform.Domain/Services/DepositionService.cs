@@ -601,7 +601,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             var participant = deposition.Participants.FirstOrDefault(p => p.Email == guest.Email);
             var witnessParticipant = deposition.Participants.FirstOrDefault(w => w.Role == ParticipantType.Witness && w.IsAdmitted == true);
             if (guest.Role == ParticipantType.Witness
-                && witnessParticipant?.Email != null
+                && !string.IsNullOrWhiteSpace(witnessParticipant?.Email)
                 && guest.Email != witnessParticipant?.Email)
                 return Result.Fail(new InvalidInputError("The deposition already has a participant as witness"));
 
