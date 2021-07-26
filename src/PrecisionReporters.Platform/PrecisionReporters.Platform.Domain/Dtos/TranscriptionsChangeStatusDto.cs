@@ -13,5 +13,7 @@ namespace PrecisionReporters.Platform.Domain.Dtos
         public Guid DepositionId { get; set; }
         [Key("offRecord")]
         public bool OffRecord { get; set; }
+        [Key("sampleRate")] 
+        public int SampleRate { get; set; }
     }
 }

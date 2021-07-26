@@ -6,12 +6,12 @@ using PrecisionReporters.Platform.Domain.Attributes;
 namespace PrecisionReporters.Platform.Domain.Dtos
 {
     [MessagePackObject]
-    public class TranscriptionsHubDto
+    public class InitializeRecognitionDto
     {
         [Key("depositionId")]
         [ResourceId(ResourceType.Deposition)]
         public Guid DepositionId { get; set; }
-        [Key("audio")]
-        public byte[] Audio { get; set; }
+        [Key("sampleRate")]
+        public int SampleRate { get; set; }
     }
 }

@@ -51,17 +51,7 @@ namespace PrecisionReporters.Platform.Transcript.Api.Hubs
             try
             {
                 var transcriptionLiveService = _signalRTranscriptionFactory.GetTranscriptionLiveService(Context.ConnectionId);
-                if (transcriptionLiveService == null)
-                {
-                    _logger.LogInformation("Initializing transcription reconnection for user {0} on deposition {1}", Context.UserIdentifier, dto.DepositionId);
-                    await _signalRTranscriptionFactory.TryInitializeRecognition(Context.ConnectionId, Context.UserIdentifier, dto.DepositionId.ToString(), dto.SampleRate);
-                    var currentTranscriptionLiveService = _signalRTranscriptionFactory.GetTranscriptionLiveService(Context.ConnectionId);
-                    await currentTranscriptionLiveService.RecognizeAsync(dto.Audio);
-                }
-                else
-                {
-                    await transcriptionLiveService.RecognizeAsync(dto.Audio);
-                }
+                await transcriptionLiveService.RecognizeAsync(dto.Audio);
             }
             catch (Exception ex)
             {
@@ -73,36 +63,40 @@ namespace PrecisionReporters.Platform.Transcript.Api.Hubs
         [UserAuthorize(ResourceType.Deposition, ResourceAction.View)]
         public async Task ChangeTranscriptionStatus(TranscriptionsChangeStatusDto dto)
         {
-            var transcriptionHubQuery = ExtractTranscriptionHubQuery(Context.GetHttpContext());
             try
             {
                 if (dto.OffRecord)
                 {
-                    _logger.LogInformation("Going OFF Record: transcriptions of {0} on deposition {1}", Context.UserIdentifier ,transcriptionHubQuery.DepositionId);
+                    _logger.LogInformation("Going OFF Record: transcriptions of {0} on deposition {1}", Context.UserIdentifier ,dto.DepositionId);
 
                     _signalRTranscriptionFactory.Unsubscribe(Context.ConnectionId);
                 }
                 else
                 {
-                    _logger.LogInformation("Going ON Record: transcriptions of {0} on deposition {1}", Context.UserIdentifier ,transcriptionHubQuery.DepositionId);
-                    await _signalRTranscriptionFactory.TryInitializeRecognition(Context.ConnectionId, Context.UserIdentifier, transcriptionHubQuery.DepositionId, transcriptionHubQuery.SampleRate);
+                    _logger.LogInformation("Going ON Record: transcriptions of {0} on deposition {1}", Context.UserIdentifier ,dto.DepositionId.ToString());
+                    await _signalRTranscriptionFactory.TryInitializeRecognition(Context.ConnectionId, Context.UserIdentifier, dto.DepositionId.ToString(), dto.SampleRate);
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "There was an error uploading transcription of connectionId {0} on Deposition {0}}", Context.ConnectionId, transcriptionHubQuery.DepositionId);
+                _logger.LogError(ex, "There was an error uploading transcription of connectionId {0} on Deposition {0}}", Context.ConnectionId, dto.DepositionId.ToString());
                 throw;
             }
         }
 
-        public override async Task OnConnectedAsync()
+        [UserAuthorize(ResourceType.Deposition, ResourceAction.View)]
+        public async Task InitializeRecognition(InitializeRecognitionDto dto)
         {
-            var transcriptionHubQuery = ExtractTranscriptionHubQuery(Context.GetHttpContext());
-            _logger.LogInformation("Trying to initialize recognition on Connection ID {0}, from user: {1} of deposition: {2}", Context.ConnectionId, Context.UserIdentifier, transcriptionHubQuery.DepositionId);
-            await _signalRTranscriptionFactory.TryInitializeRecognition(Context.ConnectionId, Context.UserIdentifier, transcriptionHubQuery.DepositionId, transcriptionHubQuery.SampleRate);
-            await base.OnConnectedAsync();
+            var transcriptionLiveService = _signalRTranscriptionFactory.GetTranscriptionLiveService(Context.ConnectionId);
+            if (transcriptionLiveService != null)
+            {
+                _logger.LogInformation("Removing transcription service for user {0} on deposition {1}. Service already exist.", Context.UserIdentifier, dto.DepositionId);
+                _signalRTranscriptionFactory.Unsubscribe(Context.ConnectionId);
+            }
+            _logger.LogInformation("Initializing transcription service for user {0} on deposition {1} with sample rate {2}", Context.UserIdentifier, dto.DepositionId, dto.SampleRate);
+            await _signalRTranscriptionFactory.TryInitializeRecognition(Context.ConnectionId, Context.UserIdentifier, dto.DepositionId.ToString(), dto.SampleRate);
         }
-        
+
         public override async Task OnDisconnectedAsync(Exception exception)
         {
             if (exception != null)
@@ -121,21 +115,6 @@ namespace PrecisionReporters.Platform.Transcript.Api.Hubs
             {
                 await base.OnDisconnectedAsync(exception);
             }
-        }
-
-        private TranscriptionHubQueryDto ExtractTranscriptionHubQuery(HttpContext httpContext)
-        {
-            var transcriptionHubQuery = new TranscriptionHubQueryDto
-            {
-                SampleRate = ApplicationConstants.DefaultSampleRate,
-                DepositionId = httpContext.Request.Query["depositionId"].ToString()
-            };
-            if (int.TryParse(httpContext.Request.Query["sampleRate"], out var requestSampleRate))
-            {
-                transcriptionHubQuery.SampleRate = requestSampleRate;
-            }
-
-            return transcriptionHubQuery;
         }
     }
 }
