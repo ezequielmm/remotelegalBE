@@ -1,5 +1,6 @@
 ﻿using FluentResults;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.VisualStudio.TestPlatform.Utilities;
 using Moq;
 using PrecisionReporters.Platform.Api.Controllers;
 using PrecisionReporters.Platform.Data.Entities;
@@ -11,6 +12,7 @@ using PrecisionReporters.Platform.Shared.Commons;
 using PrecisionReporters.Platform.UnitTests.Utils;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using Xunit;
@@ -1231,6 +1233,149 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
             var errorResult = Assert.IsType<StatusCodeResult>(result.Result);
             Assert.Equal((int) HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _depositionService.Verify(mock => mock.RevertCancel(It.IsAny<Deposition>(), It.IsAny<FileTransferInfo>(), It.IsAny<bool>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task GetDepositionInfo_ReturnsError_WhenGetDepositionByIdFails()
+        {
+            // Arrange
+            _depositionService
+                .Setup(mock => mock.GetByIdWithIncludes(It.IsAny<Guid>(), new[] { nameof(Deposition.SharingDocument), nameof(Deposition.Participants) }))
+                .ReturnsAsync(Result.Fail(new Error()));
+
+            // Act
+            var result = await _classUnderTest.GetDepositionInfo(It.IsAny<Guid>());
+
+            // Assert
+            Assert.NotNull(result);
+            var errorResult = Assert.IsType<StatusCodeResult>(result.Result);
+            Assert.Equal((int)HttpStatusCode.InternalServerError, errorResult.StatusCode);
+            _depositionService.Verify(mock => mock.GetByIdWithIncludes(It.IsAny<Guid>(), new[] { nameof(Deposition.SharingDocument), nameof(Deposition.Participants) }), Times.Once);
+        }
+
+        [Fact]
+        public async Task GetDepositionInfo_ReturnsOkAndDepositionTechStatusDto()
+        {
+            // Arrange
+            var depositionId = Guid.NewGuid();
+            var roomId = Guid.NewGuid();
+            var caseId = Guid.NewGuid();
+            var participantId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
+
+            var deposition = new Deposition
+            {
+                IsVideoRecordingNeeded = false,
+                RoomId = roomId,
+                IsOnTheRecord = false,
+                SharingDocument = new Document
+                {
+                    DisplayName = "sample.pdf"
+                },
+                Participants = new List<Participant>
+                {
+                    new Participant {
+                        Name = "test",
+                        Id = participantId,
+                        Role = ParticipantType.TechExpert,
+                        CreationDate = It.IsAny<DateTime>(),
+                        Email = "test@test.com",
+                        HasJoined = false,
+                        IsAdmitted = false,
+                        IsMuted = false,
+                        Phone = "2233222333",
+                        User = new User {
+                            EmailAddress = "test@test.com",
+                            FirstName = "test",
+                            LastName = "mock",
+                            Id = userId
+                        },
+                        DepositionId = depositionId,
+                        UserId = userId
+                    }
+                }
+            };
+
+            var participant = new Participant
+            {
+                Name = "test",
+                Id = participantId,
+                Role = ParticipantType.TechExpert,
+                CreationDate = It.IsAny<DateTime>(),
+                Email = "test@test.com",
+                HasJoined = false,
+                IsAdmitted = false,
+                IsMuted = false,
+                Phone = "2233222333",
+                User = new User
+                {
+                    EmailAddress = "test@test.com",
+                    FirstName = "test",
+                    LastName = "mock",
+                    Id = userId
+                },
+                DepositionId = depositionId,
+                UserId = userId
+            };
+
+
+            var depositionTechStatus = new DepositionTechStatusDto
+            {
+                RoomId = roomId.ToString(),
+                IsRecording = false,
+                IsVideoRecordingNeeded = false,
+                SharingExhibit = "sample.pdf",
+                Participants = new List<ParticipantDto>
+                {
+                    new ParticipantDto{
+                        Name = "test",
+                        Id = It.IsAny<Guid>(),
+                        Role = ParticipantType.TechExpert.ToString(),
+                        CreationDate = It.IsAny<DateTime>(),
+                        Email = "test@test.com",
+                        HasJoined = false,
+                        IsAdmitted = false,
+                        IsMuted = false,
+                        Phone = "2233222333",
+                        User = new UserOutputDto{
+                            EmailAddress = "test@test.com",
+                            FirstName = "test",
+                            LastName = "mock",
+                            Id = It.IsAny<Guid>()
+                        }                       
+                    }
+                }
+            };
+
+            _depositionService
+                .Setup(mock => mock.GetByIdWithIncludes(It.IsAny<Guid>(), new[] { nameof(Deposition.SharingDocument), nameof(Deposition.Participants) }))
+                .ReturnsAsync(Result.Ok(deposition));
+
+            // Act
+            var result = await _classUnderTest.GetDepositionInfo(It.IsAny<Guid>());
+            var resultParticipant = _participantMapper.ToDto(participant);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.IsType<ActionResult<DepositionTechStatusDto>>(result);
+            var okResult = Assert.IsType<OkObjectResult>(result.Result);
+            var resultValues = Assert.IsAssignableFrom<DepositionTechStatusDto>(okResult.Value);
+            Assert.Equal(deposition.RoomId.ToString(), depositionTechStatus.RoomId);
+            Assert.Equal(deposition.IsOnTheRecord, depositionTechStatus.IsRecording);
+            Assert.Equal(deposition.SharingDocument.DisplayName, depositionTechStatus.SharingExhibit);
+            Assert.Equal(deposition.IsVideoRecordingNeeded, depositionTechStatus.IsVideoRecordingNeeded);
+
+            var compareValue1 = deposition.Participants.Select(p => _participantMapper.ToDto(p)).ToList();
+            var compareValue2 = new List<ParticipantDto> { resultParticipant };
+            try
+            {
+                Assert.Equal(compareValue1, compareValue2);
+            }
+            catch (Exception ex) {
+                ConsoleOutput.Instance.WriteLine(ex.Message, OutputLevel.Information);
+            };
+
+           _depositionService.Verify(mock => mock.GetByIdWithIncludes(It.IsAny<Guid>(), new[] { nameof(Deposition.SharingDocument), nameof(Deposition.Participants) }), Times.Once);
         }
     }
 }

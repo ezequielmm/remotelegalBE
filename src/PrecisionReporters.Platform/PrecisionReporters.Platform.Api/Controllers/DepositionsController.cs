@@ -464,5 +464,30 @@ namespace PrecisionReporters.Platform.Api.Controllers
 
             return Ok(new NotifyOutputDto { Notified = result.Value });
         }
+
+        /// <summary>
+        /// Get an existing Deposition info for tech status tab
+        /// </summary>
+        /// <param name="depositionId">DepositionId to End.</param>
+        /// <returns>DepositionTechStatusDto object.</returns>
+        [HttpGet("{id}/info")]
+        [UserAuthorize(ResourceType.Deposition, ResourceAction.ViewDepositionStatus)]
+        public async Task<ActionResult<DepositionTechStatusDto>> GetDepositionInfo([ResourceId(ResourceType.Deposition)] Guid id)
+        {
+            var depositionResult = await _depositionService.GetByIdWithIncludes(id, new[] { nameof(Deposition.SharingDocument), nameof(Deposition.Participants) });
+            if (depositionResult.IsFailed)
+                return WebApiResponses.GetErrorResponse(depositionResult);
+
+            return Ok(new DepositionTechStatusDto
+            {
+                RoomId = depositionResult.Value.RoomId?.ToString(),
+                IsVideoRecordingNeeded = depositionResult.Value.IsVideoRecordingNeeded,
+                IsRecording = depositionResult.Value.IsOnTheRecord,
+                SharingExhibit = depositionResult?.Value?.SharingDocument?.DisplayName,
+                Participants = depositionResult.Value.Participants.Select(p => _participantMapper.ToDto(p)).ToList()
+            });
+
+
+        }
     }
 }
