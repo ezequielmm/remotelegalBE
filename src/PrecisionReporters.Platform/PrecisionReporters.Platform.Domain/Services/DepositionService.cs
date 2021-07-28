@@ -694,7 +694,8 @@ namespace PrecisionReporters.Platform.Domain.Services
             participant.User = userResult.Value;
             participant.HasJoined = true;
 
-            if (participant.Role == ParticipantType.Witness && deposition.Participants.Single(x => x.Role == ParticipantType.Witness).UserId != null)
+            var witness = deposition.Participants.FirstOrDefault(p => p.Role == ParticipantType.Witness);
+            if (witness != null && !string.IsNullOrWhiteSpace(witness.Email) && participant.Role == ParticipantType.Witness && witness.Email != participant.Email)
                 return Result.Fail(new InvalidInputError("The deposition already has a participant as witness"));
 
             if (participant.Role == ParticipantType.Witness)
