@@ -1351,5 +1351,12 @@ namespace PrecisionReporters.Platform.Domain.Services
             currentParticipant.HasJoined = true;
             await _participantRepository.Update(currentParticipant);
         }
+
+        public async Task<Result> UpdateUserSystemInfo(Guid depositionId, UserSystemInfo userSystemInfo)
+        {
+            var currentUser = await _userService.GetCurrentUserAsync();
+
+            return await _activityHistoryService.UpdateUserSystemInfo(depositionId, userSystemInfo, currentUser);
+        }
     }
 }

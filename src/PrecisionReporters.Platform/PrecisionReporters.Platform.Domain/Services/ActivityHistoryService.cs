@@ -5,9 +5,11 @@ using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Data.Enums;
 using PrecisionReporters.Platform.Data.Repositories.Interfaces;
 using PrecisionReporters.Platform.Domain.Configurations;
+using PrecisionReporters.Platform.Domain.Dtos;
 using PrecisionReporters.Platform.Domain.Extensions;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using PrecisionReporters.Platform.Shared.Commons;
+using PrecisionReporters.Platform.Shared.Errors;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -84,6 +86,31 @@ namespace PrecisionReporters.Platform.Domain.Services
                 _logger.LogError(ex, "Unable to add activity");
             }
             
+            return Result.Ok();
+        }
+
+        public async Task<Result> UpdateUserSystemInfo(Guid depositionId, UserSystemInfo userSystemInfo, User user)
+        {
+            try
+            {
+                var activityHistory = new ActivityHistory() {
+                    Action = ActivityHistoryAction.JoinDeposition,
+                    ActionDetails = string.Empty,
+                    ActivityDate = DateTime.UtcNow,
+                    Browser = userSystemInfo.Browser,
+                    CreationDate = DateTime.UtcNow,
+                    DepositionId = depositionId,
+                    Device = userSystemInfo.Device,
+                    OperatingSystem = userSystemInfo.OS,
+                    UserId = user.Id
+                };
+
+                await _activityHistoryRepository.Create(activityHistory);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unable to update User system info");
+            }
             return Result.Ok();
         }
     }

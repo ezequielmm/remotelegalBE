@@ -92,6 +92,7 @@ namespace PrecisionReporters.Platform.Domain
             services.AddSingleton<IUserIdProvider, UserIdProvider>();
             services.AddSingleton<IMapper<Participant, EditParticipantDto, object>, EditParticipantMapper>();
             services.AddSingleton<IMapper<Case, EditCaseDto, object>, EditCaseMapper>();
+            services.AddSingleton<IMapper<UserSystemInfo, UserSystemInfoDto, object>, UserSystemInfoMapper>();
 
             // Services            
             services.AddScoped<ITwilioService, TwilioService>().Configure<TwilioAccountConfiguration>(x =>

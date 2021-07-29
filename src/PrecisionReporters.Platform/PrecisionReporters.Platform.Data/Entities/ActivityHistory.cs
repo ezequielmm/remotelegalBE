@@ -18,6 +18,7 @@ namespace PrecisionReporters.Platform.Data.Entities
         public Deposition Deposition { get; set; }
         public ActivityHistoryAction Action { get; set; }
         public string ActionDetails { get; set; }
+        public string OperatingSystem { get; set; }
         public override void CopyFrom(ActivityHistory entity)
         {
             ActivityDate = entity.ActivityDate;
@@ -30,6 +31,7 @@ namespace PrecisionReporters.Platform.Data.Entities
             Deposition = entity.Deposition;
             Action = entity.Action;
             ActionDetails = entity.ActionDetails;
+            OperatingSystem = entity.OperatingSystem;
         }
     }
 }

@@ -32,13 +32,15 @@ namespace PrecisionReporters.Platform.Api.Controllers
         private readonly IParticipantService _partcipantService;
         private readonly IMapper<Participant, ParticipantDto, CreateParticipantDto> _participantMapper;
         private readonly IMapper<Participant, AddParticipantDto, CreateGuestDto> _guestMapper;
+        private readonly IMapper<UserSystemInfo, UserSystemInfoDto, object> _userSystemInfoMapper;
 
         public DepositionsController(IDepositionService depositionService,
             IMapper<Deposition, DepositionDto, CreateDepositionDto> depositionMapper,
             IDocumentService documentService, IMapper<AnnotationEvent, AnnotationEventDto, CreateAnnotationEventDto> annotationMapper,
             IMapper<DepositionEvent, DepositionEventDto, CreateDepositionEventDto> eventMapper,
             IMapper<BreakRoom, BreakRoomDto, object> breakRoomMapper, IAnnotationEventService annotationEventService, IParticipantService partcipantService,
-            IMapper<Participant, ParticipantDto, CreateParticipantDto> participantMapper, IMapper<Participant, AddParticipantDto, CreateGuestDto> guestMapper)
+            IMapper<Participant, ParticipantDto, CreateParticipantDto> participantMapper, IMapper<Participant, AddParticipantDto, CreateGuestDto> guestMapper,
+            IMapper<UserSystemInfo, UserSystemInfoDto, object> userSystemInfoMapper)
         {
             _depositionService = depositionService;
             _depositionMapper = depositionMapper;
@@ -50,6 +52,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
             _partcipantService = partcipantService;
             _participantMapper = participantMapper;
             _guestMapper = guestMapper;
+            _userSystemInfoMapper = userSystemInfoMapper;
         }
 
         [HttpGet]
@@ -488,6 +491,19 @@ namespace PrecisionReporters.Platform.Api.Controllers
             });
 
 
+        }
+        
+        [HttpPost("{id}/userSystemInfo")]
+        [UserAuthorize(ResourceType.Deposition, ResourceAction.ViewDepositionStatus)]
+        public async Task<ActionResult> SetUserSystemInfo([ResourceId(ResourceType.Deposition)] Guid id, UserSystemInfoDto userSystemInfoDto)
+        {
+            var userSystemInfo = _userSystemInfoMapper.ToModel(userSystemInfoDto);
+
+            var result = await _depositionService.UpdateUserSystemInfo(id, userSystemInfo);
+            if (result.IsFailed)
+                return WebApiResponses.GetErrorResponse(result);
+
+            return Ok(result);
         }
     }
 }

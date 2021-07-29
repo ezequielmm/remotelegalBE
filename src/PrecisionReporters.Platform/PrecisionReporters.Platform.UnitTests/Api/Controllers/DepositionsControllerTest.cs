@@ -36,6 +36,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
         private readonly IMapper<Document, DocumentDto, CreateDocumentDto> _documentMapper;
         private readonly IMapper<DepositionDocument, DepositionDocumentDto, CreateDepositionDocumentDto> _depositionDocumentMapper;
         private readonly IMapper<User, UserDto, CreateUserDto> _userMapper;
+        private readonly IMapper<UserSystemInfo, UserSystemInfoDto, object> _userSystemInfoMapper;
         private readonly DepositionsController _classUnderTest;
 
         public DepositionsControllerTest()
@@ -49,6 +50,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
             _eventMapper = new DepositionEventMapper();
             _participantMapper = new ParticipantMapper();
             _guestMapper = new GuestParticipantMapper();
+            _userSystemInfoMapper = new UserSystemInfoMapper();
 
             // Deposition mapper arguments
             _compositionMapper = new CompositionMapper();
@@ -68,7 +70,8 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
                 _annotationEventService.Object,
                 _participantService.Object,
                 _participantMapper,
-                _guestMapper);
+                _guestMapper,
+                _userSystemInfoMapper);
         }
 
         [Fact]
@@ -1376,6 +1379,77 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
             };
 
            _depositionService.Verify(mock => mock.GetByIdWithIncludes(It.IsAny<Guid>(), new[] { nameof(Deposition.SharingDocument), nameof(Deposition.Participants) }), Times.Once);
+        }
+
+        [Fact]
+        public async Task SetUserSystemInfo_ReturnsError_WhenSetUserSystemInfoFails()
+        {
+            // Arrange
+            var userSystemInfoDto = new UserSystemInfoDto() {
+                Browser = "test Browser",
+                Device = "test Device",
+                OS = "test OS"
+            };
+
+            var activityHistory = new ActivityHistory()
+            {
+                CreationDate = It.IsAny<DateTime>(),
+                Device = userSystemInfoDto.Device,
+                Browser = userSystemInfoDto.Browser,
+                Action = ActivityHistoryAction.JoinDeposition,
+                ActivityDate = It.IsAny<DateTime>(),
+                DepositionId = It.IsAny<Guid>(),
+                OperatingSystem = userSystemInfoDto.OS,
+                UserId = It.IsAny<Guid>()
+            };
+            _depositionService
+                .Setup(mock => mock.UpdateUserSystemInfo(It.IsAny<Guid>(), It.IsAny<UserSystemInfo>()))
+                .ReturnsAsync(Result.Fail(new Error()));
+
+            // Act
+            var result = await _classUnderTest.SetUserSystemInfo(It.IsAny<Guid>(), userSystemInfoDto);
+
+            // Assert
+            Assert.NotNull(result);
+            var errorResult = Assert.IsType<StatusCodeResult>(result);
+            Assert.Equal((int)HttpStatusCode.InternalServerError, errorResult.StatusCode);
+            _depositionService.Verify(mock => mock.UpdateUserSystemInfo(It.IsAny<Guid>(), It.IsAny<UserSystemInfo>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task SetUserSystemInfo_ReturnsOkAndDepositionTechStatusDto()
+        {
+            // Arrange
+            var userSystemInfo = new UserSystemInfoDto()
+            {
+                Browser = "test Browser",
+                Device = "test Device",
+                OS = "test OS"
+            };
+
+            var activityHistory = new ActivityHistory()
+            {
+                CreationDate = It.IsAny<DateTime>(),
+                Device = userSystemInfo.Device,
+                Browser = userSystemInfo.Browser,
+                Action = ActivityHistoryAction.JoinDeposition,
+                ActivityDate = It.IsAny<DateTime>(),
+                DepositionId = It.IsAny<Guid>(),
+                OperatingSystem = userSystemInfo.OS,
+                UserId = It.IsAny<Guid>()
+            };
+            _depositionService
+                .Setup(mock => mock.UpdateUserSystemInfo(It.IsAny<Guid>(), It.IsAny<UserSystemInfo>()))
+                .ReturnsAsync(Result.Ok(userSystemInfo));
+
+            // Act
+            var result = await _classUnderTest.SetUserSystemInfo(It.IsAny<Guid>(), userSystemInfo);
+
+            // Assert
+            Assert.NotNull(result);
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            
+            _depositionService.Verify(mock => mock.UpdateUserSystemInfo(It.IsAny<Guid>(), It.IsAny<UserSystemInfo>()), Times.Once);
         }
     }
 }
