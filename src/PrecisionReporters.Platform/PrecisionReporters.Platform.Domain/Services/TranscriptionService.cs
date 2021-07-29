@@ -91,13 +91,13 @@ namespace PrecisionReporters.Platform.Domain.Services
             var user = await _userRepository.GetFirstOrDefaultByFilter(x => x.EmailAddress == identity);
             var currentParticipant = await _participantRepository.GetFirstOrDefaultByFilter(x => x.DepositionId == depositionId && x.UserId == user.Id);
             var includes = new[] { $"{ nameof(DepositionDocument.Document) }.{ nameof(Document.AddedBy) }" };
-            Expression<Func< DepositionDocument, bool>> filter;
+            Expression<Func<DepositionDocument, bool>> filter;
 
             if (user.IsAdmin || currentParticipant.Role == ParticipantType.CourtReporter)
             {
-                 filter = x => x.DepositionId == depositionId && (x.Document.DocumentType == DocumentType.DraftTranscription || x.Document.DocumentType == DocumentType.DraftTranscriptionWord || x.Document.DocumentType == DocumentType.Transcription);
+                filter = x => x.DepositionId == depositionId && (x.Document.DocumentType == DocumentType.DraftTranscription || x.Document.DocumentType == DocumentType.DraftTranscriptionWord || x.Document.DocumentType == DocumentType.Transcription);
             }
-            else 
+            else
             {
                 filter = x => x.DepositionId == depositionId && (x.Document.DocumentType == DocumentType.DraftTranscription || x.Document.DocumentType == DocumentType.Transcription);
             }
@@ -123,8 +123,9 @@ namespace PrecisionReporters.Platform.Domain.Services
             var transcriptionsResult = await GetTranscriptionsByDepositionId(depositionId);
 
             var deposition = depositionResult;
-            var startedAt =  VideoStartDate(deposition.Events);
-            var compositionIntervals = _compositionHelper.GetDepositionRecordingIntervals(deposition.Events, new DateTime(startedAt));
+            var startedAt = VideoStartDate(deposition.Events);
+            var startedDate = DateTimeOffset.FromUnixTimeMilliseconds(startedAt);
+            var compositionIntervals = _compositionHelper.GetDepositionRecordingIntervals(deposition.Events, startedDate.UtcDateTime);
 
             var resultList = transcriptionsResult.Value
                 .OrderBy(x => x.CreationDate)
@@ -172,9 +173,9 @@ namespace PrecisionReporters.Platform.Domain.Services
         private int CalculateSpeechTime(int offset, List<CompositionInterval> intervals)
         {
             var t = 0;
-            for (var i = 0; i < intervals.Count; i++) 
+            for (var i = 0; i < intervals.Count; i++)
             {
-                if (intervals[i].Stop < offset && i != (intervals.Count -1))
+                if (intervals[i].Stop < offset && i != (intervals.Count - 1))
                 {
                     t += (intervals[i + 1].Start - intervals[i].Stop);
                 }
