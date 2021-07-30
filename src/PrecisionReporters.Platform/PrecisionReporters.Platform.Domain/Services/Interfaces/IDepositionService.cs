@@ -51,6 +51,6 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
         Task<Result<Deposition>> ReScheduleDeposition(Deposition deposition, FileTransferInfo file, bool deleteCaption);
         Task<Result<bool>> NotifyParties(Guid depositionId, bool isEndDeposition = false);
         Task<Result<List<Deposition>>> UpdateParticipantOnExistingDepositions(User user);
-        Task<Result> UpdateUserSystemInfo(Guid id, UserSystemInfo userSystemInfoDto);
+        Task<Result> UpdateUserSystemInfo(Guid id, UserSystemInfo userSystemInfo, string ipAddress);
     }
 }

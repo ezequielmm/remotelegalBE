@@ -17,6 +17,7 @@ namespace PrecisionReporters.Platform.Domain.Services
     {
         private readonly IParticipantRepository _participantRepository;
         private readonly IDepositionRepository _depositionRepository;
+        private readonly IDeviceInfoRepository _deviceInfoRepository;
         private readonly ISignalRDepositionManager _signalRNotificationManager;
         private readonly IUserService _userService;
         private readonly IPermissionService _permissionService;
@@ -26,6 +27,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             ISignalRDepositionManager signalRNotificationManager,
             IUserService userService,
             IDepositionRepository depositionRepository,
+            IDeviceInfoRepository deviceInfoRepository,
             IPermissionService permissionService,
             IDepositionEmailService depositionEmailService,
             IMapper<Participant, ParticipantDto, CreateParticipantDto> participantMapper)
@@ -34,6 +36,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             _signalRNotificationManager = signalRNotificationManager;
             _userService = userService;
             _depositionRepository = depositionRepository;
+            _deviceInfoRepository = deviceInfoRepository;
             _permissionService = permissionService;
             _depositionEmailService = depositionEmailService;
             _participantMapper = participantMapper;
@@ -198,6 +201,25 @@ namespace PrecisionReporters.Platform.Domain.Services
                 await _depositionEmailService.SendJoinDepositionEmailNotification(deposition, updatedParticipant);
 
             return Result.Ok(updatedParticipant);
+        }
+
+        public async Task<Result> SetUserDeviceInfo(Guid depositionId, DeviceInfo userDeviceInfo)
+        {
+            var currentUser = await _userService.GetCurrentUserAsync();
+
+            var participant = await GetParticipantToUpdate(depositionId, currentUser);
+            if (participant.IsFailed)
+                return participant.ToResult();
+
+            var deviceInfo = await _deviceInfoRepository.Create(userDeviceInfo);
+
+            participant.Value.DeviceInfoId = deviceInfo.Id;
+
+            var updatedParticipant = await _participantRepository.Update(participant.Value);
+            if (updatedParticipant == null)
+                return Result.Fail(new ResourceNotFoundError($"There was an error updating Participant with Id: {participant.Value.Id}"));
+
+            return Result.Ok();
         }
     }
 }

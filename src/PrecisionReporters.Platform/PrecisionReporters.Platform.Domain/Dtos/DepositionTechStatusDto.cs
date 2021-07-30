@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using PrecisionReporters.Platform.Data.Entities;
 
 namespace PrecisionReporters.Platform.Domain.Dtos
 {
@@ -9,6 +8,6 @@ namespace PrecisionReporters.Platform.Domain.Dtos
         public bool IsVideoRecordingNeeded { get; set; }
         public bool IsRecording { get; set; }
         public string? SharingExhibit { get; set; }
-        public List<ParticipantDto> Participants { get; set; }
+        public List<ParticipantTechStatusDto> Participants { get; set; }
     }
 }

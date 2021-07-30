@@ -1352,11 +1352,11 @@ namespace PrecisionReporters.Platform.Domain.Services
             await _participantRepository.Update(currentParticipant);
         }
 
-        public async Task<Result> UpdateUserSystemInfo(Guid depositionId, UserSystemInfo userSystemInfo)
+        public async Task<Result> UpdateUserSystemInfo(Guid depositionId, UserSystemInfo userSystemInfo, string ipAddress)
         {
             var currentUser = await _userService.GetCurrentUserAsync();
 
-            return await _activityHistoryService.UpdateUserSystemInfo(depositionId, userSystemInfo, currentUser);
+            return await _activityHistoryService.UpdateUserSystemInfo(depositionId, userSystemInfo, currentUser, ipAddress);
         }
     }
 }

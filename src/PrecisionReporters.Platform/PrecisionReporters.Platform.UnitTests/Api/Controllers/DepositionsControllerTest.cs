@@ -31,12 +31,14 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
         private readonly IMapper<DepositionEvent, DepositionEventDto, CreateDepositionEventDto> _eventMapper;
         private readonly IMapper<Participant, ParticipantDto, CreateParticipantDto> _participantMapper;
         private readonly IMapper<Participant, AddParticipantDto, CreateGuestDto> _guestMapper;
+        private readonly IMapper<Participant, ParticipantTechStatusDto, object> _participantTechStatusMapper;
         private readonly IMapper<Composition, CompositionDto, CallbackCompositionDto> _compositionMapper;
         private readonly IMapper<Room, RoomDto, CreateRoomDto> _rooMapper;
         private readonly IMapper<Document, DocumentDto, CreateDocumentDto> _documentMapper;
         private readonly IMapper<DepositionDocument, DepositionDocumentDto, CreateDepositionDocumentDto> _depositionDocumentMapper;
         private readonly IMapper<User, UserDto, CreateUserDto> _userMapper;
         private readonly IMapper<UserSystemInfo, UserSystemInfoDto, object> _userSystemInfoMapper;
+        private readonly IMapper<DeviceInfo, DeviceInfoDto, object> _deviceInfoMapper;
         private readonly DepositionsController _classUnderTest;
 
         public DepositionsControllerTest()
@@ -50,7 +52,9 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
             _eventMapper = new DepositionEventMapper();
             _participantMapper = new ParticipantMapper();
             _guestMapper = new GuestParticipantMapper();
+            _participantTechStatusMapper = new ParticipantTechStatusMapper();
             _userSystemInfoMapper = new UserSystemInfoMapper();
+            _deviceInfoMapper = new DeviceInfoMapper();
 
             // Deposition mapper arguments
             _compositionMapper = new CompositionMapper();
@@ -71,7 +75,9 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
                 _participantService.Object,
                 _participantMapper,
                 _guestMapper,
-                _userSystemInfoMapper);
+                _participantTechStatusMapper,
+                _userSystemInfoMapper,
+                _deviceInfoMapper);
         }
 
         [Fact]
@@ -1243,7 +1249,9 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
         {
             // Arrange
             _depositionService
-                .Setup(mock => mock.GetByIdWithIncludes(It.IsAny<Guid>(), new[] { nameof(Deposition.SharingDocument), nameof(Deposition.Participants) }))
+                .Setup(mock => mock.GetByIdWithIncludes(It.IsAny<Guid>(), new[] { nameof(Deposition.SharingDocument),
+                $"{nameof(Deposition.Participants)}.{nameof(Participant.DeviceInfo)}",
+                $"{nameof(Deposition.Participants)}.{nameof(Participant.User)}.{nameof(User.ActivityHistories)}"}))
                 .ReturnsAsync(Result.Fail(new Error()));
 
             // Act
@@ -1253,7 +1261,9 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
             Assert.NotNull(result);
             var errorResult = Assert.IsType<StatusCodeResult>(result.Result);
             Assert.Equal((int)HttpStatusCode.InternalServerError, errorResult.StatusCode);
-            _depositionService.Verify(mock => mock.GetByIdWithIncludes(It.IsAny<Guid>(), new[] { nameof(Deposition.SharingDocument), nameof(Deposition.Participants) }), Times.Once);
+            _depositionService.Verify(mock => mock.GetByIdWithIncludes(It.IsAny<Guid>(), new[] { nameof(Deposition.SharingDocument),
+                $"{nameof(Deposition.Participants)}.{nameof(Participant.DeviceInfo)}",
+                $"{nameof(Deposition.Participants)}.{nameof(Participant.User)}.{nameof(User.ActivityHistories)}"}), Times.Once);
         }
 
         [Fact]
@@ -1318,7 +1328,8 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
                     Id = userId
                 },
                 DepositionId = depositionId,
-                UserId = userId
+                UserId = userId,
+                DeviceInfo = new DeviceInfo { CameraName="cam1", CameraStatus=CameraStatus.Unavailable, MicrophoneName="mic1", SpeakersName="spk1", Id=Guid.NewGuid(), CreationDate=DateTime.UtcNow}
             };
 
 
@@ -1328,9 +1339,9 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
                 IsRecording = false,
                 IsVideoRecordingNeeded = false,
                 SharingExhibit = "sample.pdf",
-                Participants = new List<ParticipantDto>
+                Participants = new List<ParticipantTechStatusDto>
                 {
-                    new ParticipantDto{
+                    new ParticipantTechStatusDto{
                         Name = "test",
                         Id = It.IsAny<Guid>(),
                         Role = ParticipantType.TechExpert.ToString(),
@@ -1339,19 +1350,23 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
                         HasJoined = false,
                         IsAdmitted = false,
                         IsMuted = false,
-                        Phone = "2233222333",
-                        User = new UserOutputDto{
-                            EmailAddress = "test@test.com",
-                            FirstName = "test",
-                            LastName = "mock",
-                            Id = It.IsAny<Guid>()
-                        }                       
+                        Browser = "Firefox",
+                        OperatingSystem = "Linux",
+                        IP = "0.0.0.92",
+                        Device = "PC",
+                        Devices = new DeviceInfoDto{
+                            Camera = new CameraDto { Name = "Cam 1", Status = CameraStatus.Unavailable},
+                            Microphone = new MicrophoneDto { Name = "Mic 1" },
+                            Speakers = new SpeakersDto { Name = "Spk 1"}
+                        }          
                     }
                 }
             };
 
             _depositionService
-                .Setup(mock => mock.GetByIdWithIncludes(It.IsAny<Guid>(), new[] { nameof(Deposition.SharingDocument), nameof(Deposition.Participants) }))
+                .Setup(mock => mock.GetByIdWithIncludes(It.IsAny<Guid>(), new[] { nameof(Deposition.SharingDocument),
+                $"{nameof(Deposition.Participants)}.{nameof(Participant.DeviceInfo)}",
+                $"{nameof(Deposition.Participants)}.{nameof(Participant.User)}.{nameof(User.ActivityHistories)}"}))
                 .ReturnsAsync(Result.Ok(deposition));
 
             // Act
@@ -1378,7 +1393,9 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
                 ConsoleOutput.Instance.WriteLine(ex.Message, OutputLevel.Information);
             };
 
-           _depositionService.Verify(mock => mock.GetByIdWithIncludes(It.IsAny<Guid>(), new[] { nameof(Deposition.SharingDocument), nameof(Deposition.Participants) }), Times.Once);
+           _depositionService.Verify(mock => mock.GetByIdWithIncludes(It.IsAny<Guid>(), new[] { nameof(Deposition.SharingDocument),
+                $"{nameof(Deposition.Participants)}.{nameof(Participant.DeviceInfo)}",
+                $"{nameof(Deposition.Participants)}.{nameof(Participant.User)}.{nameof(User.ActivityHistories)}"}), Times.Once);
         }
 
         [Fact]
@@ -1400,10 +1417,13 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
                 ActivityDate = It.IsAny<DateTime>(),
                 DepositionId = It.IsAny<Guid>(),
                 OperatingSystem = userSystemInfoDto.OS,
-                UserId = It.IsAny<Guid>()
+                UserId = It.IsAny<Guid>(),
+                IPAddress = It.IsAny<string>()
             };
+            var context = ContextFactory.GetControllerContextWithLocalIp();
+            _classUnderTest.ControllerContext = context;
             _depositionService
-                .Setup(mock => mock.UpdateUserSystemInfo(It.IsAny<Guid>(), It.IsAny<UserSystemInfo>()))
+                .Setup(mock => mock.UpdateUserSystemInfo(It.IsAny<Guid>(), It.IsAny<UserSystemInfo>(), It.IsAny<string>()))
                 .ReturnsAsync(Result.Fail(new Error()));
 
             // Act
@@ -1413,7 +1433,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
             Assert.NotNull(result);
             var errorResult = Assert.IsType<StatusCodeResult>(result);
             Assert.Equal((int)HttpStatusCode.InternalServerError, errorResult.StatusCode);
-            _depositionService.Verify(mock => mock.UpdateUserSystemInfo(It.IsAny<Guid>(), It.IsAny<UserSystemInfo>()), Times.Once);
+            _depositionService.Verify(mock => mock.UpdateUserSystemInfo(It.IsAny<Guid>(), It.IsAny<UserSystemInfo>(), It.IsAny<string>()), Times.Once);
         }
 
         [Fact]
@@ -1436,10 +1456,13 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
                 ActivityDate = It.IsAny<DateTime>(),
                 DepositionId = It.IsAny<Guid>(),
                 OperatingSystem = userSystemInfo.OS,
-                UserId = It.IsAny<Guid>()
+                UserId = It.IsAny<Guid>(),
+                IPAddress = It.IsAny<string>()
             };
+            var context = ContextFactory.GetControllerContextWithLocalIp();
+            _classUnderTest.ControllerContext = context;
             _depositionService
-                .Setup(mock => mock.UpdateUserSystemInfo(It.IsAny<Guid>(), It.IsAny<UserSystemInfo>()))
+                .Setup(mock => mock.UpdateUserSystemInfo(It.IsAny<Guid>(), It.IsAny<UserSystemInfo>(), It.IsAny<string>()))
                 .ReturnsAsync(Result.Ok(userSystemInfo));
 
             // Act
@@ -1449,7 +1472,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
             Assert.NotNull(result);
             var okResult = Assert.IsType<OkObjectResult>(result);
             
-            _depositionService.Verify(mock => mock.UpdateUserSystemInfo(It.IsAny<Guid>(), It.IsAny<UserSystemInfo>()), Times.Once);
+            _depositionService.Verify(mock => mock.UpdateUserSystemInfo(It.IsAny<Guid>(), It.IsAny<UserSystemInfo>(), It.IsAny<string>()), Times.Once);
         }
     }
 }

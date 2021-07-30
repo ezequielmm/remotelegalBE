@@ -2,6 +2,7 @@
 {
     public enum ActivityHistoryAction
     {
-        JoinDeposition
+        JoinDeposition,
+        SetSystemInfo
     }
 }

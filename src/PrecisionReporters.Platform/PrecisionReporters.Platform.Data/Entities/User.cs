@@ -30,6 +30,7 @@ namespace PrecisionReporters.Platform.Data.Entities
         public string SId { get; set; }
 
         public List<VerifyUser> VerifiedUsers { get; set; }
+        public List<ActivityHistory> ActivityHistories { get; set; }
 
         public override void CopyFrom(User entity)
         {

@@ -28,6 +28,7 @@ namespace PrecisionReporters.Platform.Data
         public DbSet<BreakRoom> BreakRooms { get; set; }
         public DbSet<BreakRoomAttendee> BreakRoomsAttendees { get; set; }
         public DbSet<ActivityHistory> ActivityHistories { get; set; }
+        public DbSet<DeviceInfo> DevicesInfo { get; set; }
         public ApplicationDbContext(DbContextOptions options) : base(options) { }
 
         public ApplicationDbContext() { }
@@ -93,6 +94,10 @@ namespace PrecisionReporters.Platform.Data
                 .HasConversion(new EnumToStringConverter<ActivityHistoryAction>());
 
             modelBuilder.Entity<BreakRoomAttendee>().HasKey(x => new { x.BreakRoomId, x.UserId });
+
+            modelBuilder.Entity<DeviceInfo>()
+                .Property(x => x.CameraStatus)
+                .HasConversion(new EnumToStringConverter<CameraStatus>());
             // Seeds
             modelBuilder.SeedRoles();
         }

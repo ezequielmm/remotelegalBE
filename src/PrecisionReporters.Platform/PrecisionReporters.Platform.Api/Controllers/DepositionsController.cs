@@ -29,10 +29,12 @@ namespace PrecisionReporters.Platform.Api.Controllers
         private readonly IMapper<AnnotationEvent, AnnotationEventDto, CreateAnnotationEventDto> _annotationMapper;
         private readonly IMapper<DepositionEvent, DepositionEventDto, CreateDepositionEventDto> _eventMapper;
         private readonly IAnnotationEventService _annotationEventService;
-        private readonly IParticipantService _partcipantService;
+        private readonly IParticipantService _participantService;
         private readonly IMapper<Participant, ParticipantDto, CreateParticipantDto> _participantMapper;
+        private readonly IMapper<Participant, ParticipantTechStatusDto, object> _participantTechStatusMapper;
         private readonly IMapper<Participant, AddParticipantDto, CreateGuestDto> _guestMapper;
         private readonly IMapper<UserSystemInfo, UserSystemInfoDto, object> _userSystemInfoMapper;
+        private readonly IMapper<DeviceInfo, DeviceInfoDto, object> _userDeviceMapper;
 
         public DepositionsController(IDepositionService depositionService,
             IMapper<Deposition, DepositionDto, CreateDepositionDto> depositionMapper,
@@ -40,7 +42,9 @@ namespace PrecisionReporters.Platform.Api.Controllers
             IMapper<DepositionEvent, DepositionEventDto, CreateDepositionEventDto> eventMapper,
             IMapper<BreakRoom, BreakRoomDto, object> breakRoomMapper, IAnnotationEventService annotationEventService, IParticipantService partcipantService,
             IMapper<Participant, ParticipantDto, CreateParticipantDto> participantMapper, IMapper<Participant, AddParticipantDto, CreateGuestDto> guestMapper,
-            IMapper<UserSystemInfo, UserSystemInfoDto, object> userSystemInfoMapper)
+            IMapper<Participant, ParticipantTechStatusDto, object> participantTechStatusMapper,
+            IMapper<UserSystemInfo, UserSystemInfoDto, object> userSystemInfoMapper,
+            IMapper<DeviceInfo, DeviceInfoDto, object> userDeviceMapper)
         {
             _depositionService = depositionService;
             _depositionMapper = depositionMapper;
@@ -49,10 +53,12 @@ namespace PrecisionReporters.Platform.Api.Controllers
             _annotationMapper = annotationMapper;
             _eventMapper = eventMapper;
             _annotationEventService = annotationEventService;
-            _partcipantService = partcipantService;
+            _participantService = partcipantService;
             _participantMapper = participantMapper;
             _guestMapper = guestMapper;
+            _participantTechStatusMapper = participantTechStatusMapper;
             _userSystemInfoMapper = userSystemInfoMapper;
+            _userDeviceMapper = userDeviceMapper;
         }
 
         [HttpGet]
@@ -401,7 +407,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
         [UserAuthorize(ResourceType.Deposition, ResourceAction.AdmitParticipants)]
         public async Task<ActionResult<List<ParticipantDto>>> GetWaitParticipants([ResourceId(ResourceType.Deposition)] Guid id)
         {
-            var participantResult = await _partcipantService.GetWaitParticipants(id);
+            var participantResult = await _participantService.GetWaitParticipants(id);
             if (participantResult.Value == null)
                 return new List<ParticipantDto>();
 
@@ -477,7 +483,9 @@ namespace PrecisionReporters.Platform.Api.Controllers
         [UserAuthorize(ResourceType.Deposition, ResourceAction.ViewDepositionStatus)]
         public async Task<ActionResult<DepositionTechStatusDto>> GetDepositionInfo([ResourceId(ResourceType.Deposition)] Guid id)
         {
-            var depositionResult = await _depositionService.GetByIdWithIncludes(id, new[] { nameof(Deposition.SharingDocument), nameof(Deposition.Participants) });
+            var depositionResult = await _depositionService.GetByIdWithIncludes(id, new[] { nameof(Deposition.SharingDocument),
+                $"{nameof(Deposition.Participants)}.{nameof(Participant.DeviceInfo)}",
+                $"{nameof(Deposition.Participants)}.{nameof(Participant.User)}.{nameof(Data.Entities.User.ActivityHistories)}"});
             if (depositionResult.IsFailed)
                 return WebApiResponses.GetErrorResponse(depositionResult);
 
@@ -487,23 +495,37 @@ namespace PrecisionReporters.Platform.Api.Controllers
                 IsVideoRecordingNeeded = depositionResult.Value.IsVideoRecordingNeeded,
                 IsRecording = depositionResult.Value.IsOnTheRecord,
                 SharingExhibit = depositionResult?.Value?.SharingDocument?.DisplayName,
-                Participants = depositionResult.Value.Participants.Select(p => _participantMapper.ToDto(p)).ToList()
+                Participants = depositionResult.Value.Participants.Select(p => _participantTechStatusMapper.ToDto(p)).ToList()
             });
-
-
         }
         
         [HttpPost("{id}/userSystemInfo")]
-        [UserAuthorize(ResourceType.Deposition, ResourceAction.ViewDepositionStatus)]
-        public async Task<ActionResult> SetUserSystemInfo([ResourceId(ResourceType.Deposition)] Guid id, UserSystemInfoDto userSystemInfoDto)
+        public async Task<ActionResult> SetUserSystemInfo(Guid id, UserSystemInfoDto userSystemInfoDto)
         {
+            var publicIPAddress = HttpContext.Request.Headers["X-Forwarded-For"].ToString().Split(new[] { ',' }).FirstOrDefault();
+            var localIPAddress = HttpContext.Connection.RemoteIpAddress.MapToIPv4();
+
+            string ipAddress = string.IsNullOrWhiteSpace(publicIPAddress) ? localIPAddress.ToString() : publicIPAddress;
+
             var userSystemInfo = _userSystemInfoMapper.ToModel(userSystemInfoDto);
 
-            var result = await _depositionService.UpdateUserSystemInfo(id, userSystemInfo);
+            var result = await _depositionService.UpdateUserSystemInfo(id, userSystemInfo, ipAddress);
             if (result.IsFailed)
                 return WebApiResponses.GetErrorResponse(result);
 
             return Ok(result);
+        }
+
+        [HttpPost("{id}/devices")]
+        public async Task<ActionResult> SetUserDevice(Guid id, DeviceInfoDto userDeviceDto)
+        {
+            var userDeviceInfo = _userDeviceMapper.ToModel(userDeviceDto);
+
+            var result = await _participantService.SetUserDeviceInfo(id, userDeviceInfo);
+            if (result.IsFailed)
+                return WebApiResponses.GetErrorResponse(result);
+
+            return Ok();
         }
     }
 }

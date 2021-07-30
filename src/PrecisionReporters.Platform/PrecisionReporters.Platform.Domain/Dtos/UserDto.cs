@@ -15,5 +15,6 @@ namespace PrecisionReporters.Platform.Domain.Dtos
         public bool IsAdmin { get; set; }
         public bool IsGuest { get; set; }
         public DateTime? VerificationDate { get; set; }
+        public ActivityHistoryDto? ActivityHistory { get; set; }
     }
 }

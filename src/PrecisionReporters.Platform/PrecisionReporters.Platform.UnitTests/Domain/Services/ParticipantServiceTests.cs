@@ -22,6 +22,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         private readonly ParticipantService _participantService;
         private readonly Mock<IParticipantRepository> _participantRepositoryMock;
         private readonly Mock<IDepositionRepository> _depositionRepositoryMock;
+        private readonly Mock<IDeviceInfoRepository> _deviceInfoRepositoryMock;
         private readonly Mock<ISignalRDepositionManager> _signalRNotificationManagerMock;
         private readonly Mock<IUserService> _userServiceMock;
         private readonly Mock<IPermissionService> _permissionServiceMock;
@@ -36,11 +37,12 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _permissionServiceMock = new Mock<IPermissionService>();
             _depositionEmailServiceMock = new Mock<IDepositionEmailService>();
             _participantMapperMock = new Mock<IMapper<Participant, ParticipantDto, CreateParticipantDto>>();
-
+            _deviceInfoRepositoryMock = new Mock<IDeviceInfoRepository>();
             _participantService = new ParticipantService(_participantRepositoryMock.Object,
                 _signalRNotificationManagerMock.Object,
                 _userServiceMock.Object,
                 _depositionRepositoryMock.Object,
+                _deviceInfoRepositoryMock.Object,
                 _permissionServiceMock.Object,
                 _depositionEmailServiceMock.Object,
                 _participantMapperMock.Object);

@@ -24,6 +24,10 @@ namespace PrecisionReporters.Platform.Data.Entities
 
         public bool IsMuted { get; set; }
 
+        [ForeignKey(nameof(DeviceInfo))]
+        public Guid? DeviceInfoId { get; set; }
+        public DeviceInfo DeviceInfo { get; set; }
+
         public override void CopyFrom(Participant entity)
         {
             Role = entity.Role;

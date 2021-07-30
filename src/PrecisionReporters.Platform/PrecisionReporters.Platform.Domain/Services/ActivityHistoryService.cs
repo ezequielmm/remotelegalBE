@@ -89,12 +89,12 @@ namespace PrecisionReporters.Platform.Domain.Services
             return Result.Ok();
         }
 
-        public async Task<Result> UpdateUserSystemInfo(Guid depositionId, UserSystemInfo userSystemInfo, User user)
+        public async Task<Result> UpdateUserSystemInfo(Guid depositionId, UserSystemInfo userSystemInfo, User user, string ipAddress)
         {
             try
             {
                 var activityHistory = new ActivityHistory() {
-                    Action = ActivityHistoryAction.JoinDeposition,
+                    Action = ActivityHistoryAction.SetSystemInfo,
                     ActionDetails = string.Empty,
                     ActivityDate = DateTime.UtcNow,
                     Browser = userSystemInfo.Browser,
@@ -102,7 +102,8 @@ namespace PrecisionReporters.Platform.Domain.Services
                     DepositionId = depositionId,
                     Device = userSystemInfo.Device,
                     OperatingSystem = userSystemInfo.OS,
-                    UserId = user.Id
+                    UserId = user.Id,
+                    IPAddress = ipAddress
                 };
 
                 await _activityHistoryRepository.Create(activityHistory);
