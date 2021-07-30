@@ -11,7 +11,6 @@ using PrecisionReporters.Platform.Shared.Extensions;
 using PrecisionReporters.Platform.Transcript.Api.Hubs.Interfaces;
 using System;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
 using PrecisionReporters.Platform.Transcript.Api.Utils.Interfaces;
 
 namespace PrecisionReporters.Platform.Transcript.Api.Hubs
@@ -55,7 +54,7 @@ namespace PrecisionReporters.Platform.Transcript.Api.Hubs
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "There was an error uploading transcription of connectionId {0} on Deposition {0}", Context.ConnectionId, dto.DepositionId);
+                _logger.LogError(ex, "There was an error uploading transcription of connectionId {0} on Deposition {1}", Context.ConnectionId, dto.DepositionId);
                 throw;
             }
         }
@@ -79,7 +78,7 @@ namespace PrecisionReporters.Platform.Transcript.Api.Hubs
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "There was an error uploading transcription of connectionId {0} on Deposition {0}}", Context.ConnectionId, dto.DepositionId.ToString());
+                _logger.LogError(ex, "There was an error uploading transcription status of connectionId {0} on Deposition {1}", Context.ConnectionId, dto.DepositionId.ToString());
                 throw;
             }
         }
