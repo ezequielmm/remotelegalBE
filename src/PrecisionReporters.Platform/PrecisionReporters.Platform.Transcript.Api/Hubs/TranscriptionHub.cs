@@ -50,7 +50,8 @@ namespace PrecisionReporters.Platform.Transcript.Api.Hubs
             try
             {
                 var transcriptionLiveService = _signalRTranscriptionFactory.GetTranscriptionLiveService(Context.ConnectionId);
-                await transcriptionLiveService.RecognizeAsync(dto.Audio);
+                if (transcriptionLiveService != null)
+                    await transcriptionLiveService.RecognizeAsync(dto.Audio);
             }
             catch (Exception ex)
             {

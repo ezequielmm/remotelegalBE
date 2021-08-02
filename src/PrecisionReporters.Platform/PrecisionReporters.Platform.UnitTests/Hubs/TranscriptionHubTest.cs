@@ -127,7 +127,7 @@ namespace PrecisionReporters.Platform.UnitTests.Hubs
             _classUnderTest.Context = _clientContextMock.Object;
             _signalRTranscriptionFactoryMock
                 .Setup(mock => mock.GetTranscriptionLiveService(It.IsAny<string>()))
-                .Returns((TranscriptionLiveAzureService) null);
+                .Throws(new NullReferenceException());
             var logErrorMessage =
                 $"There was an error uploading transcription of connectionId {_classUnderTest.Context.ConnectionId} on Deposition {transcriptionsHubDto.DepositionId}";
 
