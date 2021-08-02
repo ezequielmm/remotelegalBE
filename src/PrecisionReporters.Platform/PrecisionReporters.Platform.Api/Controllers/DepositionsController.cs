@@ -525,7 +525,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
             if (result.IsFailed)
                 return WebApiResponses.GetErrorResponse(result);
 
-            return Ok();
+            return Ok(result);
         }
     }
 }
