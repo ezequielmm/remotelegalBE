@@ -19,21 +19,24 @@ namespace PrecisionReporters.Platform.Domain.Mappers
                 Email = model.Email,
                 Name = model.Name,
                 Role = model.Role.ToString(),
-                Browser = lastSystemInfo!=null? lastSystemInfo.Browser:null,
-                Device = lastSystemInfo != null ? lastSystemInfo.Device:null,
-                OperatingSystem = lastSystemInfo != null ? lastSystemInfo.OperatingSystem:null,
-                IP = lastSystemInfo != null ? lastSystemInfo.IPAddress:null,
+                Browser = lastSystemInfo?.Browser,
+                Device = lastSystemInfo?.Device,
+                OperatingSystem = lastSystemInfo?.OperatingSystem,
+                IP = lastSystemInfo?.IPAddress,
                 IsMuted = model.IsMuted,
                 IsAdmitted = model.IsAdmitted,
                 HasJoined = model.HasJoined,
-                Devices = model.DeviceInfo != null ?
+                Devices = 
                     new DeviceInfoDto
                     {
-                        Camera = new CameraDto { Name = model.DeviceInfo.CameraName, Status = model.DeviceInfo.CameraStatus },
-                        Microphone = new MicrophoneDto { Name = model.DeviceInfo.MicrophoneName },
-                        Speakers = new SpeakersDto { Name = model.DeviceInfo.SpeakersName }
+                        Camera = new CameraDto {
+                            Name = model.DeviceInfo != null ?  model.DeviceInfo?.CameraName : null,
+                            Status = model.DeviceInfo != null ? model.DeviceInfo?.CameraStatus : null
+                        },
+                        Microphone = new MicrophoneDto { Name = model.DeviceInfo != null ? model.DeviceInfo?.MicrophoneName : null },
+                        Speakers = new SpeakersDto { Name = model.DeviceInfo != null ? model.DeviceInfo?.SpeakersName : null }
                     }
-                    : null
+                   
             };
         }
 
