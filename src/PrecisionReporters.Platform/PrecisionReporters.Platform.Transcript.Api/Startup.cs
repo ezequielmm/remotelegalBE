@@ -55,14 +55,7 @@ namespace PrecisionReporters.Platform.Transcript.Api
             // Services
             services.AddScoped<ITranscriptionService, TranscriptionService>();
 
-            if (appConfiguration.CloudServicesConfiguration.TranscriptionProvider.Equals("GCP"))
-            {
-                services.AddTransient<ITranscriptionLiveService, TranscriptionLiveGcpService>();
-            }
-            else
-            {
-                services.AddTransient<ITranscriptionLiveService, TranscriptionLiveAzureService>();
-            }
+            services.AddTransient<ITranscriptionLiveService, TranscriptionLiveAzureService>();
 
             services.AddScoped<ISignalRTranscriptionManager, SignalRTranscriptionManager>();
 
