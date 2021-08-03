@@ -1249,7 +1249,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
         {
             // Arrange
             _depositionService
-                .Setup(mock => mock.GetByIdWithIncludes(It.IsAny<Guid>(), new[] { nameof(Deposition.SharingDocument),
+                .Setup(mock => mock.GetByIdWithIncludes(It.IsAny<Guid>(), new[] { nameof(Deposition.SharingDocument), nameof(Deposition.Room),
                 $"{nameof(Deposition.Participants)}.{nameof(Participant.DeviceInfo)}",
                 $"{nameof(Deposition.Participants)}.{nameof(Participant.User)}.{nameof(User.ActivityHistories)}"}))
                 .ReturnsAsync(Result.Fail(new Error()));
@@ -1261,7 +1261,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
             Assert.NotNull(result);
             var errorResult = Assert.IsType<StatusCodeResult>(result.Result);
             Assert.Equal((int)HttpStatusCode.InternalServerError, errorResult.StatusCode);
-            _depositionService.Verify(mock => mock.GetByIdWithIncludes(It.IsAny<Guid>(), new[] { nameof(Deposition.SharingDocument),
+            _depositionService.Verify(mock => mock.GetByIdWithIncludes(It.IsAny<Guid>(), new[] { nameof(Deposition.SharingDocument), nameof(Deposition.Room),
                 $"{nameof(Deposition.Participants)}.{nameof(Participant.DeviceInfo)}",
                 $"{nameof(Deposition.Participants)}.{nameof(Participant.User)}.{nameof(User.ActivityHistories)}"}), Times.Once);
         }
@@ -1271,7 +1271,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
         {
             // Arrange
             var depositionId = Guid.NewGuid();
-            var roomId = Guid.NewGuid();
+            var roomId = Guid.NewGuid().ToString();
             var caseId = Guid.NewGuid();
             var participantId = Guid.NewGuid();
             var userId = Guid.NewGuid();
@@ -1279,11 +1279,15 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
             var deposition = new Deposition
             {
                 IsVideoRecordingNeeded = false,
-                RoomId = roomId,
+                RoomId = Guid.NewGuid(),
                 IsOnTheRecord = false,
                 SharingDocument = new Document
                 {
                     DisplayName = "sample.pdf"
+                },
+                Room = new Room
+                {
+                    SId = roomId
                 },
                 Participants = new List<Participant>
                 {
@@ -1335,7 +1339,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
 
             var depositionTechStatus = new DepositionTechStatusDto
             {
-                RoomId = roomId.ToString(),
+                RoomId = roomId,
                 IsRecording = false,
                 IsVideoRecordingNeeded = false,
                 SharingExhibit = "sample.pdf",
@@ -1364,7 +1368,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
             };
 
             _depositionService
-                .Setup(mock => mock.GetByIdWithIncludes(It.IsAny<Guid>(), new[] { nameof(Deposition.SharingDocument),
+                .Setup(mock => mock.GetByIdWithIncludes(It.IsAny<Guid>(), new[] { nameof(Deposition.SharingDocument), nameof(Deposition.Room),
                 $"{nameof(Deposition.Participants)}.{nameof(Participant.DeviceInfo)}",
                 $"{nameof(Deposition.Participants)}.{nameof(Participant.User)}.{nameof(User.ActivityHistories)}"}))
                 .ReturnsAsync(Result.Ok(deposition));
@@ -1378,7 +1382,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
             Assert.IsType<ActionResult<DepositionTechStatusDto>>(result);
             var okResult = Assert.IsType<OkObjectResult>(result.Result);
             var resultValues = Assert.IsAssignableFrom<DepositionTechStatusDto>(okResult.Value);
-            Assert.Equal(deposition.RoomId.ToString(), depositionTechStatus.RoomId);
+            Assert.Equal(deposition.Room.SId, depositionTechStatus.RoomId);
             Assert.Equal(deposition.IsOnTheRecord, depositionTechStatus.IsRecording);
             Assert.Equal(deposition.SharingDocument.DisplayName, depositionTechStatus.SharingExhibit);
             Assert.Equal(deposition.IsVideoRecordingNeeded, depositionTechStatus.IsVideoRecordingNeeded);
@@ -1393,7 +1397,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
                 ConsoleOutput.Instance.WriteLine(ex.Message, OutputLevel.Information);
             };
 
-           _depositionService.Verify(mock => mock.GetByIdWithIncludes(It.IsAny<Guid>(), new[] { nameof(Deposition.SharingDocument),
+           _depositionService.Verify(mock => mock.GetByIdWithIncludes(It.IsAny<Guid>(), new[] { nameof(Deposition.SharingDocument), nameof(Deposition.Room),
                 $"{nameof(Deposition.Participants)}.{nameof(Participant.DeviceInfo)}",
                 $"{nameof(Deposition.Participants)}.{nameof(Participant.User)}.{nameof(User.ActivityHistories)}"}), Times.Once);
         }

@@ -483,7 +483,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
         [UserAuthorize(ResourceType.Deposition, ResourceAction.ViewDepositionStatus)]
         public async Task<ActionResult<DepositionTechStatusDto>> GetDepositionInfo([ResourceId(ResourceType.Deposition)] Guid id)
         {
-            var depositionResult = await _depositionService.GetByIdWithIncludes(id, new[] { nameof(Deposition.SharingDocument),
+            var depositionResult = await _depositionService.GetByIdWithIncludes(id, new[] { nameof(Deposition.SharingDocument), nameof(Deposition.Room), 
                 $"{nameof(Deposition.Participants)}.{nameof(Participant.DeviceInfo)}",
                 $"{nameof(Deposition.Participants)}.{nameof(Participant.User)}.{nameof(Data.Entities.User.ActivityHistories)}"});
             if (depositionResult.IsFailed)
@@ -491,11 +491,12 @@ namespace PrecisionReporters.Platform.Api.Controllers
 
             return Ok(new DepositionTechStatusDto
             {
-                RoomId = depositionResult.Value.RoomId?.ToString(),
+                RoomId = depositionResult.Value.Room.SId?.ToString(),
                 IsVideoRecordingNeeded = depositionResult.Value.IsVideoRecordingNeeded,
                 IsRecording = depositionResult.Value.IsOnTheRecord,
                 SharingExhibit = depositionResult?.Value?.SharingDocument?.DisplayName,
-                Participants = depositionResult.Value.Participants.Select(p => _participantTechStatusMapper.ToDto(p)).ToList()
+                Participants = depositionResult.Value.Participants.Where(t => t.HasJoined && t.User != null)
+                .Select(p => _participantTechStatusMapper.ToDto(p)).ToList()
             });
         }
         

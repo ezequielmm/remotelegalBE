@@ -11,12 +11,10 @@ namespace PrecisionReporters.Platform.Domain.Mappers
         {
             ActivityHistory lastSystemInfo = null;
 
-            if (model.User == null)
-                return null;
-
             if (model.User.ActivityHistories != null && model.User.ActivityHistories.Count > 0)
-                lastSystemInfo = model.User.ActivityHistories?.Where(t => t.Action == ActivityHistoryAction.SetSystemInfo)
-                .OrderByDescending(d => d.ActivityDate).FirstOrDefault();
+                lastSystemInfo = model.User.ActivityHistories?
+                    .Where(t => t.Action == ActivityHistoryAction.SetSystemInfo)
+                    .OrderByDescending(d => d.ActivityDate).FirstOrDefault();
 
             return new ParticipantTechStatusDto
             {
