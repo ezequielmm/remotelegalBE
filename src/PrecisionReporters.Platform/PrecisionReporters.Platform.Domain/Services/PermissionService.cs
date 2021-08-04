@@ -84,8 +84,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         {
             if (participant.User != null)
             {
-                await AddUserRole(participant.User.Id, participant.DepositionId.Value,
-                    ResourceType.Deposition, ParticipantType.CourtReporter == participant.Role ? RoleName.DepositionCourtReporter : RoleName.DepositionAttendee);
+                await AddRolesToParticipants(participant, participant.DepositionId.Value);
             }
         }
 
@@ -96,6 +95,22 @@ namespace PrecisionReporters.Platform.Domain.Services
                 var userResource = await _userResourceRoleRepository.GetFirstOrDefaultByFilter(x => x.ResourceId == depositionId && x.UserId == participant.UserId);
                 if (userResource != null)
                     await _userResourceRoleRepository.Remove(userResource);
+            }
+        }
+
+        public async Task AddRolesToParticipants(Participant participant, Guid depositionId)
+        {
+            switch (participant.Role)
+            {
+                case ParticipantType.CourtReporter:
+                    await AddUserRole(participant.User.Id, depositionId, ResourceType.Deposition, RoleName.DepositionCourtReporter);
+                    break;
+                case ParticipantType.TechExpert:
+                    await AddUserRole(participant.User.Id, depositionId, ResourceType.Deposition, RoleName.DepositionTechExpert);
+                    break;
+                default:
+                    await AddUserRole(participant.User.Id, depositionId, ResourceType.Deposition, RoleName.DepositionAttendee);
+                    break;
             }
         }
     }

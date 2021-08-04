@@ -38,12 +38,9 @@ namespace PrecisionReporters.Platform.Data.Seeds
             // TechExpert
             var techExpertRoleId = Guid.Parse("ee816afa-0399-472d-947f-73bfcb17775e");
             modelBuilder.Entity<Role>().HasData(new Role { Id = techExpertRoleId, Name = RoleName.DepositionTechExpert });
-            modelBuilder.Entity<RolePermission>().HasData(new RolePermission { RoleId = techExpertRoleId, Action = ResourceAction.EndDeposition });
-            modelBuilder.Entity<RolePermission>().HasData(new RolePermission { RoleId = techExpertRoleId, Action = ResourceAction.Recording });
+            modelBuilder.Entity<RolePermission>().HasData(new RolePermission { RoleId = techExpertRoleId, Action = ResourceAction.UploadDocument });
             modelBuilder.Entity<RolePermission>().HasData(new RolePermission { RoleId = techExpertRoleId, Action = ResourceAction.ViewSharedDocument });
-            modelBuilder.Entity<RolePermission>().HasData(new RolePermission { RoleId = techExpertRoleId, Action = ResourceAction.StampExhibit });
             modelBuilder.Entity<RolePermission>().HasData(new RolePermission { RoleId = techExpertRoleId, Action = ResourceAction.View });
-            modelBuilder.Entity<RolePermission>().HasData(new RolePermission { RoleId = techExpertRoleId, Action = ResourceAction.AdmitParticipants });
             modelBuilder.Entity<RolePermission>().HasData(new RolePermission { RoleId = techExpertRoleId, Action = ResourceAction.ViewDepositionStatus});
 
 
