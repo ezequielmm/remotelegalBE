@@ -27,6 +27,7 @@ namespace PrecisionReporters.Platform.Data
             services.AddScoped<IDepositionDocumentRepository, DepositionDocumentRepository>();
             services.AddScoped<IActivityHistoryRepository, ActivityHistoryRepository>();
             services.AddScoped<IDeviceInfoRepository, DeviceInfoRepository>();
+            services.AddScoped<ISystemSettingsRepository, SystemSettingsRepository>();
         }
     }
 }

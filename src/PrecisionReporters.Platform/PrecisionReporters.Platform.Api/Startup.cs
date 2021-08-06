@@ -87,6 +87,7 @@ namespace PrecisionReporters.Platform.Api
             });
             services.AddScoped<IAwsSnsWrapper, AwsSnsWrapper>();
             services.AddScoped<ISnsHelper, SnsHelper>();
+            services.AddScoped<ISystemSettingsService, SystemSettingsService>();
             services.Configure<KestrelServerOptions>(options =>
             {
                 // TODO: Check how to return a valid error message with this validation and reduce the value to MaxFileSize only
