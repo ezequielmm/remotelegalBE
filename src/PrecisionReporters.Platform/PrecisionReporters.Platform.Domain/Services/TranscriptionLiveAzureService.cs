@@ -40,7 +40,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         private bool _isClosed = true;
         private static readonly SemaphoreSlim _isClosedSemaphore = new SemaphoreSlim(1);
         private static readonly SemaphoreSlim _fluentTranscriptionSemaphore = new SemaphoreSlim(1);
-        private static readonly SemaphoreSlim _storeTranscriptionSemaphore = new SemaphoreSlim(1);
+        private static readonly SemaphoreSlim _storeTranscriptionSemaphore = new SemaphoreSlim(1,1); // This means that only 1 thread can be granted access at a time
         private bool _isDisposed = false;
 
         public TranscriptionLiveAzureService(IOptions<AzureCognitiveServiceConfiguration> azureConfiguration,
@@ -220,11 +220,11 @@ namespace PrecisionReporters.Platform.Domain.Services
 
                     await _storeTranscriptionSemaphore.WaitAsync();
 
-                    _logger.LogInformation("Store Transcription. Text {0}, DepositionId {1}, userEmail {2}", transcriptionToStore, _depositionId, _userEmail);
+                    _logger.LogInformation("Store Transcription. Text {0}, DepositionId {1}, userEmail {2}", transcriptionToStore.Text, _depositionId, _userEmail);
 
                     await _transcriptionService.StoreTranscription(transcriptionToStore, _depositionId, _userEmail);
 
-                    _logger.LogInformation("End Store Transcription. Text {0}, DepositionId {1}, userEmail {2}", transcriptionToStore, _depositionId, _userEmail);
+                    _logger.LogInformation("End Store Transcription. Text {0}, DepositionId {1}, userEmail {2}", transcriptionToStore.Text, _depositionId, _userEmail);
                 }
             }
             catch (ObjectDisposedException ex)
@@ -234,11 +234,13 @@ namespace PrecisionReporters.Platform.Domain.Services
             }
             finally
             {
-                _logger.LogInformation("Release Semaphore.");
-
-                _storeTranscriptionSemaphore.Release();
-
-                _logger.LogInformation("Semaphore Released.");
+                // Ensure that it is only released when transcription storage task is done
+                if(isFinalTranscript)
+                {
+                    _logger.LogInformation("Release StoreTranscriptionSemaphore.");
+                    _storeTranscriptionSemaphore.Release();
+                    _logger.LogInformation("StoreTranscriptionSemaphore Released.");
+                }
             }
         }
 
