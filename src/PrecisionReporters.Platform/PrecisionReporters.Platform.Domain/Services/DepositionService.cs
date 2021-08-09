@@ -613,10 +613,8 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             _logger.LogInformation($"{nameof(DepositionService)}.{nameof(DepositionService.JoinGuestParticipant)} user : {userResult?.Value.Id}");
 
-            bool shouldAddPermissions;
             if (participant != null)
             {
-                shouldAddPermissions = participant.UserId == null;
                 userResult.Value.FirstName = guest.Name;
                 participant.User = userResult.Value;
                 participant.Name = guest.Name;
@@ -631,7 +629,6 @@ namespace PrecisionReporters.Platform.Domain.Services
             }
             else
             {
-                shouldAddPermissions = true;
                 guest.User = userResult.Value;
                 if (guest.Role == ParticipantType.Witness && deposition.Participants.Any(x => x.Role == ParticipantType.Witness))
                 { 
@@ -645,11 +642,6 @@ namespace PrecisionReporters.Platform.Domain.Services
                 await _depositionRepository.Update(deposition);
 
                 _logger.LogInformation($"{nameof(DepositionService)}.{nameof(DepositionService.JoinGuestParticipant)} participant null: {guest?.Id}");
-            }
-
-            if (shouldAddPermissions)
-            {
-                await _permissionService.AddParticipantPermissions(guest);
             }
 
             await _activityHistoryService.AddActivity(activityHistory, userResult.Value, deposition);
@@ -1086,14 +1078,12 @@ namespace PrecisionReporters.Platform.Domain.Services
                 EntityType = NotificationEntity.JoinResponse,
                 Content = _participantMapper.ToDto(participant)
             };
-            if (!admited)
-            {
-                await _permissionService.RemoveParticipantPermissions(participant.DepositionId.Value, participant);
-            }
-            else
+
+            if (admited)
             {
                 await _permissionService.AddParticipantPermissions(participant);
             }
+            
             await _participantRepository.Update(participant);
             await _signalRNotificationManager.SendDirectMessage(participant.Email, notificationtDto);
             await _signalRNotificationManager.SendNotificationToDepositionAdmins(participant.DepositionId.Value, notificationtDto);
