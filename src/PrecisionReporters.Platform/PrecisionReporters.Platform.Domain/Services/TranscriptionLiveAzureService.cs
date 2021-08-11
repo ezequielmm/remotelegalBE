@@ -276,10 +276,12 @@ namespace PrecisionReporters.Platform.Domain.Services
                     _audioInputStream?.Dispose();
                     _logger.LogInformation("Disposed successfully transcriptionLiveService on deposition {0} of user {1}", _depositionId, _userEmail);
                 });
-                
+                // Ensure that last transcription is saved
+                if(_storeTranscriptionSemaphore.CurrentCount > 1)
+                    _storeTranscriptionSemaphore.Release();
                 _fluentTranscriptionSemaphore.Release();
-                _storeTranscriptionSemaphore.Release();
                 _isClosedSemaphore.Release();
+                _shouldCloseSemaphore.Release();
             }
 
             _isDisposed = true;
