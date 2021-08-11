@@ -17,6 +17,7 @@ namespace PrecisionReporters.Platform.Data.Entities
         public User User { get; set; }
         public int Duration { get; set; }
         public double Confidence { get; set; }
+        public bool PostProcessed { get; set; }
 
         public override void CopyFrom(Transcription entity)
         {
@@ -28,6 +29,7 @@ namespace PrecisionReporters.Platform.Data.Entities
             TranscriptDateTime = entity.TranscriptDateTime;
             Duration = entity.Duration;
             Confidence = entity.Confidence;
+            PostProcessed = entity.PostProcessed;
         }
     }
 }

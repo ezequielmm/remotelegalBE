@@ -2,15 +2,17 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PrecisionReporters.Platform.Data;
 
 namespace PrecisionReporters.Platform.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20210630215606_AddPostProcessedColumnIntoTranscriptionsTable")]
+    partial class AddPostProcessedColumnIntoTranscriptionsTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -48,9 +50,6 @@ namespace PrecisionReporters.Platform.Data.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("IPAddress")
-                        .HasColumnType("text");
-
-                    b.Property<string>("OperatingSystem")
                         .HasColumnType("text");
 
                     b.Property<string>("UserId")
@@ -379,33 +378,6 @@ namespace PrecisionReporters.Platform.Data.Migrations
                     b.ToTable("DepositionEvents");
                 });
 
-            modelBuilder.Entity("PrecisionReporters.Platform.Data.Entities.DeviceInfo", b =>
-                {
-                    b.Property<string>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("char(36)");
-
-                    b.Property<string>("CameraName")
-                        .HasColumnType("text");
-
-                    b.Property<string>("CameraStatus")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("CreationDate")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime");
-
-                    b.Property<string>("MicrophoneName")
-                        .HasColumnType("text");
-
-                    b.Property<string>("SpeakersName")
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("DevicesInfo");
-                });
-
             modelBuilder.Entity("PrecisionReporters.Platform.Data.Entities.Document", b =>
                 {
                     b.Property<string>("Id")
@@ -522,9 +494,6 @@ namespace PrecisionReporters.Platform.Data.Migrations
                     b.Property<string>("DepositionId")
                         .HasColumnType("char(36)");
 
-                    b.Property<string>("DeviceInfoId")
-                        .HasColumnType("char(36)");
-
                     b.Property<string>("Email")
                         .HasColumnType("text");
 
@@ -553,8 +522,6 @@ namespace PrecisionReporters.Platform.Data.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("DepositionId");
-
-                    b.HasIndex("DeviceInfoId");
 
                     b.HasIndex("UserId");
 
@@ -597,12 +564,6 @@ namespace PrecisionReporters.Platform.Data.Migrations
                             Id = "6c73879b-cce3-47ea-9b80-12e1c4d1285e",
                             CreationDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Name = "DepositionCourtReporter"
-                        },
-                        new
-                        {
-                            Id = "ee816afa-0399-472d-947f-73bfcb17775e",
-                            CreationDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
-                            Name = "DepositionTechExpert"
                         },
                         new
                         {
@@ -715,36 +676,6 @@ namespace PrecisionReporters.Platform.Data.Migrations
                         },
                         new
                         {
-                            RoleId = "6c73879b-cce3-47ea-9b80-12e1c4d1285e",
-                            Action = "ViewDepositionStatus",
-                            CreationDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
-                        },
-                        new
-                        {
-                            RoleId = "ee816afa-0399-472d-947f-73bfcb17775e",
-                            Action = "UploadDocument",
-                            CreationDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
-                        },
-                        new
-                        {
-                            RoleId = "ee816afa-0399-472d-947f-73bfcb17775e",
-                            Action = "ViewSharedDocument",
-                            CreationDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
-                        },
-                        new
-                        {
-                            RoleId = "ee816afa-0399-472d-947f-73bfcb17775e",
-                            Action = "View",
-                            CreationDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
-                        },
-                        new
-                        {
-                            RoleId = "ee816afa-0399-472d-947f-73bfcb17775e",
-                            Action = "ViewDepositionStatus",
-                            CreationDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
-                        },
-                        new
-                        {
                             RoleId = "997d199c-3b9a-4103-a320-130b02890a5b",
                             Action = "UploadDocument",
                             CreationDate = new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified)
@@ -827,29 +758,6 @@ namespace PrecisionReporters.Platform.Data.Migrations
                         .IsUnique();
 
                     b.ToTable("Rooms");
-                });
-
-            modelBuilder.Entity("PrecisionReporters.Platform.Data.Entities.SystemSettings", b =>
-                {
-                    b.Property<string>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("char(36)");
-
-                    b.Property<DateTime>("CreationDate")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Value")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("SystemSettings");
                 });
 
             modelBuilder.Entity("PrecisionReporters.Platform.Data.Entities.Transcription", b =>
@@ -1010,7 +918,7 @@ namespace PrecisionReporters.Platform.Data.Migrations
                         .IsRequired();
 
                     b.HasOne("PrecisionReporters.Platform.Data.Entities.User", "User")
-                        .WithMany("ActivityHistories")
+                        .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -1198,10 +1106,6 @@ namespace PrecisionReporters.Platform.Data.Migrations
                     b.HasOne("PrecisionReporters.Platform.Data.Entities.Deposition", null)
                         .WithMany("Participants")
                         .HasForeignKey("DepositionId");
-
-                    b.HasOne("PrecisionReporters.Platform.Data.Entities.DeviceInfo", "DeviceInfo")
-                        .WithMany()
-                        .HasForeignKey("DeviceInfoId");
 
                     b.HasOne("PrecisionReporters.Platform.Data.Entities.User", "User")
                         .WithMany()
