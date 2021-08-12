@@ -353,8 +353,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                     return Result.Ok(chatParticipant?.Sid);
                 }
 
-                _log.LogError("Error adding user to chat, user identity: {0}", identity.Email);
-                return Result.Fail(new Error($"Error adding user to chat, user identity: {identity.Email}"));
+                return Result.Ok(userChannel.MemberSid);
             }
             catch (Exception ex)
             {
