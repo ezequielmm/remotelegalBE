@@ -22,6 +22,7 @@ namespace PrecisionReporters.Platform.Domain.Dtos
         public string UserName { get; set; }
         [Key("userEmail")]
         public string UserEmail { get; set; }
+        [Key("postProcessed")]
         public bool PostProcessed { get; set; }
     }
 }
