@@ -128,7 +128,8 @@ namespace PrecisionReporters.Platform.Domain.Services
             var witnessArray = participants.Where(x => DeserializeObject(x.Identity).Email == witnessEmail).Select(w => w.Sid).ToArray();
             if (!witnessArray.Any())
             {
-                return new[] { participants.First().Sid };
+                _log.LogError("There was an error finding a witness in array: {@0} from the room SId: {1}", witnessArray, roomSid);
+                throw new Exception("No Witness is found");
             }
             return witnessArray;
         }
@@ -136,6 +137,9 @@ namespace PrecisionReporters.Platform.Domain.Services
         private async Task<List<ParticipantResource>> GetParticipantsByRoom(string roomSid)
         {
             var participants = await ParticipantResource.ReadAsync(roomSid);
+            var participantsSid = participants.Select(x => x.Sid).ToList();
+            _log.LogInformation("RoomService.StartRoom Participant Id List: {@0}", participantsSid);
+
             return participants.ToList();
         }
 
