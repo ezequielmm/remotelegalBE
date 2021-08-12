@@ -71,12 +71,8 @@ namespace PrecisionReporters.Platform.Transcript.Api
             });
 
             // Enable Bearer token authentication
-            services.AddAuthentication(options =>
-            {
-                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-
-            }).AddJwtBearer("FullUserAuthenticationScheme", options =>
+            services.AddAuthentication("GuestAuthenticationScheme")
+            .AddJwtBearer("FullUserAuthenticationScheme", options =>
             {
                 options.Audience = appConfiguration.CognitoConfiguration.ClientId;
                 options.Authority = appConfiguration.CognitoConfiguration.Authority;

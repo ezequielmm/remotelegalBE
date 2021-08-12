@@ -107,12 +107,8 @@ namespace PrecisionReporters.Platform.Api
             });
 
             // Enable Bearer token authentication
-            services.AddAuthentication(options =>
-            {
-                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-
-            }).AddJwtBearer("FullUserAuthenticationScheme", options =>
+            services.AddAuthentication("GuestAuthenticationScheme")
+            .AddJwtBearer("FullUserAuthenticationScheme", options =>
             {
                 options.Audience = appConfiguration.CognitoConfiguration.ClientId;
                 options.Authority = appConfiguration.CognitoConfiguration.Authority;
@@ -134,8 +130,7 @@ namespace PrecisionReporters.Platform.Api
                 {
                     OnMessageReceived = GetTokenFromWebSocket
                 };
-            }
-            );
+            });
 
             services.AddMvc()
                 .AddJsonOptions(opts => opts.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
