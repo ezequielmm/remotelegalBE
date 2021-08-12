@@ -559,6 +559,31 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         }
 
         [Fact]
+        public async Task JoinDeposition_ShouldReturnError_WhenDepositionIsCompleted()
+        {
+            // Arrange
+            var userEmail = "testing@mail.com";
+            var depositionId = Guid.NewGuid();
+            var caseId = Guid.NewGuid();
+            var deposition = DepositionFactory.GetDeposition(depositionId, caseId);
+            _depositions.Add(deposition);
+            deposition.Status = DepositionStatus.Completed;
+            var errorMessage = $"Deposition with id {depositionId} has already ended.";
+
+            _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(new User()));
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
+
+            // Act
+            var result = await _depositionService.JoinDeposition(depositionId, userEmail);
+
+            // Assert
+            _userServiceMock.Verify(mock => mock.GetUserByEmail(It.Is<string>(a => a == userEmail)), Times.Once());
+            _depositionRepositoryMock.Verify(mock => mock.GetById(It.IsAny<Guid>(), It.Is<string[]>(a => a.SequenceEqual(new[] { nameof(Deposition.Room), nameof(Deposition.PreRoom), nameof(Deposition.Participants) }))), Times.Once());
+            Assert.Equal(errorMessage, result.Errors[0].Message);
+            Assert.True(result.IsFailed);
+        }
+
+        [Fact]
         public async Task JoinDeposition_ShouldReturnJoinDepositionInfo_WhenDepositionIdExist()
         {
             // Arrange

@@ -298,6 +298,12 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (deposition == null)
                 return Result.Fail(new ResourceNotFoundError($"Deposition with id {id} not found."));
 
+            if (deposition.Status == DepositionStatus.Completed)
+            {
+                _logger.LogError("User {0} tries to enter the Deposition with id {1} that has already ended.", userResult.Value.EmailAddress, deposition.Id);
+                return Result.Fail(new InvalidStatusError($"Deposition with id {deposition.Id} has already ended."));
+            }
+
             _logger.LogInformation($"{nameof(DepositionService)}.{nameof(DepositionService.JoinDeposition)} Deposition ID: {deposition.Id}");
 
             var joinDepositionInfo = await GetJoinDepositionInfoDto(userResult.Value, deposition, identity);
@@ -1303,7 +1309,9 @@ namespace PrecisionReporters.Platform.Domain.Services
         private async Task StartDepositionRoom(Room room, bool configureCallBacks)
         {
             // TODO: Add distributed lock when our infra allows it
-            _logger.LogInformation($"{nameof(DepositionService)}.{nameof(DepositionService.StartDepositionRoom)} Chat SID CR Flow: {room?.Status}");
+            _logger.LogInformation(configureCallBacks
+                ? $"{nameof(DepositionService)}.{nameof(DepositionService.StartDepositionRoom)} CR Flow room status: {room?.Status}"
+                : $"{nameof(DepositionService)}.{nameof(DepositionService.StartDepositionRoom)} Participant Flow PreRoom status: {room?.Status}");
             if (room?.Status == RoomStatus.Created)
             {
                 await _roomService.StartRoom(room, configureCallBacks);

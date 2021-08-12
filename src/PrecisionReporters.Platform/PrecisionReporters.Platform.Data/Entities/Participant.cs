@@ -36,6 +36,7 @@ namespace PrecisionReporters.Platform.Data.Entities
             Phone = entity.Phone;
             User = entity.User;
             IsMuted = entity.IsMuted;
+            HasJoined = entity.HasJoined;
         }
 
         public Participant() { }
