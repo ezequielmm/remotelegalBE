@@ -74,7 +74,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
             documentSignedDto.Close = close;
 
             documentSignedDto.IsPublic = await _depositionDocumentService.IsPublicDocument(id, document.Id);
-
+            documentSignedDto.StampLabel = await _depositionDocumentService.GetDocumentStampLabel(document.Id);
             return Ok(documentSignedDto);
         }
 
@@ -105,7 +105,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
                 return WebApiResponses.GetErrorResponse(depositionDocumentResult);
 
             return Ok();
-        }        
+        }
 
         /// <summary>
         /// Close a not Stamped Document. 
@@ -141,7 +141,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
 
             var result = enteredExhibitsResult.Value.Select(d => GetDocumentWithStamp(d));
             return Ok(result);
-        }        
+        }
 
         /// <summary>
         /// Gets the public url of a file. This url exipres after deposition end or after 2 hours if deposition doesn't have an end date

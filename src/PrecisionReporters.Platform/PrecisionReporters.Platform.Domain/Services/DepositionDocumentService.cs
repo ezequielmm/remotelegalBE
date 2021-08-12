@@ -248,5 +248,11 @@ namespace PrecisionReporters.Platform.Domain.Services
             await _signalRNotificationManager.SendNotificationToDepositionMembers(depositionId, notification);
             return Result.Ok();
         }
+
+        public async Task<string> GetDocumentStampLabel(Guid documentId)
+        {
+            var depositionDocument = await _depositionDocumentRepository.GetFirstOrDefaultByFilter(d => d.DocumentId == documentId);
+            return depositionDocument?.StampLabel;
+        }
     }
 }

@@ -2218,7 +2218,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var user = UserFactory.GetUserByGivenEmail(email);
             var deposition = DepositionFactory.GetDepositionWithParticipantEmail(email, false);
             var depositions = new List<Deposition> { deposition };
-            _depositionRepositoryMock.Setup(s => s.GetByFilter(d => d.Participants.Any(u => 
+            _depositionRepositoryMock.Setup(s => s.GetByFilter(d => d.Participants.Any(u =>
                                                     u.Email == user.EmailAddress), new[] { nameof(Deposition.Participants) }))
                                     .ReturnsAsync(depositions);
 

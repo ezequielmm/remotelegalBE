@@ -631,8 +631,8 @@ namespace PrecisionReporters.Platform.Domain.Services
             {
                 guest.User = userResult.Value;
                 if (guest.Role == ParticipantType.Witness && deposition.Participants.Any(x => x.Role == ParticipantType.Witness))
-                { 
-                    deposition.Participants[deposition.Participants.FindIndex(x => x.Role == ParticipantType.Witness)] = guest; 
+                {
+                    deposition.Participants[deposition.Participants.FindIndex(x => x.Role == ParticipantType.Witness)] = guest;
                 }
                 else
                 {
@@ -857,7 +857,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         public async Task<Result<List<Deposition>>> UpdateParticipantOnExistingDepositions(User user)
         {
             var depositions = await GetDepositions(d => d.Participants.Any(u => u.Email == user.EmailAddress), new[] { nameof(Deposition.Participants) });
-            
+
             foreach (var deposition in depositions)
             {
                 var participant = deposition.Participants.FirstOrDefault(u => u.Email == user.EmailAddress);
@@ -866,7 +866,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 await _permissionService.AddParticipantPermissions(participant);
                 await _depositionRepository.Update(deposition);
             }
-            
+
             return Result.Ok(depositions);
         }
 

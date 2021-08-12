@@ -114,7 +114,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         {
             var extension = Path.GetExtension(file.Name) == ApplicationConstants.Mp4Extension ? ApplicationConstants.Mp4Extension : ApplicationConstants.PDFExtension;
             var fileName = $"{Guid.NewGuid()}{extension}";
-            
+
             var document = await UploadExhibitToStorage(file, user, fileName, parentPath, documentType);
             return document;
         }
@@ -365,7 +365,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             return GetCannedPrivateURL(depositionDocument.Document);
         }
-        
+
         public async Task<Result<string>> GetCannedPrivateURL(Guid documentId)
         {
             var document = await _documentRepository.GetFirstOrDefaultByFilter(x => x.Id == documentId);
@@ -433,7 +433,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             var depositionResult = await _depositionRepository.GetById(depositionDocument.DepositionId, include);
             if (depositionResult == null)
                 return Result.Fail(new ResourceNotFoundError($"Deposition with id {depositionDocument.DepositionId} not found."));
-            
+
             var parentPath = $"{depositionResult.CaseId}/{depositionResult.Id}/{folder}";
             var documentResult = await SaveDocumentWithAnnotationsToS3(document, temporalPath, parentPath);
             if (documentResult.IsFailed)
@@ -457,7 +457,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                     var fileName = $"{Path.GetFileNameWithoutExtension(document.FilePath)}_Entered{ApplicationConstants.PDFExtension}";
                     updateDocument.Name = fileName;
                     updateDocument.DisplayName = $"{Path.GetFileNameWithoutExtension(document.DisplayName)}{ApplicationConstants.PDFExtension}";
-                    
+
                     updateDocument.FilePath = $"files/{parentPath}/{fileName}";
                     updateDocument.Type = ApplicationConstants.PDFExtension;
                     await _documentRepository.Update(updateDocument);
@@ -733,7 +733,8 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             try
             {
-                if (type != ApplicationConstants.Mp4Extension)
+                var nonPdfExtensions = _documentsConfiguration.NonConvertToPdfExtensions.Contains(Path.GetExtension(file.Name)?.ToLower());
+                if (!nonPdfExtensions)
                 {
                     var pathPDF = _fileHelper.ConvertFileToPDF(file).Result;
                     pathFiles.Add(pathPDF);

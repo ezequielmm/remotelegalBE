@@ -17,5 +17,6 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
         Task<bool> IsPublicDocument(Guid depositionId, Guid documentId);
         Task<Result> RemoveDepositionTranscript(Guid depositionId, Guid documentId);
         Task<Result> BringAllToMe(Guid depositionId, BringAllToMeDto bringAllToMeDto);
+        Task<string> GetDocumentStampLabel(Guid documentId);
     }
 }
