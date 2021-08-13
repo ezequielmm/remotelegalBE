@@ -46,8 +46,9 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             {
                 BucketName = "testBucket",
                 MaxFileSize = 52428800,
-                AcceptedFileExtensions = new List<string> { ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".jpg", ".png", ".mp4" },
-                AcceptedTranscriptionExtensions = new List<string> { ".pdf", ".txt", ".ptx" }
+                AcceptedFileExtensions = new List<string> { ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".jpg", ".jpeg", ".png", ".mp4", ".mov", ".mp3", ".m4a", ".wav", ".ogg" },
+                AcceptedTranscriptionExtensions = new List<string> { ".pdf", ".txt", ".ptx" },
+                NonConvertToPdfExtensions = new List<string> { ".mp4", ".mov", ".mp3", ".m4a", ".wav", ".ogg" }
             };
             _depositionDocumentRepositoryMock = new Mock<IDepositionDocumentRepository>();
             _depositionDocumentRepositoryMock.Setup(x => x.GetByFilter(It.IsAny<Expression<Func<DepositionDocument, bool>>>(), It.IsAny<string[]>())).ReturnsAsync(_depositionDocuments);
@@ -516,7 +517,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _annotationEventServiceMock.Verify(x => x.RemoveUserDocumentAnnotations(depositionDocument.DocumentId), Times.Once());
             _depositionServiceMock.Verify(x => x.ClearDepositionDocumentSharingId(depositionDocument.DepositionId), Times.Once());
             Assert.True(result.IsSuccess);
-        }       
+        }
 
         [Fact]
         public async Task CloseStampedDepositionDocument_CanCloseStampedDocument_ReturnTransactionFail()

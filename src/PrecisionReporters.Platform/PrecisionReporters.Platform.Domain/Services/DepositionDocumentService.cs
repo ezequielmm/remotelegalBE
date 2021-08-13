@@ -76,7 +76,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             {
                 newDepositionDocument = await _depositionDocumentRepository.Create(depositionDocument);
                 // Update document in S3 and Delete entry from DocumentUserDepositions table
-                if (document.Type != ApplicationConstants.Mp4Extension)
+                if (!_documentsConfiguration.NonConvertToPdfExtensions.Contains(document.Type))
                 {
                     var uploadResult = await _documentService.UpdateDocument(document, newDepositionDocument, identity, temporalPath, DocumentType.Exhibit.GetDescription());
                     if (uploadResult.IsFailed)

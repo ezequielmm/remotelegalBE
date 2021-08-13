@@ -112,7 +112,8 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<Document>> UploadExhibit(FileTransferInfo file, User user, string parentPath, DocumentType documentType)
         {
-            var extension = Path.GetExtension(file.Name) == ApplicationConstants.Mp4Extension ? ApplicationConstants.Mp4Extension : ApplicationConstants.PDFExtension;
+            var nonPdfExtensions = _documentsConfiguration.NonConvertToPdfExtensions.Contains(Path.GetExtension(file.Name)?.ToLower());
+            var extension = !nonPdfExtensions ? ApplicationConstants.PDFExtension : Path.GetExtension(file.Name);
             var fileName = $"{Guid.NewGuid()}{extension}";
 
             var document = await UploadExhibitToStorage(file, user, fileName, parentPath, documentType);
