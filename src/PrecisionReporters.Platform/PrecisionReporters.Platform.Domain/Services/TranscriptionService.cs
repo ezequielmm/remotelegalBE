@@ -135,7 +135,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                         Text = x.Text,
                         Id = x.Id.ToString(),
                         Confidence = x.Confidence,
-                        TranscriptDateTime = new DateTimeOffset(x.CreationDate, TimeSpan.Zero),
+                        TranscriptDateTime = new DateTimeOffset(x.TranscriptDateTime, TimeSpan.Zero),
                         TranscriptionVideoTime = CalculateSpeechTime(
                             CalculateSeconds(startedAt, GetDateTimestamp(x.TranscriptDateTime)),
                             compositionIntervals),
