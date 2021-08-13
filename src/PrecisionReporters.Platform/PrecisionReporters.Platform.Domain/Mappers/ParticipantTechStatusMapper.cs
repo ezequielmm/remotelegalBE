@@ -35,7 +35,7 @@ namespace PrecisionReporters.Platform.Domain.Mappers
                     {
                         Camera = new CameraDto {
                             Name = model.DeviceInfo != null ?  model.DeviceInfo?.CameraName : null,
-                            Status = model.DeviceInfo != null ? model.DeviceInfo?.CameraStatus : null
+                            Status = model.DeviceInfo != null ? model.DeviceInfo.CameraStatus : CameraStatus.Unavailable
                         },
                         Microphone = new MicrophoneDto { Name = model.DeviceInfo != null ? model.DeviceInfo?.MicrophoneName : null },
                         Speakers = new SpeakersDto { Name = model.DeviceInfo != null ? model.DeviceInfo?.SpeakersName : null }
