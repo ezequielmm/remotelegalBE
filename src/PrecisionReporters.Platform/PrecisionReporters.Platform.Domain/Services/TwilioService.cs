@@ -128,7 +128,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             var witnessArray = participants.Where(x => DeserializeObject(x.Identity).Email == witnessEmail).Select(w => w.Sid).ToArray();
             if (!witnessArray.Any())
             {
-                _log.LogError("There was an error finding a witness in array: {@0} from the room SId: {1}", witnessArray, roomSid);
+                _log.LogError("There was an error finding a witness in array: {@0} from the room SId: {1}", participants, roomSid);
                 throw new Exception("No Witness is found");
             }
             return witnessArray;
@@ -138,7 +138,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         {
             var participants = await ParticipantResource.ReadAsync(roomSid);
             var participantsSid = participants.Select(x => x.Sid).ToList();
-            _log.LogInformation("RoomService.StartRoom Participant Id List: {@0}", participantsSid);
+            _log.LogInformation("{0}.{1}: Room {2} Participant Id List: {@3}", nameof(TwilioService), nameof(TwilioService.CreateComposition), roomSid, participantsSid);
 
             return participants.ToList();
         }
