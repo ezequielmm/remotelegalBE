@@ -300,7 +300,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             if (deposition.Status == DepositionStatus.Completed)
             {
-                _logger.LogError("User {0} tries to enter the Deposition with id {1} that has already ended.", userResult.Value.EmailAddress, deposition.Id);
+                _logger.LogWarning("User {0} tries to enter the Deposition with id {1} that has already ended.", userResult.Value.EmailAddress, deposition.Id);
                 return Result.Fail(new InvalidStatusError($"Deposition with id {deposition.Id} has already ended."));
             }
 
