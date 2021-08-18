@@ -53,28 +53,11 @@ namespace PrecisionReporters.Platform.Data.Repositories
             return await result.ToListAsync();
         }
 
-        public async Task<Deposition> GetByIdWithAdmittedParticipants(Guid id, string[] include = null)
-        {
-            IQueryable<Deposition> depositions = _dbContext.Set<Deposition>();
-
-            if (include != null)
-            {
-                foreach (var property in include)
-                {
-                    depositions = depositions.Include(property);
-                }
-            }
-
-            var result = await GetDepositionWithAdmittedParticipant(depositions);
-
-            return result.FirstOrDefault(x => x.Id == id);
-        }
-
         public async Task<List<Deposition>> GetDepositionWithAdmittedParticipant(IQueryable<Deposition> depositions)
         {
-            IQueryable<Participant> participants = _dbContext.Set<Participant>();
+            IQueryable<Participant> participants = _dbContext.Set<Participant>().AsNoTracking();
 
-            var result = from d in depositions
+            var result = from d in depositions.AsNoTracking()
                          join p in participants.Where(x => x.IsAdmitted == true)
                               on d.Id equals p.DepositionId
                          select new { d, p };

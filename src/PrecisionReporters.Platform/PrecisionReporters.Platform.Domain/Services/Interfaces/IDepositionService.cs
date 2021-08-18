@@ -14,7 +14,6 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
     {
         Task<List<Deposition>> GetDepositions(Expression<Func<Deposition, bool>> filter = null, string[] include = null);
         Task<Result<Deposition>> GetDepositionById(Guid id);
-        Task<Result<Deposition>> GetDepositionByIdWithDocumentUsers(Guid id);
         Task<Result<Deposition>> GenerateScheduledDeposition(Guid caseId, Deposition deposition, List<Document> uploadedDocuments, User addedBy);
         Task<DepositionFilterResponseDto> GetDepositionsByStatus(DepositionFilterDto filterDto);
         Task<Result<JoinDepositionDto>> JoinDeposition(Guid id, string identity);
@@ -41,7 +40,6 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
         Task<Result<Participant>> AddParticipantToExistingDeposition(Guid id, Participant participant);
         Task<Result<Deposition>> EditDepositionDetails(Deposition deposition, FileTransferInfo file, bool deleteCaption);
         Task<Result<Deposition>> GetByIdWithIncludes(Guid id, string[] include = null);
-        Task<Result<Deposition>> GetByIdWithIncludesAndIsAdmitted(Guid id, string[] include = null);
         Task<Result<DepositionFilterResponseDto>> GetDepositionsByFilter(DepositionFilterDto filterDto);
         Task<Result<Deposition>> CancelDeposition(Guid depositionId);
         Task<Result<Deposition>> RevertCancel(Deposition deposition, FileTransferInfo file, bool deleteCaption);

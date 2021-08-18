@@ -11,9 +11,7 @@ namespace PrecisionReporters.Platform.Data.Repositories.Interfaces
     public interface IDepositionRepository: IRepository<Deposition>
     {
         Task<List<Deposition>> GetByStatus(Expression<Func<Deposition, object>> orderBy, SortDirection sortDirection,
-            Expression<Func<Deposition, bool>> filter = null, string[] include = null, Expression<Func<Deposition, object>> orderByThen = null);
-
-        Task<Deposition> GetByIdWithAdmittedParticipants(Guid id, string[] include = null);
+            Expression<Func<Deposition, bool>> filter = null, string[] include = null, Expression<Func<Deposition, object>> orderByThen = null);      
 
         Task<List<Deposition>> GetDepositionWithAdmittedParticipant(IQueryable<Deposition> depositions);
     }
