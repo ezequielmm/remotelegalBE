@@ -82,7 +82,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (roomResult.Value == null)
             {
                 _logger.LogError("Room with Sid: {0} not found", composition.Room.SId);
-                return roomResult.ToResult<Composition>();
+                return Result.Fail(new ResourceNotFoundError());
             }
 
             var compositionToUpdate = await _compositionRepository.GetFirstOrDefaultByFilter(x => x.SId == composition.SId);
@@ -133,23 +133,42 @@ namespace PrecisionReporters.Platform.Domain.Services
         private CompositionRecordingMetadata CreateCompositionMetadata(Deposition deposition)
         {
             var startDateTime = _twilioService.GetVideoStartTimeStamp(deposition.Room.SId);
-            return new CompositionRecordingMetadata
+#pragma warning disable IDE0017 // Simplify object initialization
+            var recMetadata = new CompositionRecordingMetadata();
+#pragma warning restore IDE0017 // Simplify object initialization
+
+            //TODO unified file name generation in one place
+            recMetadata.Video = $"{deposition.Room.Composition.SId}.{ApplicationConstants.Mp4}";
+            recMetadata.Name = deposition.Room?.Composition?.SId;
+            recMetadata.TimeZone = Enum.GetValues(typeof(USTimeZone)).Cast<USTimeZone>().FirstOrDefault(x => x.GetDescription() == deposition.TimeZone).ToString();
+            recMetadata.TimeZoneDescription = deposition.TimeZone;
+            recMetadata.OutputFormat = deposition.Room?.Composition?.FileType;
+            recMetadata.StartDate = startDateTime.Result.Value.GetDateTimeToSeconds();
+            if (deposition.Room.EndDate == null)
             {
-                //TODO unified file name generation in one place
-                Video = $"{deposition.Room.Composition.SId}.{ApplicationConstants.Mp4}",
-                Name = deposition.Room.Composition.SId,
-                TimeZone = Enum.GetValues(typeof(USTimeZone)).Cast<USTimeZone>().FirstOrDefault(x => x.GetDescription() == deposition.TimeZone).ToString(),
-                TimeZoneDescription = deposition.TimeZone,
-                OutputFormat = deposition.Room.Composition.FileType,
-                StartDate = startDateTime.Result.Value.GetDateTimeToSeconds(),
-                EndDate = _compositionHelper.GetDateTimestamp(deposition.Room.EndDate.Value),
-                Intervals = _compositionHelper.GetDepositionRecordingIntervals(deposition.Events, startDateTime.Result.Value)
-            };
+                var msg = string.Format("EndDate property cannot be null - Deposition Room Sid \"{0}\"", deposition.Room.SId);
+                throw new NullReferenceException(msg);
+            }
+            recMetadata.EndDate = _compositionHelper.GetDateTimestamp(deposition.Room.EndDate.Value);
+            recMetadata.Intervals = _compositionHelper.GetDepositionRecordingIntervals(deposition.Events, startDateTime.Result.Value);
+
+            return recMetadata;
         }
 
         private async Task<Result> UploadCompositionMetadata(Deposition deposition)
         {
-            var metadata = CreateCompositionMetadata(deposition);
+            CompositionRecordingMetadata metadata;
+            try
+            {
+                metadata = CreateCompositionMetadata(deposition);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex.Message);
+                var msg = string.Format("Error mapping Deposition->CompositionRecordingMetadata: {0}", ex.Message);
+                return Result.Fail(new Error(msg));
+            }
+
             return await _twilioService.UploadCompositionMetadata(metadata);
 
         }

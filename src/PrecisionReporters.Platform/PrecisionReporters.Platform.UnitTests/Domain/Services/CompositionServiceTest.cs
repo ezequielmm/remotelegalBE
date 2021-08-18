@@ -254,7 +254,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             };
             _roomServiceMock
                 .Setup(x => x.GetRoomBySId(It.IsAny<string>()))
-                .ReturnsAsync(Result.Ok(new Room()));
+                .ReturnsAsync(Result.Ok((Room) null));
             _compositionRepositoryMock
                 .Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Composition, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()))
                 .ReturnsAsync((Composition)null);
@@ -264,8 +264,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             //Assert
             _roomServiceMock.Verify(x => x.GetRoomBySId(It.IsAny<string>()), Times.Once);
-            _compositionRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Composition, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()), Times.Once);
-            //Assert.True(result.IsFailed);
+            Assert.True(result.IsFailed);
         }
 
         [Fact]
@@ -356,6 +355,64 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _twilioServiceMock.Verify(x => x.GetVideoStartTimeStamp(It.IsAny<string>()), Times.Once);
             _twilioServiceMock.Verify(x => x.UploadCompositionMetadata(It.IsAny<CompositionRecordingMetadata>()), Times.Once);
             Assert.True(result.IsFailed);
+        }
+
+        [Fact]
+        public async Task UpdateCompositionCallback_ShouldFail_NullDepositionEndDate()
+        {
+            //Arrange
+            var compositionId = Guid.NewGuid();
+            var composition = new Composition()
+            {
+                Id = compositionId,
+                SId = "CompositionTestSid",
+                Room = new Room()
+                {
+                    SId = "RoomTestSid"
+                },
+                Status = CompositionStatus.Available
+            };
+            var room = new Room()
+            {
+                SId = "WrongRoomSid",
+                Composition = composition,
+                EndDate = null
+            };
+            var deposition = new Deposition()
+            {
+                Room = room,
+                Events = new List<DepositionEvent>()
+                {
+                    new DepositionEvent() { EventType = EventType.OnTheRecord }
+                },
+                TimeZone = USTimeZone.AZ.ToString()
+            };
+            _roomServiceMock
+                .Setup(x => x.GetRoomBySId(It.IsAny<string>()))
+                .ReturnsAsync(Result.Ok(new Room()));
+            _compositionRepositoryMock
+                .Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Composition, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()))
+                .ReturnsAsync(new Composition());
+            _depositionServiceMock
+                .Setup(x => x.GetDepositionByRoomId(It.IsAny<Guid>()))
+                .ReturnsAsync(Result.Ok(deposition));
+            _twilioServiceMock
+                .Setup(x => x.GetVideoStartTimeStamp(It.IsAny<string>()))
+                .ReturnsAsync(Result.Ok(DateTime.UtcNow));
+            _twilioServiceMock
+                .Setup(x => x.UploadCompositionMetadata(It.IsAny<CompositionRecordingMetadata>()))
+                .ReturnsAsync(Result.Fail("Error"));
+            var errorMessaggeExpected = string.Format("Error mapping Deposition->CompositionRecordingMetadata: EndDate property cannot be null - Deposition Room Sid \"{0}\"", room.SId);
+            //Act
+            var result = await _service.UpdateCompositionCallback(composition);
+
+            //Assert
+            _roomServiceMock.Verify(x => x.GetRoomBySId(It.IsAny<string>()), Times.Once);
+            _compositionRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Composition, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()), Times.Once);
+            _depositionServiceMock.Verify(x => x.GetDepositionByRoomId(It.IsAny<Guid>()), Times.Once);
+            _twilioServiceMock.Verify(x => x.GetVideoStartTimeStamp(It.IsAny<string>()), Times.Once);
+            Assert.True(result.IsFailed);
+            Assert.Equal(errorMessaggeExpected, result.Errors.First().Message);
         }
 
         [Fact]

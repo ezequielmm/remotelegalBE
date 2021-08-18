@@ -99,16 +99,18 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<Room>> EndRoom(Room room, string witnessEmail)
         {
+            _logger.LogInformation(string.Format("Closing Room Sid \"{0}\"- status {1}", room.SId, room.Status));
             if (room.Status == RoomStatus.InProgress)
             {
                 var roomResourceResult = await _twilioService.EndRoom(room);
                 if (roomResourceResult.IsFailed)
                     return roomResourceResult.ToResult<Room>();
-
+                
                 room.EndDate = DateTime.UtcNow;
                 room.Status = RoomStatus.Completed;
-
+                _logger.LogInformation(string.Format("Updating Room Id: \"{0}\" - EndDate {1}, Status {2}", room.Id, room.EndDate, room.Status));
                 await _roomRepository.Update(room);
+                _logger.LogInformation(string.Format("Room Updated \"{0}\" - EndDate {1}, Status {2}", room.Id, room.EndDate, room.Status));
             }
             else
             {
