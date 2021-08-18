@@ -98,23 +98,22 @@ namespace PrecisionReporters.Platform.Domain.Services
             }
         }
 
-        public async Task<CompositionResource> CreateComposition(Room room, string witnessEmail)
+        public async Task<CompositionResource> CreateComposition(Room room, string[] witnessSid)
         {
             var options = new CreateCompositionOptions(room.SId);
             options.AudioSources = new List<string> { "*" };
             options.StatusCallback = new Uri(_twilioAccountConfiguration.StatusCallbackUrl);
             options.Format = CompositionResource.FormatEnum.Mp4;
-            options.Trim = true;            
+            options.Trim = true;
             if (room.IsRecordingEnabled)
             {
-                var witnessSid = await GetWitnessSid(room.SId, witnessEmail);
                 var joinedWitnessSid = string.Join(",", witnessSid);
-                _log.LogInformation($"{nameof(TwilioService)}.{nameof(TwilioService.CreateComposition)} - Create Composition Room Sid: {room?.SId} - Array Witness SID: {joinedWitnessSid}");
+                _log.LogInformation($"{nameof(TwilioService)}.{nameof(TwilioService.CreateComposition)} - Create Composition Room Sid: {room?.SId} - Array Witness SID: {witnessSid}");
                 options.VideoLayout = new
                 {
                     grid = new
                     {
-                        video_sources = witnessSid
+                        video_sources = witnessSid  
                     }
                 };
             }
@@ -122,7 +121,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             return await CompositionResource.CreateAsync(options);
         }
 
-        private async Task<string[]> GetWitnessSid(string roomSid, string witnessEmail)
+        public async Task<string[]> GetWitnessSid(string roomSid, string witnessEmail)
         {
             var participants = await GetParticipantsByRoom(roomSid);
             var witnessArray = participants.Where(x => DeserializeObject(x.Identity).Email == witnessEmail).Select(w => w.Sid).ToArray();
@@ -239,7 +238,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             return JsonConvert.SerializeObject(item, _serializeOptions);
         }
 
-        private TwilioIdentity DeserializeObject(string item)
+        public TwilioIdentity DeserializeObject(string item)
         {
             return (TwilioIdentity)JsonConvert.DeserializeObject(item, typeof(TwilioIdentity), _serializeOptions);
         }
