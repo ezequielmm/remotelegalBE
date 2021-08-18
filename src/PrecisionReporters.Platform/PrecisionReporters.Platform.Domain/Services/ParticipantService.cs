@@ -122,7 +122,8 @@ namespace PrecisionReporters.Platform.Domain.Services
                     EntityType = NotificationEntity.JoinRequest,
                     Content = _participantMapper.ToDto(participantResult.Value)
                 };
-                await _signalRNotificationManager.SendNotificationToDepositionAdmins(depositionId, notificationtDto);
+                if(!user.IsAdmin)
+                    await _signalRNotificationManager.SendNotificationToDepositionAdmins(depositionId, notificationtDto);
             }
 
             participantResult.Value.IsMuted = participantStatusDto.IsMuted;
