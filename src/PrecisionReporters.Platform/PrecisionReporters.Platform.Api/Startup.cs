@@ -9,7 +9,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json.Converters;
 using PrecisionReporters.Platform.Api.Filters;
 using PrecisionReporters.Platform.Api.Hubs;
-using PrecisionReporters.Platform.Api.Middlewares;
 using PrecisionReporters.Platform.Data;
 using PrecisionReporters.Platform.Domain;
 using PrecisionReporters.Platform.Domain.AppConfigurations;
@@ -20,6 +19,7 @@ using PrecisionReporters.Platform.Domain.Wrappers;
 using PrecisionReporters.Platform.Domain.Wrappers.Interfaces;
 using PrecisionReporters.Platform.Shared.Helpers;
 using PrecisionReporters.Platform.Shared.Helpers.Interfaces;
+using PrecisionReporters.Platform.Shared.Middlewares;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
@@ -88,6 +88,7 @@ namespace PrecisionReporters.Platform.Api
             });
             services.AddScoped<IAwsSnsWrapper, AwsSnsWrapper>();
             services.AddScoped<ISnsHelper, SnsHelper>();
+            services.AddScoped<ILoggingHelper, LoggingHelper>();
             services.AddScoped<ISystemSettingsService, SystemSettingsService>();
             services.Configure<KestrelServerOptions>(options =>
             {
@@ -174,8 +175,6 @@ namespace PrecisionReporters.Platform.Api
             // Enable middleware to serve generated Swagger as a JSON endpoint.
             app.UseSwagger();
 
-            app.UseMiddleware<ErrorHandlingMiddleware>(appConfiguration.ConfigurationFlags.IsShowErrorMessageEnabled);
-
             // Enable middleware to serve swagger-ui, specifying the Swagger JSON endpoint.
             if (appConfiguration.ConfigurationFlags.IsSwaggerUiEnabled)
             {
@@ -202,6 +201,9 @@ namespace PrecisionReporters.Platform.Api
             });
 
             app.UseAuthorization();
+            app.UseMiddleware<ErrorHandlingMiddleware>(appConfiguration.ConfigurationFlags.IsShowErrorMessageEnabled);
+            app.UseMiddleware<LogIdentityMiddleware>();
+
             app.UseHealthChecks("/healthcheck");
             app.UseWebSockets();
 

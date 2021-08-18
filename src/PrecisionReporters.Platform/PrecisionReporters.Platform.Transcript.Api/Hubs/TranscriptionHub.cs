@@ -8,10 +8,11 @@ using PrecisionReporters.Platform.Domain.Authorization.Attributes;
 using PrecisionReporters.Platform.Domain.Dtos;
 using PrecisionReporters.Platform.Shared.Commons;
 using PrecisionReporters.Platform.Shared.Extensions;
+using PrecisionReporters.Platform.Shared.Helpers.Interfaces;
 using PrecisionReporters.Platform.Transcript.Api.Hubs.Interfaces;
+using PrecisionReporters.Platform.Transcript.Api.Utils.Interfaces;
 using System;
 using System.Threading.Tasks;
-using PrecisionReporters.Platform.Transcript.Api.Utils.Interfaces;
 
 namespace PrecisionReporters.Platform.Transcript.Api.Hubs
 {
@@ -21,80 +22,98 @@ namespace PrecisionReporters.Platform.Transcript.Api.Hubs
     {
         private readonly ILogger<TranscriptionHub> _logger;
         private readonly ISignalRTranscriptionFactory _signalRTranscriptionFactory;
+        private readonly ILoggingHelper _loggingHelper;
 
         public TranscriptionHub(ILogger<TranscriptionHub> logger,
-            ISignalRTranscriptionFactory signalRTranscriptionFactory)
+            ISignalRTranscriptionFactory signalRTranscriptionFactory,
+            ILoggingHelper loggingHelper)
         {
             _logger = logger;
             _signalRTranscriptionFactory = signalRTranscriptionFactory;
+            _loggingHelper = loggingHelper;
         }
 
         [UserAuthorize(ResourceType.Deposition, ResourceAction.View)]
         public async Task<Result> SubscribeToDeposition(SubscribeToDepositionDto dto)
         {
-            try
+            return await _loggingHelper.ExecuteWithDeposition(dto.DepositionId, async () =>
             {
-                await Groups.AddToGroupAsync(Context.ConnectionId, dto.DepositionId.GetDepositionSignalRGroupName());
-                return Result.Ok();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "There was an error subscribing to Deposition {0}", dto.DepositionId);
-                return Result.Fail($"Unable to add user to Group {ApplicationConstants.DepositionGroupName}{dto.DepositionId}.");
-            }
+                try
+                {
+                    await Groups.AddToGroupAsync(Context.ConnectionId, dto.DepositionId.GetDepositionSignalRGroupName());
+                    return Result.Ok();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "There was an error subscribing to Deposition {0}", dto.DepositionId);
+                    return Result.Fail($"Unable to add user to Group {ApplicationConstants.DepositionGroupName}{dto.DepositionId}.");
+                }
+            });
         }
 
         [UserAuthorize(ResourceType.Deposition, ResourceAction.View)]
         public async Task UploadTranscription(TranscriptionsHubDto dto)
         {
-            try
+            await _loggingHelper.ExecuteWithDeposition(dto.DepositionId, async () =>
             {
-                var transcriptionLiveService = _signalRTranscriptionFactory.GetTranscriptionLiveService(Context.ConnectionId);
-                if (transcriptionLiveService != null)
-                    await transcriptionLiveService.RecognizeAsync(dto.Audio);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "There was an error uploading transcription of connectionId {0} on Deposition {1}", Context.ConnectionId, dto.DepositionId);
-                throw;
-            }
+                try
+                {
+                    var transcriptionLiveService = _signalRTranscriptionFactory.GetTranscriptionLiveService(Context.ConnectionId);
+                    if (transcriptionLiveService != null)
+                        await transcriptionLiveService.RecognizeAsync(dto.Audio);
+                    return Result.Ok();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "There was an error uploading transcription of connectionId {0} on Deposition {1}", Context.ConnectionId, dto.DepositionId);
+                    throw;
+                }
+            });
         }
 
         [UserAuthorize(ResourceType.Deposition, ResourceAction.View)]
         public async Task ChangeTranscriptionStatus(TranscriptionsChangeStatusDto dto)
         {
-            try
+            await _loggingHelper.ExecuteWithDeposition(dto.DepositionId, async () =>
             {
-                if (dto.OffRecord)
+                try
                 {
-                    _logger.LogInformation("Going OFF Record: transcriptions of {0} on deposition {1}", Context.UserIdentifier ,dto.DepositionId);
+                    if (dto.OffRecord)
+                    {
+                        _logger.LogInformation("Going OFF Record: transcriptions of {0} on deposition {1}", Context.UserIdentifier, dto.DepositionId);
 
-                    _signalRTranscriptionFactory.Unsubscribe(Context.ConnectionId);
+                        _signalRTranscriptionFactory.Unsubscribe(Context.ConnectionId);
+                    }
+                    else
+                    {
+                        _logger.LogInformation("Going ON Record: transcriptions of {0} on deposition {1}", Context.UserIdentifier, dto.DepositionId.ToString());
+                        await _signalRTranscriptionFactory.TryInitializeRecognition(Context.ConnectionId, Context.UserIdentifier, dto.DepositionId.ToString(), dto.SampleRate);
+                    }
+                    return true;
                 }
-                else
+                catch (Exception ex)
                 {
-                    _logger.LogInformation("Going ON Record: transcriptions of {0} on deposition {1}", Context.UserIdentifier ,dto.DepositionId.ToString());
-                    await _signalRTranscriptionFactory.TryInitializeRecognition(Context.ConnectionId, Context.UserIdentifier, dto.DepositionId.ToString(), dto.SampleRate);
+                    _logger.LogError(ex, "There was an error uploading transcription status of connectionId {0} on Deposition {1}", Context.ConnectionId, dto.DepositionId.ToString());
+                    throw;
                 }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "There was an error uploading transcription status of connectionId {0} on Deposition {1}", Context.ConnectionId, dto.DepositionId.ToString());
-                throw;
-            }
+            });
         }
 
         [UserAuthorize(ResourceType.Deposition, ResourceAction.View)]
         public async Task InitializeRecognition(InitializeRecognitionDto dto)
         {
-            var transcriptionLiveService = _signalRTranscriptionFactory.GetTranscriptionLiveService(Context.ConnectionId);
-            if (transcriptionLiveService != null)
+            await _loggingHelper.ExecuteWithDeposition(dto.DepositionId, async () =>
             {
-                _logger.LogInformation("Removing transcription service for user {0} on deposition {1}. Service already exist.", Context.UserIdentifier, dto.DepositionId);
-                _signalRTranscriptionFactory.Unsubscribe(Context.ConnectionId);
-            }
-            _logger.LogInformation("Initializing transcription service for user {0} on deposition {1} with sample rate {2}", Context.UserIdentifier, dto.DepositionId, dto.SampleRate);
-            await _signalRTranscriptionFactory.TryInitializeRecognition(Context.ConnectionId, Context.UserIdentifier, dto.DepositionId.ToString(), dto.SampleRate);
+                var transcriptionLiveService = _signalRTranscriptionFactory.GetTranscriptionLiveService(Context.ConnectionId);
+                if (transcriptionLiveService != null)
+                {
+                    _logger.LogInformation("Removing transcription service for user {0} on deposition {1}. Service already exist.", Context.UserIdentifier, dto.DepositionId);
+                    _signalRTranscriptionFactory.Unsubscribe(Context.ConnectionId);
+                }
+                _logger.LogInformation("Initializing transcription service for user {0} on deposition {1} with sample rate {2}", Context.UserIdentifier, dto.DepositionId, dto.SampleRate);
+                await _signalRTranscriptionFactory.TryInitializeRecognition(Context.ConnectionId, Context.UserIdentifier, dto.DepositionId.ToString(), dto.SampleRate);
+                return true;
+            });
         }
 
         public override async Task OnDisconnectedAsync(Exception exception)
@@ -106,6 +125,7 @@ namespace PrecisionReporters.Platform.Transcript.Api.Hubs
             try
             {
                 _signalRTranscriptionFactory.Unsubscribe(Context.ConnectionId);
+
             }
             catch (Exception e)
             {

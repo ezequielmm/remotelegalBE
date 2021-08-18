@@ -10,6 +10,7 @@ using PrecisionReporters.Platform.Domain.Dtos;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using PrecisionReporters.Platform.Shared.Commons;
 using PrecisionReporters.Platform.Shared.Extensions;
+using PrecisionReporters.Platform.Shared.Helpers.Interfaces;
 using System;
 using System.Threading.Tasks;
 
@@ -21,30 +22,35 @@ namespace PrecisionReporters.Platform.Api.Hubs
     {
         private readonly ILogger<DepositionHub> _logger;
         private readonly IDepositionService _depositionService;
-        public DepositionHub(ILogger<DepositionHub> logger, IDepositionService depositionService)
+        private readonly ILoggingHelper _loggingHelper;
+        public DepositionHub(ILogger<DepositionHub> logger, IDepositionService depositionService, ILoggingHelper loggingHelper)
         {
             _logger = logger;
             _depositionService = depositionService;
+            _loggingHelper = loggingHelper;
         }
 
         [UserAuthorize(ResourceType.Deposition, ResourceAction.View)]
         public async Task<Result> SubscribeToDeposition(SubscribeToDepositionDto dto)
         {
-            try
+            return await _loggingHelper.ExecuteWithDeposition(dto.DepositionId, async () =>
             {
-                await Groups.AddToGroupAsync(Context.ConnectionId, dto.DepositionId.GetDepositionSignalRGroupName());
-                var currentUserParticipant = await _depositionService.GetUserParticipant(dto.DepositionId);
-                if (currentUserParticipant.IsSuccess && (currentUserParticipant.Value.User.IsAdmin || currentUserParticipant.Value.Role == ParticipantType.CourtReporter))
+                try
                 {
-                    await Groups.AddToGroupAsync(Context.ConnectionId, dto.DepositionId.GetDepositionSignalRAdminsGroupName());
+                    await Groups.AddToGroupAsync(Context.ConnectionId, dto.DepositionId.GetDepositionSignalRGroupName());
+                    var currentUserParticipant = await _depositionService.GetUserParticipant(dto.DepositionId);
+                    if (currentUserParticipant.IsSuccess && (currentUserParticipant.Value.User.IsAdmin || currentUserParticipant.Value.Role == ParticipantType.CourtReporter))
+                    {
+                        await Groups.AddToGroupAsync(Context.ConnectionId, dto.DepositionId.GetDepositionSignalRAdminsGroupName());
+                    }
+                    return Result.Ok();
                 }
-                return Result.Ok();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"There was an error subscribing to Deposition {dto.DepositionId}");
-                return Result.Fail($"Unable to add user to Group {ApplicationConstants.DepositionGroupName}{dto.DepositionId}.");
-            }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, $"There was an error subscribing to Deposition {dto.DepositionId}");
+                    return Result.Fail($"Unable to add user to Group {ApplicationConstants.DepositionGroupName}{dto.DepositionId}.");
+                }
+            });
         }
     }
 }

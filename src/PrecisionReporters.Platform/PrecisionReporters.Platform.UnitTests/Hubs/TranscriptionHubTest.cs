@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Threading.Tasks;
+using FluentResults;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 using Moq;
 using PrecisionReporters.Platform.Domain.Dtos;
 using PrecisionReporters.Platform.Domain.Services;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
+using PrecisionReporters.Platform.Shared.Helpers.Interfaces;
 using PrecisionReporters.Platform.Transcript.Api.Hubs;
 using PrecisionReporters.Platform.Transcript.Api.Utils.Interfaces;
 using Xunit;
@@ -19,6 +21,7 @@ namespace PrecisionReporters.Platform.UnitTests.Hubs
         private readonly TranscriptionHub _classUnderTest;
         private readonly Mock<IHubContext<TranscriptionHub>> _hubContextMock;
         private readonly Mock<HubCallerContext> _clientContextMock;
+        private readonly Mock<ILoggingHelper> _loggingHelperMock;
 
         public TranscriptionHubTest()
         {
@@ -26,7 +29,15 @@ namespace PrecisionReporters.Platform.UnitTests.Hubs
             _clientContextMock = new Mock<HubCallerContext>();
             _signalRTranscriptionFactoryMock = new Mock<ISignalRTranscriptionFactory>();
             _loggerMock = new Mock<ILogger<TranscriptionHub>>();
-            _classUnderTest = new TranscriptionHub(_loggerMock.Object, _signalRTranscriptionFactoryMock.Object);
+            _loggingHelperMock = new Mock<ILoggingHelper>();
+
+            _loggingHelperMock.Setup(x => x.ExecuteWithDeposition(It.IsAny<Guid>(), It.IsAny<Func<Task<Result>>>()))
+                .Returns(async (Guid depoId, Func<Task<Result>> action) => { return await action(); });
+
+            _loggingHelperMock.Setup(x => x.ExecuteWithDeposition(It.IsAny<Guid>(), It.IsAny<Func<Task<bool>>>()))
+                .Returns(async (Guid depoId, Func<Task<bool>> action) => { return await action(); });
+
+            _classUnderTest = new TranscriptionHub(_loggerMock.Object, _signalRTranscriptionFactoryMock.Object, _loggingHelperMock.Object);
         }
 
         [Fact]
@@ -238,7 +249,7 @@ namespace PrecisionReporters.Platform.UnitTests.Hubs
                 .Throws(new Exception());
             var logMessage = "There was an error uploading transcription status of connectionId";
 
-                // Act
+            // Act
             Task Result()
             {
                 return _classUnderTest.ChangeTranscriptionStatus(transcriptionsChangeStatusDto);
@@ -322,7 +333,7 @@ namespace PrecisionReporters.Platform.UnitTests.Hubs
             _classUnderTest.Context = _clientContextMock.Object;
             _signalRTranscriptionFactoryMock
                 .Setup(mock => mock.GetTranscriptionLiveService(It.IsAny<string>()))
-                .Returns((TranscriptionLiveAzureService) null);
+                .Returns((TranscriptionLiveAzureService)null);
             var logMessageFinish =
                 $"Initializing transcription service for user {userIdentifier} on deposition {initializeRecognitionDto.DepositionId} with sample rate {initializeRecognitionDto.SampleRate}";
             _signalRTranscriptionFactoryMock
