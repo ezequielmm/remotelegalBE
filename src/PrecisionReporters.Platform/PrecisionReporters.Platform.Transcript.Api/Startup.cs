@@ -16,6 +16,9 @@ using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using PrecisionReporters.Platform.Transcript.Api.Utils;
 using PrecisionReporters.Platform.Transcript.Api.Utils.Interfaces;
+using PrecisionReporters.Platform.Shared.Middlewares;
+using PrecisionReporters.Platform.Shared.Helpers;
+using PrecisionReporters.Platform.Shared.Helpers.Interfaces;
 
 namespace PrecisionReporters.Platform.Transcript.Api
 {
@@ -58,6 +61,8 @@ namespace PrecisionReporters.Platform.Transcript.Api
             services.AddTransient<ITranscriptionLiveService, TranscriptionLiveAzureService>();
 
             services.AddScoped<ISignalRTranscriptionManager, SignalRTranscriptionManager>();
+
+            services.AddScoped<ILoggingHelper, LoggingHelper>();
 
             // Repositories
             services.AddDbContext<ApplicationDbContext>(options =>
@@ -141,8 +146,6 @@ namespace PrecisionReporters.Platform.Transcript.Api
                 app.UseDeveloperExceptionPage();
             }
 
-            //TODO: Add Error Handler Middleware
-
             app.UseHttpsRedirection();
             app.UseRouting();
             app.UseCors(AllowedOrigins);
@@ -160,6 +163,10 @@ namespace PrecisionReporters.Platform.Transcript.Api
             });
 
             app.UseAuthorization();
+
+            app.UseMiddleware<ErrorHandlingMiddleware>(appConfiguration.ConfigurationFlags.IsShowErrorMessageEnabled);
+            app.UseMiddleware<LogIdentityMiddleware>();
+
             app.UseHealthChecks("/healthcheck");
 
             var webSocketOptions = new WebSocketOptions() 

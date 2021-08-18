@@ -1,13 +1,12 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using PrecisionReporters.Platform.Domain.Dtos;
 using PrecisionReporters.Platform.Shared.Commons;
 using System;
 using System.Net;
 using System.Threading.Tasks;
 
-namespace PrecisionReporters.Platform.Api.Middlewares
+namespace PrecisionReporters.Platform.Shared.Middlewares
 {
     public class ErrorHandlingMiddleware
     {
@@ -54,7 +53,7 @@ namespace PrecisionReporters.Platform.Api.Middlewares
             
             var message = (exception is BaseException) ? exception.Message : "Internal server error";
             var error = (_showMessage) ? exception : null;
-            var result = JsonConvert.SerializeObject(new ErrorResponseDto { Message = message, Error = error });
+            var result = JsonConvert.SerializeObject(new { Message = message, Error = error });
             context.Response.ContentType = "application/json";
             
             await context.Response.WriteAsync(result);
