@@ -24,19 +24,22 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly IUserRepository _userRepository;
         private readonly IDepositionRepository _depositionRepository;
         private readonly ILogger<RoomService> _logger;
+        private readonly ITwilioParticipantRepository _twilioParticipantRepository;
 
         public RoomService(
             ITwilioService twilioService,
             IRoomRepository roomRepository,
             IUserRepository userRepository,
             IDepositionRepository depositionRepository,
-            ILogger<RoomService> logger)
+            ILogger<RoomService> logger,
+            ITwilioParticipantRepository twilioParticipantRepository)
         {
             _twilioService = twilioService;
             _roomRepository = roomRepository;
             _userRepository = userRepository;
             _depositionRepository = depositionRepository;
             _logger = logger;
+            _twilioParticipantRepository = twilioParticipantRepository;
         }
 
         public async Task<Result<Room>> Create(Room room)
@@ -120,9 +123,24 @@ namespace PrecisionReporters.Platform.Domain.Services
             return Result.Ok(room);
         }
 
-        public async Task<Result<Composition>> CreateComposition(Room room, string witnessEmail)
+        public async Task<Result<Composition>> CreateComposition(Room room, string witnessEmail, Guid depositionId)
         {
-            var compositionResource = await _twilioService.CreateComposition(room, witnessEmail);
+            var witnessParticipants = await _twilioParticipantRepository.GetByFilter(t => t.Participant.Email == witnessEmail && t.Participant.DepositionId.HasValue && t.Participant.DepositionId.Value == depositionId);
+            var twilioParticipantsSIDs = await _twilioService.GetWitnessSid(room.SId, witnessEmail);
+
+            if (!witnessParticipants.Any())
+            {
+                _logger.LogError($"{nameof(RoomService)}.{nameof(RoomService.CreateComposition)} Witness Email {witnessEmail}, RoomSid {room.SId}: User with Witness Email not found on DB");
+                throw new Exception("Witness not found");
+            }
+            var lstWitnessSIDs = witnessParticipants.Select(p => p.ParticipantSid).ToArray();
+
+            var differences = twilioParticipantsSIDs.Where(x => !lstWitnessSIDs.Contains(x));
+
+            if (differences.Any())
+                _logger.LogWarning($"{nameof(RoomService)}.{nameof(RoomService.CreateComposition)} - " + "Twilio's participant list {@0} - DB paticipant list {@1} - Differences between Twilio and BD list {@2}", twilioParticipantsSIDs, lstWitnessSIDs, differences);
+
+            var compositionResource = await _twilioService.CreateComposition(room, lstWitnessSIDs);
             _logger.LogInformation($"{nameof(RoomService)}.{nameof(RoomService.CreateComposition)} Twilio Composition Created: {compositionResource.Sid}");
             var composition = new Composition
             {

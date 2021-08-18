@@ -31,13 +31,13 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         private readonly Mock<IUserRepository> _userRepositoryMock = new Mock<IUserRepository>();
         private readonly Mock<IDepositionRepository> _depositionRepositoryMock = new Mock<IDepositionRepository>();
         private readonly Mock<ILogger<RoomService>> _mockLogger = new Mock<ILogger<RoomService>>();
-
+        private readonly Mock<ITwilioParticipantRepository> _twilioParticipantRepositoryMock = new Mock<ITwilioParticipantRepository>();
         public RoomServiceTests()
         {
             _twilioServiceMock = new Mock<ITwilioService>();
             _roomRepositoryMock = new Mock<IRoomRepository>();
-
-            _service = new RoomService(_twilioServiceMock.Object, _roomRepositoryMock.Object, _userRepositoryMock.Object, _depositionRepositoryMock.Object, _mockLogger.Object);
+            _twilioParticipantRepositoryMock = new Mock<ITwilioParticipantRepository>();
+            _service = new RoomService(_twilioServiceMock.Object, _roomRepositoryMock.Object, _userRepositoryMock.Object, _depositionRepositoryMock.Object, _mockLogger.Object, _twilioParticipantRepositoryMock.Object);
         }
 
         public void Dispose()
@@ -155,7 +155,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var twilioServiceMock = new Mock<ITwilioService>();
             var roomRepositoryMock = new Mock<IRoomRepository>();
             twilioServiceMock.Setup(x => x.EndRoom(It.IsAny<Room>())).ReturnsAsync(Result.Ok());
-            twilioServiceMock.Setup(x => x.CreateComposition(It.IsAny<Room>(), It.IsAny<string>())).ReturnsAsync((CompositionResource)null);
+            twilioServiceMock.Setup(x => x.CreateComposition(It.IsAny<Room>(), It.IsAny<string[]>())).ReturnsAsync((CompositionResource)null);
             var roomService = InitializeService(twilioService: twilioServiceMock, roomRepository: roomRepositoryMock);
 
             // Act
@@ -352,7 +352,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 .ReturnsAsync(Result.Ok("userChatSiD"));
 
             // Act
-            var result = await _service.GenerateRoomToken(roomName, user, participantRole, user.EmailAddress,chatDto);
+            var result = await _service.GenerateRoomToken(roomName, user, participantRole, user.EmailAddress, chatDto);
 
             // Assert
             _roomRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Room, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()), Times.Once);
@@ -370,7 +370,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var roomName = "TestingRoom";
             var room = new Room { Name = roomName, Status = RoomStatus.InProgress };
             var participantRole = ParticipantType.Observer;
-            var user = new User { Id = Guid.NewGuid(), EmailAddress = "testUser@mail.com", FirstName = "userFirstName", LastName = "userLastName", SId = Guid.NewGuid().ToString()};
+            var user = new User { Id = Guid.NewGuid(), EmailAddress = "testUser@mail.com", FirstName = "userFirstName", LastName = "userLastName", SId = Guid.NewGuid().ToString() };
             var identityObject = new TwilioIdentity
             {
                 Name = $"{user.FirstName} {user.LastName}",
@@ -394,11 +394,11 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 .Setup(mock => mock.CreateChat(It.IsAny<string>()))
                 .ReturnsAsync(Result.Ok("userChatSiD"));
             _depositionRepositoryMock
-                .Setup(mock => mock.GetById(It.IsAny<Guid>(),null))
+                .Setup(mock => mock.GetById(It.IsAny<Guid>(), null))
                 .ReturnsAsync(DepositionFactory.GetDeposition(Guid.NewGuid(), Guid.NewGuid()));
 
             // Act
-            var result = await _service.GenerateRoomToken(roomName, user, participantRole, user.EmailAddress,chatDto);
+            var result = await _service.GenerateRoomToken(roomName, user, participantRole, user.EmailAddress, chatDto);
 
             // Assert
             _roomRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Room, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()), Times.Once);
@@ -415,10 +415,10 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             // Arrange
             var roomId = Guid.NewGuid();
             var room = RoomFactory.GetRoomById(roomId);
-           _roomRepositoryMock
-                .Setup(mock => mock.Create(It.IsAny<Room>()))
-                .ReturnsAsync(room);
-            
+            _roomRepositoryMock
+                 .Setup(mock => mock.Create(It.IsAny<Room>()))
+                 .ReturnsAsync(room);
+
             // Act
             var result = await _service.Create(room);
 
@@ -434,16 +434,16 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var roomId = Guid.NewGuid();
             var room = RoomFactory.GetRoomById(roomId);
             _roomRepositoryMock
-                .Setup(mock => mock.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Room, bool>>>(),null,It.IsAny<bool>()))
+                .Setup(mock => mock.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Room, bool>>>(), null, It.IsAny<bool>()))
                 .ReturnsAsync(room);
-            
+
             // Act
             var result = await _service.GetRoomBySId(roomId.ToString());
 
             // Assert
             Assert.NotNull(result);
             Assert.IsType<Room>(result.Value);
-            _roomRepositoryMock.Verify(mock => mock.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Room, bool>>>(),null,It.IsAny<bool>()), Times.Once);
+            _roomRepositoryMock.Verify(mock => mock.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Room, bool>>>(), null, It.IsAny<bool>()), Times.Once);
         }
 
         [Fact]
@@ -457,7 +457,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _roomRepositoryMock
                 .Setup(mock => mock.Update(It.IsAny<Room>()))
                 .ReturnsAsync(updatedRoom);
-            
+
             // Act
             var result = await _service.Update(room);
 
@@ -479,7 +479,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 .ReturnsAsync(new List<RoomResource>());
 
             // Act
-            var result = await _service.GetTwilioRoomByNameAndStatus(uniqueName,status);
+            var result = await _service.GetTwilioRoomByNameAndStatus(uniqueName, status);
 
             // Assert
             Assert.NotNull(result);
@@ -500,7 +500,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             // Assert
             Assert.True(result);
-            _twilioServiceMock.Verify(mock => mock.RemoveRecordingRules(It.IsAny<string>()),Times.Once);
+            _twilioServiceMock.Verify(mock => mock.RemoveRecordingRules(It.IsAny<string>()), Times.Once);
         }
 
         [Fact]
@@ -508,15 +508,15 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         {
             // Arrange
             _twilioServiceMock
-                .Setup(mock => mock.AddRecordingRules(It.IsAny<string>(),It.IsAny<TwilioIdentity>(),It.IsAny<bool>()))
+                .Setup(mock => mock.AddRecordingRules(It.IsAny<string>(), It.IsAny<TwilioIdentity>(), It.IsAny<bool>()))
                 .ReturnsAsync(true);
 
             // Act
-            var result = await _service.AddRecordingRules(It.IsAny<string>(),It.IsAny<TwilioIdentity>(),It.IsAny<bool>());
+            var result = await _service.AddRecordingRules(It.IsAny<string>(), It.IsAny<TwilioIdentity>(), It.IsAny<bool>());
 
             // Assert
             Assert.True(result);
-            _twilioServiceMock.Verify(mock => mock.AddRecordingRules(It.IsAny<string>(),It.IsAny<TwilioIdentity>(),It.IsAny<bool>()), Times.Once);
+            _twilioServiceMock.Verify(mock => mock.AddRecordingRules(It.IsAny<string>(), It.IsAny<TwilioIdentity>(), It.IsAny<bool>()), Times.Once);
         }
 
         private RoomService InitializeService(
@@ -535,7 +535,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 roomRepositoryMock.Object,
                 userRepositoryMock.Object,
                 depositionRepositoryMock.Object,
-                _mockLogger.Object
+                _mockLogger.Object,
+                _twilioParticipantRepositoryMock.Object
                 );
         }
     }

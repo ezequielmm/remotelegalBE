@@ -28,6 +28,7 @@ namespace PrecisionReporters.Platform.Data
             services.AddScoped<IActivityHistoryRepository, ActivityHistoryRepository>();
             services.AddScoped<IDeviceInfoRepository, DeviceInfoRepository>();
             services.AddScoped<ISystemSettingsRepository, SystemSettingsRepository>();
+            services.AddScoped<ITwilioParticipantRepository, TwilioParticipantRepository>();
         }
     }
 }
