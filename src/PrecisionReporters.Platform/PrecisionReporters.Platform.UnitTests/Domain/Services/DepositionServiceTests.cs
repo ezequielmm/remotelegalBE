@@ -181,13 +181,13 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var deposition = DepositionFactory.GetDeposition(depositionId, caseId);
             _depositions.Add(deposition);
 
-            _depositionRepositoryMock.Setup(x => x.GetByIdWithAdmittedParticipants(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(() => _depositions.FirstOrDefault());
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(() => _depositions.FirstOrDefault());
 
             // Act
             var result = await _depositionService.GetDepositionById(depositionId);
 
             // Assert
-            _depositionRepositoryMock.Verify(mock => mock.GetByIdWithAdmittedParticipants(It.Is<Guid>(a => a == depositionId), It.IsAny<string[]>()), Times.Once());
+            _depositionRepositoryMock.Verify(mock => mock.GetById(It.Is<Guid>(a => a == depositionId), It.IsAny<string[]>()), Times.Once());
             Assert.True(result.IsSuccess);
 
             var foundDeposition = result.Value;
@@ -202,13 +202,13 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var id = Guid.NewGuid();
             var errorMessage = $"Deposition with id {id} not found.";
 
-            _depositionRepositoryMock.Setup(x => x.GetByIdWithAdmittedParticipants(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(() => _depositions.FirstOrDefault());
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(() => _depositions.FirstOrDefault());
 
             // Act
             var result = await _depositionService.GetDepositionById(id);
 
             // Assert
-            _depositionRepositoryMock.Verify(mock => mock.GetByIdWithAdmittedParticipants(It.Is<Guid>(a => a == id), It.IsAny<string[]>()), Times.Once());
+            _depositionRepositoryMock.Verify(mock => mock.GetById(It.Is<Guid>(a => a == id), It.IsAny<string[]>()), Times.Once());
             Assert.Equal(result.Errors[0].Message, errorMessage);
             Assert.True(result.IsFailed);
         }
@@ -972,7 +972,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 }
             };
 
-            _depositionRepositoryMock.Setup(x => x.GetByIdWithAdmittedParticipants(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
             _breakRoomServiceMock.Setup(x => x.JoinBreakRoom(breakRoomId, It.IsAny<Participant>())).ReturnsAsync(Result.Ok(token));
             _userServiceMock.Setup(x => x.GetCurrentUserAsync()).ReturnsAsync(user);
             // Act
@@ -995,13 +995,13 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 Participants = new List<Participant>()
             };
             _userServiceMock.Setup(x => x.GetCurrentUserAsync()).ReturnsAsync(new User());
-            _depositionRepositoryMock.Setup(x => x.GetByIdWithAdmittedParticipants(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
             // Act
             var result = await _depositionService.JoinBreakRoom(depositionId, breakRoomId);
 
             // Assert
             _userServiceMock.Verify(x => x.GetCurrentUserAsync(), Times.Once);
-            _depositionRepositoryMock.Verify(d => d.GetByIdWithAdmittedParticipants(It.Is<Guid>(i => i == depositionId), It.IsAny<string[]>()), Times.Once);
+            _depositionRepositoryMock.Verify(d => d.GetById(It.Is<Guid>(i => i == depositionId), It.IsAny<string[]>()), Times.Once);
             Assert.NotNull(result);
             Assert.True(result.IsFailed);
             Assert.Contains(expectedError, result.Errors.Select(e => e.Message));
@@ -1036,14 +1036,14 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 },
             };
             _userServiceMock.Setup(x => x.GetCurrentUserAsync()).ReturnsAsync(user);
-            _depositionRepositoryMock.Setup(x => x.GetByIdWithAdmittedParticipants(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
             _breakRoomServiceMock.Setup(x => x.JoinBreakRoom(It.IsAny<Guid>(), It.IsAny<Participant>())).ReturnsAsync(Result.Fail(new InvalidInputError(expectedError)));
             // Act
             var result = await _depositionService.JoinBreakRoom(depositionId, breakRoomId);
 
             // Assert
             _userServiceMock.Verify(x => x.GetCurrentUserAsync(), Times.Once);
-            _depositionRepositoryMock.Verify(d => d.GetByIdWithAdmittedParticipants(It.Is<Guid>(i => i == depositionId), It.IsAny<string[]>()), Times.Once);
+            _depositionRepositoryMock.Verify(d => d.GetById(It.Is<Guid>(i => i == depositionId), It.IsAny<string[]>()), Times.Once);
             _breakRoomServiceMock.Verify(x => x.JoinBreakRoom(It.IsAny<Guid>(), It.IsAny<Participant>()), Times.Once);
             Assert.NotNull(result);
             Assert.True(result.IsFailed);
@@ -1080,14 +1080,14 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 },
             };
             _userServiceMock.Setup(x => x.GetCurrentUserAsync()).ReturnsAsync(user);
-            _depositionRepositoryMock.Setup(x => x.GetByIdWithAdmittedParticipants(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
             _breakRoomServiceMock.Setup(x => x.JoinBreakRoom(It.IsAny<Guid>(), It.IsAny<Participant>())).ReturnsAsync(Result.Fail(new InvalidInputError(expectedError)));
             // Act
             var result = await _depositionService.JoinBreakRoom(depositionId, breakRoomId);
 
             // Assert
             _userServiceMock.Verify(x => x.GetCurrentUserAsync(), Times.Once);
-            _depositionRepositoryMock.Verify(d => d.GetByIdWithAdmittedParticipants(It.Is<Guid>(i => i == depositionId), It.IsAny<string[]>()), Times.Once);
+            _depositionRepositoryMock.Verify(d => d.GetById(It.Is<Guid>(i => i == depositionId), It.IsAny<string[]>()), Times.Once);
             _breakRoomServiceMock.Verify(x => x.JoinBreakRoom(It.IsAny<Guid>(), It.IsAny<Participant>()), Times.Once);
             Assert.NotNull(result);
             Assert.True(result.IsFailed);
@@ -1124,14 +1124,14 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 },
             };
             _userServiceMock.Setup(x => x.GetCurrentUserAsync()).ReturnsAsync(user);
-            _depositionRepositoryMock.Setup(x => x.GetByIdWithAdmittedParticipants(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
             _breakRoomServiceMock.Setup(x => x.JoinBreakRoom(It.IsAny<Guid>(), It.IsAny<Participant>())).ReturnsAsync(Result.Fail(new InvalidInputError(expectedError)));
             // Act
             var result = await _depositionService.JoinBreakRoom(depositionId, breakRoomId);
 
             // Assert
             _userServiceMock.Verify(x => x.GetCurrentUserAsync(), Times.Once);
-            _depositionRepositoryMock.Verify(d => d.GetByIdWithAdmittedParticipants(It.Is<Guid>(i => i == depositionId), It.IsAny<string[]>()), Times.Once);
+            _depositionRepositoryMock.Verify(d => d.GetById(It.Is<Guid>(i => i == depositionId), It.IsAny<string[]>()), Times.Once);
             _breakRoomServiceMock.Verify(x => x.JoinBreakRoom(It.IsAny<Guid>(), It.IsAny<Participant>()), Times.Once);
             Assert.NotNull(result);
             Assert.True(result.IsFailed);
@@ -1181,8 +1181,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var result = await _depositionService.EndDeposition(depositionId);
 
             // Assert
-            _depositionRepositoryMock.Verify(mock => mock.GetById(It.Is<Guid>(a => a == depositionId), It.IsAny<string[]>()), Times.Once());
-            _depositionRepositoryMock.Verify(mock => mock.Update(It.Is<Deposition>(d => d.Status == DepositionStatus.Completed && d.CompleteDate.HasValue)), Times.Once());
+            _depositionRepositoryMock.Verify(mock => mock.GetById(It.Is<Guid>(a => a == depositionId), It.IsAny<string[]>()), Times.AtLeast(1));
+            _depositionRepositoryMock.Verify(mock => mock.Update(It.Is<Deposition>(d => d.Status == DepositionStatus.Completed && d.CompleteDate.HasValue)), Times.AtLeast(1));
             _roomServiceMock.Verify(mock => mock.EndRoom(It.IsAny<Room>(), It.IsAny<string>()), Times.Once());
             Assert.NotNull(result);
             Assert.True(result.IsSuccess);
@@ -1200,7 +1200,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             deposition.IsOnTheRecord = !IsOnRecord;
             _depositions.Add(deposition);
 
-            _depositionRepositoryMock.Setup(x => x.GetByIdWithAdmittedParticipants(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(() => _depositions.FirstOrDefault());
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(() => _depositions.FirstOrDefault());
             _depositionRepositoryMock.Setup(x => x.Update(It.IsAny<Deposition>())).ReturnsAsync(() => _depositions.FirstOrDefault());
 
             _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(new User()));
@@ -1209,7 +1209,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var result = await _depositionService.GoOnTheRecord(depositionId, IsOnRecord, "user@mail.com");
 
             // Assert
-            _depositionRepositoryMock.Verify(mock => mock.GetByIdWithAdmittedParticipants(It.Is<Guid>(a => a == depositionId), It.IsAny<string[]>()), Times.Once());
+            _depositionRepositoryMock.Verify(mock => mock.GetById(It.Is<Guid>(a => a == depositionId), It.IsAny<string[]>()), Times.Once());
             _depositionRepositoryMock.Verify(mock => mock.Update(It.Is<Deposition>(d => d.IsOnTheRecord == IsOnRecord)), Times.Once());
 
             Assert.NotNull(result);
@@ -1230,7 +1230,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             deposition.IsOnTheRecord = IsOnRecord;
             _depositions.Add(deposition);
 
-            _depositionRepositoryMock.Setup(x => x.GetByIdWithAdmittedParticipants(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(() => _depositions.FirstOrDefault());
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(() => _depositions.FirstOrDefault());
             _depositionRepositoryMock.Setup(x => x.Update(It.IsAny<Deposition>())).ReturnsAsync(() => _depositions.FirstOrDefault());
 
             _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(new User()));
@@ -1239,7 +1239,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var result = await _depositionService.GoOnTheRecord(depositionId, IsOnRecord, "user@mail.com");
 
             // Assert
-            _depositionRepositoryMock.Verify(mock => mock.GetByIdWithAdmittedParticipants(It.Is<Guid>(a => a == depositionId), It.IsAny<string[]>()), Times.Once());
+            _depositionRepositoryMock.Verify(mock => mock.GetById(It.Is<Guid>(a => a == depositionId), It.IsAny<string[]>()), Times.Once());
             _depositionRepositoryMock.Verify(mock => mock.Update(It.Is<Deposition>(d => d.IsOnTheRecord == IsOnRecord)), Times.Never());
 
             Assert.True(result.IsFailed);
@@ -1256,7 +1256,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             deposition.IsOnTheRecord = !IsOnRecord;
             _depositions.Add(deposition);
 
-            _depositionRepositoryMock.Setup(x => x.GetByIdWithAdmittedParticipants(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(() => _depositions.FirstOrDefault());
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(() => _depositions.FirstOrDefault());
             _depositionRepositoryMock.Setup(x => x.Update(It.IsAny<Deposition>())).ReturnsAsync(() => _depositions.FirstOrDefault());
 
             _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(new User()));
@@ -1265,7 +1265,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var result = await _depositionService.GoOnTheRecord(depositionId, IsOnRecord, "user@mail.com");
 
             // Assert
-            _depositionRepositoryMock.Verify(mock => mock.GetByIdWithAdmittedParticipants(It.Is<Guid>(a => a == depositionId), It.IsAny<string[]>()), Times.Once());
+            _depositionRepositoryMock.Verify(mock => mock.GetById(It.Is<Guid>(a => a == depositionId), It.IsAny<string[]>()), Times.Once());
             _depositionRepositoryMock.Verify(mock => mock.Update(It.Is<Deposition>(d => d.IsOnTheRecord == IsOnRecord)), Times.Once());
 
             Assert.NotNull(result);
@@ -1411,7 +1411,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var depositionId = Guid.NewGuid();
             Deposition deposition = null;
 
-            _depositionRepositoryMock.Setup(x => x.GetByIdWithAdmittedParticipants(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
 
             // Act
             var result = await _depositionService.CheckParticipant(depositionId, participantEmail);
@@ -1692,7 +1692,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 Email = participantEmail,
                 Role = ParticipantType.Observer
             };
-            _depositionRepositoryMock.Setup(x => x.GetByIdWithAdmittedParticipants(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
             _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(user));
 
             // Act
@@ -1718,7 +1718,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 Email = participantEmail,
                 Role = ParticipantType.TechExpert
             };
-            _depositionRepositoryMock.Setup(x => x.GetByIdWithAdmittedParticipants(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
             _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(user));
 
             // Act
@@ -1745,7 +1745,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 Email = participantEmail,
                 Role = ParticipantType.Observer
             };
-            _depositionRepositoryMock.Setup(x => x.GetByIdWithAdmittedParticipants(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
 
             // Act
             var result = await _depositionService.AddParticipant(depositionId, participant);
@@ -1772,7 +1772,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 Email = participantEmail,
                 Role = ParticipantType.Observer
             };
-            _depositionRepositoryMock.Setup(x => x.GetByIdWithAdmittedParticipants(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
 
             // Act
             var result = await _depositionService.AddParticipant(depositionId, participant);
@@ -1800,7 +1800,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 Email = participantEmail,
                 Role = ParticipantType.Witness
             };
-            _depositionRepositoryMock.Setup(x => x.GetByIdWithAdmittedParticipants(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
             _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(user));
 
             // Act
@@ -1868,7 +1868,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             deposition.Room.RecordingStartDate = DateTime.UtcNow;
             deposition.Room.EndDate = DateTime.UtcNow.AddSeconds(300);
 
-            _depositionRepositoryMock.Setup(x => x.GetByIdWithAdmittedParticipants(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
 
             //Act
             var result = await _depositionService.GetDepositionVideoInformation(depositionId);
@@ -1903,7 +1903,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             deposition.Room.RecordingStartDate = DateTime.UtcNow;
             deposition.Room.EndDate = DateTime.UtcNow.AddSeconds(300);
             deposition.Case = new Case { Name = "Case123" };
-            _depositionRepositoryMock.Setup(x => x.GetByIdWithAdmittedParticipants(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition); _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(user));
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition); _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(user));
             _awsStorageServiceMock.Setup(x => x.GetFilePublicUri(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>(), null, false)).Returns("urlMocked");
 
             //Act
@@ -2293,13 +2293,13 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             //Arrange
             var depositionMock = new Deposition() { Id = Guid.NewGuid() };
             _userServiceMock.Setup(u => u.GetCurrentUserAsync()).ReturnsAsync(new User { });
-            _depositionRepositoryMock.Setup(d => d.GetByIdWithAdmittedParticipants(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync((Deposition)null);
+            _depositionRepositoryMock.Setup(d => d.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync((Deposition)null);
             //Act
             var result = await _depositionService.EditDepositionDetails(depositionMock, new FileTransferInfo(), false);
 
             //Assert
             _userServiceMock.Verify(u => u.GetCurrentUserAsync(), Times.Never);
-            _depositionRepositoryMock.Verify(d => d.GetByIdWithAdmittedParticipants(It.Is<Guid>(i => i == depositionMock.Id), It.IsAny<string[]>()));
+            _depositionRepositoryMock.Verify(d => d.GetById(It.Is<Guid>(i => i == depositionMock.Id), It.IsAny<string[]>()));
             Assert.NotNull(result);
             Assert.True(result.IsFailed);
         }
@@ -2318,14 +2318,14 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var fileMock = new FileTransferInfo() { Name = fileName };
 
             _userServiceMock.Setup(u => u.GetCurrentUserAsync()).ReturnsAsync(userMock);
-            _depositionRepositoryMock.Setup(d => d.GetByIdWithAdmittedParticipants(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(depositionMock);
+            _depositionRepositoryMock.Setup(d => d.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(depositionMock);
             _documentServiceMock.Setup(dc => dc.UploadDocumentFile(It.IsAny<FileTransferInfo>(), It.IsAny<User>(), It.IsAny<string>(), It.IsAny<DocumentType>())).ReturnsAsync(Result.Fail($"Error loading file {keyName}"));
             //Act
             var result = await _depositionService.EditDepositionDetails(depositionMock, fileMock, false);
 
             //Assert
             _userServiceMock.Verify(u => u.GetCurrentUserAsync(), Times.Once);
-            _depositionRepositoryMock.Verify(d => d.GetByIdWithAdmittedParticipants(It.Is<Guid>(i => i == depositionMock.Id), It.IsAny<string[]>()));
+            _depositionRepositoryMock.Verify(d => d.GetById(It.Is<Guid>(i => i == depositionMock.Id), It.IsAny<string[]>()));
             _documentServiceMock.Verify(dc => dc.UploadDocumentFile(
                 It.IsAny<FileTransferInfo>(),
                 It.Is<User>(u => u == userMock),
@@ -2350,7 +2350,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var fileMock = new FileTransferInfo() { Name = fileName };
 
             _userServiceMock.Setup(u => u.GetCurrentUserAsync()).ReturnsAsync(userMock);
-            _depositionRepositoryMock.Setup(d => d.GetByIdWithAdmittedParticipants(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(depositionMock);
+            _depositionRepositoryMock.Setup(d => d.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(depositionMock);
             _documentServiceMock.Setup(dc => dc.UploadDocumentFile(It.IsAny<FileTransferInfo>(), It.IsAny<User>(), It.IsAny<string>(), It.IsAny<DocumentType>())).ReturnsAsync(Result.Ok(new Document()));
             _depositionRepositoryMock.Setup(d => d.Update(It.IsAny<Deposition>())).ReturnsAsync(depositionMock);
             //Act
@@ -2358,7 +2358,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             //Assert
             _userServiceMock.Verify(u => u.GetCurrentUserAsync(), Times.Once);
-            _depositionRepositoryMock.Verify(d => d.GetByIdWithAdmittedParticipants(It.Is<Guid>(i => i == depositionMock.Id), It.IsAny<string[]>()));
+            _depositionRepositoryMock.Verify(d => d.GetById(It.Is<Guid>(i => i == depositionMock.Id), It.IsAny<string[]>()));
             _documentServiceMock.Verify(dc => dc.UploadDocumentFile(
                 It.IsAny<FileTransferInfo>(),
                 It.Is<User>(u => u == userMock),
@@ -2385,14 +2385,14 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var fileMock = new FileTransferInfo() { Name = fileName };
 
             _userServiceMock.Setup(u => u.GetCurrentUserAsync()).ReturnsAsync(userMock);
-            _depositionRepositoryMock.Setup(d => d.GetByIdWithAdmittedParticipants(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(depositionMock);
+            _depositionRepositoryMock.Setup(d => d.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(depositionMock);
             _depositionRepositoryMock.Setup(d => d.Update(It.IsAny<Deposition>())).ReturnsAsync(depositionMock);
             //Act
             var result = await _depositionService.EditDepositionDetails(depositionMock, null, true);
 
             //Assert
             _userServiceMock.Verify(u => u.GetCurrentUserAsync(), Times.Once);
-            _depositionRepositoryMock.Verify(d => d.GetByIdWithAdmittedParticipants(It.Is<Guid>(i => i == depositionMock.Id), It.IsAny<string[]>()));
+            _depositionRepositoryMock.Verify(d => d.GetById(It.Is<Guid>(i => i == depositionMock.Id), It.IsAny<string[]>()));
             _documentServiceMock.Verify(dc => dc.DeleteUploadedFiles(It.IsAny<List<Document>>()), Times.AtLeastOnce);
             _depositionRepositoryMock.Verify(d => d.Update(It.IsAny<Deposition>()), Times.Once);
             Assert.NotNull(result);
@@ -2414,14 +2414,14 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var fileMock = new FileTransferInfo() { Name = fileName };
 
             _userServiceMock.Setup(u => u.GetCurrentUserAsync()).ReturnsAsync(userMock);
-            _depositionRepositoryMock.Setup(d => d.GetByIdWithAdmittedParticipants(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(depositionMock);
+            _depositionRepositoryMock.Setup(d => d.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(depositionMock);
             _depositionRepositoryMock.Setup(d => d.Update(It.IsAny<Deposition>())).ReturnsAsync(depositionMock);
             //Act
             var result = await _depositionService.EditDepositionDetails(depositionMock, null, false);
 
             //Assert
             _userServiceMock.Verify(u => u.GetCurrentUserAsync(), Times.Once);
-            _depositionRepositoryMock.Verify(d => d.GetByIdWithAdmittedParticipants(It.Is<Guid>(i => i == depositionMock.Id), It.IsAny<string[]>()));
+            _depositionRepositoryMock.Verify(d => d.GetById(It.Is<Guid>(i => i == depositionMock.Id), It.IsAny<string[]>()));
             _depositionRepositoryMock.Verify(d => d.Update(It.IsAny<Deposition>()), Times.Once);
             Assert.NotNull(result);
             Assert.IsType<Result<Deposition>>(result);
@@ -2562,12 +2562,12 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var caseId = Guid.NewGuid();
             var deposition = DepositionFactory.GetDeposition(depositionId, caseId);
             deposition.StartDate = DateTime.UtcNow.AddSeconds(59);
-            _depositionRepositoryMock.Setup(x => x.GetByIdWithAdmittedParticipants(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
 
             var result = await _depositionService.CancelDeposition(depositionId);
 
             Assert.True(result.IsFailed);
-            _depositionRepositoryMock.Verify(x => x.GetByIdWithAdmittedParticipants(It.IsAny<Guid>(), It.IsAny<string[]>()), Times.Once);
+            _depositionRepositoryMock.Verify(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>()), Times.Once);
         }
 
         [Fact]
@@ -2577,12 +2577,12 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var caseId = Guid.NewGuid();
             var deposition = DepositionFactory.GetDeposition(depositionId, caseId);
             deposition.StartDate = DateTime.UtcNow.AddMinutes(2);
-            _depositionRepositoryMock.Setup(x => x.GetByIdWithAdmittedParticipants(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
 
             var result = await _depositionService.CancelDeposition(depositionId);
 
             Assert.True(result.IsSuccess);
-            _depositionRepositoryMock.Verify(x => x.GetByIdWithAdmittedParticipants(It.IsAny<Guid>(), It.IsAny<string[]>()), Times.Once);
+            _depositionRepositoryMock.Verify(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>()), Times.Once);
         }
 
         [Fact]
@@ -2591,14 +2591,14 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             //Arrange
             var depositionMock = new Deposition() { Id = Guid.NewGuid() };
             _userServiceMock.Setup(u => u.GetCurrentUserAsync()).ReturnsAsync(new User { });
-            _depositionRepositoryMock.Setup(d => d.GetByIdWithAdmittedParticipants(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync((Deposition)null);
+            _depositionRepositoryMock.Setup(d => d.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync((Deposition)null);
 
             //Act
             var result = await _depositionService.RevertCancel(depositionMock, new FileTransferInfo(), false);
 
             //Assert
             _userServiceMock.Verify(u => u.GetCurrentUserAsync(), Times.Never);
-            _depositionRepositoryMock.Verify(d => d.GetByIdWithAdmittedParticipants(It.Is<Guid>(i => i == depositionMock.Id), It.Is<string[]>(i => i.SequenceEqual(new[] { nameof(Deposition.Caption), nameof(Deposition.Case), nameof(Deposition.Participants) }))));
+            _depositionRepositoryMock.Verify(d => d.GetById(It.Is<Guid>(i => i == depositionMock.Id), It.Is<string[]>(i => i.SequenceEqual(new[] { nameof(Deposition.Caption), nameof(Deposition.Case), nameof(Deposition.Participants) }))));
             Assert.NotNull(result);
             Assert.True(result.IsFailed);
         }
@@ -2617,7 +2617,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var fileMock = new FileTransferInfo() { Name = fileName };
 
             _userServiceMock.Setup(u => u.GetCurrentUserAsync()).ReturnsAsync(userMock);
-            _depositionRepositoryMock.Setup(d => d.GetByIdWithAdmittedParticipants(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(depositionMock);
+            _depositionRepositoryMock.Setup(d => d.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(depositionMock);
             _documentServiceMock.Setup(dc => dc.UploadDocumentFile(It.IsAny<FileTransferInfo>(), It.IsAny<User>(), It.IsAny<string>(), It.IsAny<DocumentType>())).ReturnsAsync(Result.Fail($"Error loading file {keyName}"));
 
             //Act
@@ -2625,7 +2625,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             //Assert
             _userServiceMock.Verify(u => u.GetCurrentUserAsync(), Times.Once);
-            _depositionRepositoryMock.Verify(d => d.GetByIdWithAdmittedParticipants(It.Is<Guid>(i => i == depositionMock.Id), It.Is<string[]>(i => i.SequenceEqual(new[] { nameof(Deposition.Caption), nameof(Deposition.Case), nameof(Deposition.Participants) }))));
+            _depositionRepositoryMock.Verify(d => d.GetById(It.Is<Guid>(i => i == depositionMock.Id), It.Is<string[]>(i => i.SequenceEqual(new[] { nameof(Deposition.Caption), nameof(Deposition.Case), nameof(Deposition.Participants) }))));
             _documentServiceMock.Verify(dc => dc.UploadDocumentFile(
                 It.IsAny<FileTransferInfo>(),
                 It.Is<User>(u => u == userMock),
@@ -2651,7 +2651,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var fileMock = new FileTransferInfo() { Name = fileName };
 
             _userServiceMock.Setup(u => u.GetCurrentUserAsync()).ReturnsAsync(userMock);
-            _depositionRepositoryMock.Setup(d => d.GetByIdWithAdmittedParticipants(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(currentDepositionMock);
+            _depositionRepositoryMock.Setup(d => d.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(currentDepositionMock);
             _documentServiceMock.Setup(dc => dc.UploadDocumentFile(It.IsAny<FileTransferInfo>(), It.IsAny<User>(), It.IsAny<string>(), It.IsAny<DocumentType>())).ReturnsAsync(Result.Ok(new Document()));
             _depositionRepositoryMock.Setup(d => d.Update(It.IsAny<Deposition>())).ReturnsAsync(depositionMock);
             //Act
@@ -2659,7 +2659,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             //Assert
             _userServiceMock.Verify(u => u.GetCurrentUserAsync(), Times.Once);
-            _depositionRepositoryMock.Verify(d => d.GetByIdWithAdmittedParticipants(It.Is<Guid>(i => i == depositionMock.Id), It.Is<string[]>(i => i.SequenceEqual(new[] { nameof(Deposition.Caption), nameof(Deposition.Case), nameof(Deposition.Participants) }))));
+            _depositionRepositoryMock.Verify(d => d.GetById(It.Is<Guid>(i => i == depositionMock.Id), It.Is<string[]>(i => i.SequenceEqual(new[] { nameof(Deposition.Caption), nameof(Deposition.Case), nameof(Deposition.Participants) }))));
             _documentServiceMock.Verify(dc => dc.UploadDocumentFile(
                 It.IsAny<FileTransferInfo>(),
                 It.Is<User>(u => u == userMock),
@@ -2794,7 +2794,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var userMock = new User() { EmailAddress = testEmail };
             var fileMock = new FileTransferInfo() { Name = fileName };
             _userServiceMock.Setup(u => u.GetCurrentUserAsync()).ReturnsAsync(userMock);
-            _depositionRepositoryMock.Setup(d => d.GetByIdWithAdmittedParticipants(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(currentDepositionMock);
+            _depositionRepositoryMock.Setup(d => d.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(currentDepositionMock);
             _documentServiceMock.Setup(dc => dc.UploadDocumentFile(It.IsAny<FileTransferInfo>(), It.IsAny<User>(), It.IsAny<string>(), It.IsAny<DocumentType>())).ReturnsAsync(Result.Ok(new Document()));
             _depositionRepositoryMock.Setup(d => d.Update(It.IsAny<Deposition>())).ReturnsAsync(depositionMock);
 
@@ -2804,7 +2804,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             // Assert
             Assert.True(result.IsSuccess);
             _userServiceMock.Verify(u => u.GetCurrentUserAsync(), Times.Once);
-            _depositionRepositoryMock.Verify(d => d.GetByIdWithAdmittedParticipants(It.Is<Guid>(i => i == depositionMock.Id), It.IsAny<string[]>()), Times.Once);
+            _depositionRepositoryMock.Verify(d => d.GetById(It.Is<Guid>(i => i == depositionMock.Id), It.IsAny<string[]>()), Times.Once);
             _documentServiceMock.Verify(dc => dc.UploadDocumentFile(
                 It.IsAny<FileTransferInfo>(),
                 It.Is<User>(u => u == userMock),
@@ -2818,13 +2818,13 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             //Arrange
             var depositionId = Guid.NewGuid();
             var expectedError = $"Deposition with id {depositionId} not found.";
-            _depositionRepositoryMock.Setup(x => x.GetByIdWithAdmittedParticipants(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync((Deposition)null);
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync((Deposition)null);
 
             //Act
             var result = await _depositionService.NotifyParties(depositionId);
 
             //Assert
-            _depositionRepositoryMock.Verify(x => x.GetByIdWithAdmittedParticipants(It.Is<Guid>(p => p == depositionId), It.IsAny<string[]>()), Times.Once);
+            _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(p => p == depositionId), It.IsAny<string[]>()), Times.Once);
             Assert.True(result.IsFailed);
             Assert.Contains(expectedError, result.Errors.Select(e => e.Message));
 
@@ -2841,13 +2841,13 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 Participants = new List<Participant>()
             };
             var expectedError = $"The deposition {depositionId} must have participants";
-            _depositionRepositoryMock.Setup(x => x.GetByIdWithAdmittedParticipants(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
 
             //Act
             var result = await _depositionService.NotifyParties(depositionId);
 
             //Assert
-            _depositionRepositoryMock.Verify(x => x.GetByIdWithAdmittedParticipants(It.Is<Guid>(p => p == depositionId), It.IsAny<string[]>()), Times.Once);
+            _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(p => p == depositionId), It.IsAny<string[]>()), Times.Once);
             Assert.True(result.IsFailed);
             Assert.Contains(expectedError, result.Errors.Select(e => e.Message));
 
@@ -2867,13 +2867,13 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 }
             };
             var expectedError = $"The Deposition {depositionId} must have a witness";
-            _depositionRepositoryMock.Setup(x => x.GetByIdWithAdmittedParticipants(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
 
             //Act
             var result = await _depositionService.NotifyParties(depositionId);
 
             //Assert
-            _depositionRepositoryMock.Verify(x => x.GetByIdWithAdmittedParticipants(It.Is<Guid>(p => p == depositionId), It.IsAny<string[]>()), Times.Once);
+            _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(p => p == depositionId), It.IsAny<string[]>()), Times.Once);
             Assert.True(result.IsFailed);
             Assert.Contains(expectedError, result.Errors.Select(e => e.Message));
 
@@ -2896,14 +2896,14 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                     new Participant(){ Role = ParticipantType.Witness, Name = "Test Witness" }
                 }
             };
-            _depositionRepositoryMock.Setup(x => x.GetByIdWithAdmittedParticipants(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
             _awsEmailServiceMock.Setup(x => x.SetTemplateEmailRequest(It.IsAny<EmailTemplateInfo>(), It.IsAny<string>())).ThrowsAsync(new Exception());
 
             //Act
             var result = await _depositionService.NotifyParties(depositionId);
 
             //Assert
-            _depositionRepositoryMock.Verify(x => x.GetByIdWithAdmittedParticipants(It.Is<Guid>(p => p == depositionId), It.IsAny<string[]>()), Times.Once);
+            _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(p => p == depositionId), It.IsAny<string[]>()), Times.Once);
             _awsEmailServiceMock.Verify(e => e.SetTemplateEmailRequest(It.IsAny<EmailTemplateInfo>(), It.IsAny<string>()), Times.Once);
             Assert.True(result.IsSuccess);
             Assert.IsType<bool>(result.Value);
@@ -2928,13 +2928,13 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 }
             };
             var expectedError = $"The Deposition {depositionId} must have a witness";
-            _depositionRepositoryMock.Setup(x => x.GetByIdWithAdmittedParticipants(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
 
             //Act
             var result = await _depositionService.NotifyParties(depositionId);
 
             //Assert
-            _depositionRepositoryMock.Verify(x => x.GetByIdWithAdmittedParticipants(It.Is<Guid>(p => p == depositionId), It.IsAny<string[]>()), Times.Once);
+            _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(p => p == depositionId), It.IsAny<string[]>()), Times.Once);
             _awsEmailServiceMock.Verify(e => e.SetTemplateEmailRequest(It.IsAny<EmailTemplateInfo>(), It.IsAny<string>()), Times.Once);
             Assert.True(result.IsSuccess);
             Assert.IsType<bool>(result.Value);
@@ -2947,13 +2947,13 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             //Arrange
             var depositionId = Guid.NewGuid();
             var expectedError = $"Deposition with id {depositionId} not found.";
-            _depositionRepositoryMock.Setup(d => d.GetByIdWithAdmittedParticipants(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync((Deposition)null);
+            _depositionRepositoryMock.Setup(d => d.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync((Deposition)null);
 
             //Act
             var result = await _depositionService.LockBreakRoom(depositionId, Guid.NewGuid(), true);
 
             //Assert
-            _depositionRepositoryMock.Verify(d => d.GetByIdWithAdmittedParticipants(It.Is<Guid>(x => x == depositionId), It.IsAny<string[]>()), Times.Once);
+            _depositionRepositoryMock.Verify(d => d.GetById(It.Is<Guid>(x => x == depositionId), It.IsAny<string[]>()), Times.Once);
             Assert.True(result.IsFailed);
             Assert.NotNull(result);
             Assert.Contains(expectedError, result.Errors.Select(e => e.Message));
