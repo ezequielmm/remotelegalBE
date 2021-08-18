@@ -16,27 +16,27 @@
                 {
                     "name": "AppConfiguration__CognitoConfiguration__AWSRegion",
                     "value": "us-east-1"
-                },
-                {
+                  },
+                  {
                     "name": "AppConfiguration__CognitoConfiguration__ClientId",
-                    "value": "4lh6ji3bllp5mef6nn99oo5eii"
-                },
-                {
+                    "value": "3fihjsoceeclkcbim6sn84ad7l"
+                  },
+                  {
                     "name": "AppConfiguration__CognitoConfiguration__UserPoolId",
-                    "value": "us-east-1_EIxRbuTmE"
-                },
-                {
+                    "value": "us-east-1_VeMTCOfOh"
+                  },
+                  {
                     "name": "AppConfiguration__CognitoConfiguration__Authority",
-                    "value": "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_EIxRbuTmE"
-                },
-                {
+                    "value": "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_VeMTCOfOh"
+                  },
+                  {
                     "name": "AppConfiguration__CognitoConfiguration__GuestClientId",
-                    "value": "2n4gmkmkv73kf645u69m5jv9nj"
-                },
-                {
+                    "value": "68rkght0h6ntkf4b2052o4fri8"
+                  },
+                  {
                     "name": "AppConfiguration__CognitoConfiguration__GuestUsersGroup",
                     "value": "Guests"
-                },
+                  },
                 {
                     "name": "AppConfiguration__TwilioAccountConfiguration__StatusCallbackUrl",
                     "value": "https://api-performance.prdevelopment.net/api/compositions"
@@ -165,7 +165,7 @@
             "secrets": [
                 {
                     "name": "AppConfiguration__ConnectionStrings__MySqlConnection",
-                    "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:QA/AppConfiguration__ConnectionStrings__MySqlConnection-5rPWpp"
+                    "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:PERFORMANCE/AppConfiguration__ConnectionStrings__MySqlConnection-XZKXex"
                 },
                 {
                     "name": "AppConfiguration__CognitoConfiguration__GuestUsersPass",
