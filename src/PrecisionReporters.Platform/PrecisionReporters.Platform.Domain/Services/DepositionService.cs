@@ -343,6 +343,8 @@ namespace PrecisionReporters.Platform.Domain.Services
                 await GoOnTheRecord(deposition.Id, false, email);
                 await _userService.RemoveGuestParticipants(deposition.Participants);
 
+                _logger.LogInformation($"{nameof(DepositionService)}.{nameof(DepositionService.EndDeposition)} Deposition completed: {deposition.Id} with Witness {witness} finished by user {currentUser} with id {deposition.EndedById}");
+
                 return Result.Ok(updatedDeposition);
             });
             if (transactionResult.IsFailed)
@@ -446,10 +448,15 @@ namespace PrecisionReporters.Platform.Domain.Services
                     Name = witness?.Name,
                     Role = Enum.GetName(typeof(ParticipantType), witness?.Role)
                 };
+
+                _logger.LogInformation($"{nameof(DepositionService)}.{nameof(DepositionService.GoOnTheRecord)} Deposition is ON the record {depositionEvent.EventType}: in deposition {deposition.Id} with Witness {witness} Started by {userResult} with Twilio identity {identity}");
+
                 await _roomService.AddRecordingRules(deposition.Room.SId, identity, deposition.IsVideoRecordingNeeded);
             }
             else
             {
+                _logger.LogInformation($"{nameof(DepositionService)}.{nameof(DepositionService.GoOnTheRecord)} Deposition is OFF the record {depositionEvent.EventType}: in deposition {deposition.Id} finished by {userResult}");
+
                 await _roomService.RemoveRecordingRules(deposition.Room.SId);
             }
 
