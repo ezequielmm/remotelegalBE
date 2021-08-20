@@ -178,7 +178,12 @@ namespace PrecisionReporters.Platform.Transcript.Api
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
-                endpoints.MapHub<TranscriptionHub>("/transcriptionHub");
+                endpoints.MapHub<TranscriptionHub>("/transcriptionHub",
+                    options =>
+                    {
+                        options.ApplicationMaxBufferSize = 128 * 1024;
+                        options.TransportMaxBufferSize = 128 * 1024;
+                    });
             });
 
             app.UseResponseCompression();
