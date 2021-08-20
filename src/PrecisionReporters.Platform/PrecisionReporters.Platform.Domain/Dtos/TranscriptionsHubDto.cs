@@ -13,5 +13,7 @@ namespace PrecisionReporters.Platform.Domain.Dtos
         public Guid DepositionId { get; set; }
         [Key("audio")]
         public byte[] Audio { get; set; }
+        [Key("sampleRate")]
+        public int SampleRate { get; set; }
     }
 }

@@ -61,6 +61,19 @@ namespace PrecisionReporters.Platform.Transcript.Api.Hubs
                     var transcriptionLiveService = _signalRTranscriptionFactory.GetTranscriptionLiveService(Context.ConnectionId);
                     if (transcriptionLiveService != null)
                         await transcriptionLiveService.RecognizeAsync(dto.Audio);
+                    else
+                    {
+                        _logger.LogWarning("Reconnecting transcription service for user {0} with connectionID {1} on deposition {2}", Context.UserIdentifier,Context.ConnectionId,dto.DepositionId);
+                        await _signalRTranscriptionFactory.TryInitializeRecognition(Context.ConnectionId, Context.UserIdentifier, dto.DepositionId.ToString(), dto.SampleRate);
+                        transcriptionLiveService = _signalRTranscriptionFactory.GetTranscriptionLiveService(Context.ConnectionId);
+                        if (transcriptionLiveService != null)
+                            await transcriptionLiveService.RecognizeAsync(dto.Audio);
+                        else
+                        {
+                            _logger.LogError("FAIL Reconnection transcription service for user {0} with connectionID {1} on deposition {2}", Context.UserIdentifier,Context.ConnectionId,dto.DepositionId);
+                            return Result.Fail($"FAIL Reconnection transcription service for user {Context.UserIdentifier} with connectionID {Context.ConnectionId} on deposition {dto.DepositionId}");
+                        }
+                    }
                     return Result.Ok();
                 }
                 catch (Exception ex)
