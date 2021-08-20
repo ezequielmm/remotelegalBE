@@ -113,7 +113,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 {
                     grid = new
                     {
-                        video_sources = witnessSid  
+                        video_sources = witnessSid
                     }
                 };
             }
@@ -127,8 +127,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             var witnessArray = participants.Where(x => DeserializeObject(x.Identity).Email == witnessEmail).Select(w => w.Sid).ToArray();
             if (!witnessArray.Any())
             {
-                _log.LogError("There was an error finding a witness in array: {@0} from the room SId: {1}", participants, roomSid);
-                throw new Exception("No Witness is found");
+                _log.LogError("{0} - {1} - There was an error finding a witness in array: {@2} from the room SId: {3}", nameof(TwilioService), nameof(TwilioService.GetWitnessSid), participants, roomSid);
             }
             return witnessArray;
         }
