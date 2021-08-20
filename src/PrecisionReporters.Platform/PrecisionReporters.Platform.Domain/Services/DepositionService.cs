@@ -335,7 +335,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 deposition.CompleteDate = DateTime.UtcNow;
                 deposition.Status = DepositionStatus.Completed;
                 deposition.EndedById = currentUser?.Id;
-                
+
                 var email = currentUser != null ? currentUser.EmailAddress : deposition.AddedBy.EmailAddress;
                 //TODO: we need to avoid calling _depositionRepository.Update twice. Maybe a refactor in GoOnTheRecord method.
                 var updatedDeposition = await _depositionRepository.Update(deposition);
@@ -925,7 +925,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<Deposition>> EditDepositionDetails(Deposition deposition, FileTransferInfo file, bool deleteCaption)
         {
-            var includes = new[] { nameof(Deposition.Caption), nameof(Deposition.Case), nameof(Deposition.AddedBy) };
+            var includes = new[] { nameof(Deposition.Caption), nameof(Deposition.Case), nameof(Deposition.AddedBy), nameof(Deposition.Participants) };
             var currentDepositionResult = await GetByIdWithIncludes(deposition.Id, includes);
             if (currentDepositionResult.IsFailed)
                 return currentDepositionResult;
