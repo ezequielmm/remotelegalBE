@@ -66,6 +66,10 @@
           "value": "prp-frontend-content-uat"
         },
         {
+          "name": "AppConfiguration__DocumentConfiguration__PreSignedUploadUrlValidSeconds",
+          "value": "30"
+        },
+        {
           "name": "AppConfiguration__EmailConfiguration__VerifyEmailSubject",
           "value": "[UAT] Verify your Remote Legal account"
         },

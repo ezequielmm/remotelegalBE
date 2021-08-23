@@ -1997,5 +1997,136 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _documentRepositoryMock.Verify(r => r.Update(It.Is<Document>(d => d.Id == docId && d.SharedAt.HasValue)), Times.Never);
             _depositionRepositoryMock.Verify(r => r.Update(It.Is<Deposition>(d => d.Id == depoId && d.SharingDocumentId.HasValue)), Times.Never);
         }
+
+        [Fact]
+        public async Task GetPreSignedUrlUploadExhibit_ShouldReturn_SignedUrl()
+        {
+            // Arrange
+            var presignurl = new PreSignedUrlDto()
+            {
+                Headers = new Dictionary<string, string>() {
+                    { "x-amz-meta-user-id", "6fc0184a-800c-4a1e-eb44-08d94b9110fd"},
+                    { "x-amz-meta-deposition-id", "06173e30-8e36-4b07-a16b-2a5a27fd83f0"}
+                },
+                Url = "https://download-url.com/tets.file/4j34h2k4h242kj4h"
+            };
+            var filename = "test.pdf";
+            var documentId = Guid.NewGuid();
+            var depositionId = Guid.NewGuid();
+            var input = new PreSignedUploadUrlDto()
+            {
+                DepositionId = depositionId,
+                FileName = filename
+            };
+            var deposition = new Deposition { EndDate = DateTime.Now };
+            var depoDoc = new DepositionDocument { Id = documentId, Document = new Document { Id = documentId, DisplayName = "testName.pdf" } };
+            _userServiceMock.Setup(x => x.GetCurrentUserAsync()).ReturnsAsync(new User());
+
+            _depositionRepositoryMock
+                .Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>()))
+                .ReturnsAsync(deposition);
+
+            _awsStorageServiceMock
+                .Setup(x => x.GetPreSignedPutUrl(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<Dictionary<string, object>>()))
+                .Returns(Result.Ok(presignurl));
+
+            // Act
+            var result = await _service.GetPreSignedUrlUploadExhibit(input);
+
+            // Assert
+
+            _depositionRepositoryMock.Verify(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>()), Times.Once);
+            _awsStorageServiceMock.Verify(x => x.GetPreSignedPutUrl(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<Dictionary<string, object>>()), Times.Once);
+            Assert.NotNull(result);
+            Assert.IsType<Result<PreSignedUrlDto>>(result);
+            Assert.True(result.IsSuccess);
+            Assert.Equal(presignurl.Url, result.Value.Url);
+        }
+
+        [Fact]
+        public async Task GetPreSignedUrlUploadExhibit_ShouldFail_DepositionNotfound()
+        {
+            // Arrange
+            var presignurl = new PreSignedUrlDto()
+            {
+                Headers = new Dictionary<string, string>() {
+                    { "x-amz-meta-user-id", "6fc0184a-800c-4a1e-eb44-08d94b9110fd"},
+                    { "x-amz-meta-deposition-id", "06173e30-8e36-4b07-a16b-2a5a27fd83f0"}
+                },
+                Url = "https://download-url.com/tets.file/4j34h2k4h242kj4h"
+            };
+            var filename = "test.pdf";
+            var documentId = Guid.NewGuid();
+            var depositionId = Guid.NewGuid();
+            var input = new PreSignedUploadUrlDto()
+            {
+                DepositionId = depositionId,
+                FileName = filename
+            };
+            var erroMsg = $"Deposition with id {depositionId} not found.";
+            var deposition = (Deposition) null;
+            var depoDoc = new DepositionDocument { Id = documentId, Document = new Document { Id = documentId, DisplayName = "testName.pdf" } };
+            _userServiceMock.Setup(x => x.GetCurrentUserAsync()).ReturnsAsync(new User());
+
+            _depositionRepositoryMock
+                .Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>()))
+                .ReturnsAsync(deposition);
+
+            // Act
+            var result = await _service.GetPreSignedUrlUploadExhibit(input);
+
+            // Assert
+
+            _depositionRepositoryMock.Verify(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>()), Times.Once);
+            Assert.True(result.IsFailed);
+            Assert.Equal(result.Errors.First().Message, erroMsg);
+        }
+
+        [Fact]
+        public async Task GetPreSignedUrlUploadExhibit_ShouldFail_AmazonS3Error()
+        {
+            // Arrange
+            var presignurl = new PreSignedUrlDto()
+            {
+                Headers = new Dictionary<string, string>() {
+                    { "x-amz-meta-user-id", "6fc0184a-800c-4a1e-eb44-08d94b9110fd"},
+                    { "x-amz-meta-deposition-id", "06173e30-8e36-4b07-a16b-2a5a27fd83f0"}
+                },
+                Url = "https://download-url.com/tets.file/4j34h2k4h242kj4h"
+            };
+            var filename = "test.pdf";
+            var documentId = Guid.NewGuid();
+            var depositionId = Guid.NewGuid();
+            var input = new PreSignedUploadUrlDto()
+            {
+                DepositionId = depositionId,
+                FileName = filename
+            };
+            var deposition = new Deposition { EndDate = DateTime.Now };
+            var depoDoc = new DepositionDocument { Id = documentId, Document = new Document { Id = documentId, DisplayName = "testName.pdf" } };
+            var erroMsg = $"Error getting Presigned Url from Amazon S3 Services. Error S3";
+
+            _userServiceMock.Setup(x => x.GetCurrentUserAsync()).ReturnsAsync(new User());
+
+            _depositionRepositoryMock
+                .Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>()))
+                .ReturnsAsync(deposition);
+
+            _awsStorageServiceMock
+                .Setup(x => x.GetPreSignedPutUrl(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<Dictionary<string, object>>()))
+                .Returns(Result.Fail(new Error("Error S3")));
+
+            // Act
+            var result = await _service.GetPreSignedUrlUploadExhibit(input);
+
+            // Assert
+
+            _depositionRepositoryMock.Verify(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>()), Times.Once);
+            _awsStorageServiceMock.Verify(x => x.GetPreSignedPutUrl(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<Dictionary<string, object>>()), Times.Once);
+            Assert.NotNull(result);
+            Assert.IsType<Result<PreSignedUrlDto>>(result);
+            Assert.True(result.IsFailed);
+            Assert.Equal(result.Errors.First().Message, erroMsg);
+        }
     }
 }

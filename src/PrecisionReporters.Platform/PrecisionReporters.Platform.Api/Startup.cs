@@ -85,6 +85,7 @@ namespace PrecisionReporters.Platform.Api
                 x.CloudfrontXmlKey = appConfiguration.DocumentConfiguration.CloudfrontXmlKey;
                 x.CloudfrontPolicyStatement = appConfiguration.DocumentConfiguration.CloudfrontPolicyStatement;
                 x.NonConvertToPdfExtensions = appConfiguration.DocumentConfiguration.NonConvertToPdfExtensions;
+                x.PreSignedUploadUrlValidSeconds = appConfiguration.DocumentConfiguration.PreSignedUploadUrlValidSeconds;
             });
             services.AddScoped<IAwsSnsWrapper, AwsSnsWrapper>();
             services.AddScoped<ISnsHelper, SnsHelper>();

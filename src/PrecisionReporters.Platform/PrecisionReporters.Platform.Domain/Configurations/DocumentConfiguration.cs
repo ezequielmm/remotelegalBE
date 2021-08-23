@@ -10,6 +10,7 @@ namespace PrecisionReporters.Platform.Domain.Configurations
         public long MaxFileSize { get; set; }
         public IReadOnlyList<string> AcceptedFileExtensions { get; set; }
         public int PreSignedUrlValidHours { get; set; }
+        public int PreSignedUploadUrlValidSeconds { get; set; }
         public long MaxRequestBodySize { get; set; }
         public string PostDepoVideoBucket { get; set; }
         public string EnvironmentFilesBucket { get; set; }

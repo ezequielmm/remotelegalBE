@@ -78,6 +78,10 @@
                     "value": "output-elastictranscoder-dev"
                 },
                 {
+                    "name": "AppConfiguration__DocumentConfiguration__PreSignedUploadUrlValidSeconds",
+                    "value": "30"
+                },
+                {
                     "name": "AppConfiguration__EmailConfiguration__ImagesUrl",
                     "value": "https://prp-dev.prdevelopment.net/email/images/"
                 },

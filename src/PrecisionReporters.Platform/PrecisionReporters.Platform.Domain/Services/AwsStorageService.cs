@@ -1,14 +1,18 @@
 ﻿using Amazon.Runtime;
+using Amazon.S3;
 using Amazon.S3.Model;
 using Amazon.S3.Transfer;
 using FluentResults;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using PrecisionReporters.Platform.Domain.Configurations;
+using PrecisionReporters.Platform.Domain.Dtos;
 using PrecisionReporters.Platform.Domain.Helpers;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using PrecisionReporters.Platform.Shared.Commons;
+using PrecisionReporters.Platform.Shared.Extensions;
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
@@ -22,6 +26,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly ITransferUtility _fileTransferUtility;
         private readonly ILogger<AwsStorageService> _logger;
         private readonly UrlPathConfiguration _urlPathConfiguration;
+        private const string CUSTOM_METADATA_PREFIX = "x-amz-meta-";
 
         public AwsStorageService(ITransferUtility transferUtility, ILogger<AwsStorageService> logger, IOptions<UrlPathConfiguration> urlPathConfiguration)
         {
@@ -218,6 +223,53 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             var uriSignature = StorageHelper.CreateCannedPrivateURL(filePublicUri, "seconds", durationNumber.ToString(), privateKeyId, xmlKey, policyStatement);
             return uriSignature;
+        }
+
+        /// <summary>
+        /// Generate a presigned URL that can be used to access the file named
+        /// in the ojbectKey parameter for the amount of time specified in the
+        /// duration parameter.
+        /// </summary>
+        /// <param name="key">The name of the S3 bucket containing the object for which to create the presigned URL</param>
+        /// <param name="bucketName">The name of the object to access with the presigned URL.</param>
+        /// <param name="expirationTime">The length of time for which the presigned URL will be valid.</param>
+        /// <param name="metadata">collection of metadata to append to Presigned URL</param>
+        /// <returns>A string representing the generated presigned URL</returns>
+        public Result<PreSignedUrlDto> GetPreSignedPutUrl(string key, string bucketName, DateTime expirationTime, Dictionary<string, object> metadata = null)
+        {
+            PreSignedUrlDto presigned;
+            try
+            {
+                GetPreSignedUrlRequest request = new GetPreSignedUrlRequest()
+                {
+                    BucketName = bucketName,
+                    Key = key,
+                    Verb = HttpVerb.PUT,
+                    Expires = expirationTime
+                };
+                
+                presigned = new PreSignedUrlDto();
+                if (metadata != null)
+                {
+                    presigned.Headers = new Dictionary<string, string>();
+                    foreach (var data in metadata)
+                    {
+                        var customKey = CUSTOM_METADATA_PREFIX + data.Key;
+                        customKey = customKey.ToHypenCase();
+                        request.Metadata.Add(data.Key.ToHypenCase(), data.Value.ToString());
+                        presigned.Headers.Add(customKey, data.Value.ToString());
+                    }
+                }
+
+                presigned.Url = _fileTransferUtility.S3Client.GetPreSignedURL(request);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("An AmazonS3Exception was thrown: {0}", ex.Message);
+                return Result.Fail(new ExceptionalError($"Error generating PreSignedPutUrl: ", ex));
+            }
+
+            return Result.Ok(presigned);
         }
     }
 }

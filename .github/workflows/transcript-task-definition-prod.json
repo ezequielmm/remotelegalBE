@@ -66,6 +66,10 @@
           "value": "prp-frontend-content-prod"
         },
         {
+          "name": "AppConfiguration__DocumentConfiguration__PreSignedUploadUrlValidSeconds",
+          "value": "30"
+        },
+        {
           "name": "AppConfiguration__EmailConfiguration__VerifyEmailSubject",
           "value": "Verify your Remote Legal account"
         },

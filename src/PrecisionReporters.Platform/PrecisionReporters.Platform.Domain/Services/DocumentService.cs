@@ -783,5 +783,52 @@ namespace PrecisionReporters.Platform.Domain.Services
                 }
             }
         }
+
+        /// <summary>
+        /// Generate a presigned URL that can be used to access the file named
+        /// in the ojbectKey parameter for the amount of time specified in the
+        /// duration parameter.
+        /// </summary>
+        /// <param name="preSignedUploadUrl"></param>
+        /// <returns></returns>
+        public async Task<Result<PreSignedUrlDto>> GetPreSignedUrlUploadExhibit(PreSignedUploadUrlDto preSignedUploadUrl)
+        {
+            var deposition = await _depositionRepository.GetById(preSignedUploadUrl.DepositionId);
+            if (deposition == null)
+            {
+                return Result.Fail(new ResourceNotFoundError($"Deposition with id {preSignedUploadUrl.DepositionId} not found."));
+            }
+            var extension = Path.GetExtension(preSignedUploadUrl.FileName);
+            var keyFileName = $"{Guid.NewGuid()}{extension}";
+            var folder = "temp-" + DocumentType.Exhibit.GetDescription().ToLower();
+            var documentKeyName = $"{folder}/{deposition.CaseId}/{deposition.Id}/{keyFileName}";
+            var metadata = await GenerateUploadMetadata(preSignedUploadUrl, deposition, extension);
+            var expirationDate = DateTime.UtcNow.AddSeconds(_documentsConfiguration.PreSignedUploadUrlValidSeconds);
+            var urlResult = _awsStorageService.GetPreSignedPutUrl(documentKeyName, _documentsConfiguration.BucketName, expirationDate, metadata);
+
+            if (urlResult.IsFailed)
+            {
+                var msg = $"Error getting Presigned Url from Amazon S3 Services. {urlResult.Errors.First().Message}";
+                return Result.Fail(new Error(msg));
+            }
+
+            return Result.Ok(urlResult.Value);
+        }
+
+        private async Task<Dictionary<string, object>> GenerateUploadMetadata(PreSignedUploadUrlDto preSignedUploadUrl, Deposition deposition, string extension)
+        {
+            var user = await _userService.GetCurrentUserAsync();
+            var metadata = new Dictionary<string, object>
+            {
+                { "UserId", user.Id.ToString() },
+                { "DepositionId", deposition.Id.ToString() },
+                { "CaseId", deposition.CaseId.ToString() },
+                { "DisplayName", preSignedUploadUrl.FileName },
+                { "Type", extension },
+                { "DocumentType", DocumentType.Exhibit.ToString()}
+            };
+
+            return metadata;
+        }
     }
 }

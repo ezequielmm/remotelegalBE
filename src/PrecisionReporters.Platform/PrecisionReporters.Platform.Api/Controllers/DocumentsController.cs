@@ -186,5 +186,23 @@ namespace PrecisionReporters.Platform.Api.Controllers
 
             return Ok();
         }
+
+        /// <summary>
+        /// Return a pre-signed url to upload an Exhibit, This url will expires after 30 seconds
+        /// </summary>
+        /// <param name="depositionId">Identifier of the deposition which files are going to asociated with</param>
+        /// <param name="fileName">File Name</param>
+        /// <returns>Ok if succeeded</returns>
+        [HttpPost]
+        [Route("Depositions/PreSignUploadExhibit")]
+        public async Task<ActionResult<PreSignedUrlDto>> GetPreSignUploadExhibit(PreSignedUploadUrlDto preSignedUploadUrl)
+        {
+            var preSignedUrlResult = await _documentService.GetPreSignedUrlUploadExhibit(preSignedUploadUrl);
+
+            if (preSignedUrlResult.IsFailed)
+                return WebApiResponses.GetErrorResponse(preSignedUrlResult);
+
+            return Ok(preSignedUrlResult.Value);
+        }
     }
 }

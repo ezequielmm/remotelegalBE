@@ -378,21 +378,61 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
         }
 
         [Fact]
-        public async Task UploadTranscriptionsFiles_ReturnsError_WhenUploadDocumentsFails()
+        public async Task PreSignUploadExhibit_ReturnsOk()
         {
             // Arrange
+            var resultDto = new PreSignedUrlDto()
+            { 
+                Headers = new Dictionary<string, string>() {
+                    { "x-amz-meta-user-id", "6fc0184a-800c-4a1e-eb44-08d94b9110fd"},
+                    { "x-amz-meta-deposition-id", "06173e30-8e36-4b07-a16b-2a5a27fd83f0"}
+                },
+                Url = "https://download-url.com/tets.file/4j34h2k4h242kj4h"
+            };
+            var filename = "test.pdf";
+            var input = new PreSignedUploadUrlDto()
+            {
+                DepositionId = new Guid(),
+                FileName = filename
+            };
             var context = ContextFactory.GetControllerContextWithFile();
             _documentsController.ControllerContext = context;
             _documentService
-                .Setup(mock => mock.UploadTranscriptions(It.IsAny<Guid>(), It.IsAny<List<FileTransferInfo>>()))
+                .Setup(mock => mock.GetPreSignedUrlUploadExhibit(input))
+                .ReturnsAsync(Result.Ok(resultDto));
+            // Act
+            var actionResult = await _documentsController.GetPreSignUploadExhibit(input);
+            
+            
+            // Assert
+            _documentService.Verify(mock => mock.GetPreSignedUrlUploadExhibit(input), Times.Once);
+            var result = actionResult.Result as OkObjectResult;
+            var value = (PreSignedUrlDto) result.Value;
+            Assert.Equal(resultDto.Url, value.Url);
+        }
+
+        [Fact]
+        public async Task PreSignUploadExhibit_ReturnsError_FailUrlGeneration()
+        {
+            // Arrange
+            var filename = "test.pdf";
+            var input = new PreSignedUploadUrlDto()
+            {
+                DepositionId = new Guid(),
+                FileName = filename
+            };
+            var context = ContextFactory.GetControllerContextWithFile();
+            _documentsController.ControllerContext = context;
+            _documentService
+                .Setup(mock => mock.GetPreSignedUrlUploadExhibit(input))
                 .ReturnsAsync(Result.Fail(new Error()));
             // Act
-            var result = await _documentsController.UploadTranscriptionsFiles(It.IsAny<Guid>());
+            var result = await _documentsController.GetPreSignUploadExhibit(input);
             // Assert
+            _documentService.Verify(mock => mock.GetPreSignedUrlUploadExhibit(input), Times.Once);
             Assert.NotNull(result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result);
+            var errorResult = Assert.IsType<StatusCodeResult>(result.Result);
             Assert.Equal((int)HttpStatusCode.InternalServerError, errorResult.StatusCode);
-            _documentService.Verify(mock => mock.UploadTranscriptions(It.IsAny<Guid>(), It.IsAny<List<FileTransferInfo>>()), Times.Once);
         }
     }
 }

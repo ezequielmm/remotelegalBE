@@ -35,5 +35,6 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
         Task<Result<List<FileSignedDto>>> GetFrontEndContent();
         Task<Result<string>> GenerateZipFile(List<DepositionDocument> depositionDocuments);
         Task<Result<string>> GetCannedPrivateURL(Guid documentId);
+        Task<Result<PreSignedUrlDto>> GetPreSignedUrlUploadExhibit(PreSignedUploadUrlDto preSignedUploadUrl);
     }
 }
