@@ -337,7 +337,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 }
                 catch (Exception ex)
                 {
-                    _log.LogError(ex, "Error getting user info: {0}", identity.Email);
+                    _log.LogInformation("User {0} doesn't exists in twilio channel. Creating participant.", identity.Email);
                 }
             }
 
