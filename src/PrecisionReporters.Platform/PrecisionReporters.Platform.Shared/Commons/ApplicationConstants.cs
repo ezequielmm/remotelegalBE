@@ -27,5 +27,18 @@
         public const string DepositionReminderEmailTemplate = "DepositionReminderEmailTemplate";
         public const string ZipExtension = ".zip";
         public const int DefaultSampleRate = 48000;
+        public const string UserIdExhibitsMetadata = "x-amz-meta-user-id";
+        public const string DepositionIdExhibitsMetadata = "x-amz-meta-deposition-id";
+        public const string CaseIdExhibitsMetadata = "x-amz-meta-case-id";
+        public const string DocumentTypeExhibitsMetadata = "x-amz-meta-document-type";
+        public const string DisplayNameExhibitsMetadata = "x-amz-meta-display-name";
+        public const string TypeExhibitsMetadata = "x-amz-meta-type";
+        public static class UploadExhibitsNotificationTypes
+        {
+            public const string ExhibitUploaded = "ExhibitUploaded";
+            public const string ExceededSize = "ExceededSize";
+            public const string InvalidS3Structure = "InvalidS3Structure";
+            public const string ExceptionInLambda = "ExceptionInLambda";
+        }
     }
 }

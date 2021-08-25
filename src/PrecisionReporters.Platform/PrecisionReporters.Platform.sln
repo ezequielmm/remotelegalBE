@@ -23,7 +23,13 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "99 Tests", "99 Tests", "{E6
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PrecisionReporters.Platform.Transcript.Api", "PrecisionReporters.Platform.Transcript.Api\PrecisionReporters.Platform.Transcript.Api.csproj", "{31EF1535-1ECB-4536-9483-2BBF1423C944}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PrecisionReporters.Platform.Shared", "PrecisionReporters.Platform.Shared\PrecisionReporters.Platform.Shared.csproj", "{5155C0AF-D479-475B-96C2-B0FA5479517C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PrecisionReporters.Platform.Shared", "PrecisionReporters.Platform.Shared\PrecisionReporters.Platform.Shared.csproj", "{5155C0AF-D479-475B-96C2-B0FA5479517C}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "05 AWS", "05 AWS", "{0EB513F6-2A13-44FF-AED5-44C4327997BD}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Lambdas", "Lambdas", "{4C958A0B-23A7-4C25-B01D-21D0945EF2CB}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UploadExhibitLambda", "..\AWS\Lambdas\UploadExhibitLambda\UploadExhibitLambda.csproj", "{FF8D95B9-4364-4BD4-811B-B65998D8080E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -55,6 +61,10 @@ Global
 		{5155C0AF-D479-475B-96C2-B0FA5479517C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5155C0AF-D479-475B-96C2-B0FA5479517C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5155C0AF-D479-475B-96C2-B0FA5479517C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FF8D95B9-4364-4BD4-811B-B65998D8080E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FF8D95B9-4364-4BD4-811B-B65998D8080E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FF8D95B9-4364-4BD4-811B-B65998D8080E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FF8D95B9-4364-4BD4-811B-B65998D8080E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -66,6 +76,8 @@ Global
 		{CB58A355-5C41-4675-A90B-E142686EE191} = {E61D8678-C26D-448C-99F4-75923D0C788A}
 		{31EF1535-1ECB-4536-9483-2BBF1423C944} = {C6C82FDC-25C3-4B5E-9EAC-87A64EFF764D}
 		{5155C0AF-D479-475B-96C2-B0FA5479517C} = {F0F8CDC4-B18E-46AB-BD1C-1F684266080C}
+		{4C958A0B-23A7-4C25-B01D-21D0945EF2CB} = {0EB513F6-2A13-44FF-AED5-44C4327997BD}
+		{FF8D95B9-4364-4BD4-811B-B65998D8080E} = {4C958A0B-23A7-4C25-B01D-21D0945EF2CB}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {356F8094-1201-4BE9-89BD-D6DA204082C1}
