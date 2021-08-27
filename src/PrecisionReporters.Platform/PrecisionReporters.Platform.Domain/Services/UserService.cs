@@ -151,7 +151,8 @@ namespace PrecisionReporters.Platform.Domain.Services
                 UserSortField.Email => x => x.EmailAddress,
                 UserSortField.Company => x => x.CompanyName,
                 UserSortField.AccountCreationDate => x => x.CreationDate,
-                UserSortField.AccountVerifiedDate => x => x.VerifiedUsers.FirstOrDefault(y => y.VerificationType == VerificationType.VerifyUser),
+                UserSortField.AccountVerifiedDate => x => x.VerifiedUsers.FirstOrDefault(y => y.VerificationType == VerificationType.VerifyUser)
+                .VerificationDate,
                 _ => x => x.LastName,
             };
             Expression<Func<User, object>> orderByThen = x => x.FirstName;

@@ -22,7 +22,7 @@ namespace PrecisionReporters.Platform.Domain.Mappers
                 CompanyAddress = model.CompanyAddress,
                 IsAdmin = model.IsAdmin,
                 IsGuest = model.IsGuest,
-                VerificationDate = model.VerifiedUsers?.FirstOrDefault(y => y.VerificationType == VerificationType.VerifyUser)?.VerificationDate
+                VerificationDate = model.VerifiedUsers?.FirstOrDefault(y => y.VerificationType == VerificationType.VerifyUser)?.VerificationDate ?? Convert.ToDateTime("01/01/1971")
             };
         }
 
