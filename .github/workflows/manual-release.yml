@@ -4,10 +4,10 @@ on:
   workflow_dispatch:
     inputs:
       api-image:
-        description: "API-IMAGE:TAG"
+        description: "API-IMAGE URI"
         required: true
       transcript-image:
-        description: "TRANSCRIPT-IMAGE:TAG"
+        description: "TRANSCRIPT-IMAGE URI"
         required: true
       region:
         description: "Region"
