@@ -30,6 +30,7 @@ namespace PrecisionReporters.Platform.Data
         public DbSet<ActivityHistory> ActivityHistories { get; set; }
         public DbSet<DeviceInfo> DevicesInfo { get; set; }
         public DbSet<SystemSettings> SystemSettings { get; set; }
+        public DbSet<TwilioParticipant> TwilioParticipant { get; set; }
         public ApplicationDbContext(DbContextOptions options) : base(options) { }
 
         public ApplicationDbContext() { }
