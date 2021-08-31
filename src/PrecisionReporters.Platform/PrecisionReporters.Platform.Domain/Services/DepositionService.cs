@@ -1093,7 +1093,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             {
                 await _permissionService.AddParticipantPermissions(participant);
             }
-
+            
             await _participantRepository.Update(participant);
             await _signalRNotificationManager.SendDirectMessage(participant.Email, notificationtDto);
             await _signalRNotificationManager.SendNotificationToDepositionAdmins(participant.DepositionId.Value, notificationtDto);
