@@ -12,9 +12,9 @@ namespace PrecisionReporters.Platform.Shared.Helpers
 {
     public class LoggingHelper : ILoggingHelper
     {
-        private readonly ILogger _logger;
+        private readonly ILogger<LoggingHelper> _logger;
 
-        public LoggingHelper(ILogger logger)
+        public LoggingHelper(ILogger<LoggingHelper> logger)
         {
             _logger = logger;
         }
