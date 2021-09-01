@@ -42,9 +42,10 @@ namespace PrecisionReporters.Platform.Shared.Helpers
         {
             dynamic scopes = new ExpandoObject();
             scopes.Category = category;
-            Func<Task> action = async () =>
+            Func<Task<bool>> action = async () =>
             {
-                await Task.Run(() => { _logger.LogInformation(message); });
+                // TODO: create an override that doesn't need a return value
+                return await Task.Run(() => { _logger.LogInformation(message); return true; });
             };
             await ExecuteWithScope(scopes, action);
         }
