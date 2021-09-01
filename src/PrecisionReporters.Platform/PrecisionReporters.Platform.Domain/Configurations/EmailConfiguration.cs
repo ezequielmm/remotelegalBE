@@ -13,5 +13,6 @@
         public string PreDepositionLink { get; set; }
         public string JoinDepositionTemplate { get; set; }
         public string SenderLabel { get; set; }
+        public string XSesConfigurationSetHeader { get; set; }
     }
 }

@@ -147,6 +147,7 @@ namespace PrecisionReporters.Platform.Domain
                 x.PreDepositionLink = appConfiguration.EmailConfiguration.PreDepositionLink;
                 x.JoinDepositionTemplate = appConfiguration.EmailConfiguration.JoinDepositionTemplate;
                 x.SenderLabel = appConfiguration.EmailConfiguration.SenderLabel;
+                x.XSesConfigurationSetHeader = appConfiguration.EmailConfiguration.XSesConfigurationSetHeader;
             });
 
             services.AddHostedService<BackgroundHostedService>();

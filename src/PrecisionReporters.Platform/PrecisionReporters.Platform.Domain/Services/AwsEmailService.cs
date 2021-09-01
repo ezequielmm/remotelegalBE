@@ -39,9 +39,9 @@ namespace PrecisionReporters.Platform.Domain.Services
                 Source = source,
                 Template = templateName,
                 DefaultTemplateData = destinations[0].ReplacementTemplateData,
-                Destinations = destinations
+                Destinations = destinations,
+                ConfigurationSetName = _emailConfiguration.XSesConfigurationSetHeader
             };
-
             var response = await _emailService.SendBulkTemplatedEmailAsync(emailRequest);
 
             if (response.HttpStatusCode == HttpStatusCode.OK)
@@ -96,7 +96,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             string htmlBody = template.Template.HtmlPart;
             await SendRawEmailNotification(CreateMessageStream(emailTemplateInfo, htmlBody));
         }
-        
+
         private Multipart CreateMessageBody(EmailTemplateInfo emailTemplateInfo, string htmlBodyTemplate)
         {
             var mixed = new Multipart("mixed");
@@ -154,7 +154,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             message.Subject = subject;
 
             message.Body = CreateMessageBody(emailTemplateInfo, htmlBodyTemplate);
-            
+            message.Headers.Add("X-SES-CONFIGURATION-SET", _emailConfiguration.XSesConfigurationSetHeader);
             return message;
         }
 
