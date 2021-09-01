@@ -1,6 +1,6 @@
 ﻿namespace PrecisionReporters.Platform.Shared.Dtos
 {
-    public class NotificationErrorDto : NotificationBaseDto<string>
+    public class NotificationErrorDto : NotificationBaseDto<ErrorDocumentDto>
     {
     }
 }
