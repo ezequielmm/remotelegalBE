@@ -9,7 +9,7 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
         Task SendJoinDepositionEmailNotification(Deposition deposition);
         Task SendJoinDepositionEmailNotification(Deposition deposition, Participant participant);
         Task SendCancelDepositionEmailNotification(Deposition deposition, Participant participant);
-        Task SendReSheduleDepositionEmailNotification(Deposition deposition, Participant participant, DateTime oldStartDate, string oldTimeZone);
+        Task SendRescheduleDepositionEmailNotification(Deposition deposition, Participant participant, DateTime oldStartDate, string oldTimeZone);
         Task SendDepositionReminder(Deposition deposition, Participant participant);
     }
 }

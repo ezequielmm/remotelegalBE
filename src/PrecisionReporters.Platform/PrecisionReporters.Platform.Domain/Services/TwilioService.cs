@@ -7,6 +7,8 @@ using PrecisionReporters.Platform.Domain.Configurations;
 using PrecisionReporters.Platform.Domain.Dtos;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using PrecisionReporters.Platform.Shared.Commons;
+using PrecisionReporters.Platform.Shared.Enums;
+using PrecisionReporters.Platform.Shared.Helpers.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -31,14 +33,16 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly ILogger<TwilioService> _log;
         private readonly IAwsStorageService _awsStorageService;
         private readonly JsonSerializerSettings _serializeOptions;
+        private readonly ILoggingHelper _loggingHelper;
 
         public TwilioService(Microsoft.Extensions.Options.IOptions<TwilioAccountConfiguration> twilioAccountConfiguration,
-            ILogger<TwilioService> log, IAwsStorageService awsStorageService)
+            ILogger<TwilioService> log, IAwsStorageService awsStorageService, ILoggingHelper loggingHelper)
         {
             _twilioAccountConfiguration = twilioAccountConfiguration.Value ?? throw new ArgumentException(nameof(twilioAccountConfiguration));
             TwilioClient.Init(_twilioAccountConfiguration.AccountSid, _twilioAccountConfiguration.AuthToken);
             _log = log;
             _awsStorageService = awsStorageService;
+            _loggingHelper = loggingHelper;
             _serializeOptions = new JsonSerializerSettings
             {
                 ContractResolver = new CamelCasePropertyNamesContractResolver()
@@ -55,6 +59,8 @@ namespace PrecisionReporters.Platform.Domain.Services
                 );
 
             room.SId = roomResource?.Sid;
+
+            await _loggingHelper.LogInformationWithScope(LogCategory.TwilioNewRoom, $"New room generated id: {room.Id}");
             return room;
         }
 
@@ -79,7 +85,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             var token = new Token(_twilioAccountConfiguration.AccountSid, _twilioAccountConfiguration.ApiKeySid,
                 _twilioAccountConfiguration.ApiKeySecret, identity: stringIdentity, expiration: DateTime.UtcNow.AddMinutes(expirationOffset), grants: grants);
 
-            _log.LogInformation($"{nameof(TwilioService)}.{nameof(TwilioService.GenerateToken)} Token: {token.ToJwt()}");
+            _log.LogDebug("Token Generated Successfully");
             return token.ToJwt();
         }
 
@@ -89,6 +95,8 @@ namespace PrecisionReporters.Platform.Domain.Services
             try
             {
                 await Task.WhenAll(openRooms.Select(r => RoomResource.UpdateAsync(status: RoomStatusEnum.Completed, pathSid: r.Sid)));
+                await _loggingHelper.LogInformationWithScope(LogCategory.TwilioEndRoom, $"End room id: {room.Id}");
+
                 return Result.Ok();
             }
             catch (Exception e)

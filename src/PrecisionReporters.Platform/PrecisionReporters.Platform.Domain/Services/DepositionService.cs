@@ -1134,7 +1134,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
                     if (currentDeposition.Status == DepositionStatus.Confirmed)
                     {
-                        var tasks = currentDeposition.Participants.Where(p => !string.IsNullOrWhiteSpace(p.Email)).Select(participant => _depositionEmailService.SendReSheduleDepositionEmailNotification(currentDeposition, participant, oldStartDate, oldTimeZone));
+                        var tasks = currentDeposition.Participants.Where(p => !string.IsNullOrWhiteSpace(p.Email)).Select(participant => _depositionEmailService.SendRescheduleDepositionEmailNotification(currentDeposition, participant, oldStartDate, oldTimeZone));
                         await Task.WhenAll(tasks);
                     }
 

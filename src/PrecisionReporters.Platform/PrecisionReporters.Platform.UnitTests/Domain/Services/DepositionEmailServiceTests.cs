@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Options;
+﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Moq;
 using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Data.Enums;
@@ -6,6 +7,7 @@ using PrecisionReporters.Platform.Domain.Configurations;
 using PrecisionReporters.Platform.Domain.Services;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using PrecisionReporters.Platform.Shared.Commons;
+using PrecisionReporters.Platform.Shared.Helpers.Interfaces;
 using PrecisionReporters.Platform.UnitTests.Utils;
 using System;
 using System.Threading.Tasks;
@@ -22,6 +24,9 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         private readonly UrlPathConfiguration _urlPathConfiguration;
         private readonly Mock<IOptions<UrlPathConfiguration>> _urlPathConfigurationMock;
         private readonly Mock<IOptions<EmailConfiguration>> _emailConfigurationMock;
+        private readonly Mock<ILogger<DepositionEmailService>> _loggerMock;
+        private readonly Mock<ILoggingHelper> _loggingHelperMock;
+
         public DepositionEmailServiceTests()
         {
             _emailConfiguration = new EmailConfiguration { EmailNotification = "notifications@remotelegal.com", PreDepositionLink = "", LogoImageName = "", ImagesUrl = "" };
@@ -33,8 +38,10 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _urlPathConfigurationMock.Setup(x => x.Value).Returns(_urlPathConfiguration);
 
             _awsEmailServiceMock = new Mock<IAwsEmailService>();
+            _loggerMock = new Mock<ILogger<DepositionEmailService>>();
+            _loggingHelperMock = new Mock<ILoggingHelper>();
 
-            _service = new DepositionEmailService(_awsEmailServiceMock.Object,_urlPathConfigurationMock.Object,_emailConfigurationMock.Object);
+            _service = new DepositionEmailService(_awsEmailServiceMock.Object,_urlPathConfigurationMock.Object,_loggerMock.Object,_emailConfigurationMock.Object, _loggingHelperMock.Object);
 
         }
 
@@ -115,7 +122,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _awsEmailServiceMock.Setup(x => x.SendRawEmailNotification(It.IsAny<EmailTemplateInfo>()));
 
             //Act
-            await _service.SendReSheduleDepositionEmailNotification(deposition, participant, oldDate, "America/New_York");
+            await _service.SendRescheduleDepositionEmailNotification(deposition, participant, oldDate, "America/New_York");
 
             //Assert
             _awsEmailServiceMock.Verify(x => x.SendRawEmailNotification(It.IsAny<EmailTemplateInfo>()), Times.Once);
@@ -134,7 +141,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _awsEmailServiceMock.Setup(x => x.SendRawEmailNotification(It.IsAny<EmailTemplateInfo>()));
 
             //Act
-            await _service.SendReSheduleDepositionEmailNotification(deposition, participant, oldDate, "America/New_York");
+            await _service.SendRescheduleDepositionEmailNotification(deposition, participant, oldDate, "America/New_York");
 
             //Assert
             _awsEmailServiceMock.Verify(x => x.SendRawEmailNotification(It.IsAny<EmailTemplateInfo>()), Times.Once);

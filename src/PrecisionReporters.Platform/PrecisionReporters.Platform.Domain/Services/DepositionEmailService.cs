@@ -1,6 +1,7 @@
 ﻿using Ical.Net;
 using Ical.Net.CalendarComponents;
 using Ical.Net.DataTypes;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Data.Enums;
@@ -9,6 +10,8 @@ using PrecisionReporters.Platform.Domain.Enums;
 using PrecisionReporters.Platform.Domain.Extensions;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using PrecisionReporters.Platform.Shared.Commons;
+using PrecisionReporters.Platform.Shared.Enums;
+using PrecisionReporters.Platform.Shared.Helpers.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,19 +23,26 @@ namespace PrecisionReporters.Platform.Domain.Services
     {
         private readonly IAwsEmailService _awsEmailService;
         private readonly EmailConfiguration _emailConfiguration;
+        private readonly ILogger<DepositionEmailService> _logger;
+        private readonly ILoggingHelper _loggingHelper;
 
         public DepositionEmailService(IAwsEmailService awsEmailService,
             IOptions<UrlPathConfiguration> urlPathConfiguration,
-            IOptions<EmailConfiguration> emailConfiguration)
+            ILogger<DepositionEmailService> logger,
+            IOptions<EmailConfiguration> emailConfiguration,
+            ILoggingHelper loggingHelper)
         {
             _awsEmailService = awsEmailService;
+            _logger = logger;
             _emailConfiguration = emailConfiguration.Value;
+            _loggingHelper = loggingHelper;
         }
         public async Task SendJoinDepositionEmailNotification(Deposition deposition)
         {
             var tasks = deposition.Participants.Where(p => !string.IsNullOrWhiteSpace(p.Email)).Select(participant =>
             {
                 var template = GetJoinDepositionEmailTemplate(deposition, participant);
+                _loggingHelper.LogInformationWithScope(LogCategory.JoinNotification, $"Sending Join Deposition Email Notification to {participant.Email}");
                 return _awsEmailService.SendRawEmailNotification(template);
             });
 
@@ -41,24 +51,28 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task SendJoinDepositionEmailNotification(Deposition deposition, Participant participant)
         {
+            await _loggingHelper.LogInformationWithScope(LogCategory.JoinNotification, $"Sending Join Deposition Email Notification to {participant.Email}");
             var template = GetJoinDepositionEmailTemplate(deposition, participant);
             await _awsEmailService.SendRawEmailNotification(template);
         }
 
         public async Task SendCancelDepositionEmailNotification(Deposition deposition, Participant participant)
         {
+            await _loggingHelper.LogInformationWithScope(LogCategory.CancelNotification, $"Sending Cancel Deposition Email Notification to {participant.Email}");
             var template = GetCancelDepositionEmailTemplate(deposition, participant);
             await _awsEmailService.SendRawEmailNotification(template);
         }
 
-        public async Task SendReSheduleDepositionEmailNotification(Deposition deposition, Participant participant, DateTime oldStartDate, string oldTimeZone)
+        public async Task SendRescheduleDepositionEmailNotification(Deposition deposition, Participant participant, DateTime oldStartDate, string oldTimeZone)
         {
+            await _loggingHelper.LogInformationWithScope(LogCategory.RescheduleNotification, $"Sending Reschedule Deposition Email Notification to {participant.Email}");
             var template = GetReScheduleDepositionEmailTemplate(deposition, participant, oldStartDate, oldTimeZone);
             await _awsEmailService.SendRawEmailNotification(template);
         }
 
         public async Task SendDepositionReminder(Deposition deposition, Participant participant)
         {
+            await _loggingHelper.LogInformationWithScope(LogCategory.ReminderNotification, $"Sending Reminder Deposition Email Notification to {participant.Email}");
             var template = GetDepositionReminderEmailTemplate(deposition, participant);
             await _awsEmailService.SendRawEmailNotification(template);
         }

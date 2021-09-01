@@ -1,4 +1,5 @@
-﻿using System;
+﻿using PrecisionReporters.Platform.Shared.Enums;
+using System;
 using System.Dynamic;
 using System.Threading.Tasks;
 
@@ -8,5 +9,6 @@ namespace PrecisionReporters.Platform.Shared.Helpers.Interfaces
     {
         Task<T> ExecuteWithScope<T>(ExpandoObject scopes, Func<Task<T>> action);
         Task<T> ExecuteWithDeposition<T>(Guid depositionId, Func<Task<T>> action);
+        Task LogInformationWithScope(LogCategory category, string message);
     }
 }
