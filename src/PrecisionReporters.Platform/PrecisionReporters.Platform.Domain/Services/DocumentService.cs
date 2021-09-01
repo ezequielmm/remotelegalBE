@@ -637,8 +637,8 @@ namespace PrecisionReporters.Platform.Domain.Services
             {
                 try
                 {
-                    await _documentRepository.Remove(document);
                     await _documentUserDepositionRepository.Remove(documentUser);
+                    await _documentRepository.Remove(document);
                     await _awsStorageService.DeleteObjectAsync(_documentsConfiguration.BucketName, document.FilePath);
                 }
                 catch (Exception ex)
