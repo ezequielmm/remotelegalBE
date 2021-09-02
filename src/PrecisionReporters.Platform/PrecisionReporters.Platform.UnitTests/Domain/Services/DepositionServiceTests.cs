@@ -1621,13 +1621,14 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _participantRepositoryMock.Setup(x => x.Update(It.IsAny<Participant>())).ReturnsAsync(participant);
             _userServiceMock.Setup(x => x.LoginGuestAsync(It.IsAny<string>())).ReturnsAsync(Result.Ok(new GuestToken()));
             _activityHistoryServiceMock.Setup(x => x.AddActivity(It.IsAny<ActivityHistory>(), It.IsAny<User>(), It.IsAny<Deposition>()));
+            _permissionServiceMock.Setup(x => x.AddParticipantPermissions(It.IsAny<Participant>()));
 
             // Act
             var result = await _depositionService.JoinGuestParticipant(depositionId, participant, activity);
 
             // Assert
             _depositionRepositoryMock.Verify(x => x.Update(It.Is<Deposition>(x => x.Id == depositionId)), Times.Never);
-            _permissionServiceMock.Verify(x => x.AddParticipantPermissions(It.Is<Participant>(x => x.Email == guestEmail)), Times.Never);
+            _permissionServiceMock.Verify(x => x.AddParticipantPermissions(It.Is<Participant>(x => x.Email == guestEmail)), Times.Once);
             _activityHistoryServiceMock.Verify(x => x.AddActivity(It.IsAny<ActivityHistory>(), It.IsAny<User>(), It.IsAny<Deposition>()), Times.Once);
             Assert.True(result.IsSuccess);
         }

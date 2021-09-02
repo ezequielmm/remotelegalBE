@@ -653,6 +653,8 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             await _activityHistoryService.AddActivity(activityHistory, userResult.Value, deposition);
 
+            await _permissionService.AddParticipantPermissions(guest);
+
             return await _userService.LoginGuestAsync(guest.Email);
         }
 
