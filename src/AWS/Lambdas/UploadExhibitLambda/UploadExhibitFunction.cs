@@ -14,6 +14,10 @@ using System.Linq;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using Amazon.S3.Model;
+using PrecisionReporters.Platform.Shared.Helpers;
+using PrecisionReporters.Platform.Shared.Helpers.Interfaces;
+using Serilog.Context;
 using UploadExhibitLambda.Wrappers;
 using UploadExhibitLambda.Wrappers.Interface;
 using static PrecisionReporters.Platform.Shared.Commons.ApplicationConstants;
@@ -27,6 +31,7 @@ namespace UploadExhibitLambda
         private readonly IAmazonSimpleNotificationService _snsClient;
         private readonly IAmazonSecretsManager _secretsManagerClient;
         private readonly IMetadataWrapper _metadataWrapper;
+        private readonly ILogger _logger;
 
         /// <summary>
         /// Default constructor used by AWS Lambda to construct the function. Credentials and Region information will
@@ -34,6 +39,7 @@ namespace UploadExhibitLambda
         /// </summary>
         public UploadExhibitFunction()
         {
+            _logger = new Logger();
             _s3Client = new AmazonS3Client();
             _snsClient = new AmazonSimpleNotificationServiceClient();
             _secretsManagerClient = new AmazonSecretsManagerClient();
@@ -46,12 +52,13 @@ namespace UploadExhibitLambda
         /// <param name="s3Client"></param>
         /// <param name="SnsClient"></param>
         /// <param name="secretsManagerClient"></param>
-        public UploadExhibitFunction(IAmazonS3 s3Client, IAmazonSimpleNotificationService SnsClient, IAmazonSecretsManager secretsManagerClient, IMetadataWrapper metadataWrapper)
+        public UploadExhibitFunction(IAmazonS3 s3Client, IAmazonSimpleNotificationService SnsClient, IAmazonSecretsManager secretsManagerClient, IMetadataWrapper metadataWrapper, ILogger logger)
         {
             _s3Client = s3Client;
             _snsClient = SnsClient;
             _secretsManagerClient = secretsManagerClient;
             _metadataWrapper = metadataWrapper;
+            _logger = logger;
         }
 
         /// <summary>
@@ -68,8 +75,8 @@ namespace UploadExhibitLambda
             var cancellationToken = cancellationTokenSource.Token;
             if (input.Records == null || !input.Records.Any())
             {
-                context.Logger.LogLine("Event does not have a valid S3 structure");
-                context.Logger.LogLine(await SendNotification(new NotificationErrorDto
+                _logger.LogError("Event does not have a valid S3 structure");
+                _logger.LogError(await SendNotification(new NotificationErrorDto
                 {
                     NotificationType = UploadExhibitsNotificationTypes.InvalidS3Structure,
                     Context = new ErrorDocumentDto()
@@ -81,106 +88,121 @@ namespace UploadExhibitLambda
                 return false;
             }
 
-            try
+            var objectMetadata = await _s3Client.GetObjectMetadataAsync(input.Records[0].S3.Bucket.Name, input.Records[0].S3.Object.Key, cancellationToken);
+            var depositionId = Guid.Parse(_metadataWrapper.GetMetadataByKey(objectMetadata, DepositionIdExhibitsMetadata));
+            using (LogContext.PushProperty("scope", new { DepositionId = Guid.NewGuid() }))
             {
-                pdftron.PDFNet.Initialize(await GetSecret(UploadExhibitConstants.PdfTronKey, cancellationToken));
-                foreach (var record in input.Records)
+                try
                 {
-                    context.Logger.LogLine(CleanUpTmpFolder());
-                    context.Logger.LogLine($"Initializing process for bucket name: {record.S3.Bucket.Name} and Key: {record.S3.Object.Key}");
-                    var objectMetadata = await _s3Client.GetObjectMetadataAsync(record.S3.Bucket.Name, record.S3.Object.Key, cancellationToken);
-                    var userId = Guid.Parse(_metadataWrapper.GetMetadataByKey(objectMetadata, UserIdExhibitsMetadata));
-                    var depositionId = Guid.Parse(_metadataWrapper.GetMetadataByKey(objectMetadata, DepositionIdExhibitsMetadata));
-                    var caseId = Guid.Parse(_metadataWrapper.GetMetadataByKey(objectMetadata, CaseIdExhibitsMetadata));
-                    var documentType = _metadataWrapper.GetMetadataByKey(objectMetadata, DocumentTypeExhibitsMetadata);
-                    var displayName = _metadataWrapper.GetMetadataByKey(objectMetadata, DisplayNameExhibitsMetadata);
-
-                    var extension = Path.GetExtension(displayName)?.ToLower();
-                    var fileName = $"{Guid.NewGuid()}{extension}";
-                    var s3FilePath = $"files/{caseId}/{depositionId}/{documentType}/{fileName}";
-
-                    var file = await _s3Client.GetObjectStreamAsync(record.S3.Bucket.Name, record.S3.Object.Key, null, cancellationToken);
-
-                    var objectSize = record.S3.Object.Size;
-                    if (objectSize > long.Parse(Environment.GetEnvironmentVariable(UploadExhibitConstants.MaxFileSize)!))
+                    pdftron.PDFNet.Initialize(await GetSecret(UploadExhibitConstants.PdfTronKey, cancellationToken));
+                    foreach (var record in input.Records)
                     {
-                        context.Logger.LogLine($"Fail Upload: File size exceeds the allowed limit. File of deposition {depositionId} from user {userId} extension file {extension} document type {documentType}");
-                        context.Logger.LogLine(await SendNotification(new NotificationErrorDto
+                        _logger.LogInformation(CleanUpTmpFolder());
+                        _logger.LogInformation("Initializing process for bucket name: {0} and Key: {1}", record.S3.Bucket.Name, record.S3.Object.Key);
+                        objectMetadata = await _s3Client.GetObjectMetadataAsync(record.S3.Bucket.Name, record.S3.Object.Key, cancellationToken);
+                        var userId = Guid.Parse(_metadataWrapper.GetMetadataByKey(objectMetadata, UserIdExhibitsMetadata));
+                        var caseId = Guid.Parse(_metadataWrapper.GetMetadataByKey(objectMetadata, CaseIdExhibitsMetadata));
+                        var documentType = _metadataWrapper.GetMetadataByKey(objectMetadata, DocumentTypeExhibitsMetadata);
+                        var displayName = _metadataWrapper.GetMetadataByKey(objectMetadata, DisplayNameExhibitsMetadata);
+
+                        var extension = Path.GetExtension(displayName)?.ToLower();
+                        var fileName = $"{Guid.NewGuid()}{extension}";
+                        var s3FilePath = $"files/{caseId}/{depositionId}/{documentType}/{fileName}";
+
+                        var file = await _s3Client.GetObjectStreamAsync(record.S3.Bucket.Name, record.S3.Object.Key, null, cancellationToken);
+
+                        var objectSize = record.S3.Object.Size;
+                        if (objectSize > long.Parse(Environment.GetEnvironmentVariable(UploadExhibitConstants.MaxFileSize)!))
                         {
-                            NotificationType = UploadExhibitsNotificationTypes.ExceededSize,
-                            Context = new ErrorDocumentDto()
+                            _logger.LogWarning("Fail Upload: File size exceeds the allowed limit. File of deposition {0} from user {1} extension file {2} document type {3}",
+                            depositionId, userId, extension, documentType);
+                            _logger.LogWarning(await SendNotification(new NotificationErrorDto
                             {
-                                Error = string.Empty,
-                                Document = new DocumentDto
+                                NotificationType = UploadExhibitsNotificationTypes.ExceededSize,
+                                Context = new ErrorDocumentDto()
                                 {
-                                    AddedBy = Guid.Parse(_metadataWrapper.GetMetadataByKey(objectMetadata, UserIdExhibitsMetadata)),
-                                    DepositionId = Guid.Parse(_metadataWrapper.GetMetadataByKey(objectMetadata, DepositionIdExhibitsMetadata)),
-                                    DisplayName = _metadataWrapper.GetMetadataByKey(objectMetadata, DisplayNameExhibitsMetadata),
-                                    DocumentType = _metadataWrapper.GetMetadataByKey(objectMetadata, DocumentTypeExhibitsMetadata),
-                                    FilePath = input.Records[0].S3.Object.Key
+                                    Error = string.Empty,
+                                    Document = new DocumentDto
+                                    {
+                                        AddedBy = userId,
+                                        DepositionId = depositionId,
+                                        DisplayName = displayName,
+                                        DocumentType = documentType,
+                                        FilePath = input.Records[0].S3.Object.Key
+                                    }
                                 }
+                            },
+                            cancellationToken), depositionId, userId);
+
+                            continue;
+                        }
+
+                        _logger.LogInformation("Uploading file of deposition {depositionId} from user {userId} extension file {extension} document type {documentType}",
+                        depositionId, userId, extension, documentType);
+                        if (!UploadExhibitConstants.SkipPdfConversionExtensions.Contains(extension))
+                        {
+                            _logger.LogInformation("File of deposition {depositionId} requires PDF optimization as it is of extension {extension}", depositionId, extension);
+                            var pathPdf = await FileToPdf(file, extension, cancellationToken);
+                            var pathOptimizedPDF = OptimizePdf(pathPdf);
+                            await _s3Client.UploadObjectFromFilePathAsync(Environment.GetEnvironmentVariable(UploadExhibitConstants.BucketName), s3FilePath, pathOptimizedPDF,
+                            null, cancellationToken);
+                        }
+                        else
+                        {
+                            _logger.LogInformation("File of deposition {depositionId} skipped PDF optimization as it is of extension {extension}", depositionId, extension);
+                            var request = new CopyObjectRequest
+                            {
+                                SourceBucket = record.S3.Bucket.Name,
+                                SourceKey = record.S3.Object.Key,
+                                DestinationBucket = Environment.GetEnvironmentVariable(UploadExhibitConstants.BucketName),
+                                DestinationKey = s3FilePath
+                            };
+                            await _s3Client.CopyObjectAsync(request, cancellationToken);
+                        }
+
+                        var content = new ExhibitNotificationDto
+                        {
+                            NotificationType = UploadExhibitsNotificationTypes.ExhibitUploaded,
+                            Context = new DocumentDto
+                            {
+                                DepositionId = depositionId,
+                                Type = extension,
+                                AddedBy = userId,
+                                Name = fileName,
+                                DisplayName = displayName,
+                                FilePath = s3FilePath,
+                                Size = record.S3.Object.Size,
+                                DocumentType = documentType,
+                                CreationDate = DateTime.UtcNow
                             }
-                        },
-                            cancellationToken));
-                        continue;
+                        };
+                        _logger.LogInformation(await SendNotification(content, cancellationToken), depositionId, userId);
                     }
 
-                    context.Logger.LogLine($"Uploading file of deposition {depositionId} from user {userId} extension file {extension} document type {documentType}");
-                    if (!UploadExhibitConstants.SkipPdfConversionExtensions.Contains(extension))
-                    {
-                        context.Logger.LogLine($"File of deposition {depositionId} requires PDF optimization as it is of extension {extension}");
-                        var pathPdf = await FileToPdf(file, extension, cancellationToken);
-                        var pathOptimizedPDF = OptimizePdf(pathPdf);
-                        await _s3Client.UploadObjectFromFilePathAsync(Environment.GetEnvironmentVariable(UploadExhibitConstants.BucketName), s3FilePath, pathOptimizedPDF, null, cancellationToken);
-                    }
-                    else
-                    {
-                        context.Logger.LogLine($"File of deposition {depositionId} skipped PDF optimization as it is of extension {extension}");
-                        await _s3Client.UploadObjectFromStreamAsync(Environment.GetEnvironmentVariable(UploadExhibitConstants.BucketName), s3FilePath, file, null, cancellationToken);
-                    }
-
-                    var content = new ExhibitNotificationDto
-                    {
-                        NotificationType = UploadExhibitsNotificationTypes.ExhibitUploaded,
-                        Context = new DocumentDto
-                        {
-                            DepositionId = depositionId,
-                            Type = extension,
-                            AddedBy = userId,
-                            Name = fileName,
-                            DisplayName = displayName,
-                            FilePath = s3FilePath,
-                            Size = record.S3.Object.Size,
-                            DocumentType = documentType,
-                            CreationDate = DateTime.UtcNow
-                        }
-                    };
-                    context.Logger.LogLine(await SendNotification(content, cancellationToken));
+                    return true;
                 }
-
-                return true;
-            }
-            catch (Exception e)
-            {
-                context.Logger.LogLine($"UploadExhibit Exception thrown during AWS Lambda function runtime: {e}");
-                var objectMetadata = await _s3Client.GetObjectMetadataAsync(input.Records[0].S3.Bucket.Name, input.Records[0].S3.Object.Key, cancellationToken);
-                context.Logger.LogLine(await SendNotification(new NotificationErrorDto
+                catch (Exception e)
                 {
-                    NotificationType = UploadExhibitsNotificationTypes.ExceptionInLambda,
-                    Context = new ErrorDocumentDto()
+                    _logger.LogError(e, "UploadExhibit Exception thrown during AWS Lambda function runtime: {ExceptionMessage}", e.Message);
+                    _logger.LogError(await SendNotification(new NotificationErrorDto
                     {
-                        Error = e.ToString(),
-                        Document = new DocumentDto
+                        NotificationType = UploadExhibitsNotificationTypes.ExceptionInLambda,
+                        Context = new ErrorDocumentDto()
                         {
-                            AddedBy = Guid.Parse(_metadataWrapper.GetMetadataByKey(objectMetadata, UserIdExhibitsMetadata)),
-                            DepositionId = Guid.Parse(_metadataWrapper.GetMetadataByKey(objectMetadata, DepositionIdExhibitsMetadata)),
-                            DisplayName = _metadataWrapper.GetMetadataByKey(objectMetadata, DisplayNameExhibitsMetadata),
-                            DocumentType = _metadataWrapper.GetMetadataByKey(objectMetadata, DocumentTypeExhibitsMetadata),
-                            FilePath = input.Records[0].S3.Object.Key
+                            Error = e.ToString(),
+                            Document = new DocumentDto
+                            {
+                                AddedBy = Guid.Parse(_metadataWrapper.GetMetadataByKey(objectMetadata, UserIdExhibitsMetadata)),
+                                DepositionId = Guid.Parse(_metadataWrapper.GetMetadataByKey(objectMetadata, DepositionIdExhibitsMetadata)),
+                                DisplayName = _metadataWrapper.GetMetadataByKey(objectMetadata, DisplayNameExhibitsMetadata),
+                                DocumentType = _metadataWrapper.GetMetadataByKey(objectMetadata, DocumentTypeExhibitsMetadata),
+                                FilePath = input.Records[0].S3.Object.Key
+                            }
                         }
-                    }
-                }, cancellationToken));
+                    }, cancellationToken));
+                }
             }
+
             return false;
         }
 

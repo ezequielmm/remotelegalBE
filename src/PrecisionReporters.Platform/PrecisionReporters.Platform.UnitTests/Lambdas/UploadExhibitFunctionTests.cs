@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Amazon.S3.Model;
+using PrecisionReporters.Platform.Shared.Helpers.Interfaces;
 using UploadExhibitLambda;
 using UploadExhibitLambda.Wrappers.Interface;
 using Xunit;
@@ -21,58 +22,89 @@ namespace PrecisionReporters.Platform.UnitTests.Lambdas
 {
     public class UploadExhibitFunctionTests
     {
+        private readonly Mock<IAmazonS3> _s3Client;
+        private readonly Mock<IAmazonSimpleNotificationService> _snsClient;
+        private readonly Mock<IAmazonSecretsManager> _secretManagerClient;
+        private readonly Mock<IMetadataWrapper> _metadataWrapper;
+        private readonly Mock<ILogger> _logger;
+
+        public UploadExhibitFunctionTests()
+        {
+            _s3Client = new Mock<IAmazonS3>();
+            _snsClient = new Mock<IAmazonSimpleNotificationService>();
+            _secretManagerClient = new Mock<IAmazonSecretsManager>();
+            _metadataWrapper = new Mock<IMetadataWrapper>();
+            _logger = new Mock<ILogger>();
+        }
+
         [Fact]
         public async Task UploadExhibit_ShouldSkipUploadAndSendNotification_WhenNullRecords()
         {
             // Arrange
-            var s3Client = new Mock<IAmazonS3>();
-            var snsClient = new Mock<IAmazonSimpleNotificationService>();
-            var secretManagerClient = new Mock<IAmazonSecretsManager>();
-            var metadataWrapper = new Mock<IMetadataWrapper>();
-            snsClient.Setup(x => x.PublishAsync(It.IsAny<PublishRequest>(), It.IsAny<CancellationToken>()))
+            _snsClient.Setup(x => x.PublishAsync(It.IsAny<PublishRequest>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new PublishResponse { MessageId = "1", HttpStatusCode = System.Net.HttpStatusCode.OK });
             var lambdaContext = new Mock<ILambdaContext>();
             lambdaContext.Setup(x => x.Logger)
                 .Returns(new Mock<ILambdaLogger>().Object);
             var ev = new S3Event();
-            var function = new UploadExhibitFunction(s3Client.Object, snsClient.Object, secretManagerClient.Object, metadataWrapper.Object);
+            var function = new UploadExhibitFunction(_s3Client.Object, _snsClient.Object, _secretManagerClient.Object, _metadataWrapper.Object, _logger.Object);
 
             // Act
             var res = await function.UploadExhibit(ev, lambdaContext.Object);
 
             // Assert
             Assert.False(res);
-            snsClient.Verify(x => x.PublishAsync(It.Is<PublishRequest>(c => c.Message.Contains(UploadExhibitsNotificationTypes.InvalidS3Structure)), It.IsAny<CancellationToken>()), Times.Once);
+            _snsClient.Verify(x => x.PublishAsync(It.Is<PublishRequest>(c => c.Message.Contains(UploadExhibitsNotificationTypes.InvalidS3Structure)), It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Fact]
         public async Task UploadExhibit_ShouldSkipUploadAndSendNotification_WhenGetSecretFails()
         {
             // Arrange
-            var s3Client = new Mock<IAmazonS3>();
-            var snsClient = new Mock<IAmazonSimpleNotificationService>();
-            var secretManagerClient = new Mock<IAmazonSecretsManager>();
-            var metadataWrapper = new Mock<IMetadataWrapper>();
-            metadataWrapper.Setup(mock => mock.GetMetadataByKey(It.IsAny<GetObjectMetadataResponse>(), It.IsAny<string>()))
+            _metadataWrapper.Setup(mock => mock.GetMetadataByKey(It.IsAny<GetObjectMetadataResponse>(), It.IsAny<string>()))
                 .Returns(Guid.NewGuid().ToString);
-            snsClient.Setup(x => x.PublishAsync(It.IsAny<PublishRequest>(), It.IsAny<CancellationToken>()))
+            _snsClient.Setup(x => x.PublishAsync(It.IsAny<PublishRequest>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new PublishResponse { MessageId = "1", HttpStatusCode = System.Net.HttpStatusCode.OK });
             var lambdaContext = new Mock<ILambdaContext>();
             lambdaContext.Setup(x => x.Logger)
                 .Returns(new Mock<ILambdaLogger>().Object);
             var ev = CreateS3Event();
 
-            secretManagerClient.Setup(mock => mock.GetSecretValueAsync(It.IsAny<GetSecretValueRequest>(),
+            _secretManagerClient.Setup(mock => mock.GetSecretValueAsync(It.IsAny<GetSecretValueRequest>(),
                 It.IsAny<CancellationToken>()))
                 .Throws(new Exception());
-            var function = new UploadExhibitFunction(s3Client.Object, snsClient.Object, secretManagerClient.Object, metadataWrapper.Object);
+            var function = new UploadExhibitFunction(_s3Client.Object, _snsClient.Object, _secretManagerClient.Object, _metadataWrapper.Object, _logger.Object);
 
             // Act
             var result = await function.UploadExhibit(ev, lambdaContext.Object);
 
             // Assert
             Assert.False(result);
-            snsClient.Verify(x => x.PublishAsync(It.Is<PublishRequest>(c => c.Message.Contains(UploadExhibitsNotificationTypes.ExceptionInLambda)), It.IsAny<CancellationToken>()), Times.Once);
+            _snsClient.Verify(x => x.PublishAsync(It.Is<PublishRequest>(c => c.Message.Contains(UploadExhibitsNotificationTypes.ExceptionInLambda)), It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task UploadExhibit_ShouldSkipUploadAndSendNotification_WhenFileSizeIsNotAllowed()
+        {
+            // Arrange
+            _metadataWrapper.Setup(mock => mock.GetMetadataByKey(It.IsAny<GetObjectMetadataResponse>(), It.IsAny<string>()))
+                .Returns(Guid.NewGuid().ToString);
+            _snsClient.Setup(x => x.PublishAsync(It.IsAny<PublishRequest>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new PublishResponse { MessageId = "1", HttpStatusCode = System.Net.HttpStatusCode.OK });
+            var lambdaContext = new Mock<ILambdaContext>();
+            lambdaContext.Setup(x => x.Logger)
+                .Returns(new Mock<ILambdaLogger>().Object);
+            var ev = CreateS3Event();
+
+            
+            var function = new UploadExhibitFunction(_s3Client.Object, _snsClient.Object, _secretManagerClient.Object, _metadataWrapper.Object, _logger.Object);
+
+            // Act
+            var result = await function.UploadExhibit(ev, lambdaContext.Object);
+
+            // Assert
+            Assert.False(result);
+            _snsClient.Verify(x => x.PublishAsync(It.Is<PublishRequest>(c => c.Message.Contains(UploadExhibitsNotificationTypes.ExceptionInLambda)), It.IsAny<CancellationToken>()), Times.Once);
         }
 
         private S3Event CreateS3Event()
