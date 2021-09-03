@@ -1,3 +1,4 @@
+using Amazon.SimpleNotificationService;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
@@ -13,10 +14,10 @@ using PrecisionReporters.Platform.Data;
 using PrecisionReporters.Platform.Domain;
 using PrecisionReporters.Platform.Domain.AppConfigurations;
 using PrecisionReporters.Platform.Domain.Configurations;
+using PrecisionReporters.Platform.Domain.Handlers.Notifications;
+using PrecisionReporters.Platform.Domain.Handlers.Notifications.Interfaces;
 using PrecisionReporters.Platform.Domain.Services;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
-using PrecisionReporters.Platform.Domain.Wrappers;
-using PrecisionReporters.Platform.Domain.Wrappers.Interfaces;
 using PrecisionReporters.Platform.Shared.Helpers;
 using PrecisionReporters.Platform.Shared.Helpers.Interfaces;
 using PrecisionReporters.Platform.Shared.Middlewares;
@@ -71,6 +72,7 @@ namespace PrecisionReporters.Platform.Api
             services.AddScoped<IActivityHistoryService, ActivityHistoryService>();
             services.AddScoped<IDraftTranscriptGeneratorService, DraftTranscriptGeneratorService>();
             services.AddScoped<IParticipantService, ParticipantService>();
+            services.AddScoped<ISnsNotificationService, SnsNotificationService>();
             services.AddScoped<IDocumentService, DocumentService>().Configure<DocumentConfiguration>(x =>
             {
                 x.BucketName = appConfiguration.DocumentConfiguration.BucketName;
@@ -87,8 +89,6 @@ namespace PrecisionReporters.Platform.Api
                 x.NonConvertToPdfExtensions = appConfiguration.DocumentConfiguration.NonConvertToPdfExtensions;
                 x.PreSignedUploadUrlValidSeconds = appConfiguration.DocumentConfiguration.PreSignedUploadUrlValidSeconds;
             });
-            services.AddScoped<IAwsSnsWrapper, AwsSnsWrapper>();
-            services.AddScoped<ISnsHelper, SnsHelper>();
             services.AddScoped<ILoggingHelper, LoggingHelper>();
             services.AddScoped<ISystemSettingsService, SystemSettingsService>();
             services.Configure<KestrelServerOptions>(options =>
@@ -107,6 +107,13 @@ namespace PrecisionReporters.Platform.Api
             {
                 x.RedisConnectionString = appConfiguration.ConnectionStrings.RedisConnectionString;
             });
+
+            // Notifcation handlers - register before signalR and Repositories dependencies
+            services.AddScoped<IMessageSignatureHandler, MessageSignatureHandler>();
+            services.AddScoped<ISubscriptionMessageHandler, SubscriptionMessageHandler>();
+            services.AddScoped<ILambdaExceptionHandler, LambdaExceptionHandler>();
+            services.AddScoped<IExhibitNotificationHandler, ExhibitNotificationHandler>();
+            services.AddScoped<IUnknownMessageHandler, UnknownMessageHandler>();
 
             // Enable Bearer token authentication
             services.AddAuthentication("GuestAuthenticationScheme")

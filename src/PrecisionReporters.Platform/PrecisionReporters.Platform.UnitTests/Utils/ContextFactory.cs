@@ -3,6 +3,8 @@ using System.IO;
 using System.Net;
 using System.Security.Claims;
 using System.Text;
+using Amazon.S3.Model.Internal.MarshallTransformations;
+using Google.Api;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Controllers;
@@ -20,6 +22,22 @@ namespace PrecisionReporters.Platform.UnitTests.Utils
             {
                 HttpContext = new DefaultHttpContext()
             };
+        }
+
+        public static ControllerContext GetControllerContext(string rawBody)
+        {
+            var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(rawBody));
+
+            var httpContext = new DefaultHttpContext();
+            httpContext.Request.Body = stream;
+            httpContext.Request.ContentLength = stream.Length;
+
+            var controllerContext = new ControllerContext()
+            {
+                HttpContext = httpContext,
+            };
+
+            return controllerContext;
         }
 
         public static ControllerContext GetControllerContextWithLocalIp()

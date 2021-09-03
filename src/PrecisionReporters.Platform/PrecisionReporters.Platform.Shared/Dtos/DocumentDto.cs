@@ -13,5 +13,6 @@ namespace PrecisionReporters.Platform.Shared.Dtos
         public string Type { get; set; }
         public Guid DepositionId { get; set; }
         public DateTime? CreationDate { get; set; }
+        public DateTime? SharedAt { get; set; }
     }
 }

@@ -79,7 +79,8 @@ namespace PrecisionReporters.Platform.Api.Controllers
             using (var reader = new StreamReader(Request.Body)) { content = await reader.ReadToEndAsync(); }
 
             var message = _awsSnsWrapper.ParseMessage(content);
-
+            // TODO: We should process these Sns Message using /api/Notications/SnsCallback (we just need to create a Handler to process message type: PostDepositionEditionDto)
+            // avoid subscribe and validate message on Service layer
             if (!_awsSnsWrapper.IsMessageSignatureValid(message))
             {
                 _logger.LogError("There was an error verifying the authenticity of a message sent by Amazon SNS.");

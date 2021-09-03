@@ -5,6 +5,7 @@
         Create,
         Update,
         Delete,
-        Start
+        Start,
+        Error
     }
 }

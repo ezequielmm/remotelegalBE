@@ -27,7 +27,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
     {
         private readonly IDocumentService _documentService;
         private readonly IMapper<Document, DocumentDto, CreateDocumentDto> _documentMapper;
-
+        
         public DocumentsController(IDocumentService documentService, IMapper<Document, DocumentDto, CreateDocumentDto> documentMapper)
         {
             _documentService = documentService;
@@ -194,7 +194,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
         /// <param name="fileName">File Name</param>
         /// <returns>Ok if succeeded</returns>
         [HttpPost]
-        [Route("Depositions/PreSignUploadExhibit")]
+        [Route("[controller]/PreSignUploadExhibit")]
         public async Task<ActionResult<PreSignedUrlDto>> GetPreSignUploadExhibit(PreSignedUploadUrlDto preSignedUploadUrl)
         {
             var preSignedUrlResult = await _documentService.GetPreSignedUrlUploadExhibit(preSignedUploadUrl);

@@ -10,6 +10,7 @@
         BringAllTo,
         Deposition,
         LockBreakRoom,
-        EndDeposition
+        EndDeposition,
+        Exhibit
     }
 }

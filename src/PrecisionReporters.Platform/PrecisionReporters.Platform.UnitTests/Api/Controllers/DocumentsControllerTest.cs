@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Net;
 using System.Threading.Tasks;
 using FluentResults;
@@ -14,6 +15,7 @@ using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using PrecisionReporters.Platform.Shared.Commons;
 using PrecisionReporters.Platform.UnitTests.Utils;
 using Xunit;
+
 namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
 {
     public class DocumentsControllerTest

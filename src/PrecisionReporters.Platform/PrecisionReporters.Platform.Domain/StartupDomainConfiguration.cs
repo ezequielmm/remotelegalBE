@@ -25,6 +25,10 @@ using PrecisionReporters.Platform.Domain.Services;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using PrecisionReporters.Platform.Domain.Transcripts;
 using PrecisionReporters.Platform.Domain.Transcripts.Interfaces;
+using PrecisionReporters.Platform.Domain.Wrappers;
+using PrecisionReporters.Platform.Domain.Wrappers.Interfaces;
+using PrecisionReporters.Platform.Shared.Helpers;
+using PrecisionReporters.Platform.Shared.Helpers.Interfaces;
 using PrecisionReporters.Platform.Shared.Hubs;
 using System;
 
@@ -95,6 +99,7 @@ namespace PrecisionReporters.Platform.Domain
             services.AddSingleton<IMapper<UserSystemInfo, UserSystemInfoDto, object>, UserSystemInfoMapper>();
             services.AddSingleton<IMapper<DeviceInfo, DeviceInfoDto, object>, DeviceInfoMapper>();
             services.AddSingleton<IMapper<Participant, ParticipantTechStatusDto, object>, ParticipantTechStatusMapper>();
+            services.AddSingleton<IMapper<Document, Shared.Dtos.DocumentDto, object>, ExhibitDocumentMapper>();
 
             // Services            
             services.AddScoped<ITwilioService, TwilioService>().Configure<TwilioAccountConfiguration>(x =>
@@ -186,6 +191,8 @@ namespace PrecisionReporters.Platform.Domain
 
             services.AddScoped<IDatabaseTransactionProvider, ApplicationDbContextTransactionProvider>();
             services.AddScoped<ITransactionHandler, TransactionHandler>();
+            services.AddScoped<IAwsSnsWrapper, AwsSnsWrapper>();
+            services.AddScoped<ISnsHelper, SnsHelper>();
 
             if (!string.IsNullOrWhiteSpace(appConfiguration.DocumentConfiguration.PDFTronLicenseKey))
             {
