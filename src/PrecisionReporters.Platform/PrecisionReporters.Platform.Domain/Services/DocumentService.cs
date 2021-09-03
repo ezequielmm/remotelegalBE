@@ -6,6 +6,7 @@ using pdftron.PDF;
 using pdftron.SDF;
 using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Data.Enums;
+using PrecisionReporters.Platform.Shared.Enums;
 using PrecisionReporters.Platform.Data.Handlers.Interfaces;
 using PrecisionReporters.Platform.Data.Repositories.Interfaces;
 using PrecisionReporters.Platform.Domain.Configurations;

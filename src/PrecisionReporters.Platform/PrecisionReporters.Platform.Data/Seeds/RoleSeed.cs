@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Data.Enums;
+using PrecisionReporters.Platform.Shared.Enums;
 using System;
 
 namespace PrecisionReporters.Platform.Data.Seeds

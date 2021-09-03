@@ -2,6 +2,7 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using PrecisionReporters.Platform.Data.Enums;
+using PrecisionReporters.Platform.Shared.Enums;
 
 namespace PrecisionReporters.Platform.Domain.Dtos
 {

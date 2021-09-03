@@ -1,6 +1,7 @@
 ﻿using FluentResults;
 using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Data.Enums;
+using PrecisionReporters.Platform.Shared.Enums;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;

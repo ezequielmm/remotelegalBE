@@ -1,5 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
-using PrecisionReporters.Platform.Data.Enums;
+using PrecisionReporters.Platform.Shared.Enums;
 using System;
 
 namespace PrecisionReporters.Platform.Domain.Authorization.Requirements

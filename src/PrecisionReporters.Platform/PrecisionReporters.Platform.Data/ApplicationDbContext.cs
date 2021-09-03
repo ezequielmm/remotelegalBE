@@ -1,8 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PrecisionReporters.Platform.Data.Entities;
-using PrecisionReporters.Platform.Data.Enums;
+using PrecisionReporters.Platform.Shared.Enums;
 using PrecisionReporters.Platform.Data.Seeds;
+using PrecisionReporters.Platform.Data.Enums;
 
 namespace PrecisionReporters.Platform.Data
 {

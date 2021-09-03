@@ -6,7 +6,7 @@ using FluentResults;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 using PrecisionReporters.Platform.Api.Controllers;
-using PrecisionReporters.Platform.Data.Enums;
+using PrecisionReporters.Platform.Shared.Enums;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using PrecisionReporters.Platform.UnitTests.Utils;
 using Xunit;

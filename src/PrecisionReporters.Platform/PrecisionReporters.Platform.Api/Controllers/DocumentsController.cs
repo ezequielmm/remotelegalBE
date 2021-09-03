@@ -1,10 +1,11 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using PrecisionReporters.Platform.Domain.Authorization.Attributes;
+using PrecisionReporters.Platform.Shared.Authorization.Attributes;
 using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Data.Enums;
-using PrecisionReporters.Platform.Domain.Attributes;
+using PrecisionReporters.Platform.Shared.Enums;
+using PrecisionReporters.Platform.Shared.Attributes;
 using PrecisionReporters.Platform.Domain.Dtos;
 using PrecisionReporters.Platform.Domain.Extensions;
 using PrecisionReporters.Platform.Domain.Mappers;
@@ -43,6 +44,8 @@ namespace PrecisionReporters.Platform.Api.Controllers
         [Route("Depositions/{depositionId}/Exhibits")]
         public async Task<IActionResult> UploadFiles(Guid depositionId)
         {
+            // TODO: review authorization
+
             var identity = HttpContext.User.FindFirstValue(ClaimTypes.Email);
             if (!Request.HasFormContentType || Request.Form.Files.Count == 0)
                 return BadRequest("No files to upload");
@@ -74,6 +77,8 @@ namespace PrecisionReporters.Platform.Api.Controllers
         [HttpGet("Depositions/{depositionId}/MyExhibits")]
         public async Task<ActionResult<List<DocumentDto>>> GetMyExhibits(Guid depositionId)
         {
+            // TODO: review authorization
+
             var identity = HttpContext.User.FindFirstValue(ClaimTypes.Email);
             var documentsResult = await _documentService.GetExhibitsForUser(depositionId, identity);
             if (documentsResult.IsFailed)
@@ -139,11 +144,11 @@ namespace PrecisionReporters.Platform.Api.Controllers
         /// </summary>
         /// <param name="documentId"></param>
         /// <returns>List of documents information</returns>
-        [HttpDelete("Depositions/{depositionId}/documents/{documentId}")]
+        [HttpDelete("Depositions/{depositionId}/documents/{id}")]
         [UserAuthorize(ResourceType.Document, ResourceAction.Delete)]
-        public async Task<ActionResult<List<DocumentDto>>> DeleteMyExhibits(Guid depositionId, [ResourceId(ResourceType.Document)] Guid documentId)
+        public async Task<ActionResult<List<DocumentDto>>> DeleteMyExhibits(Guid depositionId, [ResourceId(ResourceType.Document)] Guid id)
         {
-            var documentsResult = await _documentService.RemoveDepositionDocument(depositionId, documentId);
+            var documentsResult = await _documentService.RemoveDepositionDocument(depositionId, id);
             if (documentsResult.IsFailed)
                 return WebApiResponses.GetErrorResponse(documentsResult);
 
@@ -174,6 +179,8 @@ namespace PrecisionReporters.Platform.Api.Controllers
         [Route("{depositionId}/Files")]
         public async Task<IActionResult> UploadTranscriptionsFiles(Guid depositionId)
         {
+            // TODO: review authorization
+
             if (!Request.HasFormContentType || Request.Form.Files.Count == 0)
                 return BadRequest("No files to upload");
 

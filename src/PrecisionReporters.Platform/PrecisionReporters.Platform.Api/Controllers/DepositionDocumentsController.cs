@@ -1,10 +1,10 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
-using PrecisionReporters.Platform.Domain.Authorization.Attributes;
+using PrecisionReporters.Platform.Shared.Authorization.Attributes;
 using PrecisionReporters.Platform.Data.Entities;
-using PrecisionReporters.Platform.Data.Enums;
-using PrecisionReporters.Platform.Domain.Attributes;
+using PrecisionReporters.Platform.Shared.Enums;
+using PrecisionReporters.Platform.Shared.Attributes;
 using PrecisionReporters.Platform.Domain.Dtos;
 using PrecisionReporters.Platform.Domain.Mappers;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
@@ -16,6 +16,7 @@ using System.IO;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using PrecisionReporters.Platform.Data.Enums;
 
 namespace PrecisionReporters.Platform.Api.Controllers
 {
@@ -86,6 +87,8 @@ namespace PrecisionReporters.Platform.Api.Controllers
         [HttpPost("{id}/SharedDocument/CloseStamped")]
         public async Task<ActionResult> CloseStampedDocument(Guid id, StampedDocumentDto stampedDocumentDto)
         {
+            // TODO: review authorization
+
             var identity = HttpContext.User.FindFirstValue(ClaimTypes.Email);
             var documentResult = await _depositionService.GetSharedDocument(id);
             if (documentResult.IsFailed)
@@ -115,6 +118,8 @@ namespace PrecisionReporters.Platform.Api.Controllers
         [HttpPost("{id}/SharedDocument/Close")]
         public async Task<ActionResult> CloseDocument(Guid id)
         {
+            // TODO: review authorization
+
             var documentResult = await _depositionService.GetSharedDocument(id);
             if (documentResult.IsFailed)
                 return WebApiResponses.GetErrorResponse(documentResult);
@@ -172,11 +177,11 @@ namespace PrecisionReporters.Platform.Api.Controllers
         /// </summary>
         /// <param name="id">Document identifier</param>
         /// <returns>Ok if the process has completed successfully</returns>
-        [HttpPut("{depositionId}/documents/{documentId}/Share")]
+        [HttpPut("{id}/documents/{documentId}/Share")]
         [UserAuthorize(ResourceType.Deposition, ResourceAction.ViewSharedDocument)]
-        public async Task<IActionResult> ShareEnteredExhibit([ResourceId(ResourceType.Deposition)] Guid depositionId, Guid documentId)
+        public async Task<IActionResult> ShareEnteredExhibit([ResourceId(ResourceType.Deposition)] Guid id, Guid documentId)
         {
-            var documentsResult = await _documentService.ShareEnteredExhibit(depositionId, documentId);
+            var documentsResult = await _documentService.ShareEnteredExhibit(id, documentId);
             if (documentsResult.IsFailed)
                 return WebApiResponses.GetErrorResponse(documentsResult);
             return Ok();
@@ -187,11 +192,11 @@ namespace PrecisionReporters.Platform.Api.Controllers
         /// </summary>
         /// <param name="id">Document identifier</param>
         /// <returns></returns>
-        [HttpGet("{depositionId}/documents/{documentId}/PreSignedUrl")]
+        [HttpGet("{id}/documents/{documentId}/PreSignedUrl")]
         [UserAuthorize(ResourceType.Deposition, ResourceAction.ViewSharedDocument)]
-        public async Task<ActionResult<FileSignedDto>> GetFileSignedUrl([ResourceId(ResourceType.Deposition)] Guid depositionId, Guid documentId)
+        public async Task<ActionResult<FileSignedDto>> GetFileSignedUrl([ResourceId(ResourceType.Deposition)] Guid id, Guid documentId)
         {
-            var fileSignedUrlResult = await _documentService.GetCannedPrivateURL(depositionId, documentId);
+            var fileSignedUrlResult = await _documentService.GetCannedPrivateURL(id, documentId);
             if (fileSignedUrlResult.IsFailed)
                 return WebApiResponses.GetErrorResponse(fileSignedUrlResult);
 
@@ -209,11 +214,11 @@ namespace PrecisionReporters.Platform.Api.Controllers
         /// </summary>
         /// <param name="id">Document identifier</param>
         /// <returns></returns>
-        [HttpGet("{depositionId}/documents/PreSignedUrl")]
+        [HttpGet("{id}/documents/PreSignedUrl")]
         [UserAuthorize(ResourceType.Deposition, ResourceAction.View)]
-        public async Task<ActionResult> GetFileSignedUrlList([ResourceId(ResourceType.Deposition)] Guid depositionId, [FromQuery] List<Guid> documentIds)
+        public async Task<ActionResult> GetFileSignedUrlList([ResourceId(ResourceType.Deposition)] Guid id, [FromQuery] List<Guid> documentIds)
         {
-            var fileSignedUrlListResult = await _documentService.GetFileSignedUrl(depositionId, documentIds);
+            var fileSignedUrlListResult = await _documentService.GetFileSignedUrl(id, documentIds);
             if (fileSignedUrlListResult.IsFailed)
                 return WebApiResponses.GetErrorResponse(fileSignedUrlListResult);
 
@@ -225,11 +230,11 @@ namespace PrecisionReporters.Platform.Api.Controllers
         /// </summary>
         /// <param name="documentId"></param>
         /// <returns>200 OK</returns>
-        [HttpDelete("{depositionId}/transcripts/{documentId}")]
+        [HttpDelete("{id}/transcripts/{documentId}")]
         [UserAuthorize(ResourceType.Document, ResourceAction.Delete)]
-        public async Task<ActionResult> DeleteTranscript(Guid depositionId, [ResourceId(ResourceType.Document)] Guid documentId)
+        public async Task<ActionResult> DeleteTranscript(Guid depositionId, [ResourceId(ResourceType.Document)] Guid id)
         {
-            var documentsResult = await _depositionDocumentService.RemoveDepositionTranscript(depositionId, documentId);
+            var documentsResult = await _depositionDocumentService.RemoveDepositionTranscript(depositionId, id);
             if (documentsResult.IsFailed)
                 return WebApiResponses.GetErrorResponse(documentsResult);
             return Ok();
@@ -242,11 +247,11 @@ namespace PrecisionReporters.Platform.Api.Controllers
         /// <param name="depositionId"></param>
         /// <param name="bringAllToMe></param>
         /// <returns>200 OK</returns>
-        [HttpPost("{depositionId}/BringAllToMe")]
+        [HttpPost("{id}/BringAllToMe")]
         [UserAuthorize(ResourceType.Deposition, ResourceAction.View)]
-        public async Task<ActionResult> BringAllToMe([ResourceId(ResourceType.Deposition)] Guid depositionId, BringAllToMeDto bringAllToMe)
+        public async Task<ActionResult> BringAllToMe([ResourceId(ResourceType.Deposition)] Guid id, BringAllToMeDto bringAllToMe)
         {
-            var result = await _depositionDocumentService.BringAllToMe(depositionId, bringAllToMe);
+            var result = await _depositionDocumentService.BringAllToMe(id, bringAllToMe);
             if (result.IsFailed)
                 return WebApiResponses.GetErrorResponse(result);
             return Ok();

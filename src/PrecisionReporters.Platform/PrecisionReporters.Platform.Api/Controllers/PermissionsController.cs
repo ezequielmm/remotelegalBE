@@ -30,6 +30,8 @@ namespace PrecisionReporters.Platform.Api.Controllers
         [HttpGet("depositions/{id}")]
         public async Task<ActionResult<DepositionPermissionsDto>> GetDepositionPermissionsForParticipant(Guid id)
         {
+            // TODO: review authorization
+
             var userEmail = HttpContext.User.FindFirstValue(ClaimTypes.Email);
             var userResult = await _userService.GetUserByEmail(userEmail);
 

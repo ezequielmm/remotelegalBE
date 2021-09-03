@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using System;
 
-namespace PrecisionReporters.Platform.Domain.Extensions
+namespace PrecisionReporters.Platform.Shared.Extensions
 {
     public static class HttpContextExtensions
     {

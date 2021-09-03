@@ -211,6 +211,7 @@ namespace PrecisionReporters.Platform.Api
             app.UseAuthorization();
             app.UseMiddleware<ErrorHandlingMiddleware>(appConfiguration.ConfigurationFlags.IsShowErrorMessageEnabled);
             app.UseMiddleware<LogIdentityMiddleware>();
+            app.UseMiddleware<LogResourceMiddleware>();
 
             app.UseHealthChecks("/healthcheck");
             app.UseWebSockets();

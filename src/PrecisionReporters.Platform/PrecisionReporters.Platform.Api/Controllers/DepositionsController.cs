@@ -1,10 +1,10 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
-using PrecisionReporters.Platform.Domain.Authorization.Attributes;
+using PrecisionReporters.Platform.Shared.Authorization.Attributes;
 using PrecisionReporters.Platform.Data.Entities;
-using PrecisionReporters.Platform.Data.Enums;
-using PrecisionReporters.Platform.Domain.Attributes;
+using PrecisionReporters.Platform.Shared.Enums;
+using PrecisionReporters.Platform.Shared.Attributes;
 using PrecisionReporters.Platform.Domain.Dtos;
 using PrecisionReporters.Platform.Domain.Mappers;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
@@ -14,6 +14,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using PrecisionReporters.Platform.Data.Enums;
 
 namespace PrecisionReporters.Platform.Api.Controllers
 {
@@ -80,6 +81,8 @@ namespace PrecisionReporters.Platform.Api.Controllers
         [HttpPost("{id}/join")]
         public async Task<ActionResult<JoinDepositionDto>> JoinDeposition(Guid id)
         {
+            // TODO: review authorization
+
             var identity = HttpContext.User.FindFirstValue(ClaimTypes.Email);
             var joinDepositionInfoResult = await _depositionService.JoinDeposition(id, identity);
 
@@ -210,7 +213,8 @@ namespace PrecisionReporters.Platform.Api.Controllers
         /// <param name="id">Deposition identifier</param>
         /// <returns>List of DepositionEvent of an existing Deposition</returns>
         [HttpGet("{id}/events")]
-        public async Task<ActionResult<List<DepositionEventDto>>> GetDepositionEvents(Guid id)
+        [UserAuthorize(ResourceType.Deposition, ResourceAction.View)]
+        public async Task<ActionResult<List<DepositionEventDto>>> GetDepositionEvents([ResourceId(ResourceType.Deposition)] Guid id)
         {
             var eventsResult = await _depositionService.GetDepositionEvents(id);
             if (eventsResult.IsFailed)
@@ -290,7 +294,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
             {
                 Browser = guest.Browser,
                 Device = guest.Device,
-                IPAddress = string.IsNullOrWhiteSpace(publicIPAddress)? localIPAddress.ToString() : publicIPAddress
+                IPAddress = string.IsNullOrWhiteSpace(publicIPAddress) ? localIPAddress.ToString() : publicIPAddress
             };
 
             var tokenResult = await _depositionService.JoinGuestParticipant(id, _guestMapper.ToModel(guest), activity);
@@ -377,11 +381,10 @@ namespace PrecisionReporters.Platform.Api.Controllers
         /// <returns>Ok if succeeded</returns>
         [HttpPatch("{id}")]
         [UserAuthorize(ResourceType.Deposition, ResourceAction.Update)]
-        [AllowAnonymous]
         public async Task<ActionResult<DepositionDto>> EditDepositionDetails([ResourceId(ResourceType.Deposition)] Guid id, EditDepositionDto editDepositionDto)
         {
-            var file = Request.HasFormContentType?
-                FileHandlerHelper.GetFilesFromRequest(Request.Form.Files).FirstOrDefault().Value 
+            var file = Request.HasFormContentType ?
+                FileHandlerHelper.GetFilesFromRequest(Request.Form.Files).FirstOrDefault().Value
                 : null;
             editDepositionDto.Deposition.Id = id;
             var deposition = _depositionMapper.ToModel(editDepositionDto.Deposition);
@@ -435,8 +438,8 @@ namespace PrecisionReporters.Platform.Api.Controllers
         [UserAuthorize(ResourceType.Deposition, ResourceAction.Revert)]
         public async Task<ActionResult<DepositionDto>> RevertCancel([ResourceId(ResourceType.Deposition)] Guid id, EditDepositionDto editDepositionDto)
         {
-            var file = Request.HasFormContentType?
-                FileHandlerHelper.GetFilesFromRequest(Request.Form.Files).FirstOrDefault().Value 
+            var file = Request.HasFormContentType ?
+                FileHandlerHelper.GetFilesFromRequest(Request.Form.Files).FirstOrDefault().Value
                 : null;
             editDepositionDto.Deposition.Id = id;
             var deposition = _depositionMapper.ToModel(editDepositionDto.Deposition);
@@ -451,8 +454,8 @@ namespace PrecisionReporters.Platform.Api.Controllers
         [UserAuthorize(ResourceType.Deposition, ResourceAction.ReSchedule)]
         public async Task<ActionResult<DepositionDto>> ReScheduleDeposition([ResourceId(ResourceType.Deposition)] Guid id, EditDepositionDto editDepositionDto)
         {
-            var file = Request.HasFormContentType?
-                FileHandlerHelper.GetFilesFromRequest(Request.Form.Files).FirstOrDefault().Value 
+            var file = Request.HasFormContentType ?
+                FileHandlerHelper.GetFilesFromRequest(Request.Form.Files).FirstOrDefault().Value
                 : null;
             editDepositionDto.Deposition.Id = id;
             var deposition = _depositionMapper.ToModel(editDepositionDto.Deposition);
@@ -483,7 +486,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
         [UserAuthorize(ResourceType.Deposition, ResourceAction.ViewDepositionStatus)]
         public async Task<ActionResult<DepositionTechStatusDto>> GetDepositionInfo([ResourceId(ResourceType.Deposition)] Guid id)
         {
-            var depositionResult = await _depositionService.GetByIdWithIncludes(id, new[] { nameof(Deposition.SharingDocument), nameof(Deposition.Room), 
+            var depositionResult = await _depositionService.GetByIdWithIncludes(id, new[] { nameof(Deposition.SharingDocument), nameof(Deposition.Room),
                 $"{nameof(Deposition.Participants)}.{nameof(Participant.DeviceInfo)}",
                 $"{nameof(Deposition.Participants)}.{nameof(Participant.User)}.{nameof(Data.Entities.User.ActivityHistories)}"});
             if (depositionResult.IsFailed)
@@ -499,10 +502,11 @@ namespace PrecisionReporters.Platform.Api.Controllers
                 .Select(p => _participantTechStatusMapper.ToDto(p)).ToList()
             });
         }
-        
+
         [HttpPost("{id}/userSystemInfo")]
         public async Task<ActionResult> SetUserSystemInfo(Guid id, UserSystemInfoDto userSystemInfoDto)
         {
+            // TODO: review authorization
             var publicIPAddress = HttpContext.Request.Headers["X-Forwarded-For"].ToString().Split(new[] { ',' }).FirstOrDefault();
             var localIPAddress = HttpContext.Connection.RemoteIpAddress.MapToIPv4();
 
@@ -520,6 +524,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
         [HttpPost("{id}/devices")]
         public async Task<ActionResult> SetUserDevice(Guid id, DeviceInfoDto userDeviceDto)
         {
+            // TODO: review authorization
             var userDeviceInfo = _userDeviceMapper.ToModel(userDeviceDto);
 
             var result = await _participantService.SetUserDeviceInfo(id, userDeviceInfo);

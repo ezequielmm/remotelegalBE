@@ -33,6 +33,8 @@ namespace PrecisionReporters.Platform.Transcript.Api.Controllers
         [HttpGet("{depositionId}")]
         public async Task<ActionResult<List<TranscriptionDto>>> GetTranscriptions(Guid depositionId)
         {
+            // TODO: review authorization
+
             var transcriptionsResult = await _transcriptionService.GetTranscriptionsByDepositionId(depositionId);
             if (transcriptionsResult.IsFailed)
                 return WebApiResponses.GetErrorResponse(transcriptionsResult);
@@ -44,6 +46,8 @@ namespace PrecisionReporters.Platform.Transcript.Api.Controllers
         [HttpGet("{depositionId}/Files")]
         public async Task<ActionResult<List<DocumentDto>>> GetTranscriptionsFiles(Guid depositionId)
         {
+            // TODO: review authorization
+
             var identity = HttpContext.User.FindFirstValue(ClaimTypes.Email);
             var transcriptionsResult = await _transcriptionService.GetTranscriptionsFiles(depositionId, identity);
             if (transcriptionsResult.IsFailed)
@@ -56,6 +60,8 @@ namespace PrecisionReporters.Platform.Transcript.Api.Controllers
         [HttpGet("{depositionId}/offsets")]
         public async Task<ActionResult<List<TranscriptionTimeDto>>> GetTranscriptionsTime(Guid depositionId)
         {
+            // TODO: review authorization
+
             var transcriptionsResult = await _transcriptionService.GetTranscriptionsWithTimeOffset(depositionId);
             if (transcriptionsResult.IsFailed)
                 return WebApiResponses.GetErrorResponse(transcriptionsResult);

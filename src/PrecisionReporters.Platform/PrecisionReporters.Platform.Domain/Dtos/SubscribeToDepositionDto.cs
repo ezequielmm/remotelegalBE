@@ -1,5 +1,5 @@
-﻿using PrecisionReporters.Platform.Data.Enums;
-using PrecisionReporters.Platform.Domain.Attributes;
+﻿using PrecisionReporters.Platform.Shared.Enums;
+using PrecisionReporters.Platform.Shared.Attributes;
 using System;
 using MessagePack;
 

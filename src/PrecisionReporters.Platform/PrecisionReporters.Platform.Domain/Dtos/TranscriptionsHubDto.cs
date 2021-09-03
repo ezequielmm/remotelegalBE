@@ -1,7 +1,7 @@
 ﻿using System;
 using MessagePack;
-using PrecisionReporters.Platform.Data.Enums;
-using PrecisionReporters.Platform.Domain.Attributes;
+using PrecisionReporters.Platform.Shared.Enums;
+using PrecisionReporters.Platform.Shared.Attributes;
 
 namespace PrecisionReporters.Platform.Domain.Dtos
 {

@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using PrecisionReporters.Platform.Domain.Authorization.Requirements;
 using PrecisionReporters.Platform.Domain.Extensions;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
+using PrecisionReporters.Platform.Shared.Extensions;
 using System;
 using System.Security.Claims;
 using System.Threading.Tasks;

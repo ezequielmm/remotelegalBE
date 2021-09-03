@@ -1,4 +1,4 @@
-﻿namespace PrecisionReporters.Platform.Data.Enums
+﻿namespace PrecisionReporters.Platform.Shared.Enums
 {
     public enum ResourceAction
     {

@@ -166,6 +166,7 @@ namespace PrecisionReporters.Platform.Transcript.Api
 
             app.UseMiddleware<ErrorHandlingMiddleware>(appConfiguration.ConfigurationFlags.IsShowErrorMessageEnabled);
             app.UseMiddleware<LogIdentityMiddleware>();
+            app.UseMiddleware<LogResourceMiddleware>();
 
             app.UseHealthChecks("/healthcheck");
 
