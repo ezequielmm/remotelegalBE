@@ -761,7 +761,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             }
             var depoStartDate = deposition.GetActualStartDate() ?? deposition.Room.RecordingStartDate;
             var depoTotalTime = (int)(deposition.Room.EndDate.Value - depoStartDate.Value).TotalSeconds;
-            var onTheRecordTime = GetOnTheRecordTime(deposition.Events, depoTotalTime);
+            var onTheRecordTime = deposition.Room.Composition.RecordDuration == 0 ? GetOnTheRecordTime(deposition.Events, depoTotalTime) : deposition.Room.Composition.RecordDuration;
             var depositionVideo = new DepositionVideoDto
             {
                 PublicUrl = url,
@@ -802,6 +802,8 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             return onTheRecordTotal;
         }
+
+
 
         public async Task<Result<Document>> GetDepositionCaption(Guid id)
         {

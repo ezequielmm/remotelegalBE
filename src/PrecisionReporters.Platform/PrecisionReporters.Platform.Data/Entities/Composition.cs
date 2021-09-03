@@ -27,7 +27,8 @@ namespace PrecisionReporters.Platform.Data.Entities
         [Column(TypeName = "char(5)")]
         public string FileType { get; set; }
 
-        public Composition() {}
+        public int RecordDuration { get; set; }
+        public Composition() { }
 
         public override void CopyFrom(Composition entity)
         {

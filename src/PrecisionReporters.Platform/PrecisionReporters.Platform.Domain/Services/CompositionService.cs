@@ -1,4 +1,6 @@
 ﻿using FluentResults;
+using MediaToolkit;
+using MediaToolkit.Model;
 using Microsoft.Extensions.Logging;
 using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Data.Enums;
@@ -9,6 +11,7 @@ using PrecisionReporters.Platform.Domain.Extensions;
 using PrecisionReporters.Platform.Domain.Helpers.Interfaces;
 using PrecisionReporters.Platform.Domain.QueuedBackgroundTasks.Interfaces;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
+using PrecisionReporters.Platform.Domain.Wrappers.Interfaces;
 using PrecisionReporters.Platform.Shared.Commons;
 using PrecisionReporters.Platform.Shared.Errors;
 using System;
@@ -26,11 +29,11 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly IBackgroundTaskQueue _backgroundTaskQueue;
         private readonly ICompositionHelper _compositionHelper;
         private readonly ILogger<CompositionService> _logger;
+        private readonly IMediaToolKitWrapper _mediaToolKitWrapper;
 
         public CompositionService(ICompositionRepository compositionRepository,
             ITwilioService twilioService, IRoomService roomService, IDepositionService depositionService,
-            ILogger<CompositionService> logger, IBackgroundTaskQueue backgroundTaskQueue, ICompositionHelper compositionHelper
-            )
+            ILogger<CompositionService> logger, IBackgroundTaskQueue backgroundTaskQueue, ICompositionHelper compositionHelper, IMediaToolKitWrapper mediaToolKitWrapper)
         {
             _compositionRepository = compositionRepository;
             _twilioService = twilioService;
@@ -39,6 +42,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             _backgroundTaskQueue = backgroundTaskQueue;
             _compositionHelper = compositionHelper;
             _logger = logger;
+            _mediaToolKitWrapper = mediaToolKitWrapper;
         }
 
         public async Task<Result> StoreCompositionMediaAsync(Composition composition)
@@ -50,6 +54,10 @@ namespace PrecisionReporters.Platform.Domain.Services
                 _logger.LogError("Could not download composition media.");
                 return Result.Fail(new ExceptionalError("Could not download composition media.", null));
             }
+
+            var duration = _mediaToolKitWrapper.GetVideoDuration($"{composition.SId}.{ApplicationConstants.Mp4}");
+
+            composition.RecordDuration = duration;
 
             composition.Status = CompositionStatus.Uploading;
             var updatedComposition = await UpdateComposition(composition);

@@ -1,4 +1,6 @@
 ﻿using FluentResults;
+using MediaToolkit;
+using MediaToolkit.Model;
 using Microsoft.Extensions.Logging;
 using Moq;
 using PrecisionReporters.Platform.Data.Entities;
@@ -10,6 +12,7 @@ using PrecisionReporters.Platform.Domain.Helpers.Interfaces;
 using PrecisionReporters.Platform.Domain.QueuedBackgroundTasks.Interfaces;
 using PrecisionReporters.Platform.Domain.Services;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
+using PrecisionReporters.Platform.Domain.Wrappers.Interfaces;
 using PrecisionReporters.Platform.Shared.Errors;
 using System;
 using System.Collections.Generic;
@@ -32,6 +35,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         private readonly Mock<ILogger<CompositionService>> _loggerMock;
         private readonly Mock<IBackgroundTaskQueue> _backgroundTaskQueue;
         private readonly Mock<ICompositionHelper> _compositionHelperMock;
+        private readonly Mock<IMediaToolKitWrapper> _IMediaToolKitWrapperMock;
 
         public CompositionServiceTest()
         {
@@ -42,9 +46,10 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _loggerMock = new Mock<ILogger<CompositionService>>();
             _backgroundTaskQueue = new Mock<IBackgroundTaskQueue>();
             _compositionHelperMock = new Mock<ICompositionHelper>();
+            _IMediaToolKitWrapperMock = new Mock<IMediaToolKitWrapper>();
 
             _service = new CompositionService(_compositionRepositoryMock.Object, _twilioServiceMock.Object,
-                _roomServiceMock.Object, _depositionServiceMock.Object, _loggerMock.Object, _backgroundTaskQueue.Object, _compositionHelperMock.Object);
+                _roomServiceMock.Object, _depositionServiceMock.Object, _loggerMock.Object, _backgroundTaskQueue.Object, _compositionHelperMock.Object, _IMediaToolKitWrapperMock.Object);
         }
 
         public void Dispose()
@@ -114,7 +119,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         [Fact]
         public async Task StoreCompositionMediaAsync_ShouldOk()
         {
-            //Arrange
+            //Arrange      
             var compositionId = Guid.NewGuid();
             var composition = new Composition()
             {
@@ -128,6 +133,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _twilioServiceMock.Setup(x => x.GetCompositionMediaAsync(It.IsAny<Composition>())).ReturnsAsync(true);
             _twilioServiceMock.Setup(x => x.UploadCompositionMediaAsync(It.IsAny<Composition>()));
             _compositionRepositoryMock.Setup(x => x.Update(It.IsAny<Composition>()));
+            _IMediaToolKitWrapperMock.Setup(x => x.GetVideoDuration(It.IsAny<string>())).Returns(It.IsAny<int>);
 
             //Act
             var result = await _service.StoreCompositionMediaAsync(composition);
@@ -136,6 +142,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _twilioServiceMock.Verify(x => x.GetCompositionMediaAsync(It.IsAny<Composition>()), Times.Once);
             _compositionRepositoryMock.Verify(x => x.Update(It.IsAny<Composition>()), Times.Once);
             _twilioServiceMock.Verify(x => x.UploadCompositionMediaAsync(It.IsAny<Composition>()), Times.Once);
+            _IMediaToolKitWrapperMock.Verify(x => x.GetVideoDuration(It.IsAny<string>()), Times.Once);
             Assert.True(result.IsSuccess);
         }
 
@@ -198,10 +205,10 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         {
             //Arrange
             var roomSid = Guid.NewGuid();
-            
+
             _compositionRepositoryMock
                 .Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Composition, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()))
-                .ReturnsAsync((Composition) null);
+                .ReturnsAsync((Composition)null);
 
             //Act
             var result = await _service.GetCompositionByRoom(roomSid);
@@ -254,7 +261,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             };
             _roomServiceMock
                 .Setup(x => x.GetRoomBySId(It.IsAny<string>()))
-                .ReturnsAsync(Result.Ok((Room) null));
+                .ReturnsAsync(Result.Ok((Room)null));
             _compositionRepositoryMock
                 .Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Composition, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()))
                 .ReturnsAsync((Composition)null);
@@ -316,7 +323,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 Status = CompositionStatus.Available
             };
             var room = new Room()
-            { 
+            {
                 Composition = composition,
                 EndDate = DateTime.Now
             };
