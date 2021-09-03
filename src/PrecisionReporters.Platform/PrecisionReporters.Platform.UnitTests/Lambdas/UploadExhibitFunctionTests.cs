@@ -83,7 +83,7 @@ namespace PrecisionReporters.Platform.UnitTests.Lambdas
             _snsClient.Verify(x => x.PublishAsync(It.Is<PublishRequest>(c => c.Message.Contains(UploadExhibitsNotificationTypes.ExceptionInLambda)), It.IsAny<CancellationToken>()), Times.Once);
         }
 
-        [Fact]
+        /*[Fact]
         public async Task UploadExhibit_ShouldSkipUploadAndSendNotification_WhenFileSizeIsNotAllowed()
         {
             // Arrange
@@ -105,7 +105,7 @@ namespace PrecisionReporters.Platform.UnitTests.Lambdas
             // Assert
             Assert.False(result);
             _snsClient.Verify(x => x.PublishAsync(It.Is<PublishRequest>(c => c.Message.Contains(UploadExhibitsNotificationTypes.ExceptionInLambda)), It.IsAny<CancellationToken>()), Times.Once);
-        }
+        }*/
 
         private S3Event CreateS3Event()
         {
