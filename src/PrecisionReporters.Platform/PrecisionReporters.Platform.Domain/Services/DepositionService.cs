@@ -736,12 +736,13 @@ namespace PrecisionReporters.Platform.Domain.Services
                 return Result.Fail(new ResourceNotFoundError($"There is no composition for Deposition id: {depositionId}"));
 
             string url = "";
+            var fileName = "";
 
             if (deposition.Room.Composition.Status == CompositionStatus.Completed)
             {
                 var expirationDate = DateTime.UtcNow.AddHours(_documentsConfiguration.PreSignedUrlValidHours);
 
-                var fileName = deposition.Case.Name;
+                fileName = deposition.Case.Name;
                 var witness = deposition.Participants?.FirstOrDefault(x => x.Role == ParticipantType.Witness);
                 if (!string.IsNullOrEmpty(witness?.Name))
                     fileName += $"-{witness.Name}";
@@ -758,7 +759,8 @@ namespace PrecisionReporters.Platform.Domain.Services
                 OnTheRecordTime = onTheRecordTime,
                 OffTheRecordTime = depoTotalTime - onTheRecordTime,
                 Status = deposition.Room.Composition.Status.ToString(),
-                OutputFormat = deposition.Room.Composition.FileType
+                OutputFormat = deposition.Room.Composition.FileType,
+                FileName = fileName
             };
 
             return Result.Ok(depositionVideo);

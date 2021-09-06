@@ -8,5 +8,6 @@
         public int OffTheRecordTime { get; set; }
         public string Status { get; set; }
         public string OutputFormat { get; set; }
+        public string FileName { get; set; }
     }
 }
