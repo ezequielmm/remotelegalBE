@@ -760,7 +760,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 OffTheRecordTime = depoTotalTime - onTheRecordTime,
                 Status = deposition.Room.Composition.Status.ToString(),
                 OutputFormat = deposition.Room.Composition.FileType,
-                FileName = fileName
+                FileName = $"{fileName}.{deposition.Room.Composition.FileType}"
             };
 
             return Result.Ok(depositionVideo);
