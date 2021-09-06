@@ -202,9 +202,9 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             _log.LogDebug("Uploading composition - SId: {0} - keyName: {1}", composition.SId, keyName);
 
-            if (file.Exists)
+            if (File.Exists(filePath))
             {
-                var result = await UploadMultipartAsync(file, keyName);
+                var result = await _awsStorageService.UploadAsync(keyName, filePath, _twilioAccountConfiguration.S3DestinationBucket);
 
                 if (result.IsFailed)
                 {
@@ -227,6 +227,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         private async Task<Result> UploadMultipartAsync(FileInfo file, string keyName)
         {
+
             using (Stream fileStream = file.OpenRead())
             {
                 var fileTransferInfo = new FileTransferInfo

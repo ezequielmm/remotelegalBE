@@ -89,7 +89,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             {
                 foreach (var doc in documents)
                 {
-                    using var fileStr = await _awsStorageService.GetObjectAsync(doc.FilePath, _documentsConfiguration.BucketName);
+                    await using var fileStr = await _awsStorageService.GetObjectAsync(doc.FilePath, _documentsConfiguration.BucketName);
                     await _fileHelper.CreateFile(new FileTransferInfo() { FileStream = fileStr, Name = doc.DisplayName });
                 }
 
@@ -659,18 +659,16 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         private async Task<Result> SaveDocumentWithAnnotationsToS3(Document document, string temporalPath, string parentPath)
         {
-            using var pdfDoc = new PDFDoc();
             using var fdfDoc = new FDFDoc();
             var filePath = temporalPath + document.Name;
             var annotations = await _annotationEventRepository.GetByFilter(x => x.DocumentId == document.Id);
-            using var fileStr = await _awsStorageService.GetObjectAsync(document.FilePath, _documentsConfiguration.BucketName);
+            await using var fileStr = await _awsStorageService.GetObjectAsync(document.FilePath, _documentsConfiguration.BucketName);
 
-            using (Stream file = File.Create(filePath))
+            await using (Stream file = File.Create(filePath))
             {
-                await _fileHelper.CopyStream(fileStr, file);
+                await fileStr.CopyToAsync(file);
             }
-
-            pdftron.PDF.Convert.ToPdf(pdfDoc, filePath);
+            using var pdfDoc = new PDFDoc(filePath);
 
             // Merge annotation into FDFDoc and then save into the new PDF
             foreach (var annotation in annotations)
@@ -679,7 +677,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             }
             pdfDoc.FDFMerge(fdfDoc);
 
-            using var streamDoc = new MemoryStream();
+            await using var streamDoc = new MemoryStream();
             try
             {
                 pdfDoc.Save(streamDoc, SDFDoc.SaveOptions.e_linearized);
@@ -688,6 +686,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 var result = await _awsStorageService.UploadObjectFromStreamAsync(s3FilePath, streamDoc, _documentsConfiguration.BucketName);
                 await _awsStorageService.DeleteObjectAsync(_documentsConfiguration.BucketName, document.FilePath);
                 File.Delete(filePath);
+
                 return result;
             }
             catch (Exception ex)
@@ -743,7 +742,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                     var pathOptimizedPDF = _fileHelper.OptimizePDF(pathPDF);
                     pathFiles.Add(pathOptimizedPDF);
 
-                    var uploadedDocumentFromPath = await _awsStorageService.UploadMultipartAsync(documentKeyName, pathOptimizedPDF, _documentsConfiguration.BucketName);
+                    var uploadedDocumentFromPath = await _awsStorageService.UploadAsync(documentKeyName, pathOptimizedPDF, _documentsConfiguration.BucketName);
                     if (uploadedDocumentFromPath.IsFailed)
                         return uploadedDocumentFromPath.ToResult<Document>();
 

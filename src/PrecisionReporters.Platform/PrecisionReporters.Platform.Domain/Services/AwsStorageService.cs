@@ -12,7 +12,6 @@ using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using PrecisionReporters.Platform.Shared.Commons;
 using PrecisionReporters.Platform.Shared.Extensions;
 using System;
-using System.Linq;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
@@ -34,99 +33,12 @@ namespace PrecisionReporters.Platform.Domain.Services
             _logger = logger;
             _urlPathConfiguration = urlPathConfiguration.Value;
         }
-        public async Task<Result<FileTransferInfo>> UploadMultipartAsync(string keyName, string pathFile, string bucketName)
-        {
-            var file = new FileTransferInfo();
-            using var stream = File.OpenRead(pathFile);
-            file.FileStream = stream;
-            file.Length = stream.Length;
-
-            var result = await UploadMultipartAsync(keyName, file, bucketName);
-
-            if(result.IsFailed)
-                return result;
-
-            return Result.Ok(file);
-        }
 
         public async Task<Result> UploadMultipartAsync(string keyName, FileTransferInfo file, string bucketName)
         {
-            // Create list to store upload part responses.
-            var uploadResponses = new List<UploadPartResponse>();
-
-            // Setup information required to initiate the multipart upload.
-            var initiateRequest = new InitiateMultipartUploadRequest
-            {
-                BucketName = bucketName,
-                Key = keyName
-            };
-
-            // Initiate the upload.
-            var initResponse =
-                await _fileTransferUtility.S3Client.InitiateMultipartUploadAsync(initiateRequest);
-
-            // Upload parts
-            var partSize = 5 * (long)Math.Pow(2, 20); // 5 MB
-
-            try
-            {
-                _logger.LogDebug("Uploading parts");
-
-                long filePosition = 0;
-                for (int i = 1; filePosition < file.Length; i++)
-                {
-                    var uploadRequest = new UploadPartRequest
-                    {
-                        BucketName = bucketName,
-                        Key = keyName,
-                        UploadId = initResponse.UploadId,
-                        PartNumber = i,
-                        PartSize = partSize,
-                        InputStream = file.FileStream
-                    };
-
-                    // Track upload progress.
-                    uploadRequest.StreamTransferProgress +=
-                        new EventHandler<StreamTransferProgressArgs>(UploadPartProgressEventCallback);
-
-                    // Upload a part and add the response to our list.
-                    uploadResponses.Add(await _fileTransferUtility.S3Client.UploadPartAsync(uploadRequest));
-
-                    filePosition += partSize;
-                }
-
-                // Setup to complete the upload.
-                var completeRequest = new CompleteMultipartUploadRequest
-                {
-                    BucketName = bucketName,
-                    Key = keyName,
-                    UploadId = initResponse.UploadId
-                };
-                completeRequest.AddPartETags(uploadResponses);
-
-                // Complete the upload.
-                await _fileTransferUtility.S3Client.CompleteMultipartUploadAsync(completeRequest);
-
-                _logger.LogDebug($"File uploaded {keyName}");
-
-                return Result.Ok();
-            }
-            catch (Exception exception)
-            {
-                _logger.LogError("An AmazonS3Exception was thrown: {0}", exception.Message);
-
-                // Abort the upload.
-                var abortMPURequest = new AbortMultipartUploadRequest
-                {
-                    BucketName = bucketName,
-                    Key = keyName,
-                    UploadId = initResponse.UploadId
-                };
-                await _fileTransferUtility.S3Client.AbortMultipartUploadAsync(abortMPURequest);
-
-
-                return Result.Fail(new ExceptionalError($"Error loading file {keyName}", exception));
-            }
+            _logger.LogInformation("UploadMultipartAsync from file:{file} size: {$size} on bucket {2} path string {$keyName}", file.Name, file.Length, bucketName, keyName);
+            await _fileTransferUtility.S3Client.UploadObjectFromStreamAsync(bucketName, keyName, file.FileStream, null);
+            return Result.Ok();
         }
 
         public async Task<Result> UploadObjectFromStreamAsync(string keyName, Stream fileStream, string bucketName)
@@ -196,19 +108,10 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Stream> GetObjectAsync(string objectKey, string bucketName)
         {
-            var request = new GetObjectRequest();
-            request.BucketName = bucketName;
-            request.Key = objectKey;
-            var response = await _fileTransferUtility.S3Client.GetObjectAsync(request);
-            return response.ResponseStream;
+            return await _fileTransferUtility.S3Client.GetObjectStreamAsync(bucketName,objectKey, null);
         }
 
-        private void UploadPartProgressEventCallback(object sender, StreamTransferProgressArgs e)
-        {
-            // Process event. 
-            _logger.LogDebug("{0}/{1}", e.TransferredBytes, e.TotalBytes);
-        }
-
+        
         public async Task<List<S3Object>> GetAllObjectInBucketAsync(string bucket)
         {
             var result = await _fileTransferUtility.S3Client.ListObjectsAsync(bucket);
@@ -223,6 +126,14 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             var uriSignature = StorageHelper.CreateCannedPrivateURL(filePublicUri, "seconds", durationNumber.ToString(), privateKeyId, xmlKey, policyStatement);
             return uriSignature;
+        }
+
+        public async Task<Result<FileTransferInfo>> UploadAsync(string keyName, string pathFile, string bucketName)
+        {
+            _logger.LogInformation("UploadAsync for path file :{pathFile} in bucket name: {2} uploaded Url: {3}", pathFile, bucketName, keyName);
+            await _fileTransferUtility.S3Client.UploadObjectFromFilePathAsync(bucketName, keyName, pathFile, null);
+
+            return Result.Ok();
         }
 
         /// <summary>
