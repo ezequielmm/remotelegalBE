@@ -27,7 +27,7 @@ namespace PrecisionReporters.Platform.UnitTests.Lambdas
         private readonly Mock<IAmazonSecretsManager> _secretManagerClient;
         private readonly Mock<IMetadataWrapper> _metadataWrapper;
         private readonly Mock<ILogger> _logger;
-
+        private readonly Mock<ICleanUpTmpFolderWrapper> _cleanUpTmpFolder;
         public UploadExhibitFunctionTests()
         {
             _s3Client = new Mock<IAmazonS3>();
@@ -35,6 +35,7 @@ namespace PrecisionReporters.Platform.UnitTests.Lambdas
             _secretManagerClient = new Mock<IAmazonSecretsManager>();
             _metadataWrapper = new Mock<IMetadataWrapper>();
             _logger = new Mock<ILogger>();
+            _cleanUpTmpFolder = new Mock<ICleanUpTmpFolderWrapper>();
         }
 
         [Fact]
@@ -47,7 +48,7 @@ namespace PrecisionReporters.Platform.UnitTests.Lambdas
             lambdaContext.Setup(x => x.Logger)
                 .Returns(new Mock<ILambdaLogger>().Object);
             var ev = new S3Event();
-            var function = new UploadExhibitFunction(_s3Client.Object, _snsClient.Object, _secretManagerClient.Object, _metadataWrapper.Object, _logger.Object);
+            var function = new UploadExhibitFunction(_s3Client.Object, _snsClient.Object, _secretManagerClient.Object, _metadataWrapper.Object, _logger.Object, _cleanUpTmpFolder.Object);
 
             // Act
             var res = await function.UploadExhibit(ev, lambdaContext.Object);
@@ -73,7 +74,7 @@ namespace PrecisionReporters.Platform.UnitTests.Lambdas
             _secretManagerClient.Setup(mock => mock.GetSecretValueAsync(It.IsAny<GetSecretValueRequest>(),
                 It.IsAny<CancellationToken>()))
                 .Throws(new Exception());
-            var function = new UploadExhibitFunction(_s3Client.Object, _snsClient.Object, _secretManagerClient.Object, _metadataWrapper.Object, _logger.Object);
+            var function = new UploadExhibitFunction(_s3Client.Object, _snsClient.Object, _secretManagerClient.Object, _metadataWrapper.Object, _logger.Object, _cleanUpTmpFolder.Object);
 
             // Act
             var result = await function.UploadExhibit(ev, lambdaContext.Object);
@@ -83,7 +84,7 @@ namespace PrecisionReporters.Platform.UnitTests.Lambdas
             _snsClient.Verify(x => x.PublishAsync(It.Is<PublishRequest>(c => c.Message.Contains(UploadExhibitsNotificationTypes.ExceptionInLambda)), It.IsAny<CancellationToken>()), Times.Once);
         }
 
-        /*[Fact]
+        [Fact]
         public async Task UploadExhibit_ShouldSkipUploadAndSendNotification_WhenFileSizeIsNotAllowed()
         {
             // Arrange
@@ -97,7 +98,7 @@ namespace PrecisionReporters.Platform.UnitTests.Lambdas
             var ev = CreateS3Event();
 
             
-            var function = new UploadExhibitFunction(_s3Client.Object, _snsClient.Object, _secretManagerClient.Object, _metadataWrapper.Object, _logger.Object);
+            var function = new UploadExhibitFunction(_s3Client.Object, _snsClient.Object, _secretManagerClient.Object, _metadataWrapper.Object, _logger.Object, _cleanUpTmpFolder.Object);
 
             // Act
             var result = await function.UploadExhibit(ev, lambdaContext.Object);
@@ -105,7 +106,7 @@ namespace PrecisionReporters.Platform.UnitTests.Lambdas
             // Assert
             Assert.False(result);
             _snsClient.Verify(x => x.PublishAsync(It.Is<PublishRequest>(c => c.Message.Contains(UploadExhibitsNotificationTypes.ExceptionInLambda)), It.IsAny<CancellationToken>()), Times.Once);
-        }*/
+        }
 
         private S3Event CreateS3Event()
         {

@@ -32,6 +32,7 @@ namespace UploadExhibitLambda
         private readonly IAmazonSecretsManager _secretsManagerClient;
         private readonly IMetadataWrapper _metadataWrapper;
         private readonly ILogger _logger;
+        private readonly ICleanUpTmpFolderWrapper _cleanUpTmpFolderWrapper;
 
         /// <summary>
         /// Default constructor used by AWS Lambda to construct the function. Credentials and Region information will
@@ -39,6 +40,7 @@ namespace UploadExhibitLambda
         /// </summary>
         public UploadExhibitFunction()
         {
+            _cleanUpTmpFolderWrapper = new CleanUpTmpFolderWrapper();
             _logger = new Logger();
             _s3Client = new AmazonS3Client();
             _snsClient = new AmazonSimpleNotificationServiceClient();
@@ -52,13 +54,22 @@ namespace UploadExhibitLambda
         /// <param name="s3Client"></param>
         /// <param name="SnsClient"></param>
         /// <param name="secretsManagerClient"></param>
-        public UploadExhibitFunction(IAmazonS3 s3Client, IAmazonSimpleNotificationService SnsClient, IAmazonSecretsManager secretsManagerClient, IMetadataWrapper metadataWrapper, ILogger logger)
+        /// <param name="metadataWrapper"></param>
+        /// <param name="logger"></param>
+        /// <param name="cleanUpTmpFolderWrapper"></param>
+        public UploadExhibitFunction(IAmazonS3 s3Client,
+            IAmazonSimpleNotificationService SnsClient,
+            IAmazonSecretsManager secretsManagerClient,
+            IMetadataWrapper metadataWrapper,
+            ILogger logger,
+            ICleanUpTmpFolderWrapper cleanUpTmpFolderWrapper)
         {
             _s3Client = s3Client;
             _snsClient = SnsClient;
             _secretsManagerClient = secretsManagerClient;
             _metadataWrapper = metadataWrapper;
             _logger = logger;
+            _cleanUpTmpFolderWrapper = cleanUpTmpFolderWrapper;
         }
 
         /// <summary>
@@ -97,7 +108,7 @@ namespace UploadExhibitLambda
                     pdftron.PDFNet.Initialize(await GetSecret(UploadExhibitConstants.PdfTronKey, cancellationToken));
                     foreach (var record in input.Records)
                     {
-                        _logger.LogInformation(CleanUpTmpFolder());
+                        _logger.LogInformation(_cleanUpTmpFolderWrapper.CleanUpTmpFolder());
                         _logger.LogInformation("Initializing process for bucket name: {0} and Key: {1}", record.S3.Bucket.Name, record.S3.Object.Key);
                         objectMetadata = await _s3Client.GetObjectMetadataAsync(record.S3.Bucket.Name, record.S3.Object.Key, cancellationToken);
                         var userId = Guid.Parse(_metadataWrapper.GetMetadataByKey(objectMetadata, UserIdExhibitsMetadata));
@@ -266,20 +277,6 @@ namespace UploadExhibitLambda
             };
             var response = await _secretsManagerClient.GetSecretValueAsync(request, cancellationToken);
             return response?.SecretString;
-        }
-
-        private string CleanUpTmpFolder()
-        {
-            var tmpFolder = UploadExhibitConstants.TmpFolder;
-            if (!Directory.Exists(tmpFolder))
-                return $"Directory {tmpFolder} not exist";
-
-            var directory = new DirectoryInfo(tmpFolder);
-            foreach (var currentFile in directory.EnumerateFiles())
-                currentFile.Delete();
-            foreach (var dir in directory.EnumerateDirectories())
-                dir.Delete(true);
-            return $"Removed all files from {tmpFolder} directory";
         }
     }
 }
