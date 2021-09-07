@@ -42,7 +42,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
         /// <returns>Ok if succeeded</returns>
         [HttpPost]
         [Route("Depositions/{depositionId}/Exhibits")]
-        public async Task<IActionResult> UploadFiles(Guid depositionId)
+        public async Task<IActionResult> UploadFiles([ResourceId(ResourceType.Deposition)] Guid depositionId)
         {
             // TODO: review authorization
 
@@ -75,7 +75,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
         /// <param name="depositionId"></param>
         /// <returns>List of documents information</returns>
         [HttpGet("Depositions/{depositionId}/MyExhibits")]
-        public async Task<ActionResult<List<DocumentDto>>> GetMyExhibits(Guid depositionId)
+        public async Task<ActionResult<List<DocumentDto>>> GetMyExhibits([ResourceId(ResourceType.Deposition)] Guid depositionId)
         {
             // TODO: review authorization
 
@@ -177,7 +177,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
         /// <returns>Ok if succeeded</returns>
         [HttpPost]
         [Route("{depositionId}/Files")]
-        public async Task<IActionResult> UploadTranscriptionsFiles(Guid depositionId)
+        public async Task<IActionResult> UploadTranscriptionsFiles([ResourceId(ResourceType.Deposition)] Guid depositionId)
         {
             // TODO: review authorization
 

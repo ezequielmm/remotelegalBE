@@ -85,7 +85,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
         /// <param name="id">Deposition identifier</param>
         /// <returns>Response Status</returns>
         [HttpPost("{id}/SharedDocument/CloseStamped")]
-        public async Task<ActionResult> CloseStampedDocument(Guid id, StampedDocumentDto stampedDocumentDto)
+        public async Task<ActionResult> CloseStampedDocument([ResourceId(ResourceType.Deposition)] Guid id, StampedDocumentDto stampedDocumentDto)
         {
             // TODO: review authorization
 
@@ -116,7 +116,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
         /// <param name="id">Deposition identifier</param>
         /// <returns>Response status</returns>
         [HttpPost("{id}/SharedDocument/Close")]
-        public async Task<ActionResult> CloseDocument(Guid id)
+        public async Task<ActionResult> CloseDocument([ResourceId(ResourceType.Deposition)] Guid id)
         {
             // TODO: review authorization
 

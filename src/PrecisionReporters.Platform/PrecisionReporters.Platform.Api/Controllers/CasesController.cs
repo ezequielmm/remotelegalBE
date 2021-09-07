@@ -96,7 +96,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
         /// <param name="casePatchDto"></param>
         /// <returns>Updated case with the scheduled depositions</returns>
         [HttpPatch("{id}")]
-        public async Task<ActionResult<CaseWithDepositionsDto>> ScheduleDepositions(Guid id, CasePatchDto casePatchDto)
+        public async Task<ActionResult<CaseWithDepositionsDto>> ScheduleDepositions([ResourceId(ResourceType.Case)] Guid id, CasePatchDto casePatchDto)
         {
             if (casePatchDto.Depositions == null)
                 return BadRequest("Depositions missing");

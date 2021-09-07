@@ -79,7 +79,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
         /// <param name="id">DepositionId to Join.</param>
         /// <returns>JoinDepositionDto object.</returns>
         [HttpPost("{id}/join")]
-        public async Task<ActionResult<JoinDepositionDto>> JoinDeposition(Guid id)
+        public async Task<ActionResult<JoinDepositionDto>> JoinDeposition([ResourceId(ResourceType.Deposition)] Guid id)
         {
             // TODO: review authorization
 
@@ -263,7 +263,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
         /// <returns>A Participant if exists</returns>
         [HttpGet("{id}/checkParticipant")]
         [AllowAnonymous]
-        public async Task<ActionResult<ParticipantValidationDto>> CheckParticipant(Guid id, string emailAddress)
+        public async Task<ActionResult<ParticipantValidationDto>> CheckParticipant([ResourceId(ResourceType.Deposition)] Guid id, string emailAddress)
         {
             var participantResult = await _depositionService.CheckParticipant(id, emailAddress.ToLower());
             if (participantResult.IsFailed)
@@ -285,7 +285,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
         /// <returns>A Participant if exists</returns>
         [HttpPost("{id}/addGuestParticipant")]
         [AllowAnonymous]
-        public async Task<ActionResult<GuestToken>> JoinGuestParticipant(Guid id, CreateGuestDto guest)
+        public async Task<ActionResult<GuestToken>> JoinGuestParticipant([ResourceId(ResourceType.Deposition)] Guid id, CreateGuestDto guest)
         {
             var publicIPAddress = HttpContext.Request.Headers["X-Forwarded-For"].ToString().Split(new[] { ',' }).FirstOrDefault();
             var localIPAddress = HttpContext.Connection.RemoteIpAddress.MapToIPv4();
@@ -311,7 +311,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
         /// <returns>Ok if succeeded</returns>
         [HttpPost("{id}/addParticipant")]
         [AllowAnonymous]
-        public async Task<ActionResult<Guid>> AddParticipant(Guid id, AddParticipantDto participant)
+        public async Task<ActionResult<Guid>> AddParticipant([ResourceId(ResourceType.Deposition)] Guid id, AddParticipantDto participant)
         {
             var addParticipantResult = await _depositionService.AddParticipant(id, _guestMapper.ToModel(participant));
 
@@ -504,7 +504,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
         }
 
         [HttpPost("{id}/userSystemInfo")]
-        public async Task<ActionResult> SetUserSystemInfo(Guid id, UserSystemInfoDto userSystemInfoDto)
+        public async Task<ActionResult> SetUserSystemInfo([ResourceId(ResourceType.Deposition)] Guid id, UserSystemInfoDto userSystemInfoDto)
         {
             // TODO: review authorization
             var publicIPAddress = HttpContext.Request.Headers["X-Forwarded-For"].ToString().Split(new[] { ',' }).FirstOrDefault();
@@ -522,7 +522,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
         }
 
         [HttpPost("{id}/devices")]
-        public async Task<ActionResult> SetUserDevice(Guid id, DeviceInfoDto userDeviceDto)
+        public async Task<ActionResult> SetUserDevice([ResourceId(ResourceType.Deposition)] Guid id, DeviceInfoDto userDeviceDto)
         {
             // TODO: review authorization
             var userDeviceInfo = _userDeviceMapper.ToModel(userDeviceDto);
