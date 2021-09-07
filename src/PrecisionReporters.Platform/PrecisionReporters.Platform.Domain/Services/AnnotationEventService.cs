@@ -1,6 +1,5 @@
 ﻿using FluentResults;
 using PrecisionReporters.Platform.Data.Entities;
-using PrecisionReporters.Platform.Data.Enums;
 using PrecisionReporters.Platform.Data.Repositories.Interfaces;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using PrecisionReporters.Platform.Shared.Errors;
@@ -40,12 +39,12 @@ namespace PrecisionReporters.Platform.Domain.Services
             {
                 var lastIncludedAnnotation = await _annotationEventRepository.GetById(annotationId.Value);
                 if (lastIncludedAnnotation == null)
-                    return Result.Fail(new ResourceNotFoundError($"annoitation with Id {annotationId} could not be found"));
+                    return Result.Fail(new ResourceNotFoundError($"annotation with Id {annotationId} could not be found"));
 
                 filter = x => x.DocumentId == documentId && x.CreationDate > lastIncludedAnnotation.CreationDate;
             }
 
-            var annotations = await _annotationEventRepository.GetByFilter(x => x.CreationDate, SortDirection.Ascend, filter, include);
+            var annotations = await _annotationEventRepository.GetAnnotationsByDocument(documentId, annotationId);
 
             return Result.Ok(annotations);
         }

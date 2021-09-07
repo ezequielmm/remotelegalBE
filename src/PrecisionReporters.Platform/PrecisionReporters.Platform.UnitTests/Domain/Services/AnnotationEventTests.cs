@@ -1,12 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Threading.Tasks;
 using FluentResults;
 using Moq;
 using PrecisionReporters.Platform.Data.Entities;
-using PrecisionReporters.Platform.Data.Enums;
 using PrecisionReporters.Platform.Data.Repositories.Interfaces;
 using PrecisionReporters.Platform.Domain.Services;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
@@ -37,19 +35,26 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             };
             var annotationId = Guid.NewGuid();
 
+            var annotationEvents = new List<AnnotationEvent>
+            {
+                new AnnotationEvent {
+                    CreationDate = DateTime.Now
+                }
+            };
+
             _annotationEventRepositoryMock
                 .Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>()))
                 .ReturnsAsync(new AnnotationEvent());
+            _annotationEventRepositoryMock
+                .Setup(x => x.GetAnnotationsByDocument(document.Id, annotationId))
+                .ReturnsAsync(annotationEvents);
             _depositionServiceMock.Setup(x => x.GetDepositionById(It.IsAny<Guid>()))
                 .ReturnsAsync(Result.Ok(new Deposition { SharingDocumentId = document.Id }));
             // Act
             var result = await _service.GetDocumentAnnotations(document.Id, annotationId);
 
             // Assert
-            _annotationEventRepositoryMock.Verify(x => x.GetByFilter(It.IsAny<Expression<Func<AnnotationEvent, object>>>(),
-                It.IsAny<SortDirection>(),
-                It.Is<Expression<Func<AnnotationEvent, bool>>>(x => x != null),
-                It.IsAny<string[]>()), Times.Once);
+            _annotationEventRepositoryMock.Verify(x => x.GetAnnotationsByDocument(document.Id, annotationId), Times.Once);
             Assert.NotNull(result);
             Assert.True(result.IsSuccess);
         }
@@ -59,7 +64,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         {
             // Arrange
             var annotationId = Guid.NewGuid();
-            var expectedError = $"annoitation with Id {annotationId} could not be found";
+            var expectedError = $"annotation with Id {annotationId} could not be found";
             _annotationEventRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>()))
                 .ReturnsAsync((AnnotationEvent)null);
             _depositionServiceMock.Setup(x => x.GetDepositionById(It.IsAny<Guid>()))
