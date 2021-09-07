@@ -1478,5 +1478,45 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
             
             _depositionService.Verify(mock => mock.UpdateUserSystemInfo(It.IsAny<Guid>(), It.IsAny<UserSystemInfo>(), It.IsAny<string>()), Times.Once);
         }
+
+        [Fact]
+        public async Task Summary_ReturnsOk()
+        {
+            // Arrange
+            var depoStatus = Mock.Of<DepositionStatusDto>();
+            _depositionService
+                .Setup(mock => mock.Summary(It.IsAny<Guid>()))
+                .ReturnsAsync(Result.Ok(depoStatus));
+
+            // Act
+            var result = await _classUnderTest.Summary(It.IsAny<Guid>());
+
+            // Assert
+            Assert.NotNull(result);
+            var okResult = Assert.IsType<OkObjectResult>(result.Result);
+            var resultValues = Assert.IsAssignableFrom<DepositionStatusDto>(okResult.Value);
+            Assert.Equal(resultValues, depoStatus);
+            _depositionService.Verify(mock => mock.Summary(It.IsAny<Guid>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task Summary_ReturnsError()
+        {
+            // Arrange
+            var errorMsg = "Invalid Deposition id";
+            var depoStatus = Mock.Of<DepositionStatusDto>();
+            _depositionService
+                .Setup(mock => mock.Summary(It.IsAny<Guid>()))
+                .ReturnsAsync(Result.Fail(errorMsg));
+
+            // Act
+            var result = await _classUnderTest.Summary(It.IsAny<Guid>());
+
+            // Assert
+            Assert.NotNull(result);
+            var errorResult = Assert.IsType<StatusCodeResult>(result.Result);
+            Assert.Equal((int)HttpStatusCode.InternalServerError, errorResult.StatusCode);
+            _depositionService.Verify(mock => mock.Summary(It.IsAny<Guid>()), Times.Once);
+        }
     }
 }

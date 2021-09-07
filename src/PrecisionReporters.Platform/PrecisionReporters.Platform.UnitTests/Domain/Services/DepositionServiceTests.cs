@@ -14,6 +14,7 @@ using PrecisionReporters.Platform.Domain.Services;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using PrecisionReporters.Platform.Shared.Commons;
 using PrecisionReporters.Platform.Shared.Errors;
+using PrecisionReporters.Platform.Shared.Extensions;
 using PrecisionReporters.Platform.UnitTests.Utils;
 using System;
 using System.Collections.Generic;
@@ -2955,6 +2956,70 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             Assert.True(result.IsFailed);
             Assert.NotNull(result);
             Assert.Contains(expectedError, result.Errors.Select(e => e.Message));
+        }
+
+        [Fact]
+        public async Task Summary_ShouldReturnOk()
+        {
+            // Arrange
+            var depositionId = new Guid();
+            var deposition = Mock.Of<Deposition>();
+            deposition.Participants = new List<Participant>() {
+                Mock.Of<Participant>()
+            };
+            deposition.TimeZone = "America/New_York";
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
+
+            // Act
+            var result = await _depositionService.Summary(depositionId);
+
+            // Assert
+            _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(a => a == deposition.Id), It.IsAny<string[]>()), Times.Once);
+            Assert.NotNull(result);
+            Assert.IsType<Result<DepositionStatusDto>>(result);
+            Assert.True(result.IsSuccess);
+            var depoStatus = result.Value;
+            Assert.Equal(deposition.AddedById, deposition.AddedById);
+        }
+
+        [Fact]
+        public async Task Summary_ShouldFail_InvalidDepositionId()
+        {
+            // Arrange
+            var depositionId = new Guid();
+            var deposition = Mock.Of<Deposition>();
+            var msg = $"Invalid Deposition id: {depositionId}";
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync((Deposition) null);
+
+            // Act
+            var result = await _depositionService.Summary(depositionId);
+
+            // Assert
+            _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(a => a == deposition.Id), It.IsAny<string[]>()), Times.Once);
+            Assert.NotNull(result);
+            Assert.IsType<Result<DepositionStatusDto>>(result);
+            Assert.True(result.IsFailed);
+            Assert.Equal(result.GetErrorMessage(), msg);
+        }
+
+        [Fact]
+        public async Task SummaryDeposition_ShouldMapperFail()
+        {
+            // Arrange
+            var msg = "DepositionService.Summary - Mapper failed - Value cannot be null. (Parameter 'source')";
+            var depositionId = new Guid();
+            var deposition = Mock.Of<Deposition>();
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
+
+            // Act
+            var result = await _depositionService.Summary(depositionId);
+
+            // Assert
+            _depositionRepositoryMock.Verify(x => x.GetById(It.Is<Guid>(a => a == deposition.Id), It.IsAny<string[]>()), Times.Once);
+            Assert.NotNull(result);
+            Assert.IsType<Result<DepositionStatusDto>>(result);
+            Assert.True(result.IsFailed);
+            Assert.Equal(result.GetErrorMessage(), msg);
         }
     }
 }

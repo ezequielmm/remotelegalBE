@@ -93,6 +93,23 @@ namespace PrecisionReporters.Platform.Api.Controllers
         }
 
         /// <summary>
+        /// Resume an existing Deposition
+        /// </summary>
+        /// <param name="id">DepositionId to Resume.</param>
+        /// <returns>JoinDepositionDto object.</returns>
+        [HttpGet("{id}/summary")]
+        [UserAuthorize(ResourceType.Deposition, ResourceAction.View)]
+        public async Task<ActionResult<DepositionStatusDto>> Summary([ResourceId(ResourceType.Deposition)] Guid id)
+        {
+            var joinDepositionInfoResult = await _depositionService.Summary(id);
+
+            if (joinDepositionInfoResult.IsFailed)
+                return WebApiResponses.GetErrorResponse(joinDepositionInfoResult);
+
+            return Ok(joinDepositionInfoResult.Value);
+        }
+
+        /// <summary>
         /// End an existing Deposition
         /// </summary>
         /// <param name="depositionId">DepositionId to End.</param>

@@ -1237,7 +1237,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
                 _logger.LogInformation($"{nameof(DepositionService)}.{nameof(DepositionService.GetJoinDepositionInfoDto)} CR User Token: {token?.Value}");
 
-                joinDepositionInfo = SetJoinDepositionInfo(token.Value, deposition, joinDepositionInfo, false);
+                joinDepositionInfo = SetJoinDepositionInfo(token.Value, deposition, joinDepositionInfo);
 
                 if (currentParticipant != null)
                 {
@@ -1256,7 +1256,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                     if (currentParticipant != null && !currentParticipant.IsAdmitted.HasValue && !user.IsAdmin)
                     {
                         _logger.LogInformation($"{nameof(DepositionService)}.{nameof(DepositionService.GetJoinDepositionInfoDto)} CurrentParticipant SetJoinDepositionInfo: {currentParticipant?.Id}");
-                        joinDepositionInfo = SetJoinDepositionInfo(null, deposition, joinDepositionInfo, false);
+                        joinDepositionInfo = SetJoinDepositionInfo(null, deposition, joinDepositionInfo);
                     }
                     else
                     {
@@ -1291,7 +1291,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
                         _logger.LogInformation($"{nameof(DepositionService)}.{nameof(DepositionService.GetJoinDepositionInfoDto)} Paticipant User Token: {token?.Value}");
 
-                        joinDepositionInfo = SetJoinDepositionInfo(token.Value, deposition, joinDepositionInfo, false);
+                        joinDepositionInfo = SetJoinDepositionInfo(token.Value, deposition, joinDepositionInfo);
                     }
                 }
                 else
@@ -1305,7 +1305,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
                     _logger.LogInformation($"{nameof(DepositionService)}.{nameof(DepositionService.GetJoinDepositionInfoDto)} PreRoomToken: {preRoomToken?.Value}");
 
-                    joinDepositionInfo = SetJoinDepositionInfo(preRoomToken.Value, deposition, joinDepositionInfo, true);
+                    joinDepositionInfo = SetJoinDepositionInfo(preRoomToken.Value, deposition, joinDepositionInfo);
                 }
             }
 
@@ -1327,18 +1327,25 @@ namespace PrecisionReporters.Platform.Domain.Services
             }
         }
 
-        private JoinDepositionDto SetJoinDepositionInfo(string token, Deposition deposition, JoinDepositionDto joinDepositionInfo, bool shouldSendToPreDepo)
+        private JoinDepositionDto SetJoinDepositionInfo(string token, Deposition deposition, JoinDepositionDto joinDepositionInfo)
         {
             joinDepositionInfo.Token = token;
-            joinDepositionInfo.ShouldSendToPreDepo = shouldSendToPreDepo;
-            joinDepositionInfo.TimeZone = Enum.GetValues(typeof(USTimeZone)).Cast<USTimeZone>().FirstOrDefault(x => x.GetDescription() == deposition.TimeZone).ToString();
-            joinDepositionInfo.IsOnTheRecord = deposition.IsOnTheRecord;
-            joinDepositionInfo.IsSharing = deposition.SharingDocumentId.HasValue;
-            joinDepositionInfo.Participants = deposition.Participants.Select(p => _participantMapper.ToDto(p)).ToList();
-            joinDepositionInfo.StartDate = deposition.StartDate;
-            joinDepositionInfo.JobNumber = deposition.Job;
-
+            SetDepositionStatus(joinDepositionInfo, deposition);
             return joinDepositionInfo;
+        }
+
+        private DepositionStatusDto SetDepositionStatus(DepositionStatusDto depositionStatus, Deposition deposition)
+        {
+            depositionStatus.ShouldSendToPreDepo = deposition.Participants.Any(p => p.Role == ParticipantType.CourtReporter && !p.HasJoined);
+            depositionStatus.TimeZone = deposition.TimeZone.ParseDescriptionToEnum<USTimeZone>().ToString();
+            depositionStatus.IsOnTheRecord = deposition.IsOnTheRecord;
+            depositionStatus.IsSharing = deposition.SharingDocumentId.HasValue;
+            depositionStatus.Participants = deposition.Participants
+                                                            .Select(p => _participantMapper.ToDto(p));
+            depositionStatus.StartDate = deposition.StartDate;
+            depositionStatus.JobNumber = deposition.Job;
+
+            return depositionStatus;
         }
 
         private async Task SendNotification(Deposition deposition)
@@ -1372,6 +1379,31 @@ namespace PrecisionReporters.Platform.Domain.Services
                 deposition.Participants.RemoveAll(x => x.IsAdmitted == false);
 
             return deposition;
+        }
+
+        public async Task<Result<DepositionStatusDto>> Summary(Guid depositionId)
+        {
+            var includes = new[] { nameof(Deposition.Participants) };
+            var deposition = await _depositionRepository.GetById(depositionId, includes);
+            if (deposition == null)
+            {
+                return Result.Fail($"Invalid Deposition id: {depositionId}");
+            }
+
+            var depositionStatus = new DepositionStatusDto();
+            
+            try
+            {
+                SetDepositionStatus(depositionStatus, deposition);
+            }
+            catch (Exception ex)
+            {
+                var msg = $"{nameof(DepositionService)}.{nameof(Summary)} - Mapper failed - {ex.Message}";
+                _logger.LogError(ex, msg);
+                return Result.Fail(msg);
+            }
+            
+            return Result.Ok(depositionStatus);
         }
     }
 }

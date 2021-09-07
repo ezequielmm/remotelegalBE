@@ -50,5 +50,6 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
         Task<Result<bool>> NotifyParties(Guid depositionId, bool isEndDeposition = false);
         Task<Result<List<Deposition>>> UpdateParticipantOnExistingDepositions(User user);
         Task<Result> UpdateUserSystemInfo(Guid id, UserSystemInfo userSystemInfo, string ipAddress);
+        Task<Result<DepositionStatusDto>> Summary(Guid depositionId);
     }
 }
