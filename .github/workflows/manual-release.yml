@@ -23,6 +23,10 @@ jobs:
       ', github.ref)
     steps:
       - uses: actions/checkout@v2
+      - name: check user permission
+        uses: 74th/workflow-permission-action@1.0.0
+        with:
+          users: ${{ secrets.USERS_ALLOWED_DEPLOY_UAT_PROD }}
       - name: Extract Branch Name
         id: extract-branch
         shell: bash
@@ -84,6 +88,10 @@ jobs:
       ', github.ref)
     steps:
       - uses: actions/checkout@v2
+      - name: check user permission
+        uses: 74th/workflow-permission-action@1.0.0
+        with:
+          users: ${{ secrets.USERS_ALLOWED_DEPLOY_UAT_PROD }}
       - name: Extract Branch Name
         id: extract-branch
         shell: bash
