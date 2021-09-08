@@ -125,16 +125,8 @@ jobs:
     needs: [pack-deploy-api, pack-deploy-transcript]
     env:
       work-dir: ./src/AWS/Lambdas/UploadExhibitLambda
-    if: contains('
-      refs/heads/develop
-      ', github.ref)
     steps:
       - uses: actions/checkout@v2
-      - name: Extract Branch Name
-        id: extract-branch
-        shell: bash
-        run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
-
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
@@ -148,5 +140,4 @@ jobs:
       - run: dotnet tool install --global Amazon.Lambda.Tools --version 5.1.4
       - name: Update lambda function for upload exhibits DEV env
         working-directory: ${{ env.work-dir }}
-        if: ${{ steps.extract-branch.outputs.branch == 'develop' }}
         run: dotnet lambda deploy-function --function-name UploadExhibitDev
