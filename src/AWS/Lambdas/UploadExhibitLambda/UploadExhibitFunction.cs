@@ -101,7 +101,7 @@ namespace UploadExhibitLambda
 
             var objectMetadata = await _s3Client.GetObjectMetadataAsync(input.Records[0].S3.Bucket.Name, input.Records[0].S3.Object.Key, cancellationToken);
             var depositionId = Guid.Parse(_metadataWrapper.GetMetadataByKey(objectMetadata, DepositionIdExhibitsMetadata));
-            using (LogContext.PushProperty("scope", new { DepositionId = Guid.NewGuid() }))
+            using (LogContext.PushProperty("scope", new { DepositionId = depositionId }, true))
             {
                 try
                 {
