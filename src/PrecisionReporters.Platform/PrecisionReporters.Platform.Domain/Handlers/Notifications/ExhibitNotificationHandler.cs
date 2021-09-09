@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 
 namespace PrecisionReporters.Platform.Domain.Handlers.Notifications
 {
-    public class ExhibitNotificationHandler : HandlerBase<Message>, IExhibitNotificationHandler
+    public class ExhibitNotificationHandler : HandlerSignalRNotificationBase<Message>, IExhibitNotificationHandler
     {
         private readonly IMapper<Document, Shared.Dtos.DocumentDto, object> _mapper;
         private readonly IUserRepository _userRepository;
@@ -71,11 +71,12 @@ namespace PrecisionReporters.Platform.Domain.Handlers.Notifications
                     }
 
                     // Send Notification using SignalR
+                    var notificationMessage = $"File '{document.DisplayName}' Uploaded Successfully";
                     var notificationDto = new NotificationDto()
                     {
                         Action = NotificationAction.Create,
                         EntityType = NotificationEntity.Exhibit,
-                        Content = document.Id
+                        Content = CreateMessage(exhibitNotification.Context, notificationMessage)
                     };
                     _logger.LogInformation($"Sending Notification - Email: {user.EmailAddress} - Document: {document.Id}");
                     await _signalRDepositionManager.SendDirectMessage(user.EmailAddress, notificationDto);

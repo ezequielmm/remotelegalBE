@@ -1983,7 +1983,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 .ReturnsAsync(deposition);
 
             _awsStorageServiceMock
-                .Setup(x => x.GetPreSignedPutUrl(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<Dictionary<string, object>>()))
+                .Setup(x => x.GetPreSignedPutUrl(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<Dictionary<string, string>>()))
                 .Returns(Result.Ok(presignurl));
 
             // Act
@@ -1992,7 +1992,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             // Assert
 
             _depositionRepositoryMock.Verify(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>()), Times.Once);
-            _awsStorageServiceMock.Verify(x => x.GetPreSignedPutUrl(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<Dictionary<string, object>>()), Times.Once);
+            _awsStorageServiceMock.Verify(x => x.GetPreSignedPutUrl(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<Dictionary<string, string>>()), Times.Once);
             Assert.NotNull(result);
             Assert.IsType<Result<PreSignedUrlDto>>(result);
             Assert.True(result.IsSuccess);
@@ -2069,7 +2069,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 .ReturnsAsync(deposition);
 
             _awsStorageServiceMock
-                .Setup(x => x.GetPreSignedPutUrl(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<Dictionary<string, object>>()))
+                .Setup(x => x.GetPreSignedPutUrl(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<Dictionary<string, string>>()))
                 .Returns(Result.Fail(new Error("Error S3")));
 
             // Act
@@ -2078,7 +2078,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             // Assert
 
             _depositionRepositoryMock.Verify(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>()), Times.Once);
-            _awsStorageServiceMock.Verify(x => x.GetPreSignedPutUrl(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<Dictionary<string, object>>()), Times.Once);
+            _awsStorageServiceMock.Verify(x => x.GetPreSignedPutUrl(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<Dictionary<string, string>>()), Times.Once);
             Assert.NotNull(result);
             Assert.IsType<Result<PreSignedUrlDto>>(result);
             Assert.True(result.IsFailed);

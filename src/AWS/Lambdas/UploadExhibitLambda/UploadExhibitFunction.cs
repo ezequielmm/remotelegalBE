@@ -115,6 +115,7 @@ namespace UploadExhibitLambda
                         var caseId = Guid.Parse(_metadataWrapper.GetMetadataByKey(objectMetadata, CaseIdExhibitsMetadata));
                         var documentType = _metadataWrapper.GetMetadataByKey(objectMetadata, DocumentTypeExhibitsMetadata);
                         var displayName = _metadataWrapper.GetMetadataByKey(objectMetadata, DisplayNameExhibitsMetadata);
+                        var resourceId = _metadataWrapper.GetMetadataByKey(objectMetadata, ResourceIdExhibitsMetadata);
 
                         var extension = Path.GetExtension(displayName)?.ToLower();
                         var fileName = $"{Guid.NewGuid()}{extension}";
@@ -184,7 +185,8 @@ namespace UploadExhibitLambda
                                 FilePath = s3FilePath,
                                 Size = record.S3.Object.Size,
                                 DocumentType = documentType,
-                                CreationDate = DateTime.UtcNow
+                                CreationDate = DateTime.UtcNow,
+                                ResourceId = resourceId
                             }
                         };
                         _logger.LogInformation(await SendNotification(content, cancellationToken), depositionId, userId);
@@ -207,7 +209,8 @@ namespace UploadExhibitLambda
                                 DepositionId = Guid.Parse(_metadataWrapper.GetMetadataByKey(objectMetadata, DepositionIdExhibitsMetadata)),
                                 DisplayName = _metadataWrapper.GetMetadataByKey(objectMetadata, DisplayNameExhibitsMetadata),
                                 DocumentType = _metadataWrapper.GetMetadataByKey(objectMetadata, DocumentTypeExhibitsMetadata),
-                                FilePath = input.Records[0].S3.Object.Key
+                                FilePath = input.Records[0].S3.Object.Key,
+                                ResourceId = _metadataWrapper.GetMetadataByKey(objectMetadata, ResourceIdExhibitsMetadata)
                             }
                         }
                     }, cancellationToken));

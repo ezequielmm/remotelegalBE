@@ -20,7 +20,7 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
         Task<Result> UploadObjectFromFileAsync(string fileName, string documentKeyName, string bucketName);
         string GetCannedPrivateURL(string key, DateTime expirationDate, string privateKeyId, string xmlKey, string policyStatement);
         Task<Result<FileTransferInfo>> UploadAsync(string keyName, string pathFile, string bucketName);
-        Result<PreSignedUrlDto> GetPreSignedPutUrl(string key, string bucketName, DateTime expirationTime, Dictionary<string, object> metadata = null);
+        Result<PreSignedUrlDto> GetPreSignedPutUrl(string key, string bucketName, DateTime expirationTime, Dictionary<string, string> metadata = null);
 
     }
 }

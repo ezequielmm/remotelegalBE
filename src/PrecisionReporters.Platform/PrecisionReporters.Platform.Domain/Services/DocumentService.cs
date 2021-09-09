@@ -815,17 +815,18 @@ namespace PrecisionReporters.Platform.Domain.Services
             return Result.Ok(urlResult.Value);
         }
 
-        private async Task<Dictionary<string, object>> GenerateUploadMetadata(PreSignedUploadUrlDto preSignedUploadUrl, Deposition deposition, string extension)
+        private async Task<Dictionary<string, string>> GenerateUploadMetadata(PreSignedUploadUrlDto preSignedUploadUrl, Deposition deposition, string extension)
         {
             var user = await _userService.GetCurrentUserAsync();
-            var metadata = new Dictionary<string, object>
+            var metadata = new Dictionary<string, string>
             {
-                { "UserId", user.Id.ToString() },
-                { "DepositionId", deposition.Id.ToString() },
-                { "CaseId", deposition.CaseId.ToString() },
-                { "DisplayName", preSignedUploadUrl.FileName },
-                { "Type", extension },
-                { "DocumentType", DocumentType.Exhibit.ToString()}
+                { ApplicationConstants.UserIdExhibitsMetadata , user.Id.ToString() },
+                { ApplicationConstants.DepositionIdExhibitsMetadata , deposition.Id.ToString() },
+                { ApplicationConstants.CaseIdExhibitsMetadata, deposition.CaseId.ToString() },
+                { ApplicationConstants.DisplayNameExhibitsMetadata, preSignedUploadUrl.FileName },
+                { ApplicationConstants.TypeExhibitsMetadata, extension },
+                { ApplicationConstants.DocumentTypeExhibitsMetadata, DocumentType.Exhibit.ToString()},
+                { ApplicationConstants.ResourceIdExhibitsMetadata, preSignedUploadUrl.ResourceId}
             };
 
             return metadata;

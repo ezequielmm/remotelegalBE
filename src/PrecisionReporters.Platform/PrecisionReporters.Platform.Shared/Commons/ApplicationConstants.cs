@@ -33,6 +33,7 @@
         public const string DocumentTypeExhibitsMetadata = "x-amz-meta-document-type";
         public const string DisplayNameExhibitsMetadata = "x-amz-meta-display-name";
         public const string TypeExhibitsMetadata = "x-amz-meta-type";
+        public const string ResourceIdExhibitsMetadata = "x-amz-meta-resource-id";
         public static class UploadExhibitsNotificationTypes
         {
             public const string ExhibitUploaded = "ExhibitUploaded";

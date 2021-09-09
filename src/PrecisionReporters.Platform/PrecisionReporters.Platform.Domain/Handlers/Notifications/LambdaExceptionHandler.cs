@@ -6,11 +6,12 @@ using PrecisionReporters.Platform.Domain.Dtos;
 using PrecisionReporters.Platform.Domain.Handlers.Notifications.Interfaces;
 using PrecisionReporters.Platform.Domain.Parsers;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
+using PrecisionReporters.Platform.Shared.Dtos;
 using System.Threading.Tasks;
 
 namespace PrecisionReporters.Platform.Domain.Handlers.Notifications
 {
-    public class LambdaExceptionHandler : HandlerBase<Message>, ILambdaExceptionHandler
+    public class LambdaExceptionHandler : HandlerSignalRNotificationBase<Message>, ILambdaExceptionHandler
     {
         private readonly ILogger<LambdaExceptionHandler> _logger;
         private readonly IUserRepository _userRepository;
@@ -29,11 +30,12 @@ namespace PrecisionReporters.Platform.Domain.Handlers.Notifications
                 var errorDocument = parseMessage.Context;
                 var user = await _userRepository.GetById(errorDocument.Document.AddedBy);
                 // Send Notification using SignalR
+                var notificationMessage = $"Failed to process file {errorDocument.Document.DisplayName}";
                 var notificationDto = new NotificationDto()
                 {
                     Action = NotificationAction.Error,
                     EntityType = NotificationEntity.Exhibit,
-                    Content = $"Failed to process file {errorDocument.Document.DisplayName}"
+                    Content = CreateMessage(errorDocument.Document, notificationMessage)
                 };
                 await _signalRDepositionManager.SendDirectMessage(user.EmailAddress, notificationDto);
 

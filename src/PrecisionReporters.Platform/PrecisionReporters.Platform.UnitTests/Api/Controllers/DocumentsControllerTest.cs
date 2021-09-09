@@ -386,8 +386,13 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
             var resultDto = new PreSignedUrlDto()
             { 
                 Headers = new Dictionary<string, string>() {
-                    { "x-amz-meta-user-id", "6fc0184a-800c-4a1e-eb44-08d94b9110fd"},
-                    { "x-amz-meta-deposition-id", "06173e30-8e36-4b07-a16b-2a5a27fd83f0"}
+                    { "x-amz-meta-deposition-id", "44be6946-c51f-4249-ad95-df41a7c4c63c" },
+                    { "x-amz-meta-display-name", "test.pdf" },
+                    { "x-amz-meta-type", ".pdf" },
+                    { "x-amz-meta-document-type", "Exhibit" },
+                    { "x-amz-meta-user-id", "6fc0184a-800c-4a1e-eb44-08d94b9110fd" },
+                    { "x-amz-meta-case-id", "75684789-63a5-4802-946c-08d958e2416c" },
+                    { "x-amz-meta-resource-id", "rc-upload-1631037245756-2" }
                 },
                 Url = "https://download-url.com/tets.file/4j34h2k4h242kj4h"
             };
@@ -395,7 +400,8 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
             var input = new PreSignedUploadUrlDto()
             {
                 DepositionId = new Guid(),
-                FileName = filename
+                FileName = filename,
+                ResourceId = "rc-upload-1631037245756-2"
             };
             var context = ContextFactory.GetControllerContextWithFile();
             _documentsController.ControllerContext = context;
@@ -421,7 +427,8 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
             var input = new PreSignedUploadUrlDto()
             {
                 DepositionId = new Guid(),
-                FileName = filename
+                FileName = filename,
+                ResourceId = "rc-upload-1631037245756-2"
             };
             var context = ContextFactory.GetControllerContextWithFile();
             _documentsController.ControllerContext = context;

@@ -158,7 +158,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         /// <param name="expirationTime">The length of time for which the presigned URL will be valid.</param>
         /// <param name="metadata">collection of metadata to append to Presigned URL</param>
         /// <returns>A string representing the generated presigned URL</returns>
-        public Result<PreSignedUrlDto> GetPreSignedPutUrl(string key, string bucketName, DateTime expirationTime, Dictionary<string, object> metadata = null)
+        public Result<PreSignedUrlDto> GetPreSignedPutUrl(string key, string bucketName, DateTime expirationTime, Dictionary<string, string> metadata = null)
         {
             PreSignedUrlDto presigned;
             try
@@ -174,16 +174,12 @@ namespace PrecisionReporters.Platform.Domain.Services
                 presigned = new PreSignedUrlDto();
                 if (metadata != null)
                 {
-                    presigned.Headers = new Dictionary<string, string>();
                     foreach (var data in metadata)
                     {
-                        var customKey = CUSTOM_METADATA_PREFIX + data.Key;
-                        customKey = customKey.ToHypenCase();
-                        request.Metadata.Add(data.Key.ToHypenCase(), data.Value.ToString());
-                        presigned.Headers.Add(customKey, data.Value.ToString());
+                        request.Metadata.Add(data.Key, data.Value.ToString());
                     }
+                    presigned.Headers = metadata;
                 }
-
                 presigned.Url = _fileTransferUtility.S3Client.GetPreSignedURL(request);
             }
             catch (Exception ex)
