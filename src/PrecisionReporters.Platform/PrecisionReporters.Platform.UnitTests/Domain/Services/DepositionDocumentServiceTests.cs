@@ -467,6 +467,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _annotationEventServiceMock.Verify(x => x.RemoveUserDocumentAnnotations(depositionDocument.DocumentId), Times.Once());
             _depositionServiceMock.Verify(x => x.ClearDepositionDocumentSharingId(depositionDocument.DepositionId), Times.Once());
             Assert.True(result.IsSuccess);
+            _signalRNotificationManagerMock.Verify(mock=>mock.SendNotificationToDepositionMembers(It.IsAny<Guid>(),It.IsAny<NotificationDto>()), Times.Once);
         }
 
         [Fact]
@@ -517,6 +518,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _annotationEventServiceMock.Verify(x => x.RemoveUserDocumentAnnotations(depositionDocument.DocumentId), Times.Once());
             _depositionServiceMock.Verify(x => x.ClearDepositionDocumentSharingId(depositionDocument.DepositionId), Times.Once());
             Assert.True(result.IsSuccess);
+            _signalRNotificationManagerMock.Verify(mock=>mock.SendNotificationToDepositionMembers(It.IsAny<Guid>(),It.IsAny<NotificationDto>()), Times.Once);
         }
 
         [Fact]
@@ -571,6 +573,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _depositionServiceMock.Verify(x => x.ClearDepositionDocumentSharingId(depositionDocument.DepositionId), Times.Once());
             Assert.True(result.IsFailed);
             Assert.True(result.Errors[0].Message.Equals(errorMessage));
+            _signalRNotificationManagerMock.Verify(mock=>mock.SendNotificationToDepositionMembers(It.IsAny<Guid>(),It.IsAny<NotificationDto>()), Times.Once);
         }
 
         [Fact]

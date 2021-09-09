@@ -106,6 +106,13 @@ namespace PrecisionReporters.Platform.Domain.Services
                     return clearSharingIdResult.ToResult<bool>();
                 }
 
+                await _signalRNotificationManager.SendNotificationToDepositionMembers(depositionDocument.DepositionId, new NotificationDto
+                {
+                    Action = NotificationAction.Close,
+                    EntityType = NotificationEntity.Exhibit,
+                    Content = document.Id
+                });
+
                 return Result.Ok(true);
             });
 
@@ -141,6 +148,13 @@ namespace PrecisionReporters.Platform.Domain.Services
                     _logger.LogError($"{nameof(DepositionDocumentService)}.{nameof(CloseDepositionDocument)}: Failed clearing SharingId on deposition '{depositionId}': {removedSharingIdResult.GetErrorMessage()}");
                     return Result.Fail("Cannot close Document Successfully.");
                 }
+
+                await _signalRNotificationManager.SendNotificationToDepositionMembers(depositionId, new NotificationDto
+                {
+                    Action = NotificationAction.Close,
+                    EntityType = NotificationEntity.Exhibit,
+                    Content = document.Id
+                });
 
                 return Result.Ok();
             });

@@ -6,6 +6,7 @@
         Update,
         Delete,
         Start,
-        Error
+        Error,
+        Close
     }
 }

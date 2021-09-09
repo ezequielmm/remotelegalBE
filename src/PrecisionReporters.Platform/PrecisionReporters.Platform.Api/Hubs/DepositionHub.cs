@@ -68,10 +68,10 @@ namespace PrecisionReporters.Platform.Api.Hubs
                     {
                         Action = NotificationAction.Error,
                         EntityType = NotificationEntity.Stamp,
-                        Content = updatedDeposition.Errors[0].Message
+                        Content = updatedDeposition.GetErrorMessage()
                     });
 
-                    return Result.Fail(updatedDeposition.Errors[0].Message);
+                    return Result.Fail(updatedDeposition.GetErrorMessage());
                 }
 
                 await _signalRNotificationManager.SendNotificationToDepositionMembers(dto.DepositionId, new NotificationDto
