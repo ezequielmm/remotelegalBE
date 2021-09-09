@@ -18,7 +18,6 @@ namespace PrecisionReporters.Platform.Shared.Middlewares
     public class LogResourceMiddleware
     {
         private readonly RequestDelegate _next;
-        private const string Parameter_Name = "id";
 
         public LogResourceMiddleware(RequestDelegate next)
         {
@@ -35,19 +34,10 @@ namespace PrecisionReporters.Platform.Shared.Middlewares
                 var resource = (ResourceType)Enum.Parse(typeof(ResourceType), attribute.ResourceType);
                 var paramName = GetParamName(endpoint, resource);
                 var id = context.GetRouteGuid(paramName);
-                attribute.ResourceId = id.Value;
-                return SetLog(attribute, context);
+                var logObject = GetLogObject(resource,id.ToString());
+                using (LogContext.PushProperty("scope", logObject, true)) { return _next(context); };
             }
             return _next(context);
-        }
-
-        private Task SetLog(UserAuthorizeAttribute attribute, HttpContext context)
-        {
-            dynamic scopeObject = new ExpandoObject();
-            IDictionary<string, object> scope = (IDictionary<string, object>)scopeObject;
-            //Create dynamic object depending on key value dictionary
-            scope.Add($"{attribute.ResourceType}Id", $"{attribute.ResourceId}");
-            using (LogContext.PushProperty("scope", scopeObject, true)) { return _next(context); };
         }
 
         private string GetParamName(Endpoint endpoint, ResourceType resource)
@@ -55,6 +45,24 @@ namespace PrecisionReporters.Platform.Shared.Middlewares
             var controllerDescriptor = endpoint.Metadata.GetMetadata<ControllerActionDescriptor>();
             var name = controllerDescriptor.MethodInfo.GetParameters().FirstOrDefault(parameter => parameter.GetCustomAttribute(typeof(ResourceIdAttribute), false) is ResourceIdAttribute x && x.ResourceType == resource)?.Name;
             return name;
+        }
+
+        private object GetLogObject(ResourceType resource, string value)
+        {
+            //TODO: Find a better approach for doing this 
+            switch (resource)
+            {
+                case ResourceType.Deposition:
+                    return new { DepositionId = value };
+                case ResourceType.Case:
+                    return new { CaseId = value };
+                case ResourceType.Document:
+                    return new { DocumentId = value };
+                case ResourceType.User:
+                    return new { UserId = value };
+                default:
+                    return new { Id = value };
+            }
         }
     }
 }
