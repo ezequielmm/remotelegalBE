@@ -18,6 +18,8 @@ using PrecisionReporters.Platform.Domain.Handlers.Notifications;
 using PrecisionReporters.Platform.Domain.Handlers.Notifications.Interfaces;
 using PrecisionReporters.Platform.Domain.Services;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
+using PrecisionReporters.Platform.Domain.Wrappers;
+using PrecisionReporters.Platform.Domain.Wrappers.Interfaces;
 using PrecisionReporters.Platform.Shared.Helpers;
 using PrecisionReporters.Platform.Shared.Helpers.Interfaces;
 using PrecisionReporters.Platform.Shared.Middlewares;
