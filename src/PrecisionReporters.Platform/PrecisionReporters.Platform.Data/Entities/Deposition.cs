@@ -42,6 +42,7 @@ namespace PrecisionReporters.Platform.Data.Entities
         [ForeignKey(nameof(SharingDocument))]
         public Guid? SharingDocumentId { get; set; }
         public Document SharingDocument { get; set; }
+        public string SharingMediaDocumentStamp { get; set; }
 
         public List<DepositionEvent> Events { get; set; }
 

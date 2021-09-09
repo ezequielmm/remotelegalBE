@@ -24,11 +24,13 @@ namespace PrecisionReporters.Platform.Api.Hubs
         private readonly ILogger<DepositionHub> _logger;
         private readonly IDepositionService _depositionService;
         private readonly ILoggingHelper _loggingHelper;
-        public DepositionHub(ILogger<DepositionHub> logger, IDepositionService depositionService, ILoggingHelper loggingHelper)
+        private readonly ISignalRDepositionManager _signalRNotificationManager;
+        public DepositionHub(ILogger<DepositionHub> logger, IDepositionService depositionService, ILoggingHelper loggingHelper, ISignalRDepositionManager signalRNotificationManager)
         {
             _logger = logger;
             _depositionService = depositionService;
             _loggingHelper = loggingHelper;
+            _signalRNotificationManager = signalRNotificationManager;
         }
 
         [UserAuthorize(ResourceType.Deposition, ResourceAction.View)]
@@ -51,6 +53,40 @@ namespace PrecisionReporters.Platform.Api.Hubs
                     _logger.LogError(ex, $"There was an error subscribing to Deposition {dto.DepositionId}");
                     return Result.Fail($"Unable to add user to Group {ApplicationConstants.DepositionGroupName}{dto.DepositionId}.");
                 }
+            });
+        }
+
+        [UserAuthorize(ResourceType.Deposition, ResourceAction.StampExhibit)]
+        public async Task<Result> UpdateMediaStamp(MediaStampDto dto)
+        {
+            return await _loggingHelper.ExecuteWithDeposition(dto.DepositionId, async () =>
+            {
+                var updatedDeposition = await _depositionService.StampMediaDocument(dto.DepositionId,dto.StampLabel);
+                if (updatedDeposition.IsFailed)
+                {
+                    await Clients.Caller.ReceiveNotification(new NotificationDto
+                    {
+                        Action = NotificationAction.Error,
+                        EntityType = NotificationEntity.Stamp,
+                        Content = updatedDeposition.Errors[0].Message
+                    });
+
+                    return Result.Fail(updatedDeposition.Errors[0].Message);
+                }
+
+                await _signalRNotificationManager.SendNotificationToDepositionMembers(dto.DepositionId, new NotificationDto
+                {
+                    Action = NotificationAction.Update,
+                    EntityType = NotificationEntity.Stamp,
+                    Content = new MediaStampDto
+                    {
+                        DepositionId = dto.DepositionId,
+                        StampLabel = dto.StampLabel,
+                        CreationDate = DateTimeOffset.Now
+                    }
+                });
+
+                return Result.Ok();
             });
         }
     }

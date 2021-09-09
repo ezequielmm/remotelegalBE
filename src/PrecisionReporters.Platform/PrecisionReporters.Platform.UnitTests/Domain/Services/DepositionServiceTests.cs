@@ -3021,5 +3021,74 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             Assert.True(result.IsFailed);
             Assert.Equal(result.GetErrorMessage(), msg);
         }
+
+        [Fact]
+        public async Task StampMediaDocument_ShouldFail_InvalidDepositionId()
+        {
+            // Arrange
+            var depositionId = Guid.NewGuid();
+            var msg = "Could not find any deposition with Id";
+            _depositionRepositoryMock
+                .Setup(mock => mock.GetById(It.IsAny<Guid>(), It.IsAny<string[]>()))
+                .ReturnsAsync(It.IsAny<Deposition>());
+
+            // Act
+            var result = await _depositionService.StampMediaDocument(depositionId, It.IsAny<string>());
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.IsType<Result<Deposition>>(result);
+            Assert.True(result.IsFailed);
+            Assert.Contains(msg, result.GetErrorMessage());
+            _depositionRepositoryMock.Verify(mock => mock.Update(It.IsAny<Deposition>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task StampMediaDocument_ShouldFail_NoSharingDocument()
+        {
+            // Arrange
+            var depositionId = Guid.NewGuid();
+            var deposition = DepositionFactory.GetDeposition(depositionId, Guid.NewGuid());
+            var msg = "There is no shared document for deposition";
+            _depositionRepositoryMock
+                .Setup(mock => mock.GetById(It.IsAny<Guid>(), It.IsAny<string[]>()))
+                .ReturnsAsync(deposition);
+
+            // Act
+            var result = await _depositionService.StampMediaDocument(depositionId, It.IsAny<string>());
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.IsType<Result<Deposition>>(result);
+            Assert.True(result.IsFailed);
+            Assert.Contains(msg, result.GetErrorMessage());
+            _depositionRepositoryMock.Verify(mock => mock.Update(It.IsAny<Deposition>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task StampMediaDocument_ShouldUpdateLabel()
+        {
+            // Arrange
+            var depositionId = Guid.NewGuid();
+            var deposition = DepositionFactory.GetDeposition(depositionId, Guid.NewGuid());
+            deposition.SharingDocumentId = Guid.NewGuid();
+            var stampLabel = "EXH-223";
+            _depositionRepositoryMock
+                .Setup(mock => mock.GetById(It.IsAny<Guid>(), It.IsAny<string[]>()))
+                .ReturnsAsync(deposition);
+            deposition.SharingMediaDocumentStamp = stampLabel;
+            _depositionRepositoryMock
+                .Setup(mock => mock.Update(It.IsAny<Deposition>()))
+                .ReturnsAsync(deposition);
+
+            // Act
+            var result = await _depositionService.StampMediaDocument(depositionId, stampLabel);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.IsType<Result<Deposition>>(result);
+            Assert.Equal(stampLabel, result.Value.SharingMediaDocumentStamp);
+            _depositionRepositoryMock.Verify(mock => mock.Update(It.IsAny<Deposition>()), Times.Once);
+        }
     }
 }

@@ -11,6 +11,7 @@
         Deposition,
         LockBreakRoom,
         EndDeposition,
-        Exhibit
+        Exhibit,
+        Stamp
     }
 }

@@ -51,5 +51,6 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
         Task<Result<List<Deposition>>> UpdateParticipantOnExistingDepositions(User user);
         Task<Result> UpdateUserSystemInfo(Guid id, UserSystemInfo userSystemInfo, string ipAddress);
         Task<Result<DepositionStatusDto>> Summary(Guid depositionId);
+        Task<Result<Deposition>> StampMediaDocument(Guid depositionId, string stampLabel);
     }
 }

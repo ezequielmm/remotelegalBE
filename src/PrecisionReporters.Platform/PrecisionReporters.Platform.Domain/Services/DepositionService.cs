@@ -1405,5 +1405,22 @@ namespace PrecisionReporters.Platform.Domain.Services
             
             return Result.Ok(depositionStatus);
         }
+
+        //TODO: Create a new entity and service for all the information related LiveDeposition ex: SharingDocumentId, IsOnRecord, SharingMediaDocumentStamp etc.
+        public async Task<Result<Deposition>> StampMediaDocument(Guid depositionId, string stampLabel)
+        {
+            var deposition = await _depositionRepository.GetById(depositionId);
+            if (deposition == null)
+                return Result.Fail(new ResourceNotFoundError($"Could not find any deposition with Id {depositionId}"));
+            if(!deposition.SharingDocumentId.HasValue)
+            {
+                _logger.LogWarning("There is no shared document for deposition {depositionId}", deposition.Id);
+                return Result.Fail($"There is no shared document for deposition {depositionId}");
+            }
+
+            deposition.SharingMediaDocumentStamp = stampLabel;
+            _logger.LogInformation("Stamp label: {stampLabel} add to document {documentId}.", stampLabel, deposition.SharingDocumentId);
+            return Result.Ok(await _depositionRepository.Update(deposition));
+        }
     }
 }
