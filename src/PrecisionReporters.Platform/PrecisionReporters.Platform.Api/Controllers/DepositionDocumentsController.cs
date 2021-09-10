@@ -232,9 +232,9 @@ namespace PrecisionReporters.Platform.Api.Controllers
         /// <returns>200 OK</returns>
         [HttpDelete("{id}/transcripts/{documentId}")]
         [UserAuthorize(ResourceType.Document, ResourceAction.Delete)]
-        public async Task<ActionResult> DeleteTranscript(Guid depositionId, [ResourceId(ResourceType.Document)] Guid id)
+        public async Task<ActionResult> DeleteTranscript(Guid id, [ResourceId(ResourceType.Document)] Guid documentId)
         {
-            var documentsResult = await _depositionDocumentService.RemoveDepositionTranscript(depositionId, id);
+            var documentsResult = await _depositionDocumentService.RemoveDepositionTranscript(id, documentId);
             if (documentsResult.IsFailed)
                 return WebApiResponses.GetErrorResponse(documentsResult);
             return Ok();
