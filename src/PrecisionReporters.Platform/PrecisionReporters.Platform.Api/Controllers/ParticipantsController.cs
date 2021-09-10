@@ -56,6 +56,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
         /// <returns>Ok if succeeded</returns>
         [HttpPut]
         [Route("Depositions/{id}/notifyParticipantPresence")]
+        [UserAuthorize(ResourceType.Deposition, ResourceAction.View)]
         public async Task<ActionResult<ParticipantStatusDto>> NotifyParticipantPresence([ResourceId(ResourceType.Deposition)] Guid id, ParticipantStatusDto participantStatus)
         {
             var participantResult = await _participantService.NotifyParticipantPresence(participantStatus, id);

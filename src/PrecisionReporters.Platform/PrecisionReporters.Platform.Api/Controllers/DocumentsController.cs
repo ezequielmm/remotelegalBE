@@ -28,7 +28,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
     {
         private readonly IDocumentService _documentService;
         private readonly IMapper<Document, DocumentDto, CreateDocumentDto> _documentMapper;
-        
+
         public DocumentsController(IDocumentService documentService, IMapper<Document, DocumentDto, CreateDocumentDto> documentMapper)
         {
             _documentService = documentService;
@@ -42,6 +42,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
         /// <returns>Ok if succeeded</returns>
         [HttpPost]
         [Route("Depositions/{depositionId}/Exhibits")]
+        [UserAuthorize(ResourceType.Deposition, ResourceAction.Update)]
         public async Task<IActionResult> UploadFiles([ResourceId(ResourceType.Deposition)] Guid depositionId)
         {
             // TODO: review authorization
@@ -75,6 +76,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
         /// <param name="depositionId"></param>
         /// <returns>List of documents information</returns>
         [HttpGet("Depositions/{depositionId}/MyExhibits")]
+        [UserAuthorize(ResourceType.Deposition, ResourceAction.View)]
         public async Task<ActionResult<List<DocumentDto>>> GetMyExhibits([ResourceId(ResourceType.Deposition)] Guid depositionId)
         {
             // TODO: review authorization
@@ -177,10 +179,9 @@ namespace PrecisionReporters.Platform.Api.Controllers
         /// <returns>Ok if succeeded</returns>
         [HttpPost]
         [Route("{depositionId}/Files")]
+        [UserAuthorize(ResourceType.Deposition, ResourceAction.UploadTranscript)]
         public async Task<IActionResult> UploadTranscriptionsFiles([ResourceId(ResourceType.Deposition)] Guid depositionId)
         {
-            // TODO: review authorization
-
             if (!Request.HasFormContentType || Request.Form.Files.Count == 0)
                 return BadRequest("No files to upload");
 

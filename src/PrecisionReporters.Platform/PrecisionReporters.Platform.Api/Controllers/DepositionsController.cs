@@ -525,6 +525,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
         }
 
         [HttpPost("{id}/userSystemInfo")]
+        [UserAuthorize(ResourceType.Deposition, ResourceAction.View)]
         public async Task<ActionResult> SetUserSystemInfo([ResourceId(ResourceType.Deposition)] Guid id, UserSystemInfoDto userSystemInfoDto)
         {
             // TODO: review authorization
@@ -543,6 +544,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
         }
 
         [HttpPost("{id}/devices")]
+        [UserAuthorize(ResourceType.Deposition, ResourceAction.View)]
         public async Task<ActionResult> SetUserDevice([ResourceId(ResourceType.Deposition)] Guid id, DeviceInfoDto userDeviceDto)
         {
             // TODO: review authorization

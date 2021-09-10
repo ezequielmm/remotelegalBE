@@ -4,6 +4,7 @@ using PrecisionReporters.Platform.Data.Enums;
 using PrecisionReporters.Platform.Domain.Dtos;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using PrecisionReporters.Platform.Shared.Attributes;
+using PrecisionReporters.Platform.Shared.Authorization.Attributes;
 using PrecisionReporters.Platform.Shared.Enums;
 using PrecisionReporters.Platform.Shared.Helpers;
 using System;
@@ -30,6 +31,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
         }
 
         [HttpGet("depositions/{id}")]
+        [UserAuthorize(ResourceType.Deposition, ResourceAction.View)]
         public async Task<ActionResult<DepositionPermissionsDto>> GetDepositionPermissionsForParticipant([ResourceId(ResourceType.Deposition)] Guid id)
         {
             // TODO: review authorization

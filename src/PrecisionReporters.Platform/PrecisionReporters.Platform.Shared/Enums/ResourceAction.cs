@@ -17,6 +17,7 @@
         ReSchedule, 
         Notify,
         List,
-        ViewDepositionStatus
+        ViewDepositionStatus,
+        UploadTranscript
     }
 }
