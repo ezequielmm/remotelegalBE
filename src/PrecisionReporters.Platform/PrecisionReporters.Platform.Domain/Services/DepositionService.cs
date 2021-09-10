@@ -33,6 +33,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly IDepositionRepository _depositionRepository;
         private readonly IParticipantRepository _participantRepository;
         private readonly IDepositionEventRepository _depositionEventRepository;
+        private readonly ISystemSettingsRepository _systemSettingsRepository;
         private readonly IUserService _userService;
         private readonly IRoomService _roomService;
         private readonly IBreakRoomService _breakRoomService;
@@ -57,6 +58,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         public DepositionService(IDepositionRepository depositionRepository,
             IParticipantRepository participantRepository,
             IDepositionEventRepository depositionEventRepository,
+            ISystemSettingsRepository systemSettingsRepository, 
             IUserService userService,
             IRoomService roomService,
             IBreakRoomService breakRoomService,
@@ -83,6 +85,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             _depositionRepository = depositionRepository;
             _participantRepository = participantRepository;
             _depositionEventRepository = depositionEventRepository;
+            _systemSettingsRepository = systemSettingsRepository;
             _userService = userService;
             _roomService = roomService;
             _breakRoomService = breakRoomService;
@@ -495,7 +498,12 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<string>> JoinBreakRoom(Guid depositionId, Guid breakRoomId)
         {
+            var systemSettingsResult = await _systemSettingsRepository.GetFirstOrDefaultByFilter(x => x.Name == SystemSettingsName.EnableBreakrooms);
+            if (systemSettingsResult.Value == "disabled")
+                return Result.Fail(new ResourceConflictError("Cannot Join to BreakRoom while feature is disabled"));
+
             var depositionResult = await GetDepositionById(depositionId);
+
             if (depositionResult.IsFailed)
                 return depositionResult.ToResult<string>();
             if (depositionResult.Value.IsOnTheRecord)
@@ -515,8 +523,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                     Role = ParticipantType.Admin
                 };
             }
-
-            return await _breakRoomService.JoinBreakRoom(breakRoomId, currentParticipant);
+           return await _breakRoomService.JoinBreakRoom(breakRoomId, currentParticipant);
         }
 
         public Task<Result> LeaveBreakRoom(Guid depositionId, Guid breakRoomId)

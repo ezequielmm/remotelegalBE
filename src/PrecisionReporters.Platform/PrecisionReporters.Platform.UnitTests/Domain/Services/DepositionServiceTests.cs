@@ -34,6 +34,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         private readonly Mock<IDepositionRepository> _depositionRepositoryMock;
         private readonly Mock<IParticipantRepository> _participantRepositoryMock;
         private readonly Mock<IDepositionEventRepository> _depositionEventRepositoryMock;
+        private readonly Mock<ISystemSettingsRepository> _systemSettingsRepositoryMock;
         private readonly Mock<IUserService> _userServiceMock;
         private readonly Mock<IRoomService> _roomServiceMock;
         private readonly Mock<IBreakRoomService> _breakRoomServiceMock;
@@ -65,6 +66,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         {
             // Setup
             _depositionEventRepositoryMock = new Mock<IDepositionEventRepository>();
+
+            _systemSettingsRepositoryMock = new Mock<ISystemSettingsRepository>();
 
             _depositionRepositoryMock = new Mock<IDepositionRepository>();
 
@@ -121,6 +124,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 _depositionRepositoryMock.Object,
                 _participantRepositoryMock.Object,
                 _depositionEventRepositoryMock.Object,
+                _systemSettingsRepositoryMock.Object,
                 _userServiceMock.Object,
                 _roomServiceMock.Object,
                 _breakRoomServiceMock.Object,
@@ -923,6 +927,11 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var depositionId = Guid.NewGuid();
             var breakRoomId = Guid.NewGuid();
 
+            var systemSetting = new SystemSettings { Name = SystemSettingsName.EnableBreakrooms, Value = "enabled", Id = Guid.Parse("dd502081-525a-4faa-a9aa-3de98e4368e7"), CreationDate = DateTime.UtcNow };
+
+            _systemSettingsRepositoryMock
+                .Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<SystemSettings, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()))
+                .ReturnsAsync(systemSetting);
             _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync((Deposition)null);
 
             // Act
@@ -939,11 +948,35 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var breakRoomId = Guid.NewGuid();
             var deposition = new Deposition { Id = Guid.NewGuid(), IsOnTheRecord = true };
 
+            var systemSetting = new SystemSettings { Name = SystemSettingsName.EnableBreakrooms, Value = "enabled", Id = Guid.Parse("dd502081-525a-4faa-a9aa-3de98e4368e7"), CreationDate = DateTime.UtcNow };
+
+            _systemSettingsRepositoryMock
+                .Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<SystemSettings, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()))
+                .ReturnsAsync(systemSetting);
             _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
 
             // Act
             var result = await _depositionService.JoinBreakRoom(depositionId, breakRoomId);
 
+            Assert.True(result.IsFailed);
+        }
+
+        [Fact]
+        public async Task JoinBreakRoom_ShouldReturnError_WhenBreakRoomIsDisabled()
+        {
+            // Arrange
+            var depositionId = Guid.NewGuid();
+            var breakRoomId = Guid.NewGuid();
+
+            var systemSetting = new SystemSettings { Name = SystemSettingsName.EnableBreakrooms, Value = "disabled", Id = Guid.Parse("dd502081-525a-4faa-a9aa-3de98e4368e7"), CreationDate = DateTime.UtcNow };
+
+            _systemSettingsRepositoryMock
+                .Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<SystemSettings, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()))
+                .ReturnsAsync(systemSetting);
+
+            // Act
+            var result = await _depositionService.JoinBreakRoom(depositionId, breakRoomId);
+            
             Assert.True(result.IsFailed);
         }
 
@@ -973,6 +1006,11 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 }
             };
 
+            var systemSetting = new SystemSettings { Name = SystemSettingsName.EnableBreakrooms, Value = "enabled", Id = Guid.Parse("dd502081-525a-4faa-a9aa-3de98e4368e7"), CreationDate = DateTime.UtcNow };
+
+            _systemSettingsRepositoryMock
+                .Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<SystemSettings, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()))
+                .ReturnsAsync(systemSetting);
             _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
             _breakRoomServiceMock.Setup(x => x.JoinBreakRoom(breakRoomId, It.IsAny<Participant>())).ReturnsAsync(Result.Ok(token));
             _userServiceMock.Setup(x => x.GetCurrentUserAsync()).ReturnsAsync(user);
@@ -995,6 +1033,12 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             {
                 Participants = new List<Participant>()
             };
+
+            var systemSetting = new SystemSettings { Name = SystemSettingsName.EnableBreakrooms, Value = "enabled", Id = Guid.Parse("dd502081-525a-4faa-a9aa-3de98e4368e7"), CreationDate = DateTime.UtcNow };
+
+            _systemSettingsRepositoryMock
+                .Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<SystemSettings, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()))
+                .ReturnsAsync(systemSetting);
             _userServiceMock.Setup(x => x.GetCurrentUserAsync()).ReturnsAsync(new User());
             _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
             // Act
@@ -1036,6 +1080,12 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                     }
                 },
             };
+
+            var systemSetting = new SystemSettings { Name = SystemSettingsName.EnableBreakrooms, Value = "enabled", Id = Guid.Parse("dd502081-525a-4faa-a9aa-3de98e4368e7"), CreationDate = DateTime.UtcNow };
+
+            _systemSettingsRepositoryMock
+                .Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<SystemSettings, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()))
+                .ReturnsAsync(systemSetting);
             _userServiceMock.Setup(x => x.GetCurrentUserAsync()).ReturnsAsync(user);
             _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
             _breakRoomServiceMock.Setup(x => x.JoinBreakRoom(It.IsAny<Guid>(), It.IsAny<Participant>())).ReturnsAsync(Result.Fail(new InvalidInputError(expectedError)));
@@ -1080,6 +1130,12 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                     }
                 },
             };
+
+            var systemSetting = new SystemSettings { Name = SystemSettingsName.EnableBreakrooms, Value = "enabled", Id = Guid.Parse("dd502081-525a-4faa-a9aa-3de98e4368e7"), CreationDate = DateTime.UtcNow };
+
+            _systemSettingsRepositoryMock
+                .Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<SystemSettings, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()))
+                .ReturnsAsync(systemSetting);
             _userServiceMock.Setup(x => x.GetCurrentUserAsync()).ReturnsAsync(user);
             _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
             _breakRoomServiceMock.Setup(x => x.JoinBreakRoom(It.IsAny<Guid>(), It.IsAny<Participant>())).ReturnsAsync(Result.Fail(new InvalidInputError(expectedError)));
@@ -1124,6 +1180,12 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                     }
                 },
             };
+
+            var systemSetting = new SystemSettings { Name = SystemSettingsName.EnableBreakrooms, Value = "enabled", Id = Guid.Parse("dd502081-525a-4faa-a9aa-3de98e4368e7"), CreationDate = DateTime.UtcNow };
+
+            _systemSettingsRepositoryMock
+                .Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<SystemSettings, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()))
+                .ReturnsAsync(systemSetting);
             _userServiceMock.Setup(x => x.GetCurrentUserAsync()).ReturnsAsync(user);
             _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
             _breakRoomServiceMock.Setup(x => x.JoinBreakRoom(It.IsAny<Guid>(), It.IsAny<Participant>())).ReturnsAsync(Result.Fail(new InvalidInputError(expectedError)));

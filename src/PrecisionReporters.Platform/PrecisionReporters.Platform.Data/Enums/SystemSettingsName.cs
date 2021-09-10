@@ -4,6 +4,7 @@
     {
         EnableBreakrooms,
         EnableLiveTranscriptions,
-        EnableRealTimeTab
+        EnableRealTimeTab,
+        EnableTwilioLogs
     }
 }
