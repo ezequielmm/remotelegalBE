@@ -82,6 +82,10 @@
                     "value": "https://app.remotelegal.com/deposition/pre-join/"
                 },
                 {
+                    "name": "AppConfiguration__EmailConfiguration__XSesConfigurationSetHeader",
+                    "value": "configset-prod"
+                },
+                {
                     "name": "AppConfiguration__ConfigurationFlags__IsDeveloperExceptionPageEnabled",
                     "value": "false"
                 },

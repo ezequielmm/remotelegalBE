@@ -98,6 +98,10 @@
                     "value": "[DEV] Verify your Remote Legal account"
                 },
                 {
+                    "name": "AppConfiguration__EmailConfiguration__XSesConfigurationSetHeader",
+                    "value": "configset-open"
+                },
+                {
                     "name": "AppConfiguration__TwilioAccountConfiguration__S3DestinationBucket",
                     "value": "input-elastictranscoder-dev"
                 },

@@ -82,6 +82,10 @@
           "value": "https://prp-uat.prdevelopment.net/deposition/pre-join/"
         },
         {
+          "name": "AppConfiguration__EmailConfiguration__XSesConfigurationSetHeader",
+          "value": "configset-uat"
+        },
+        {
           "name": "AppConfiguration__ConfigurationFlags__IsDeveloperExceptionPageEnabled",
           "value": "true"
         },

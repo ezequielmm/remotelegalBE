@@ -82,6 +82,10 @@
                     "value": "https://prp-qa.prdevelopment.net/deposition/pre-join/"
                 },
                 {
+                    "name": "AppConfiguration__EmailConfiguration__XSesConfigurationSetHeader",
+                    "value": "configset-qa"
+                },
+                {
                     "name": "AppConfiguration__ConfigurationFlags__IsDeveloperExceptionPageEnabled",
                     "value": "true"
                 },

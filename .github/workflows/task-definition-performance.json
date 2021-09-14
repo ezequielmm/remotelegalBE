@@ -82,6 +82,10 @@
                     "value": "https://prp-performance.prdevelopment.net/deposition/pre-join/"
                 },
                 {
+                    "name": "AppConfiguration__EmailConfiguration__XSesConfigurationSetHeader",
+                    "value": "configset-open"
+                },
+                {
                     "name": "AppConfiguration__ConfigurationFlags__IsDeveloperExceptionPageEnabled",
                     "value": "true"
                 },
