@@ -204,13 +204,17 @@ namespace PrecisionReporters.Platform.Domain.Services
                 Method = method
             };
 
+            // Important: Fix calendar timezone using Deposition timezone
+            var timeZone = deposition.TimeZone.GetTimeZoneInfo();
+            calendar.AddTimeZone(timeZone);
+
             var icalEvent = new CalendarEvent
             {
                 Uid = deposition.Id.ToString(),
                 Summary = $"Invitation: Remote Legal - {strWitness}",
                 Description = $"{strWitness}{Environment.NewLine}{_emailConfiguration.PreDepositionLink}{deposition.Id}",
-                Start = new CalDateTime(deposition.StartDate.GetConvertedTime(deposition.TimeZone), deposition.TimeZone),
-                End = deposition.EndDate.HasValue ? new CalDateTime(deposition.EndDate.Value.GetConvertedTime(deposition.TimeZone), deposition.TimeZone) : null,
+                Start = new CalDateTime(deposition.StartDate.GetConvertedTime(deposition.TimeZone), timeZone.Id),
+                End = deposition.EndDate.HasValue ? new CalDateTime(deposition.EndDate.Value.GetConvertedTime(deposition.TimeZone), timeZone.Id) : null,
                 Location = $"{_emailConfiguration.PreDepositionLink}{deposition.Id}",
                 Organizer = new Organizer()
                 {
