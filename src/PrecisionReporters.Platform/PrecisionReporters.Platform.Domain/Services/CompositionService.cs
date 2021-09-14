@@ -159,7 +159,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             }
             recMetadata.EndDate = _compositionHelper.GetDateTimestamp(deposition.Room.EndDate.Value);
             recMetadata.Intervals = _compositionHelper.GetDepositionRecordingIntervals(deposition.Events, startDateTime.Result.Value);
-
+            recMetadata.DepositionId = deposition.Id.ToString();
             return recMetadata;
         }
 

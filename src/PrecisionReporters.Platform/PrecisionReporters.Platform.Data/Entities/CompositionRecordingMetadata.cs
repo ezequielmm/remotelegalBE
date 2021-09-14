@@ -12,5 +12,6 @@ namespace PrecisionReporters.Platform.Data.Entities
         public long StartDate { get; set; }
         public long EndDate { get; set; }
         public List<CompositionInterval> Intervals { get; set; }
+        public string DepositionId { get; set; }
     }
 }
