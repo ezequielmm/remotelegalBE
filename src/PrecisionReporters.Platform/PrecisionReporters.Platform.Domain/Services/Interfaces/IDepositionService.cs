@@ -52,5 +52,6 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
         Task<Result> UpdateUserSystemInfo(Guid id, UserSystemInfo userSystemInfo, string ipAddress);
         Task<Result<DepositionStatusDto>> Summary(Guid depositionId);
         Task<Result<Deposition>> StampMediaDocument(Guid depositionId, string stampLabel);
+        Task<Result> SaveAwsSessionInfo(Guid id, string containerId);
     }
 }

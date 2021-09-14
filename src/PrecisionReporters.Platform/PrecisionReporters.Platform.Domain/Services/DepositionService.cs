@@ -54,6 +54,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly EmailConfiguration _emailConfiguration;
         private readonly IActivityHistoryService _activityHistoryService;
         private readonly IDepositionEmailService _depositionEmailService;
+        private readonly CognitoConfiguration _cognitoConfiguration;
 
         public DepositionService(IDepositionRepository depositionRepository,
             IParticipantRepository participantRepository,
@@ -78,7 +79,8 @@ namespace PrecisionReporters.Platform.Domain.Services
             IOptions<EmailConfiguration> emailConfiguration,
             IMapper<BreakRoom, BreakRoomDto, object> breakRoomMapper,
             IActivityHistoryService activityHistoryService,
-            IDepositionEmailService depositionEmailService)
+            IDepositionEmailService depositionEmailService,
+            IOptions<CognitoConfiguration> cognitoConfiguration)
         {
             _awsStorageService = awsStorageService;
             _documentsConfiguration = documentConfigurations.Value ?? throw new ArgumentException(nameof(documentConfigurations));
@@ -104,6 +106,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             _breakRoomMapper = breakRoomMapper;
             _activityHistoryService = activityHistoryService;
             _depositionEmailService = depositionEmailService;
+            _cognitoConfiguration = cognitoConfiguration.Value;
         }
 
         public async Task<List<Deposition>> GetDepositions(Expression<Func<Deposition, bool>> filter = null,
@@ -1428,6 +1431,20 @@ namespace PrecisionReporters.Platform.Domain.Services
             deposition.SharingMediaDocumentStamp = stampLabel;
             _logger.LogInformation("Stamp label: {stampLabel} add to document {documentId}.", stampLabel, deposition.SharingDocumentId);
             return Result.Ok(await _depositionRepository.Update(deposition));
+        }
+
+        public async Task<Result> SaveAwsSessionInfo(Guid depositionId, string containerId)
+        {
+            var region = _cognitoConfiguration.AWSRegion;
+            var currentUser = await _userService.GetCurrentUserAsync();
+
+            var awsInfo = new AwsSessionInfo
+            {
+                AvailabilityZone = region,
+                ContainerId = containerId
+            };
+
+            return await _activityHistoryService.SaveAwsSessionInfo(depositionId, awsInfo, currentUser);
         }
     }
 }

@@ -19,6 +19,8 @@ namespace PrecisionReporters.Platform.Data.Entities
         public ActivityHistoryAction Action { get; set; }
         public string ActionDetails { get; set; }
         public string OperatingSystem { get; set; }
+        public string AmazonAvailability { get; set; }
+        public string ContainerId { get; set; }
         public override void CopyFrom(ActivityHistory entity)
         {
             ActivityDate = entity.ActivityDate;
@@ -32,6 +34,8 @@ namespace PrecisionReporters.Platform.Data.Entities
             Action = entity.Action;
             ActionDetails = entity.ActionDetails;
             OperatingSystem = entity.OperatingSystem;
+            AmazonAvailability = entity.AmazonAvailability;
+            ContainerId = entity.ContainerId;
         }
     }
 }

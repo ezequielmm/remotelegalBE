@@ -3,6 +3,7 @@
     public enum ActivityHistoryAction
     {
         JoinDeposition,
-        SetSystemInfo
+        SetSystemInfo,
+        SetAwsSessionInfo
     }
 }

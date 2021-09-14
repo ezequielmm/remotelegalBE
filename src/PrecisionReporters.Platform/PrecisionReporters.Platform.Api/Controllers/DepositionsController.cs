@@ -15,6 +15,7 @@ using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using PrecisionReporters.Platform.Data.Enums;
+using System.Net;
 
 namespace PrecisionReporters.Platform.Api.Controllers
 {
@@ -36,6 +37,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
         private readonly IMapper<Participant, AddParticipantDto, CreateGuestDto> _guestMapper;
         private readonly IMapper<UserSystemInfo, UserSystemInfoDto, object> _userSystemInfoMapper;
         private readonly IMapper<DeviceInfo, DeviceInfoDto, object> _userDeviceMapper;
+        private readonly IMapper<AwsSessionInfo, AwsInfoDto, object> _awsSessionInfoMapper;
 
         public DepositionsController(IDepositionService depositionService,
             IMapper<Deposition, DepositionDto, CreateDepositionDto> depositionMapper,
@@ -45,7 +47,8 @@ namespace PrecisionReporters.Platform.Api.Controllers
             IMapper<Participant, ParticipantDto, CreateParticipantDto> participantMapper, IMapper<Participant, AddParticipantDto, CreateGuestDto> guestMapper,
             IMapper<Participant, ParticipantTechStatusDto, object> participantTechStatusMapper,
             IMapper<UserSystemInfo, UserSystemInfoDto, object> userSystemInfoMapper,
-            IMapper<DeviceInfo, DeviceInfoDto, object> userDeviceMapper)
+            IMapper<DeviceInfo, DeviceInfoDto, object> userDeviceMapper,
+            IMapper<AwsSessionInfo, AwsInfoDto, object> awsInfoMapper)
         {
             _depositionService = depositionService;
             _depositionMapper = depositionMapper;
@@ -60,6 +63,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
             _participantTechStatusMapper = participantTechStatusMapper;
             _userSystemInfoMapper = userSystemInfoMapper;
             _userDeviceMapper = userDeviceMapper;
+            _awsSessionInfoMapper = awsInfoMapper;
         }
 
         [HttpGet]
@@ -545,6 +549,16 @@ namespace PrecisionReporters.Platform.Api.Controllers
             var userDeviceInfo = _userDeviceMapper.ToModel(userDeviceDto);
 
             var result = await _participantService.SetUserDeviceInfo(id, userDeviceInfo);
+            if (result.IsFailed)
+                return WebApiResponses.GetErrorResponse(result);
+
+            return Ok(result);
+        }
+
+        [HttpPost("{id}/awsInfo")]
+        public async Task<ActionResult> SaveAWSInfo(Guid id)
+        {
+            var result = await _depositionService.SaveAwsSessionInfo(id, Dns.GetHostName());
             if (result.IsFailed)
                 return WebApiResponses.GetErrorResponse(result);
 

@@ -59,6 +59,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         private readonly Mock<IAwsEmailService> _awsEmailServiceMock;
         private readonly Mock<IActivityHistoryService> _activityHistoryServiceMock;
         private readonly Mock<IDepositionEmailService> _depositionEmailServiceMock;
+        private readonly Mock<IOptions<CognitoConfiguration>> _cognitoConfigurationMock;
+        private readonly CognitoConfiguration _cognitoConfiguration;
 
         private readonly List<Deposition> _depositions = new List<Deposition>();
 
@@ -110,6 +112,10 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _urlPathConfigurationMock = new Mock<IOptions<UrlPathConfiguration>>();
             _urlPathConfigurationMock.Setup(x => x.Value).Returns(_urlPathConfiguration);
 
+            _cognitoConfiguration = new CognitoConfiguration { AWSRegion = "test-region" };
+            _cognitoConfigurationMock = new Mock<IOptions<CognitoConfiguration>>();
+            _cognitoConfigurationMock.Setup(x => x.Value).Returns(_cognitoConfiguration);
+
             _participantMapperMock = new Mock<IMapper<Participant, ParticipantDto, CreateParticipantDto>>();
             _depositionMapperMock = new Mock<IMapper<Deposition, DepositionDto, CreateDepositionDto>>();
             _breakRoomMapperMock = new Mock<IMapper<BreakRoom, BreakRoomDto, object>>();
@@ -144,7 +150,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 _emailConfigurationMock.Object,
                 _breakRoomMapperMock.Object,
                 _activityHistoryServiceMock.Object,
-                _depositionEmailServiceMock.Object);
+                _depositionEmailServiceMock.Object,
+                _cognitoConfigurationMock.Object);
 
             _transactionHandlerMock.Setup(x => x.RunAsync(It.IsAny<Func<Task<Result<Deposition>>>>()))
                 .Returns(async (Func<Task<Result<Deposition>>> action) =>

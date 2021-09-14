@@ -9,5 +9,6 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
     {
         Task<Result> AddActivity(ActivityHistory activity, User user, Deposition deposition);
         Task<Result> UpdateUserSystemInfo(Guid depositionId, UserSystemInfo userSystemInfo, User user, string ipAddress);
+        Task<Result> SaveAwsSessionInfo(Guid depositionId, AwsSessionInfo awsInfo, User currentUser);
     }
 }

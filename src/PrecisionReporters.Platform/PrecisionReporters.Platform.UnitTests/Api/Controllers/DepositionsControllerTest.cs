@@ -39,6 +39,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
         private readonly IMapper<User, UserDto, CreateUserDto> _userMapper;
         private readonly IMapper<UserSystemInfo, UserSystemInfoDto, object> _userSystemInfoMapper;
         private readonly IMapper<DeviceInfo, DeviceInfoDto, object> _deviceInfoMapper;
+        private readonly IMapper<AwsSessionInfo, AwsInfoDto, object> _awsInfoMapper;
         private readonly DepositionsController _classUnderTest;
 
         public DepositionsControllerTest()
@@ -55,6 +56,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
             _participantTechStatusMapper = new ParticipantTechStatusMapper();
             _userSystemInfoMapper = new UserSystemInfoMapper();
             _deviceInfoMapper = new DeviceInfoMapper();
+            _awsInfoMapper = new AwsInfoMapper();
 
             // Deposition mapper arguments
             _compositionMapper = new CompositionMapper();
@@ -77,7 +79,8 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
                 _guestMapper,
                 _participantTechStatusMapper,
                 _userSystemInfoMapper,
-                _deviceInfoMapper);
+                _deviceInfoMapper,
+                _awsInfoMapper);
         }
 
         [Fact]
@@ -1517,6 +1520,69 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
             var errorResult = Assert.IsType<StatusCodeResult>(result.Result);
             Assert.Equal((int)HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _depositionService.Verify(mock => mock.Summary(It.IsAny<Guid>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task SaveAwsInfo_ReturnsError_WhenSaveAwsInfoFails()
+        {
+            // Arrange
+            var awsSessionInfoDto = new AwsInfoDto()
+            {
+                AvailabilityZone = "Test Zone",
+                ContainerId = "Cont 1234"
+            };
+
+            var activityHistory = new ActivityHistory()
+            {
+                CreationDate = It.IsAny<DateTime>(),
+                Action = ActivityHistoryAction.SetAwsSessionInfo,
+                ActivityDate = It.IsAny<DateTime>(),
+                DepositionId = It.IsAny<Guid>(),
+                UserId = It.IsAny<Guid>(),
+                AmazonAvailability = It.IsAny<string>(),
+                ContainerId = It.IsAny<string>()
+            };
+            _depositionService
+                .Setup(mock => mock.SaveAwsSessionInfo(It.IsAny<Guid>(), It.IsAny<string>()))
+                .ReturnsAsync(Result.Fail(new Error()));
+
+            // Act
+            var result = await _classUnderTest.SaveAWSInfo(It.IsAny<Guid>());
+
+            // Assert
+            Assert.NotNull(result);
+            var errorResult = Assert.IsType<StatusCodeResult>(result);
+            Assert.Equal((int)HttpStatusCode.InternalServerError, errorResult.StatusCode);
+            _depositionService.Verify(mock => mock.SaveAwsSessionInfo(It.IsAny<Guid>(), It.IsAny<string>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task SaveAwsInfo_ReturnsOk()
+        {
+            // Arrange
+            var activityHistory = new ActivityHistory()
+            {
+                CreationDate = It.IsAny<DateTime>(),
+                Action = ActivityHistoryAction.SetAwsSessionInfo,
+                ActivityDate = It.IsAny<DateTime>(),
+                DepositionId = It.IsAny<Guid>(),
+                UserId = It.IsAny<Guid>(),
+                AmazonAvailability = It.IsAny<string>(),
+                ContainerId = It.IsAny<string>()
+            };
+
+            _depositionService
+                .Setup(mock => mock.SaveAwsSessionInfo(It.IsAny<Guid>(), It.IsAny<string>()))
+                .ReturnsAsync(Result.Ok());
+
+            // Act
+            var result = await _classUnderTest.SaveAWSInfo(It.IsAny<Guid>());
+
+            // Assert
+            Assert.NotNull(result);
+            var okResult = Assert.IsType<OkObjectResult>(result);
+
+            _depositionService.Verify(mock => mock.SaveAwsSessionInfo(It.IsAny<Guid>(), It.IsAny<string>()), Times.Once);
         }
     }
 }

@@ -5,11 +5,9 @@ using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Data.Enums;
 using PrecisionReporters.Platform.Data.Repositories.Interfaces;
 using PrecisionReporters.Platform.Domain.Configurations;
-using PrecisionReporters.Platform.Domain.Dtos;
 using PrecisionReporters.Platform.Domain.Extensions;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using PrecisionReporters.Platform.Shared.Commons;
-using PrecisionReporters.Platform.Shared.Errors;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -112,6 +110,32 @@ namespace PrecisionReporters.Platform.Domain.Services
             {
                 _logger.LogError(ex, "Unable to update User system info");
             }
+            return Result.Ok();
+        }
+
+        public async Task<Result> SaveAwsSessionInfo(Guid depositionId, AwsSessionInfo awsInfo, User currentUser)
+        {
+            try
+            {
+                var activityHistory = new ActivityHistory()
+                {
+                    Action = ActivityHistoryAction.SetAwsSessionInfo,
+                    ActionDetails = string.Empty,
+                    ActivityDate = DateTime.UtcNow,
+                    CreationDate = DateTime.UtcNow,
+                    DepositionId = depositionId,
+                    AmazonAvailability = awsInfo.AvailabilityZone,
+                    ContainerId = awsInfo.ContainerId,
+                    UserId = currentUser.Id
+                };
+
+                await _activityHistoryRepository.Create(activityHistory);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unable to update AWS ssession info");
+            }
+
             return Result.Ok();
         }
     }
