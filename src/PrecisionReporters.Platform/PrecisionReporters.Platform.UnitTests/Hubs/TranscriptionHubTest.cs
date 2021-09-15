@@ -103,23 +103,24 @@ namespace PrecisionReporters.Platform.UnitTests.Hubs
                 DepositionId = Guid.NewGuid()
             };
             var transcriptionServiceMock = new Mock<ITranscriptionLiveService>();
+            var transcriptionService = transcriptionServiceMock.Object;
             _clientContextMock
                 .Setup(mock => mock.ConnectionId)
                 .Returns(Guid.NewGuid().ToString);
             _classUnderTest.Context = _clientContextMock.Object;
             _signalRTranscriptionFactoryMock
-                .Setup(mock => mock.GetTranscriptionLiveService(It.IsAny<string>()))
-                .Returns(transcriptionServiceMock.Object);
+                .Setup(mock => mock.TryGetTranscriptionLiveService(It.IsAny<string>(), out transcriptionService))
+                .Returns(true);
             transcriptionServiceMock
-                .Setup(mock => mock.RecognizeAsync(It.IsAny<byte[]>()))
-                .Returns(Task.CompletedTask);
+                .Setup(mock => mock.TryAddAudioChunkToBuffer(It.IsAny<byte[]>()))
+                .Returns(true);
 
             // Act
             await _classUnderTest.UploadTranscription(transcriptionsHubDto);
 
             // Assert
-            _signalRTranscriptionFactoryMock.Verify(mock => mock.GetTranscriptionLiveService(It.IsAny<string>()), Times.Once);
-            transcriptionServiceMock.Verify(mock => mock.RecognizeAsync(It.IsAny<byte[]>()), Times.Once);
+            _signalRTranscriptionFactoryMock.Verify(mock => mock.TryGetTranscriptionLiveService(It.IsAny<string>(), out transcriptionService), Times.Once);
+            transcriptionServiceMock.Verify(mock => mock.TryAddAudioChunkToBuffer(It.IsAny<byte[]>()), Times.Once);
         }
 
         [Fact]
@@ -132,12 +133,13 @@ namespace PrecisionReporters.Platform.UnitTests.Hubs
                 DepositionId = Guid.NewGuid()
             };
             var transcriptionServiceMock = new Mock<ITranscriptionLiveService>();
+            var transcriptionService = transcriptionServiceMock.Object;
             _clientContextMock
                 .Setup(mock => mock.ConnectionId)
                 .Returns(Guid.NewGuid().ToString);
             _classUnderTest.Context = _clientContextMock.Object;
             _signalRTranscriptionFactoryMock
-                .Setup(mock => mock.GetTranscriptionLiveService(It.IsAny<string>()))
+                .Setup(mock => mock.TryGetTranscriptionLiveService(It.IsAny<string>(), out transcriptionService))
                 .Throws(new NullReferenceException());
             var logErrorMessage =
                 $"There was an error uploading transcription of connectionId {_classUnderTest.Context.ConnectionId} on Deposition {transcriptionsHubDto.DepositionId}";
@@ -156,8 +158,8 @@ namespace PrecisionReporters.Platform.UnitTests.Hubs
                     It.IsAny<Exception>(),
                     It.Is<Func<It.IsAnyType, Exception, string>>((v, t) => true)),
                 Times.Once);
-            _signalRTranscriptionFactoryMock.Verify(mock => mock.GetTranscriptionLiveService(It.IsAny<string>()), Times.Once);
-            transcriptionServiceMock.Verify(mock => mock.RecognizeAsync(It.IsAny<byte[]>()), Times.Never);
+            _signalRTranscriptionFactoryMock.Verify(mock => mock.TryGetTranscriptionLiveService(It.IsAny<string>(), out transcriptionService), Times.Once);
+            transcriptionServiceMock.Verify(mock => mock.TryAddAudioChunkToBuffer(It.IsAny<byte[]>()), Times.Never);
         }
 
         [Fact]
@@ -177,7 +179,7 @@ namespace PrecisionReporters.Platform.UnitTests.Hubs
                 .Returns(userIdentifier);
             _classUnderTest.Context = _clientContextMock.Object;
             _signalRTranscriptionFactoryMock
-                .Setup(mock => mock.Unsubscribe(It.IsAny<string>()));
+                .Setup(mock => mock.UnsubscribeAsync(It.IsAny<string>()));
 
             // Act
             await _classUnderTest.ChangeTranscriptionStatus(transcriptionsChangeStatusDto);
@@ -189,7 +191,7 @@ namespace PrecisionReporters.Platform.UnitTests.Hubs
                     It.IsAny<Exception>(),
                     It.Is<Func<It.IsAnyType, Exception, string>>((v, t) => true)),
                 Times.Once);
-            _signalRTranscriptionFactoryMock.Verify(mock => mock.Unsubscribe(It.IsAny<string>()), Times.Once);
+            _signalRTranscriptionFactoryMock.Verify(mock => mock.UnsubscribeAsync(It.IsAny<string>()), Times.Once);
         }
 
         [Fact]
@@ -209,7 +211,7 @@ namespace PrecisionReporters.Platform.UnitTests.Hubs
                 .Returns(userIdentifier);
             _classUnderTest.Context = _clientContextMock.Object;
             _signalRTranscriptionFactoryMock
-                .Setup(mock => mock.TryInitializeRecognition(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>()));
+                .Setup(mock => mock.InitializeRecognitionAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>()));
 
             // Act
             await _classUnderTest.ChangeTranscriptionStatus(transcriptionsChangeStatusDto);
@@ -222,7 +224,7 @@ namespace PrecisionReporters.Platform.UnitTests.Hubs
                     It.Is<Func<It.IsAnyType, Exception, string>>((v, t) => true)),
                 Times.Once);
             _signalRTranscriptionFactoryMock.Verify(
-                mock => mock.TryInitializeRecognition(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>()),
+                mock => mock.InitializeRecognitionAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>()),
                 Times.Once);
         }
 
@@ -245,7 +247,7 @@ namespace PrecisionReporters.Platform.UnitTests.Hubs
                 .Returns(Guid.NewGuid().ToString);
             _classUnderTest.Context = _clientContextMock.Object;
             _signalRTranscriptionFactoryMock
-                .Setup(mock => mock.TryInitializeRecognition(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>()))
+                .Setup(mock => mock.InitializeRecognitionAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>()))
                 .Throws(new Exception());
             var logMessage = "There was an error uploading transcription status of connectionId";
 
@@ -264,7 +266,7 @@ namespace PrecisionReporters.Platform.UnitTests.Hubs
                     It.Is<Func<It.IsAnyType, Exception, string>>((v, t) => true)),
                 Times.Once);
             _signalRTranscriptionFactoryMock.Verify(
-                mock => mock.TryInitializeRecognition(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>()),
+                mock => mock.InitializeRecognitionAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>()),
                 Times.Once);
         }
 
@@ -278,6 +280,7 @@ namespace PrecisionReporters.Platform.UnitTests.Hubs
                 SampleRate = 16000
             };
             var transcriptionServiceMock = new Mock<ITranscriptionLiveService>();
+            var transcriptionService = transcriptionServiceMock.Object;
             var userIdentifier = "mock@mail.com";
             _clientContextMock
                 .Setup(mock => mock.UserIdentifier)
@@ -287,14 +290,14 @@ namespace PrecisionReporters.Platform.UnitTests.Hubs
                 .Returns(Guid.NewGuid().ToString);
             _classUnderTest.Context = _clientContextMock.Object;
             _signalRTranscriptionFactoryMock
-                .Setup(mock => mock.GetTranscriptionLiveService(It.IsAny<string>()))
-                .Returns(transcriptionServiceMock.Object);
+                .Setup(mock => mock.TryGetTranscriptionLiveService(It.IsAny<string>(), out transcriptionService))
+                .Returns(true);
             var logMessageInfo =
                 $"Removing transcription service for user {userIdentifier} on deposition {initializeRecognitionDto.DepositionId}. Service already exist.";
             var logMessageFinish =
                 $"Initializing transcription service for user {userIdentifier} on deposition {initializeRecognitionDto.DepositionId} with sample rate {initializeRecognitionDto.SampleRate}";
             _signalRTranscriptionFactoryMock
-                .Setup(mock => mock.TryInitializeRecognition(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>()))
+                .Setup(mock => mock.InitializeRecognitionAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>()))
                 .Returns(Task.CompletedTask);
 
             // Act
@@ -307,10 +310,10 @@ namespace PrecisionReporters.Platform.UnitTests.Hubs
                     It.IsAny<Exception>(),
                     It.Is<Func<It.IsAnyType, Exception, string>>((v, t) => true)),
                 Times.Exactly(2));
-            _signalRTranscriptionFactoryMock.Verify(mock => mock.Unsubscribe(It.IsAny<string>()), Times.Once);
-            _signalRTranscriptionFactoryMock.Verify(mock => mock.GetTranscriptionLiveService(It.IsAny<string>()), Times.Once);
+            _signalRTranscriptionFactoryMock.Verify(mock => mock.UnsubscribeAsync(It.IsAny<string>()), Times.Once);
+            _signalRTranscriptionFactoryMock.Verify(mock => mock.TryGetTranscriptionLiveService(It.IsAny<string>(), out transcriptionService), Times.Once);
             _signalRTranscriptionFactoryMock.Verify(
-                mock => mock.TryInitializeRecognition(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>()),
+                mock => mock.InitializeRecognitionAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>()),
                 Times.Once);
         }
 
@@ -331,13 +334,14 @@ namespace PrecisionReporters.Platform.UnitTests.Hubs
                 .Setup(mock => mock.ConnectionId)
                 .Returns(Guid.NewGuid().ToString);
             _classUnderTest.Context = _clientContextMock.Object;
+            ITranscriptionLiveService transcriptionLiveService = null;
             _signalRTranscriptionFactoryMock
-                .Setup(mock => mock.GetTranscriptionLiveService(It.IsAny<string>()))
-                .Returns((TranscriptionLiveAzureService)null);
+                .Setup(mock => mock.TryGetTranscriptionLiveService(It.IsAny<string>(), out transcriptionLiveService))
+                .Returns(false);
             var logMessageFinish =
                 $"Initializing transcription service for user {userIdentifier} on deposition {initializeRecognitionDto.DepositionId} with sample rate {initializeRecognitionDto.SampleRate}";
             _signalRTranscriptionFactoryMock
-                .Setup(mock => mock.TryInitializeRecognition(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>()))
+                .Setup(mock => mock.InitializeRecognitionAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>()))
                 .Returns(Task.CompletedTask);
 
             // Act
@@ -350,10 +354,10 @@ namespace PrecisionReporters.Platform.UnitTests.Hubs
                     It.IsAny<Exception>(),
                     It.Is<Func<It.IsAnyType, Exception, string>>((v, t) => true)),
                 Times.Once);
-            _signalRTranscriptionFactoryMock.Verify(mock => mock.Unsubscribe(It.IsAny<string>()), Times.Never);
-            _signalRTranscriptionFactoryMock.Verify(mock => mock.GetTranscriptionLiveService(It.IsAny<string>()), Times.Once);
+            _signalRTranscriptionFactoryMock.Verify(mock => mock.UnsubscribeAsync(It.IsAny<string>()), Times.Never);
+            _signalRTranscriptionFactoryMock.Verify(mock => mock.TryGetTranscriptionLiveService(It.IsAny<string>(), out transcriptionLiveService), Times.Once);
             _signalRTranscriptionFactoryMock.Verify(
-                mock => mock.TryInitializeRecognition(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>()),
+                mock => mock.InitializeRecognitionAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>()),
                 Times.Once);
         }
 
@@ -381,7 +385,7 @@ namespace PrecisionReporters.Platform.UnitTests.Hubs
                     It.IsAny<Exception>(),
                     It.Is<Func<It.IsAnyType, Exception, string>>((v, t) => true)),
                 Times.Once);
-            _signalRTranscriptionFactoryMock.Verify(mock => mock.Unsubscribe(It.IsAny<string>()), Times.Once);
+            _signalRTranscriptionFactoryMock.Verify(mock => mock.UnsubscribeAsync(It.IsAny<string>()), Times.Once);
         }
 
         [Fact]
@@ -414,7 +418,7 @@ namespace PrecisionReporters.Platform.UnitTests.Hubs
                     It.IsAny<Exception>(),
                     It.Is<Func<It.IsAnyType, Exception, string>>((v, t) => true)),
                 Times.Once);
-            _signalRTranscriptionFactoryMock.Verify(mock => mock.Unsubscribe(It.IsAny<string>()), Times.Once);
+            _signalRTranscriptionFactoryMock.Verify(mock => mock.UnsubscribeAsync(It.IsAny<string>()), Times.Once);
         }
 
         [Fact]
@@ -431,7 +435,7 @@ namespace PrecisionReporters.Platform.UnitTests.Hubs
             _classUnderTest.Context = _clientContextMock.Object;
             var logMessageInfo = $"OnDisconnectedAsync {_classUnderTest.Context.ConnectionId} user: {userIdentifier}";
             _signalRTranscriptionFactoryMock
-                .Setup(mock => mock.Unsubscribe(It.IsAny<string>()))
+                .Setup(mock => mock.UnsubscribeAsync(It.IsAny<string>()))
                 .Throws(new Exception());
             var logMessageError = "There was an error when unsubscribing user";
 
@@ -451,7 +455,7 @@ namespace PrecisionReporters.Platform.UnitTests.Hubs
                     It.IsAny<Exception>(),
                     It.Is<Func<It.IsAnyType, Exception, string>>((v, t) => true)),
                 Times.Once);
-            _signalRTranscriptionFactoryMock.Verify(mock => mock.Unsubscribe(It.IsAny<string>()), Times.Once);
+            _signalRTranscriptionFactoryMock.Verify(mock => mock.UnsubscribeAsync(It.IsAny<string>()), Times.Once);
         }
     }
 }

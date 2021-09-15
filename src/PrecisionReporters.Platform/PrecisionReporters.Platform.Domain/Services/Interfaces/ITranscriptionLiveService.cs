@@ -5,8 +5,8 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
 {
     public interface ITranscriptionLiveService : IDisposable
     {
-        Task InitializeRecognition(string userEmail, string depositionId, int sampleRate);
-        Task RecognizeAsync(byte[] audioChunk);
-        void StopTranscriptStream();
+        Task StartRecognitionAsync(string userEmail, string depositionId, int sampleRate);
+        bool TryAddAudioChunkToBuffer(byte[] audioChunk);
+        Task StopRecognitionAsync();
     }
 }

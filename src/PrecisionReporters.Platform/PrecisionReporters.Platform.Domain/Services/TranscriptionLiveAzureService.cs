@@ -1,4 +1,4 @@
-﻿using Microsoft.CognitiveServices.Speech;
+using Microsoft.CognitiveServices.Speech;
 using Microsoft.CognitiveServices.Speech.Audio;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -7,252 +7,245 @@ using PrecisionReporters.Platform.Data.Enums;
 using PrecisionReporters.Platform.Data.Repositories.Interfaces;
 using PrecisionReporters.Platform.Domain.Configurations;
 using PrecisionReporters.Platform.Domain.Dtos;
+using PrecisionReporters.Platform.Domain.Exceptions.CognitiveServices;
 using PrecisionReporters.Platform.Domain.Mappers;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using System;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace PrecisionReporters.Platform.Domain.Services
 {
     public class TranscriptionLiveAzureService : ITranscriptionLiveService
     {
-        private string _depositionId;
-        private string _userEmail;
-        private User _user;
-        private const int ChannelCount = 1;
-        private const int BitsPerSample = 16;
         private readonly AzureCognitiveServiceConfiguration _azureConfiguration;
-        private readonly ITranscriptionService _transcriptionService;
+        private readonly IFireAndForgetService _fireAndForgetService;
         private readonly ILogger<TranscriptionLiveAzureService> _logger;
-        private PushAudioInputStream _audioInputStream;
-        private SpeechRecognizer _recognizer;
         private readonly ISignalRTranscriptionManager _signalRTranscriptionManager;
         private readonly IMapper<Transcription, TranscriptionDto, object> _transcriptionMapper;
         private readonly IUserRepository _userRepository;
 
-        private Guid? _currentId;
-        private DateTime _transcriptionDateTime = DateTime.UtcNow;
-        private DateTime _lastSentTimestamp = DateTime.UtcNow;
-        private bool _shouldClose = false;
-        private static readonly SemaphoreSlim _shouldCloseSemaphore = new SemaphoreSlim(1);
-        private bool _isClosed = true;
-        private static readonly SemaphoreSlim _isClosedSemaphore = new SemaphoreSlim(1);
-        private static readonly SemaphoreSlim _fluentTranscriptionSemaphore = new SemaphoreSlim(1);
-        private static readonly SemaphoreSlim _storeTranscriptionSemaphore = new SemaphoreSlim(1,1); // This means that only 1 thread can be granted access at a time
-        private bool _isDisposed = false;
+        private string _instanceDepositionId;
+        private string _instanceUserEmail;
+        private User _instanceUser;
+        private TranscriptionInfo _currentTranscriptionInfo = null;
+
+        private PushAudioInputStream _audioInputStream;
+        private SpeechRecognizer _recognizer;
+        private bool _speechRecognizerSessionStopped = false;
+
+        private bool _disposed = false;
 
         public TranscriptionLiveAzureService(IOptions<AzureCognitiveServiceConfiguration> azureConfiguration,
             ILogger<TranscriptionLiveAzureService> logger,
             ISignalRTranscriptionManager signalRTranscriptionManager,
             IMapper<Transcription, TranscriptionDto, object> transcriptionMapper,
             IUserRepository userRepository,
-            ITranscriptionService transcriptionService)
+            IFireAndForgetService fireAndForgetService)
         {
             _azureConfiguration = azureConfiguration.Value;
             _logger = logger;
             _signalRTranscriptionManager = signalRTranscriptionManager;
             _transcriptionMapper = transcriptionMapper;
             _userRepository = userRepository;
-            _transcriptionService = transcriptionService;
+            _fireAndForgetService = fireAndForgetService;
         }
 
-        public async Task RecognizeAsync(byte[] audioChunk)
+
+        public async Task StartRecognitionAsync(string userEmail, string depositionId, int sampleRate)
         {
-            _lastSentTimestamp = DateTime.UtcNow;
-            try
-            {
-                await _isClosedSemaphore.WaitAsync();
-                if (_isClosed)
-                {
-                    // If recognition was stopped it needs to start again
-                    await _recognizer.StartContinuousRecognitionAsync()
-                     .ConfigureAwait(false);
-                    _isClosed = false;
-                    _logger.LogDebug("TranscriptionLiveAzureService: Resuming transcriptions for user {0} on deposition {1}", _userEmail, _depositionId);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "An error was found while executions StartContinuousRecognitionAsync.", _currentId);
-                throw;
-            }
-            finally
-            {
-                _isClosedSemaphore.Release();
-            }
+            _logger.LogDebug("Starting continuous recognition. Deposition: {DepositionId}. User: {UserEmail}. Sample rate: {SampleRate}.",
+                depositionId, userEmail, sampleRate);
 
-            await _shouldCloseSemaphore.WaitAsync();
-            if (_shouldClose)
-            {
-                // If recognition was getting closed, cancel the process once new audio arrives, which means the recognition should be resumed
-                _shouldClose = false;
-            }
+            await InitializeInstanceInformationAsync(userEmail, depositionId);
 
-            _shouldCloseSemaphore.Release();
-            _audioInputStream.Write(audioChunk, audioChunk.Length);
-        }
-
-        public async Task InitializeRecognition(string userEmail, string depositionId, int sampleRate)
-        {
-            _logger.LogInformation("Initializing transcriptions connection for {0} on deposition {1} with sample rate {2}", userEmail, depositionId, sampleRate);
-
-            _userEmail = userEmail;
-            _depositionId = depositionId;
-            _user = await _userRepository.GetFirstOrDefaultByFilter(x => x.EmailAddress == _userEmail, tracking: false);
-
-            var speechConfig = SpeechConfig.FromSubscription(_azureConfiguration.SubscriptionKey, _azureConfiguration.RegionCode);
-            _audioInputStream = AudioInputStream.CreatePushStream(AudioStreamFormat.GetWaveFormatPCM(Convert.ToUInt16(sampleRate), BitsPerSample, ChannelCount));
+            const int bitsPerSample = 16;
+            const int channelCount = 1;
+            _audioInputStream = AudioInputStream.CreatePushStream(AudioStreamFormat.GetWaveFormatPCM(Convert.ToUInt16(sampleRate), bitsPerSample, channelCount));
             var audioConfig = AudioConfig.FromStreamInput(_audioInputStream);
-            speechConfig.SetProperty(PropertyId.SpeechServiceResponse_OutputFormatOption, "1"); // Enable detailed results, needed for getting the confidence level
-            speechConfig.SetProperty("format", "detailed");
+            var speechConfig = SpeechConfig.FromSubscription(_azureConfiguration.SubscriptionKey, _azureConfiguration.RegionCode);
+            speechConfig.SpeechRecognitionLanguage = "en-US";
+            speechConfig.RequestWordLevelTimestamps();
+            speechConfig.OutputFormat = OutputFormat.Detailed;
             speechConfig.EnableDictation();
 
-            _recognizer = new SpeechRecognizer(speechConfig,"en-US" ,audioConfig);
+            _recognizer = new SpeechRecognizer(speechConfig, audioConfig);
+            _recognizer.Recognizing += OnSpeechRecognizerRecognizing;
+            _recognizer.Recognized += OnSpeechRecognizerRecognized;
+            _recognizer.SessionStopped += OnSpeechRecognizerSessionStopped;
+            _recognizer.Canceled += OnSpeechRecognizerCanceled;
 
-            _recognizer.Recognizing += async (s, e) =>
-            {
-                await _fluentTranscriptionSemaphore.WaitAsync();
-                if (_currentId == null)
-                {
-                    _currentId = Guid.NewGuid();
-                    _transcriptionDateTime = _lastSentTimestamp;
-                }
-                _fluentTranscriptionSemaphore.Release();
-
-                await HandleRecognizedSpeech(e);
-            };
-
-            _recognizer.Recognized += async (s, e) =>
-            {
-                if (e.Result.Reason == ResultReason.RecognizedSpeech)
-                {
-                    await HandleRecognizedSpeech(e, true);
-                }
-
-                try
-                {
-                    await _shouldCloseSemaphore.WaitAsync();
-                    if (_shouldClose)
-                    {
-                        await _recognizer.StopContinuousRecognitionAsync();
-                        _shouldClose = false;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "An was found while executions StartContinuousRecognitionAsync.", _currentId);
-                    throw;
-                }
-                finally
-                {
-                    _shouldCloseSemaphore.Release();
-                }
-            };
-
-            _recognizer.SessionStopped += _recognizer_SessionStopped;
-
-            await _recognizer.StartContinuousRecognitionAsync()
-                             .ConfigureAwait(false);
-            _isClosed = false;
+            await _recognizer.StartContinuousRecognitionAsync();
         }
 
-        private async void _recognizer_SessionStopped(object sender, SessionEventArgs e)
+        public bool TryAddAudioChunkToBuffer(byte[] audioChunk)
         {
-            await _isClosedSemaphore.WaitAsync();
-            _isClosed = true;
-            _isClosedSemaphore.Release();
-            _logger.LogDebug("TranscriptionLiveAzureService: Stopped transcriptions for user {0} on deposition {1}", _userEmail, _depositionId);
+            if (_speechRecognizerSessionStopped)
+            {
+                return false;
+            }
+
+            _audioInputStream.Write(audioChunk, audioChunk.Length);
+            return true;
         }
 
-        private async Task HandleRecognizedSpeech(SpeechRecognitionEventArgs e, bool isFinalTranscript = false)
+        public Task StopRecognitionAsync()
         {
-            try
+            _logger.LogDebug("Stopping continuous recognition. Deposition: {DepositionId}. User: {UserEmail}. Transcription: {CurrentTranscriptionInfoId}.",
+                _instanceDepositionId, _instanceUserEmail, _currentTranscriptionInfo?.Id);
+            return _recognizer.StopContinuousRecognitionAsync();
+        }
+
+        private async Task InitializeInstanceInformationAsync(string userEmail, string depositionId)
+        {
+            _instanceUserEmail = userEmail;
+            _instanceDepositionId = depositionId;
+            _instanceUser = await _userRepository.GetFirstOrDefaultByFilter(x => x.EmailAddress == userEmail, tracking: false);
+        }
+
+        private async void OnSpeechRecognizerRecognizing(object sender, SpeechRecognitionEventArgs e)
+        {
+            var eventDateTime = DateTime.UtcNow;
+            if (e.Result.Reason != ResultReason.RecognizingSpeech)
             {
-                var bestTranscription = e.Result.Best().FirstOrDefault();
-                var durationInMilliseconds = e.Result.Duration.Milliseconds;
+                _logger.LogDebug("On SpeechRecognizer Recognized event had an invalid reason: {Reason}. Deposition: {DepositionId}. User: {UserEmail}. Transcription: {CurrentTranscriptionInfoId}.",
+                    e.Result.Reason, _instanceDepositionId, _instanceUserEmail, _currentTranscriptionInfo?.Id);
+                return;
+            }
 
-                await _fluentTranscriptionSemaphore.WaitAsync();
-                int latency;
-                if (!isFinalTranscript || !int.TryParse(e.Result.Properties.GetProperty(PropertyId.SpeechServiceResponse_RecognitionLatencyMs), out latency))
+            var newTranscription = _currentTranscriptionInfo == null;
+            if (newTranscription)
+            {
+                _currentTranscriptionInfo = new TranscriptionInfo
                 {
-                    latency = 0;
-                }
-
-                var transcription = new Transcription
-                {
-                    Id = _currentId ?? Guid.NewGuid(),
-                    TranscriptDateTime = _transcriptionDateTime.AddMilliseconds(-latency),
-                    Text = e.Result.Text,
-                    Duration = durationInMilliseconds,
-                    Confidence = bestTranscription != null ? bestTranscription.Confidence : 0.0,
-                    DepositionId = new Guid(_depositionId),
-                    UserId = _user.Id,
-                    User = _user,
-                    CreationDate = DateTime.UtcNow
+                    Id = Guid.NewGuid(),
+                    FirstRecognizingAudioChunkDateTime = eventDateTime,
                 };
-
-                _currentId = isFinalTranscript ? null : _currentId;
-                _fluentTranscriptionSemaphore.Release();
-
-                var transcriptionDto = _transcriptionMapper.ToDto(transcription);
-
-                var notificationDto = new NotificationDto
-                {
-                    Action = NotificationAction.Create,
-                    EntityType = NotificationEntity.Transcript,
-                    Content = transcriptionDto
-                };
-
-                await _signalRTranscriptionManager.SendNotificationToDepositionMembers(transcriptionDto.DepositionId, notificationDto);
-
-                if (isFinalTranscript)
-                {
-                    _logger.LogInformation("Create Final Transcript Copy");
-
-                    // Create a copy in order to avoid trying to persist the untracked User entity
-                    var transcriptionToStore = new Transcription();
-                    transcriptionToStore.CopyFrom(transcription);
-                    transcriptionToStore.TranscriptDateTime = transcriptionToStore.TranscriptDateTime.AddMilliseconds(-transcriptionToStore.TranscriptDateTime.Millisecond);
-
-                    _logger.LogInformation("End Create Final Transcript Copy");
-                    _logger.LogInformation("Semaphore. Count {0}", _storeTranscriptionSemaphore.CurrentCount);
-
-                    await _storeTranscriptionSemaphore.WaitAsync();
-
-                    _logger.LogInformation("Store Transcription. Text {0}, DepositionId {1}, userEmail {2}", transcriptionToStore.Text, _depositionId, _userEmail);
-
-                    await _transcriptionService.StoreTranscription(transcriptionToStore, _depositionId, _userEmail);
-
-                    _logger.LogInformation("End Store Transcription. Text {0}, DepositionId {1}, userEmail {2}", transcriptionToStore.Text, _depositionId, _userEmail);
-                }
             }
-            catch (ObjectDisposedException ex)
+
+            var transcriptionInfo = _currentTranscriptionInfo.CreateCopy();
+            await HandleRecognizingEventAsync(e, transcriptionInfo);
+        }
+
+        private async void OnSpeechRecognizerRecognized(object sender, SpeechRecognitionEventArgs e)
+        {
+            var eventDateTime = DateTime.UtcNow;
+            if (e.Result.Reason != ResultReason.RecognizedSpeech)
             {
-                // TODO: Transcriptions may arrive after the WS is closed so objects would be disposed
-                _logger.LogError(ex, "Trying to process transcription with Id: {0} when the websocket was already closed ", _currentId);
+                _logger.LogDebug("On SpeechRecognizer Recognized event had an invalid reason: {Reason}. Deposition: {DepositionId}. User: {UserEmail}. Transcription: {CurrentTranscriptionInfoId}.",
+                    e.Result.Reason, _instanceDepositionId, _instanceUserEmail, _currentTranscriptionInfo?.Id);
+                return;
             }
-            finally
+
+            var silenceRecognized = string.IsNullOrEmpty(e.Result.Text);
+            if (silenceRecognized)
             {
-                // Ensure that it is only released when transcription storage task is done
-                if(isFinalTranscript)
-                {
-                    _logger.LogInformation("Release StoreTranscriptionSemaphore.");
-                    _storeTranscriptionSemaphore.Release();
-                    _logger.LogInformation("StoreTranscriptionSemaphore Released.");
-                }
+                _logger.LogDebug("On SpeechRecognizer Recognized event recognized a silence. Deposition: {DepositionId}. User: {UserEmail}. Transcription: {CurrentTranscriptionInfoId}.",
+                    e.Result.Reason, _instanceDepositionId, _instanceUserEmail, _currentTranscriptionInfo?.Id);
+                return;
+            }
+
+            var transcriptionInfo = _currentTranscriptionInfo.CreateCopy();
+            _currentTranscriptionInfo = null;
+            await HandleRecognizedEventAsync(e, eventDateTime, transcriptionInfo);
+        }
+
+        private void OnSpeechRecognizerSessionStopped(object sender, SessionEventArgs e)
+        {
+            _speechRecognizerSessionStopped = true;
+            _logger.LogDebug("Speech recognition session stopped. Deposition: {DepositionId}. User: {UserEmail}. Transcription: {CurrentTranscriptionInfoId}.",
+                _instanceDepositionId, _instanceUserEmail, _currentTranscriptionInfo?.Id);
+        }
+
+        private void OnSpeechRecognizerCanceled(object sender, SpeechRecognitionCanceledEventArgs e)
+        {
+            var speechRecognitionResult = e.Result;
+            var cancellationDetails = CancellationDetails.FromResult(speechRecognitionResult);
+            _logger.LogWarning("Speech recognition canceled due to {Reason}. Deposition: {DepositionId}. User: {UserEmail}. Transcription: {CurrentTranscriptionInfoId}.",
+                cancellationDetails.Reason, _instanceDepositionId, _instanceUserEmail, _currentTranscriptionInfo?.Id);
+            if (cancellationDetails.Reason == CancellationReason.Error)
+            {
+                _logger.LogError("Speech recognition canceled due to an error. (ErrorCode: {ErrorCode} | ErrorDetails: {ErrorDetails}). Deposition: {DepositionId}. User: {UserEmail}. Transcription: {CurrentTranscriptionInfoId}.",
+                    cancellationDetails.ErrorCode, cancellationDetails.ErrorDetails, _instanceDepositionId, _instanceUserEmail, _currentTranscriptionInfo?.Id);
+                ThrowExceptionIfAzureClosedConnectionDueToInactivity(cancellationDetails);
             }
         }
 
-        public void StopTranscriptStream()
+        private void ThrowExceptionIfAzureClosedConnectionDueToInactivity(CancellationDetails cancellationDetails)
         {
-            _logger.LogDebug("TranscriptionLiveAzureService: Stopping transcriptions for user {0} on deposition {1}", _userEmail, _depositionId);
+            if (cancellationDetails.ErrorCode != CancellationErrorCode.ServiceTimeout)
+            {
+                return;
+            }
 
-            _shouldClose = true;
+            const string AZURE_INACTIVITY_MESSAGE = "Due to service inactivity";
+            if (!cancellationDetails.ErrorDetails.Contains(AZURE_INACTIVITY_MESSAGE, StringComparison.InvariantCultureIgnoreCase))
+            {
+                return;
+            }
 
-            var silenceBuffer = new byte[1024 * 512]; // 500kb
-            _audioInputStream.Write(silenceBuffer, silenceBuffer.Length);
+            _speechRecognizerSessionStopped = true;
+            throw new SpeechRecognizerInactivityException(cancellationDetails);
+        }
+
+        private Task HandleRecognizingEventAsync(SpeechRecognitionEventArgs e, TranscriptionInfo transcriptionInfo)
+        {
+            var transcription = BuildTranscription(e, transcriptionInfo);
+            return SendNotificationToDepositionMembersAsync(transcription);
+        }
+
+        private Task HandleRecognizedEventAsync(SpeechRecognitionEventArgs e, DateTime eventDateTime, TranscriptionInfo transcriptionInfo)
+        {
+            var transcription = BuildTranscription(e, transcriptionInfo);
+            var bestTranscription = e.Result.Best().OrderByDescending(x => x.Confidence).First();
+            var latency = int.Parse(e.Result.Properties.GetProperty(PropertyId.SpeechServiceResponse_RecognitionLatencyMs, "0"));
+            transcription.Confidence = bestTranscription.Confidence;
+            transcription.TranscriptDateTime = eventDateTime.AddMilliseconds(-e.Result.Duration.TotalMilliseconds).AddMilliseconds(-latency);
+            FireAndForgetStoreTranscription(transcription);
+            return SendNotificationToDepositionMembersAsync(transcription);
+        }
+
+        private Transcription BuildTranscription(SpeechRecognitionEventArgs e, TranscriptionInfo transcriptionInfo)
+        {
+            var transcription = new Transcription
+            {
+                Id = transcriptionInfo.Id,
+                TranscriptDateTime = transcriptionInfo.FirstRecognizingAudioChunkDateTime,
+                Text = e.Result.Text,
+                Duration = e.Result.Duration.Milliseconds,
+                Confidence = 0,
+                DepositionId = new Guid(_instanceDepositionId),
+                UserId = _instanceUser.Id,
+                User = _instanceUser,
+                CreationDate = DateTime.UtcNow
+            };
+            return transcription;
+        }
+
+        private Task SendNotificationToDepositionMembersAsync(Transcription transcription)
+        {
+            var transcriptionDto = _transcriptionMapper.ToDto(transcription);
+            var notificationDto = new NotificationDto
+            {
+                Action = NotificationAction.Create,
+                EntityType = NotificationEntity.Transcript,
+                Content = transcriptionDto
+            };
+            return _signalRTranscriptionManager.SendNotificationToDepositionMembers(transcriptionDto.DepositionId, notificationDto);
+        }
+
+        private void FireAndForgetStoreTranscription(Transcription transcription)
+        {
+            // Create a copy in order to avoid trying to persist the untracked User entity
+            var transcriptionToStore = new Transcription();
+            transcriptionToStore.CopyFrom(transcription);
+            transcriptionToStore.TranscriptDateTime = transcriptionToStore.TranscriptDateTime.AddMilliseconds(-transcriptionToStore.TranscriptDateTime.Millisecond);
+
+            _logger.LogDebug("Attempting to store transcription. Deposition: {DepositionId}. User: {UserEmail}. Transcription: {TranscriptionId}.",
+                transcription.DepositionId, _instanceUserEmail, transcription.Id);
+
+            _fireAndForgetService.Execute<ITranscriptionService>(x =>
+                x.StoreTranscription(transcriptionToStore, transcription.DepositionId.ToString(), _instanceUserEmail));
         }
 
         // Dispose Pattern
@@ -264,33 +257,53 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         protected virtual void Dispose(bool disposing)
         {
-            if (_isDisposed)
+            if (_disposed)
+            {
                 return;
+            }
 
             if (disposing)
             {
-                _logger.LogInformation("Disposing transcriptionLiveService on deposition {0} of user {1}", _depositionId, _userEmail);
+                // Dispose managed resources
+                _logger.LogDebug("Disposing live transcription service. Deposition: {DepositionId}. User: {UserEmail}. Transcription: {CurrentTranscriptionInfoId}.",
+                    _instanceDepositionId, _instanceUserEmail, _currentTranscriptionInfo?.Id);
                 Task.Run(() =>
                 {
-                    // This takes too long so we are using fire and forget
-                    _recognizer?.Dispose();
-                    _audioInputStream?.Dispose();
-                    _logger.LogInformation("Disposed successfully transcriptionLiveService on deposition {0} of user {1}", _depositionId, _userEmail);
+                    try
+                    {
+                        // This takes too long so we are using fire and forget
+                        _recognizer?.Dispose();
+                        _audioInputStream?.Dispose();
+                        _logger.LogDebug("Successfully dispos live transcription service. Deposition: {DepositionId}. User: {UserEmail}. Transcription: {CurrentTranscriptionInfoId}.",
+                            _instanceDepositionId, _instanceUserEmail, _currentTranscriptionInfo?.Id);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "An exception occurred while trying to dispose the {Service} as a fire and forget task.", nameof(ITranscriptionLiveService));
+                    }
                 });
-                // Ensure that last transcription is saved
-                if(_storeTranscriptionSemaphore.CurrentCount > 1)
-                    _storeTranscriptionSemaphore.Release();
-                _fluentTranscriptionSemaphore.Release();
-                _isClosedSemaphore.Release();
-                _shouldCloseSemaphore.Release();
             }
 
-            _isDisposed = true;
+            // Dispose of unmanaged resources if any
+
+            _disposed = true;
         }
 
         ~TranscriptionLiveAzureService()
         {
             Dispose(false);
+        }
+
+        private class TranscriptionInfo
+        {
+            public Guid Id { get; set; }
+            public DateTime FirstRecognizingAudioChunkDateTime { get; set; }
+
+            public TranscriptionInfo CreateCopy() => new TranscriptionInfo
+            {
+                Id = Id,
+                FirstRecognizingAudioChunkDateTime = FirstRecognizingAudioChunkDateTime
+            };
         }
     }
 }

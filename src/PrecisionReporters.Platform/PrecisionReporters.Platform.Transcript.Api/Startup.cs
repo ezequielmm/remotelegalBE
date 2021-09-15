@@ -59,6 +59,7 @@ namespace PrecisionReporters.Platform.Transcript.Api
             services.AddScoped<ITranscriptionService, TranscriptionService>();
 
             services.AddTransient<ITranscriptionLiveService, TranscriptionLiveAzureService>();
+            services.AddTransient<IFireAndForgetService, FireAndForgetService>();
 
             services.AddScoped<ISignalRTranscriptionManager, SignalRTranscriptionManager>();
 
