@@ -9,6 +9,7 @@ using PrecisionReporters.Platform.Domain.Dtos;
 using PrecisionReporters.Platform.Domain.Mappers;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using PrecisionReporters.Platform.Shared.Commons;
+using PrecisionReporters.Platform.Shared.Helpers;
 using PrecisionReporters.Platform.UnitTests.Utils;
 using System;
 using System.Collections.Generic;
@@ -125,7 +126,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
 
             // Assert
             Assert.NotNull(result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result.Result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result.Result);
             Assert.Equal((int) HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _depositionService.Verify(mock => mock.GetDepositionsByFilter(It.IsAny<DepositionFilterDto>()), Times.Once);
         }
@@ -181,7 +182,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
 
             // Assert
             Assert.NotNull(result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result.Result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result.Result);
             Assert.Equal((int) HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _depositionService.Verify(mock => mock.JoinDeposition(It.IsAny<Guid>(), identity), Times.Once);
         }
@@ -223,7 +224,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
 
             // Assert
             Assert.NotNull(result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result.Result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result.Result);
             Assert.Equal((int) HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _depositionService.Verify(mock => mock.EndDeposition(It.IsAny<Guid>()), Times.Once);
         }
@@ -268,7 +269,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
 
             // Assert
             Assert.NotNull(result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result.Result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result.Result);
             Assert.Equal((int) HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _depositionService.Verify(mock => mock.GetDepositionById(It.IsAny<Guid>()), Times.Once);
         }
@@ -327,7 +328,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
 
             // Assert
             Assert.NotNull(result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result.Result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result.Result);
             Assert.Equal((int) HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _depositionService.Verify(mock => mock.GoOnTheRecord(It.IsAny<Guid>(), true, userEmail), Times.Once);
         }
@@ -365,7 +366,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
 
             // Assert
             Assert.NotNull(result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result.Result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result.Result);
             Assert.Equal((int) HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _depositionService.Verify(mock => mock.JoinBreakRoom(It.IsAny<Guid>(), It.IsAny<Guid>()), Times.Once);
         }
@@ -400,7 +401,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
 
             // Assert
             Assert.NotNull(result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result);
             Assert.Equal((int) HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _depositionService.Verify(mock => mock.LeaveBreakRoom(It.IsAny<Guid>(), It.IsAny<Guid>()), Times.Once);
         }
@@ -447,7 +448,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
 
             // Assert
             Assert.NotNull(result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result.Result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result.Result);
             Assert.Equal((int) HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _depositionService.Verify(mock => mock.LockBreakRoom(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<bool>()), Times.Once);
         }
@@ -494,7 +495,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
 
             // Assert
             Assert.NotNull(result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result.Result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result.Result);
             Assert.Equal((int) HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _depositionService.Verify(mock => mock.GetDepositionBreakRooms(It.IsAny<Guid>()), Times.Once);
         }
@@ -540,7 +541,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
 
             // Assert
             Assert.NotNull(result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result.Result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result.Result);
             Assert.Equal((int) HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _depositionService.Verify(mock => mock.GetDepositionEvents(It.IsAny<Guid>()), Times.Once);
         }
@@ -577,7 +578,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
 
             // Assert
             Assert.NotNull(result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result);
             Assert.Equal((int) HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _documentService.Verify(mock => mock.AddAnnotation(It.IsAny<Guid>(), It.IsAny<AnnotationEvent>()), Times.Once);
         }
@@ -645,7 +646,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
 
             // Assert
             Assert.NotNull(result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result.Result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result.Result);
             Assert.Equal((int) HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _depositionService.Verify(mock => mock.ReScheduleDeposition(It.IsAny<Deposition>(), It.IsAny<FileTransferInfo>(), false), Times.Once);
         }
@@ -683,7 +684,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
 
             // Assert
             Assert.NotNull(result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result.Result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result.Result);
             Assert.Equal((int) HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _depositionService.Verify(mock => mock.NotifyParties(It.IsAny<Guid>(), It.IsAny<bool>()), Times.Once);
         }
@@ -728,7 +729,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
 
             // Assert
             Assert.NotNull(result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result.Result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result.Result);
             Assert.Equal((int) HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _annotationEventService.Verify(mock => mock.GetDocumentAnnotations(It.IsAny<Guid>(), It.IsAny<Guid>()), Times.Once);
         }
@@ -789,7 +790,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
 
             // Assert
             Assert.NotNull(result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result.Result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result.Result);
             Assert.Equal((int) HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _depositionService.Verify(mock => mock.CheckParticipant(It.IsAny<Guid>(), It.IsAny<string>()), Times.Once);
         }
@@ -847,7 +848,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
 
             // Assert
             Assert.NotNull(result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result.Result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result.Result);
             Assert.Equal((int) HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _depositionService.Verify(mock => mock.JoinGuestParticipant(It.IsAny<Guid>(), It.IsAny<Participant>(), It.IsAny<ActivityHistory>()), Times.Once);
         }
@@ -887,7 +888,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
 
             // Assert
             Assert.NotNull(result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result.Result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result.Result);
             Assert.Equal((int) HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _depositionService.Verify(mock => mock.AddParticipant(It.IsAny<Guid>(), It.IsAny<Participant>()), Times.Once);
         }
@@ -927,7 +928,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
 
             // Assert
             Assert.NotNull(result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result.Result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result.Result);
             Assert.Equal((int) HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _depositionService.Verify(mock => mock.AddParticipantToExistingDeposition(It.IsAny<Guid>(), It.IsAny<Participant>()), Times.Once);
         }
@@ -964,7 +965,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
 
             // Assert
             Assert.NotNull(result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result);
             Assert.Equal((int) HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _depositionService.Verify(mock => mock.AdmitDenyParticipant(It.IsAny<Guid>(), It.IsAny<bool>()), Times.Once);
         }
@@ -1000,7 +1001,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
 
             // Assert
             Assert.NotNull(result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result);
             Assert.Equal((int) HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _depositionService.Verify(mock => mock.CancelDeposition(It.IsAny<Guid>()), Times.Once);
         }
@@ -1037,7 +1038,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
 
             // Assert
             Assert.NotNull(result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result.Result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result.Result);
             Assert.Equal((int) HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _depositionService.Verify(mock => mock.GetDepositionVideoInformation(It.IsAny<Guid>()), Times.Once);
         }
@@ -1074,7 +1075,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
 
             // Assert
             Assert.NotNull(result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result.Result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result.Result);
             Assert.Equal((int) HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _depositionService.Verify(mock => mock.GetDepositionParticipants(It.IsAny<Guid>(), ParticipantSortField.Role, SortDirection.Descend), Times.Once);
         }
@@ -1177,7 +1178,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
 
             // Assert
             Assert.NotNull(result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result.Result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result.Result);
             Assert.Equal((int) HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _depositionService.Verify(mock => mock.EditDepositionDetails(It.IsAny<Deposition>(), It.IsAny<FileTransferInfo>(), It.IsAny<bool>()), Times.Once);
         }
@@ -1242,7 +1243,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
 
             // Assert
             Assert.NotNull(result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result.Result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result.Result);
             Assert.Equal((int) HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _depositionService.Verify(mock => mock.RevertCancel(It.IsAny<Deposition>(), It.IsAny<FileTransferInfo>(), It.IsAny<bool>()), Times.Once);
         }
@@ -1262,7 +1263,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
 
             // Assert
             Assert.NotNull(result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result.Result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result.Result);
             Assert.Equal((int)HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _depositionService.Verify(mock => mock.GetByIdWithIncludes(It.IsAny<Guid>(), new[] { nameof(Deposition.SharingDocument), nameof(Deposition.Room),
                 $"{nameof(Deposition.Participants)}.{nameof(Participant.DeviceInfo)}",
@@ -1438,7 +1439,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
 
             // Assert
             Assert.NotNull(result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result);
             Assert.Equal((int)HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _depositionService.Verify(mock => mock.UpdateUserSystemInfo(It.IsAny<Guid>(), It.IsAny<UserSystemInfo>(), It.IsAny<string>()), Times.Once);
         }
@@ -1517,7 +1518,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
 
             // Assert
             Assert.NotNull(result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result.Result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result.Result);
             Assert.Equal((int)HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _depositionService.Verify(mock => mock.Summary(It.IsAny<Guid>()), Times.Once);
         }

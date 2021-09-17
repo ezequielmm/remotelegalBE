@@ -26,6 +26,9 @@ namespace PrecisionReporters.Platform.Shared.Middlewares
         {
             try
             {
+                // TODO: Handle fails on response of type FluentResult.Result
+                // 1. Read context.Response: https://devblogs.microsoft.com/aspnet/re-reading-asp-net-core-request-bodies-with-enablebuffering/
+                // 2. Check if context.Response contain a FluentResults.Result<T>.IsFail and retrieve a Response
                 await _next(context);
             }
             catch (BaseException ex)

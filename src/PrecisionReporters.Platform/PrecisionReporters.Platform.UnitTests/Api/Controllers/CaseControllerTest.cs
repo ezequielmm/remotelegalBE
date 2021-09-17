@@ -8,6 +8,7 @@ using PrecisionReporters.Platform.Domain.Dtos;
 using PrecisionReporters.Platform.Domain.Mappers;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using PrecisionReporters.Platform.Shared.Commons;
+using PrecisionReporters.Platform.Shared.Helpers;
 using PrecisionReporters.Platform.UnitTests.Utils;
 using System;
 using System.Collections.Generic;
@@ -51,7 +52,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
 
             //Assert
             Assert.NotNull(result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result.Result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result.Result);
             Assert.Equal((int)HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _caseServiceMock.Verify(mock => mock.CreateCase(It.IsAny<string>(), It.IsAny<Case>()), Times.Once);
         }
@@ -86,7 +87,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
 
             //Assert
             Assert.NotNull(result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result.Result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result.Result);
             Assert.Equal((int)HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _caseServiceMock.Verify(mock => mock.GetCaseById(It.IsAny<Guid>(), It.IsAny<string[]>()), Times.Once);
         }
@@ -121,7 +122,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
 
             //Assert
             Assert.NotNull(result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result.Result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result.Result);
             Assert.Equal((int)HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _caseServiceMock.Verify(mock => mock.GetCasesForUser(It.IsAny<string>(), It.IsAny<CaseSortField>(), It.IsAny<SortDirection>()), Times.Once);
         }
@@ -156,7 +157,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
 
             //Assert
             Assert.NotNull(result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result.Result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result.Result);
             Assert.Equal((int)HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _caseServiceMock.Verify(mock => mock.EditCase(It.IsAny<Case>()), Times.Once);
         }
@@ -219,7 +220,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
 
             //Assert
             Assert.NotNull(result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result.Result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result.Result);
             Assert.Equal((int)HttpStatusCode.InternalServerError, errorResult.StatusCode);
         }
 

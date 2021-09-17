@@ -12,6 +12,7 @@ using FluentResults;
 using Microsoft.AspNetCore.Mvc;
 using System.Net;
 using PrecisionReporters.Platform.UnitTests.Utils;
+using PrecisionReporters.Platform.Shared.Helpers;
 
 namespace PrecisionReporters.Platform.UnitTests.TranscriptApi.Controllers
 {
@@ -63,7 +64,7 @@ namespace PrecisionReporters.Platform.UnitTests.TranscriptApi.Controllers
 
             //Assert
             Assert.NotNull(result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result.Result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result.Result);
             Assert.Equal((int)HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _transcriptionServiceMock.Verify(mock => mock.GetTranscriptionsByDepositionId(It.IsAny<Guid>()), Times.Once);
         }
@@ -108,7 +109,7 @@ namespace PrecisionReporters.Platform.UnitTests.TranscriptApi.Controllers
 
             //Assert
             Assert.NotNull(result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result.Result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result.Result);
             Assert.Equal((int)HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _transcriptionServiceMock.Verify(mock => mock.GetTranscriptionsFiles(It.IsAny<Guid>(), It.IsAny<string>()), Times.Once);
         }
@@ -145,7 +146,7 @@ namespace PrecisionReporters.Platform.UnitTests.TranscriptApi.Controllers
 
             //Assert
             Assert.NotNull(result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result.Result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result.Result);
             Assert.Equal((int)HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _transcriptionServiceMock.Verify(mock => mock.GetTranscriptionsWithTimeOffset(It.IsAny<Guid>()), Times.Once);
         }

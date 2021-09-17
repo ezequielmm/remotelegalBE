@@ -9,6 +9,7 @@ using PrecisionReporters.Platform.Domain.Dtos;
 using PrecisionReporters.Platform.Domain.Mappers;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using PrecisionReporters.Platform.Shared.Errors;
+using PrecisionReporters.Platform.Shared.Helpers;
 using PrecisionReporters.Platform.UnitTests.Utils;
 using System;
 using System.Collections.Generic;
@@ -97,7 +98,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
 
             // Assert
             Assert.NotNull(result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result);
             Assert.Equal((int) HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _depositionService.Verify(mock => mock.GetSharedDocument(It.IsAny<Guid>()), Times.Once);
             _depositionDocumentService
@@ -128,7 +129,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
 
             // Assert
             Assert.NotNull(result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result);
             Assert.Equal((int) HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _depositionService.Verify(mock => mock.GetSharedDocument(It.IsAny<Guid>()), Times.Once);
             _depositionDocumentService.Verify(mock => mock.CloseStampedDepositionDocument(document, It.IsAny<DepositionDocument>(), identity, It.IsAny<string>()),
@@ -195,7 +196,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
 
             // Assert
             Assert.NotNull(result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result.Result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result.Result);
             Assert.Equal((int) HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _depositionService.Verify(mock => mock.GetSharedDocument(It.IsAny<Guid>()), Times.Once);
             _depositionDocumentService.Verify(mock => mock.ParticipantCanCloseDocument(document, It.IsAny<Guid>()), Times.Once);
@@ -217,7 +218,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
 
             // Assert
             Assert.NotNull(result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result.Result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result.Result);
             Assert.Equal((int) HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _depositionService.Verify(mock => mock.GetSharedDocument(It.IsAny<Guid>()), Times.Once);
             _depositionDocumentService.Verify(mock => mock.ParticipantCanCloseDocument(It.IsAny<Document>(), It.IsAny<Guid>()), Times.Never);
@@ -285,7 +286,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
 
             // Assert
             Assert.NotNull(result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result);
             Assert.Equal((int) HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _depositionService.Verify(mock => mock.GetSharedDocument(documentId), Times.Once);
             _depositionDocumentService.Verify(mock => mock.CloseDepositionDocument(document, It.IsAny<Guid>()), Times.Once);
@@ -360,7 +361,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
             // Assert
             Assert.NotNull(result);
             Assert.IsType<ActionResult<List<DocumentDto>>>(result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result.Result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result.Result);
             Assert.Equal((int) HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _depositionDocumentService.Verify(mock => mock.GetEnteredExhibits(It.IsAny<Guid>(), It.IsAny<ExhibitSortField>(), It.IsAny<SortDirection>()), Times.Once);
         }
@@ -395,7 +396,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
 
             // Assert
             Assert.NotNull(result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result);
             Assert.Equal((int) HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _documentService.Verify(mock => mock.ShareEnteredExhibit(It.IsAny<Guid>(), It.IsAny<Guid>()), Times.Once);
         }
@@ -436,7 +437,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
             // Assert
             Assert.NotNull(result);
             Assert.IsType<ActionResult<FileSignedDto>>(result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result.Result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result.Result);
             Assert.Equal((int) HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _documentService.Verify(mock => mock.GetCannedPrivateURL(It.IsAny<Guid>(), It.IsAny<Guid>()), Times.Once);
         }
@@ -474,7 +475,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
 
             // Assert
             Assert.NotNull(result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result);
             Assert.Equal((int) HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _documentService.Verify(mock => mock.GetFileSignedUrl(It.IsAny<Guid>(), It.IsAny<List<Guid>>()), Times.Once);
         }
@@ -509,7 +510,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
 
             // Assert
             Assert.NotNull(result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result);
             Assert.Equal((int) HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _depositionDocumentService.Verify(mock => mock.RemoveDepositionTranscript(It.IsAny<Guid>(), It.IsAny<Guid>()), Times.Once);
         }
@@ -544,7 +545,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
 
             // Assert
             Assert.NotNull(result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result);
             Assert.Equal((int) HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _depositionDocumentService.Verify(mock => mock.BringAllToMe(It.IsAny<Guid>(), It.IsAny<BringAllToMeDto>()), Times.Once);
         }
@@ -595,7 +596,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
             // Assert
             Assert.NotNull(result);
             Assert.IsType<ActionResult<DocumentWithSignedUrlDto>>(result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result.Result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result.Result);
             Assert.Equal((int) HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _depositionService.Verify(mock => mock.GetDepositionCaption(It.IsAny<Guid>()), Times.Once);
             _documentService.Verify(mock => mock.GetFileSignedUrl(It.IsAny<Document>()), Times.Never);
@@ -619,7 +620,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
             // Assert
             Assert.NotNull(result);
             Assert.IsType<ActionResult<DocumentWithSignedUrlDto>>(result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result.Result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result.Result);
             Assert.Equal((int) HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _depositionService.Verify(mock => mock.GetDepositionCaption(It.IsAny<Guid>()), Times.Once);
             _documentService.Verify(mock => mock.GetFileSignedUrl(It.IsAny<Document>()), Times.Once);

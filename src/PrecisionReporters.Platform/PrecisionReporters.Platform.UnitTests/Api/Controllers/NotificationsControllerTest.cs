@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Moq;
 using PrecisionReporters.Platform.Api.Controllers;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
+using PrecisionReporters.Platform.Shared.Helpers;
 using PrecisionReporters.Platform.UnitTests.Utils;
 using Xunit;
 
@@ -58,7 +59,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
             var result = await controller.SnsCallback();
             // Assert
             _snsNotificationService.Verify(mock => mock.Notify(It.IsAny<Stream>()), Times.Once);
-            var statusResult = Assert.IsType<StatusCodeResult>(result);
+            var statusResult = Assert.IsType<InternalServerErrorResult>(result);
             Assert.NotNull(statusResult);
             Assert.Equal((int)HttpStatusCode.InternalServerError, statusResult.StatusCode);
         }

@@ -6,6 +6,7 @@ using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Domain.Dtos;
 using PrecisionReporters.Platform.Domain.Mappers;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
+using PrecisionReporters.Platform.Shared.Helpers;
 using PrecisionReporters.Platform.UnitTests.Utils;
 using System;
 using System.Net;
@@ -65,7 +66,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
 
             // Assert
             Assert.NotNull(result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result.Result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result.Result);
             Assert.Equal((int) HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _participantService.Verify(mock=>mock.UpdateParticipantStatus(It.IsAny<ParticipantStatusDto>(), It.IsAny<Guid>()),Times.Once);
         }
@@ -100,7 +101,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
 
             // Assert
             Assert.NotNull(result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result.Result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result.Result);
             Assert.Equal((int) HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _participantService.Verify(mock=>mock.RemoveParticipantFromDeposition(It.IsAny<Guid>(), It.IsAny<Guid>()),Times.Once);
         }
@@ -144,7 +145,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
 
             // Assert
             Assert.NotNull(result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result.Result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result.Result);
             Assert.Equal((int) HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _participantService.Verify(mock=>mock.EditParticipantDetails(It.IsAny<Guid>(), It.IsAny<Participant>()),Times.Once);
         }

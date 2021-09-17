@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Moq;
 using PrecisionReporters.Platform.Api.Controllers;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
+using PrecisionReporters.Platform.Shared.Helpers;
 using System.Net;
 using System.Threading.Tasks;
 using Xunit;
@@ -31,7 +32,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
 
             //Assert
             Assert.NotNull(result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result);
             Assert.Equal((int)HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _service.Verify(x => x.GetAll(), Times.Once);
         }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
 using FluentResults;
+using Grpc.Core;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 using PrecisionReporters.Platform.Api.Controllers;
@@ -10,6 +11,7 @@ using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Domain.Dtos;
 using PrecisionReporters.Platform.Domain.Mappers;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
+using PrecisionReporters.Platform.Shared.Helpers;
 using PrecisionReporters.Platform.UnitTests.Utils;
 using Xunit;
 
@@ -85,7 +87,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
 
             // Assert
             Assert.NotNull(result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result.Result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result.Result);
             Assert.Equal((int) HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _userService.Verify(mock => mock.SignUpAsync(It.IsAny<User>()), Times.Once);
         }
@@ -252,7 +254,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
 
             // Assert
             Assert.NotNull(result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result.Result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result.Result);
             Assert.Equal((int) HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _userService.Verify(mock => mock.ForgotPassword(It.IsAny<ForgotPasswordDto>()), Times.Once);
         }
@@ -289,7 +291,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
 
             // Assert
             Assert.NotNull(result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result.Result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result.Result);
             Assert.Equal((int) HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _userService.Verify(mock => mock.VerifyForgotPassword(It.IsAny<VerifyForgotPasswordDto>()), Times.Once);
         }
@@ -327,7 +329,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
 
             // Assert
             Assert.NotNull(result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result.Result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result.Result);
             Assert.Equal((int) HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _userService.Verify(mock => mock.ResetPassword(It.IsAny<ResetPasswordDto>()), Times.Once);
         }
@@ -422,7 +424,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
 
             // Assert
             Assert.NotNull(result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result.Result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result.Result);
             Assert.Equal((int) HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _userService.Verify(mock => mock.GetCurrentUserAsync(), Times.Once);
             _userService.Verify(mock => mock.GetUsersByFilter(It.IsAny<UserFilterDto>()), Times.Once);

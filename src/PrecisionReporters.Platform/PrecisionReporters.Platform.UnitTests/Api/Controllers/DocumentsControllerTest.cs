@@ -13,6 +13,7 @@ using PrecisionReporters.Platform.Domain.Dtos;
 using PrecisionReporters.Platform.Domain.Mappers;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using PrecisionReporters.Platform.Shared.Commons;
+using PrecisionReporters.Platform.Shared.Helpers;
 using PrecisionReporters.Platform.UnitTests.Utils;
 using Xunit;
 
@@ -91,7 +92,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
             var result = await _documentsController.UploadFiles(It.IsAny<Guid>());
             // Assert
             Assert.NotNull(result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result);
             Assert.Equal((int)HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _documentService.Verify(mock => mock.UploadDocuments(It.IsAny<Guid>(),
                 It.IsAny<string>(),
@@ -136,7 +137,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
             var result = await _documentsController.GetMyExhibits(It.IsAny<Guid>());
             // Assert
             Assert.NotNull(result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result.Result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result.Result);
             Assert.Equal((int)HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _documentService.Verify(mock => mock.GetExhibitsForUser(It.IsAny<Guid>(), It.IsAny<string>()), Times.Once);
         }
@@ -173,7 +174,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
             var result = await _documentsController.GetFileSignedUrl(It.IsAny<Guid>());
             // Assert
             Assert.NotNull(result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result.Result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result.Result);
             Assert.Equal((int)HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _documentService.Verify(mock => mock.GetCannedPrivateURL(It.IsAny<Guid>()), Times.Once);
         }
@@ -212,7 +213,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
             var result = await _documentsController.ShareDocument(It.IsAny<Guid>());
             // Assert
             Assert.NotNull(result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result);
             Assert.Equal((int)HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _documentService.Verify(mock => mock.Share(It.IsAny<Guid>(),
                 It.IsAny<string>()), Times.Once);
@@ -253,7 +254,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
             var result = await _documentsController.GetDocument(It.IsAny<Guid>());
             // Assert
             Assert.NotNull(result.Result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result.Result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result.Result);
             Assert.Equal((int)HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _documentService.Verify(mock => mock.GetDocument(It.IsAny<Guid>()), Times.Once);
         }
@@ -293,7 +294,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
             var result = await _documentsController.DeleteMyExhibits(It.IsAny<Guid>(), It.IsAny<Guid>());
             // Assert
             Assert.NotNull(result.Result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result.Result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result.Result);
             Assert.Equal((int)HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _documentService.Verify(mock => mock.RemoveDepositionDocument(It.IsAny<Guid>(), It.IsAny<Guid>()), Times.Once);
         }
@@ -337,7 +338,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
             var result = await _documentsController.FrontendContent();
             // Assert
             Assert.NotNull(result.Result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result.Result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result.Result);
             Assert.Equal((int)HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _documentService.Verify(mock => mock.GetFrontEndContent(), Times.Once);
         }
@@ -440,7 +441,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
             // Assert
             _documentService.Verify(mock => mock.GetPreSignedUrlUploadExhibit(input), Times.Once);
             Assert.NotNull(result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result.Result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result.Result);
             Assert.Equal((int)HttpStatusCode.InternalServerError, errorResult.StatusCode);
         }
     }

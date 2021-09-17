@@ -10,6 +10,7 @@ using PrecisionReporters.Platform.Shared.Enums;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using PrecisionReporters.Platform.UnitTests.Utils;
 using Xunit;
+using PrecisionReporters.Platform.Shared.Helpers;
 
 namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
 {
@@ -146,7 +147,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
             
             // Assert
             Assert.NotNull(result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result.Result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result.Result);
             Assert.Equal((int)HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _depositionService.Verify(mock => mock.GetDepositionParticipantByEmail(testParticipant.Id, testParticipant.Email), Times.Once);
         }
@@ -190,7 +191,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
 
             // Assert
             Assert.NotNull(result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result.Result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result.Result);
             Assert.Equal((int)HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _permissionService.Verify(mock => mock.GetDepositionUserPermissions(testParticipant, testParticipant.Id, false), Times.Once);
         }

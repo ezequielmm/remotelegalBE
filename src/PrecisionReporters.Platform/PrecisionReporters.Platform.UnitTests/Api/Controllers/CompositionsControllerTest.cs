@@ -9,6 +9,7 @@ using PrecisionReporters.Platform.Domain.Dtos;
 using PrecisionReporters.Platform.Domain.Mappers;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using PrecisionReporters.Platform.Domain.Wrappers.Interfaces;
+using PrecisionReporters.Platform.Shared.Helpers;
 using PrecisionReporters.Platform.Shared.Helpers.Interfaces;
 using PrecisionReporters.Platform.UnitTests.Utils;
 using System;
@@ -90,7 +91,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
 
             // Assert
             Assert.NotNull(result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result);
             Assert.Equal((int) HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _compositionService.Verify(mock => mock.UpdateCompositionCallback(It.IsAny<Composition>()), Times.Once);
         }
@@ -125,7 +126,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
 
             // Assert
             Assert.NotNull(result);
-            var errorResult = Assert.IsType<StatusCodeResult>(result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result);
             Assert.Equal((int) HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _twilioCallbackService.Verify(mock => mock.UpdateStatusCallback(It.IsAny<RoomCallbackDto>()), Times.Once);
         }

@@ -1,7 +1,7 @@
 ﻿using FluentResults;
 using Microsoft.AspNetCore.Mvc;
 using PrecisionReporters.Platform.Shared.Errors;
-using System.Net;
+using PrecisionReporters.Platform.Shared.Extensions;
 
 namespace PrecisionReporters.Platform.Shared.Helpers
 {
@@ -21,7 +21,7 @@ namespace PrecisionReporters.Platform.Shared.Helpers
             if (result.HasError<ForbiddenError>())
                 return new ForbidResult();
 
-            return new StatusCodeResult((int)HttpStatusCode.InternalServerError);
+            return new InternalServerErrorResult(result.Errors);
         }
     }
 }
