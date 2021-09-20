@@ -9,6 +9,7 @@
         CaseName,
         Company,
         Requester,
-        Job
+        Job,
+        CreatedOn
     }
 }

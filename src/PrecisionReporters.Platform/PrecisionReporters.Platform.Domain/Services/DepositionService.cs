@@ -262,6 +262,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 DepositionSortField.Company => x => x.Requester.CompanyName,
                 DepositionSortField.Requester => x => x.Requester.FirstName,
                 DepositionSortField.Job => x => x.Job,
+                DepositionSortField.CreatedOn => x => x.CreationDate,
                 _ => x => x.StartDate,
             };
             Expression<Func<Deposition, object>> orderByThen = x => x.Requester.LastName;
@@ -1109,7 +1110,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             {
                 await _permissionService.AddParticipantPermissions(participant);
             }
-            
+
             await _participantRepository.Update(participant);
             await _signalRNotificationManager.SendDirectMessage(participant.Email, notificationtDto);
             await _signalRNotificationManager.SendNotificationToDepositionAdmins(participant.DepositionId.Value, notificationtDto);
@@ -1403,7 +1404,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             }
 
             var depositionStatus = new DepositionStatusDto();
-            
+
             try
             {
                 SetDepositionStatus(depositionStatus, deposition);
@@ -1414,7 +1415,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 _logger.LogError(ex, msg);
                 return Result.Fail(msg);
             }
-            
+
             return Result.Ok(depositionStatus);
         }
 
