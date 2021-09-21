@@ -4,7 +4,7 @@ namespace UploadExhibitLambda
 {
     public static class UploadExhibitConstants
     {
-        public const string PdfTronKey = "arn:aws:secretsmanager:us-east-1:747865543072:secret:AppConfiguration__DocumentConfiguration__PDFTronLicenseKey-ZF4Gtw";
+        public const string PdfTronKey = "PdfTronKey";
         public const string SnsTopicArn = "notificationarn";
         public const string PdfExtension = ".pdf";
         public const string TmpFolder = "/tmp/";

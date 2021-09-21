@@ -105,7 +105,7 @@ namespace UploadExhibitLambda
             {
                 try
                 {
-                    pdftron.PDFNet.Initialize(await GetSecret(UploadExhibitConstants.PdfTronKey, cancellationToken));
+                    pdftron.PDFNet.Initialize(await GetSecret(Environment.GetEnvironmentVariable(UploadExhibitConstants.PdfTronKey), cancellationToken));
                     foreach (var record in input.Records)
                     {
                         _logger.LogInformation(_cleanUpTmpFolderWrapper.CleanUpTmpFolder());
