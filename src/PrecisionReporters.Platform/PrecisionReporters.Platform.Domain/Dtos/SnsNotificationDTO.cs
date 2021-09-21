@@ -1,5 +1,4 @@
-﻿
-namespace PrecisionReporters.Platform.Domain.Dtos
+﻿namespace PrecisionReporters.Platform.Domain.Dtos
 {
     public class SnsNotificationDTO
     {
