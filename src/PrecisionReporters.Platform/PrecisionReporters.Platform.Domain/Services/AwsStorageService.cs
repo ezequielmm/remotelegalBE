@@ -1,4 +1,4 @@
-﻿using Amazon.Runtime;
+﻿using Amazon;
 using Amazon.S3;
 using Amazon.S3.Model;
 using Amazon.S3.Transfer;
@@ -26,12 +26,15 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly ILogger<AwsStorageService> _logger;
         private readonly UrlPathConfiguration _urlPathConfiguration;
         private const string CUSTOM_METADATA_PREFIX = "x-amz-meta-";
+        private readonly DocumentConfiguration _documentsConfiguration;
 
-        public AwsStorageService(ITransferUtility transferUtility, ILogger<AwsStorageService> logger, IOptions<UrlPathConfiguration> urlPathConfiguration)
+        public AwsStorageService(ITransferUtility transferUtility, ILogger<AwsStorageService> logger, IOptions<UrlPathConfiguration> urlPathConfiguration,
+            IOptions<DocumentConfiguration> documentConfigurations)
         {
             _fileTransferUtility = transferUtility;
             _logger = logger;
             _urlPathConfiguration = urlPathConfiguration.Value;
+            _documentsConfiguration = documentConfigurations.Value ?? throw new ArgumentException(nameof(documentConfigurations));
         }
 
         public async Task<Result> UploadMultipartAsync(string keyName, FileTransferInfo file, string bucketName)
@@ -92,9 +95,12 @@ namespace PrecisionReporters.Platform.Domain.Services
             {
                 //HttpUtility.UrlEncode change the white space for a + character, with this line the URL is encoding the special characters and replace the + character for white space again
                 //This is necessary for getting the file name properly and avoid errors whenever the SignedURL is called
-                contentDisposition = string.IsNullOrWhiteSpace(displayName) ? "attachment" : $"attachment;filename={HttpUtility.UrlEncode(displayName).Replace('+', ' ')}";
+                contentDisposition = string.IsNullOrWhiteSpace(displayName) ? "attachment" : $"attachment;filename={displayName}";
             }
-            return _fileTransferUtility.S3Client.GetPreSignedURL(new GetPreSignedUrlRequest
+
+            AWSConfigsS3.UseSignatureVersion4 = bool.Parse(_documentsConfiguration.UseSignatureVersion4);
+
+            var signedUrl = _fileTransferUtility.S3Client.GetPreSignedURL(new GetPreSignedUrlRequest
             {
                 BucketName = bucketName,
                 Key = key,
@@ -104,6 +110,12 @@ namespace PrecisionReporters.Platform.Domain.Services
                 }
             }
             );
+
+            var uriBuilder = new UriBuilder(signedUrl);
+            var queryString = HttpUtility.ParseQueryString(uriBuilder.Query);
+
+            uriBuilder.Query = queryString.ToString();
+            return uriBuilder.Uri.ToString();
         }
 
         public async Task<Stream> GetObjectAsync(string objectKey, string bucketName)
