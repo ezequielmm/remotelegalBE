@@ -76,7 +76,7 @@ namespace PrecisionReporters.Platform.Domain.Handlers.Notifications
                     {
                         Action = NotificationAction.Create,
                         EntityType = NotificationEntity.Exhibit,
-                        Content = CreateMessage(exhibitNotification.Context, notificationMessage)
+                        Content = CreateMessage(exhibitNotification.Context, notificationMessage, document.Id)
                     };
                     _logger.LogInformation($"Sending Notification - Email: {user.EmailAddress} - Document: {document.Id}");
                     await _signalRDepositionManager.SendDirectMessage(user.EmailAddress, notificationDto);
