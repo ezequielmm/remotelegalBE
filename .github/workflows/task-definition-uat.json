@@ -1,18 +1,39 @@
 {
+    "executionRoleArn": "arn:aws:iam::747865543072:role/prp-uat-ecs-task-execution-role",
     "containerDefinitions": [
         {
-            "name": "prp-be-container-uat",
-            "image": "747865543072.dkr.ecr.us-east-1.amazonaws.com/prp-be:latest",
-            "cpu": 0,
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-group": "/ecs/prp-be-task-uat",
+                    "awslogs-region": "us-east-1",
+                    "awslogs-stream-prefix": "ecs"
+                }
+            },
             "portMappings": [
                 {
-                    "containerPort": 80,
                     "hostPort": 80,
-                    "protocol": "tcp"
+                    "protocol": "tcp",
+                    "containerPort": 80
                 }
             ],
-            "essential": true,
+            "command": [
+                "/bin/mountedSensor/sensor"
+            ],
+            "cpu": 0,
             "environment": [
+                {
+                    "name": "AppConfiguration__AwsStorageConfiguration__S3BucketRegion",
+                    "value": "us-east-1"
+                },
+                {
+                    "name": "AppConfiguration__CloudServicesConfiguration__TranscriptionProvider",
+                    "value": "Azure"
+                },
+                {
+                    "name": "AppConfiguration__CognitoConfiguration__Authority",
+                    "value": "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_a8YI6WHZ1"
+                },
                 {
                     "name": "AppConfiguration__CognitoConfiguration__AWSRegion",
                     "value": "us-east-1"
@@ -20,14 +41,6 @@
                 {
                     "name": "AppConfiguration__CognitoConfiguration__ClientId",
                     "value": "kl378rf7s8mub0ctsh52k8kkq"
-                },
-                {
-                    "name": "AppConfiguration__CognitoConfiguration__UserPoolId",
-                    "value": "us-east-1_a8YI6WHZ1"
-                },
-                {
-                    "name": "AppConfiguration__CognitoConfiguration__Authority",
-                    "value": "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_a8YI6WHZ1"
                 },
                 {
                     "name": "AppConfiguration__CognitoConfiguration__GuestClientId",
@@ -38,24 +51,32 @@
                     "value": "Guests"
                 },
                 {
-                    "name": "AppConfiguration__TwilioAccountConfiguration__StatusCallbackUrl",
-                    "value": "https://api-uat.prdevelopment.net/api/compositions"
+                    "name": "AppConfiguration__CognitoConfiguration__UserPoolId",
+                    "value": "us-east-1_a8YI6WHZ1"
                 },
                 {
-                    "name": "AppConfiguration__TwilioAccountConfiguration__S3DestinationBucket",
-                    "value": "input-post-depo-uat"
+                    "name": "AppConfiguration__ConfigurationFlags__IsDeveloperExceptionPageEnabled",
+                    "value": "true"
                 },
                 {
-                    "name": "AppConfiguration__AwsStorageConfiguration__S3BucketRegion",
-                    "value": "us-east-1"
+                    "name": "AppConfiguration__ConfigurationFlags__IsShowErrorMessageEnabled",
+                    "value": "true"
+                },
+                {
+                    "name": "AppConfiguration__ConfigurationFlags__IsSwaggerUiEnabled",
+                    "value": "true"
+                },
+                {
+                    "name": "AppConfiguration__ConnectionStrings__RedisConnectionString",
+                    "value": "tf-rep-group-uat.xzj4s3.ng.0001.use1.cache.amazonaws.com:6379"
+                },
+                {
+                    "name": "AppConfiguration__CorsConfiguration__Origins",
+                    "value": "https://*.prdevelopment.net"
                 },
                 {
                     "name": "AppConfiguration__DocumentConfiguration__BucketName",
                     "value": "deposition-documents-uat"
-                },
-                {
-                    "name": "AppConfiguration__DocumentConfiguration__PostDepoVideoBucket",
-                    "value": "output-post-depo-uat"
                 },
                 {
                     "name": "AppConfiguration__DocumentConfiguration__EnvironmentFilesBucket",
@@ -66,12 +87,12 @@
                     "value": "prp-frontend-content-uat"
                 },
                 {
-                    "name": "AppConfiguration__DocumentConfiguration__PreSignedUploadUrlValidSeconds",
-                    "value": "30"
+                    "name": "AppConfiguration__DocumentConfiguration__PostDepoVideoBucket",
+                    "value": "output-post-depo-uat"
                 },
                 {
-                    "name": "AppConfiguration__EmailConfiguration__VerifyEmailSubject",
-                    "value": "[UAT] Verify your Remote Legal account"
+                    "name": "AppConfiguration__DocumentConfiguration__PreSignedUploadUrlValidSeconds",
+                    "value": "30"
                 },
                 {
                     "name": "AppConfiguration__EmailConfiguration__ImagesUrl",
@@ -83,31 +104,27 @@
                 },
                 {
                     "name": "AppConfiguration__EmailConfiguration__XSesConfigurationSetHeader",
-                    "value": "configset-uat"
+                    "value": "configset-prod"
                 },
                 {
-                    "name": "AppConfiguration__ConfigurationFlags__IsDeveloperExceptionPageEnabled",
-                    "value": "true"
+                    "name": "AppConfiguration__EmailConfiguration__SesRegion",
+                    "value": "us-east-1"
                 },
                 {
-                    "name": "AppConfiguration__ConfigurationFlags__IsSwaggerUiEnabled",
-                    "value": "true"
+                    "name": "AppConfiguration__EmailConfiguration__VerifyEmailSubject",
+                    "value": "[UAT] Verify your Remote Legal account"
                 },
                 {
-                    "name": "AppConfiguration__ConfigurationFlags__IsShowErrorMessageEnabled",
-                    "value": "true"
+                    "name": "AppConfiguration__TwilioAccountConfiguration__S3DestinationBucket",
+                    "value": "input-post-depo-uat"
+                },
+                {
+                    "name": "AppConfiguration__TwilioAccountConfiguration__StatusCallbackUrl",
+                    "value": "https://api-uat.prdevelopment.net/api/compositions"
                 },
                 {
                     "name": "AppConfiguration__UrlPathConfiguration__FrontendBaseUrl",
                     "value": "https://prp-uat.prdevelopment.net/"
-                },
-                {
-                    "name": "AppConfiguration__CorsConfiguration__Origins",
-                    "value": "https://*.prdevelopment.net"
-                },
-                {
-                    "name": "AppConfiguration__CloudServicesConfiguration__TranscriptionProvider",
-                    "value": "Azure"
                 },
                 {
                     "name": "AppConfiguration__VerificationLinkConfiguration__ExpirationTime",
@@ -142,6 +159,10 @@
                     "value": "true"
                 },
                 {
+                    "name": "DD_RUNTIME_METRICS_ENABLED",
+                    "value": "true"
+                },
+                {
                     "name": "DD_SERVICE",
                     "value": "prp-be-uat"
                 },
@@ -158,99 +179,92 @@
                     "value": "true"
                 },
                 {
-                    "name": "DD_RUNTIME_METRICS_ENABLED",
-                    "value": "true"
-                },
-                {
-                    "name": "AppConfiguration__ConnectionStrings__RedisConnectionString",
-                    "value": "tf-rep-group-uat.xzj4s3.ng.0001.use1.cache.amazonaws.com:6379"
-                },
-                {
-                    "name": "AppConfiguration__EmailConfiguration__SesRegion",
-                    "value": "us-east-1"
-                },
-                {
                     "name": "Serilog__MinimumLevel_Default",
                     "value": "Information"
                 }
             ],
+            "mountPoints": [],
             "secrets": [
                 {
-                    "name": "AppConfiguration__ConnectionStrings__MySqlConnection",
-                    "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:UAT/AppConfiguration__ConnectionStrings__MySqlConnection-KBaH3a"
+                    "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:AppConfiguration__AzureCognitiveServiceConfiguration__SubscriptionKey-6JVtew",
+                    "name": "AppConfiguration__AzureCognitiveServiceConfiguration__SubscriptionKey"
                 },
                 {
-                    "name": "AppConfiguration__CognitoConfiguration__GuestUsersPass",
-                    "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:UAT/AppConfiguration__CognitoConfiguration__GuestUsersPass-BvPsrM"
+                    "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:UAT/AppConfiguration__CognitoConfiguration__GuestUsersPass-BvPsrM",
+                    "name": "AppConfiguration__CognitoConfiguration__GuestUsersPass"
                 },
                 {
-                    "name": "AppConfiguration__TwilioAccountConfiguration__AccountSid",
-                    "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:UAT/AppConfiguration__TwilioAccountConfiguration__AccountSid-9EQUU0"
+                    "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:UAT/AppConfiguration__ConnectionStrings__MySqlConnection-KBaH3a",
+                    "name": "AppConfiguration__ConnectionStrings__MySqlConnection"
                 },
                 {
-                    "name": "AppConfiguration__TwilioAccountConfiguration__AuthToken",
-                    "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:UAT/AppConfiguration__TwilioAccountConfiguration__AuthToken-tAm4Ey"
+                    "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:UAT/AppConfiguration__DocumentConfiguration__CloudfrontPrivateKey-VcI3xx",
+                    "name": "AppConfiguration__DocumentConfiguration__CloudfrontPrivateKey"
                 },
                 {
-                    "name": "AppConfiguration__TwilioAccountConfiguration__ApiKeySid",
-                    "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:UAT/AppConfiguration__TwilioAccountConfiguration__ApiKeySid-AwhsrV"
+                    "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:UAT/AppConfiguration__DocumentConfiguration__CloudfrontXmlKey-1AXIgw",
+                    "name": "AppConfiguration__DocumentConfiguration__CloudfrontXmlKey"
                 },
                 {
-                    "name": "AppConfiguration__TwilioAccountConfiguration__ApiKeySecret",
-                    "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:UAT/AppConfiguration__TwilioAccountConfiguration__ApiKeySecret-4VahLl"
+                    "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:AppConfiguration__DocumentConfiguration__PDFTronLicenseKey-ZF4Gtw",
+                    "name": "AppConfiguration__DocumentConfiguration__PDFTronLicenseKey"
                 },
                 {
-                    "name": "AppConfiguration__TwilioAccountConfiguration__ConversationServiceId",
-                    "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:UAT/AppConfiguration__TwilioAccountConfiguration__ConversationServiceId-TeDyV2"
+                    "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:UAT/AppConfiguration__TwilioAccountConfiguration__AccountSid-9EQUU0",
+                    "name": "AppConfiguration__TwilioAccountConfiguration__AccountSid"
                 },
                 {
-                    "name": "AppConfiguration__AzureCognitiveServiceConfiguration__SubscriptionKey",
-                    "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:AppConfiguration__AzureCognitiveServiceConfiguration__SubscriptionKey-6JVtew"
+                    "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:UAT/AppConfiguration__TwilioAccountConfiguration__ApiKeySecret-4VahLl",
+                    "name": "AppConfiguration__TwilioAccountConfiguration__ApiKeySecret"
                 },
                 {
-                    "name": "AppConfiguration__DocumentConfiguration__PDFTronLicenseKey",
-                    "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:AppConfiguration__DocumentConfiguration__PDFTronLicenseKey-ZF4Gtw"
+                    "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:UAT/AppConfiguration__TwilioAccountConfiguration__ApiKeySid-AwhsrV",
+                    "name": "AppConfiguration__TwilioAccountConfiguration__ApiKeySid"
                 },
                 {
-                    "name": "AppConfiguration__DocumentConfiguration__CloudfrontXmlKey",
-                    "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:UAT/AppConfiguration__DocumentConfiguration__CloudfrontXmlKey-1AXIgw"
+                    "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:UAT/AppConfiguration__TwilioAccountConfiguration__AuthToken-tAm4Ey",
+                    "name": "AppConfiguration__TwilioAccountConfiguration__AuthToken"
                 },
                 {
-                    "name": "AppConfiguration__DocumentConfiguration__CloudfrontPrivateKey",
-                    "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:UAT/AppConfiguration__DocumentConfiguration__CloudfrontPrivateKey-VcI3xx"
+                    "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:UAT/AppConfiguration__TwilioAccountConfiguration__ConversationServiceId-TeDyV2",
+                    "name": "AppConfiguration__TwilioAccountConfiguration__ConversationServiceId"
                 },
                 {
-                    "name": "CORECLR_ENABLE_PROFILING",
-                    "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:UAT/CORECLR_ENABLE_PROFILING-ev8cdp"
+                    "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:UAT/CORECLR_ENABLE_PROFILING-ev8cdp",
+                    "name": "CORECLR_ENABLE_PROFILING"
                 }
             ],
+            "volumesFrom": [
+                {
+                    "sourceContainer": "TSAgentSideCar"
+                }
+            ],
+            "image": "747865543072.dkr.ecr.us-east-1.amazonaws.com/prp-be:qa-7ed79070002655384ec76f43d165f999f80fef01",
+            "essential": true,
             "dockerLabels": {
                 "com.datadoghq.ad.instances": "[{\"host\": \"%%host%%\", \"port\": 80}]",
                 "com.datadoghq.ad.check_names": "[\"prp-be-container-uat\"]",
                 "com.datadoghq.ad.init_configs": "[{}]"
             },
-            "mountPoints": [],
-            "volumesFrom": [],
+            "name": "prp-be-container-uat"
+        },
+        {
             "logConfiguration": {
                 "logDriver": "awslogs",
                 "options": {
-                    "awslogs-group": "/ecs/prp-be-task-uat",
+                    "awslogs-group": "/ecs/datadog-agent-uat",
                     "awslogs-region": "us-east-1",
                     "awslogs-stream-prefix": "ecs"
                 }
-            }
-        },
-        {
-            "name": "datadog-agent",
-            "image": "datadog/agent:latest",
+            },
             "portMappings": [
                 {
-                    "containerPort": 8126,
                     "hostPort": 8126,
-                    "protocol": "tcp"
+                    "protocol": "tcp",
+                    "containerPort": 8126
                 }
             ],
-            "essential": true,
+            "cpu": 300,
             "environment": [
                 {
                     "name": "DD_APM_NON_LOCAL_TRAFFIC",
@@ -265,6 +279,10 @@
                     "value": "8125"
                 },
                 {
+                    "name": "DD_ENV",
+                    "value": "uat"
+                },
+                {
                     "name": "DD_LOGS_ENABLED",
                     "value": "true"
                 },
@@ -275,45 +293,68 @@
                 {
                     "name": "ECS_FARGATE",
                     "value": "true"
-                },
-                {
-                    "name": "DD_ENV",
-                    "value": "uat"
-                }
-            ],
-            "secrets": [
-                {
-                    "name": "DD_API_KEY",
-                    "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:DATADOG_API_KEY-9EoxaV"
-                },
-                {
-                    "name": "DD_APM_ENABLED",
-                    "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:UAT/DD_APM_ENABLED-4DZPae"
                 }
             ],
             "mountPoints": [],
+            "secrets": [
+                {
+                    "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:DATADOG_API_KEY-9EoxaV",
+                    "name": "DD_API_KEY"
+                },
+                {
+                    "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:UAT/DD_APM_ENABLED-4DZPae",
+                    "name": "DD_APM_ENABLED"
+                }
+            ],
+            "memoryReservation": 512,
             "volumesFrom": [],
+            "image": "datadog/agent:latest",
+            "essential": true,
+            "name": "datadog-agent"
+        },
+        {
             "logConfiguration": {
                 "logDriver": "awslogs",
                 "options": {
-                    "awslogs-group": "/ecs/datadog-agent-uat",
+                    "awslogs-group": "/ecs/prp-be-task-uat",
                     "awslogs-region": "us-east-1",
                     "awslogs-stream-prefix": "ecs"
                 }
             },
-            "memoryReservation": 512,
-            "cpu": 300
+            "entryPoint": [
+                "/bin/agent"
+            ],
+            "portMappings": [],
+            "command": [
+                "--hostname=prp-be-container-uat"
+            ],
+            "cpu": 256,
+            "environment": [],
+            "mountPoints": [],
+            "secrets": [
+                {
+                    "valueFrom": "arn:aws:ssm:us-east-1:747865543072:parameter/puppet/threatstack/deployment_key",
+                    "name": "TS_HOSTLESS_DEPLOYMENT"
+                }
+            ],
+            "memoryReservation": 1024,
+            "volumesFrom": [],
+            "image": "747865543072.dkr.ecr.us-east-1.amazonaws.com/threatstack",
+            "essential": true,
+            "name": "TSAgentSideCar"
         }
     ],
-    "family": "prp-be-task-uat",
-    "taskRoleArn": "arn:aws:iam::747865543072:role/prp-ecs-task-role-uat",
-    "executionRoleArn": "arn:aws:iam::747865543072:role/prp-uat-ecs-task-execution-role",
-    "networkMode": "awsvpc",
-    "volumes": [],
     "placementConstraints": [],
+    "memory": "5120",
+    "taskRoleArn": "arn:aws:iam::747865543072:role/prp-ecs-task-role-uat",
+    "taskDefinitionArn": "arn:aws:ecs:us-east-1:747865543072:task-definition/prp-be-task-uat:42",
+    "family": "prp-be-task-uat",
     "requiresCompatibilities": [
         "FARGATE"
     ],
+    "networkMode": "awsvpc",
     "cpu": "2048",
-    "memory": "4096"
+    "revision": 42,
+    "status": "ACTIVE",
+    "volumes": []
 }

@@ -88,6 +88,7 @@ namespace PrecisionReporters.Platform.Api
                 x.CloudfrontPolicyStatement = appConfiguration.DocumentConfiguration.CloudfrontPolicyStatement;
                 x.NonConvertToPdfExtensions = appConfiguration.DocumentConfiguration.NonConvertToPdfExtensions;
                 x.PreSignedUploadUrlValidSeconds = appConfiguration.DocumentConfiguration.PreSignedUploadUrlValidSeconds;
+                x.UseSignatureVersion4 = appConfiguration.DocumentConfiguration.UseSignatureVersion4;
             });
             services.AddScoped<ILoggingHelper, LoggingHelper>();
             services.AddScoped<ISystemSettingsService, SystemSettingsService>();

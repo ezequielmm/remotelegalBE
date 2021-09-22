@@ -21,5 +21,6 @@ namespace PrecisionReporters.Platform.Domain.Configurations
         public string CloudfrontXmlKey { get; set; }
         public string CloudfrontPolicyStatement { get; set; }
         public IReadOnlyList<string> NonConvertToPdfExtensions { get; set; }
+        public string UseSignatureVersion4 { get; set; }
     }
 }
