@@ -46,4 +46,4 @@ jobs:
       - name: Update lambda function for upload exhibits PROD
         working-directory: ${{ env.work-dir }}
         if: ${{ steps.extract-branch.outputs.branch == 'prod' }}
-        run: dotnet lambda deploy-function --function-name UploadExhibitProd --region us-east-2
+        run: dotnet lambda deploy-function --function-name UploadExhibitProd --region ${{ github.event.inputs.region }}
