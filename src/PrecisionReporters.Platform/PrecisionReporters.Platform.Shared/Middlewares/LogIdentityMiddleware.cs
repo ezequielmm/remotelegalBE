@@ -7,6 +7,7 @@ namespace PrecisionReporters.Platform.Shared.Middlewares
 {
     public class LogIdentityMiddleware
     {
+        private const string CORRELATION_HEADER = "rl-correlation-id";
         private readonly RequestDelegate _next;
 
         public LogIdentityMiddleware(RequestDelegate next)
@@ -16,6 +17,10 @@ namespace PrecisionReporters.Platform.Shared.Middlewares
 
         public Task Invoke(HttpContext context)
         {
+            // Datadog - Push Correlate Id
+            var correlationId = context.Request.Headers.ContainsKey(CORRELATION_HEADER) ? context.Request.Headers[CORRELATION_HEADER].ToString() : null;
+            using (LogContext.PushProperty("correlation_id", correlationId, true))
+            // Datadog - Push User Identity info
             using (LogContext.PushProperty("identity", new
             {
                 authenticationType = context.User?.Identity?.AuthenticationType,
