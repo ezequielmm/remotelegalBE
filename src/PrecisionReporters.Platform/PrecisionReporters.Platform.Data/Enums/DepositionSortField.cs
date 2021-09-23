@@ -10,6 +10,6 @@
         Company,
         Requester,
         Job,
-        CreatedOn
+        CreationDate
     }
 }

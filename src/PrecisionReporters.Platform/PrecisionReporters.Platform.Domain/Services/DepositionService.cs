@@ -262,7 +262,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 DepositionSortField.Company => x => x.Requester.CompanyName,
                 DepositionSortField.Requester => x => x.Requester.FirstName,
                 DepositionSortField.Job => x => x.Job,
-                DepositionSortField.CreatedOn => x => x.CreationDate,
+                DepositionSortField.CreationDate => x => x.CreationDate,
                 _ => x => x.StartDate,
             };
             Expression<Func<Deposition, object>> orderByThen = x => x.Requester.LastName;
