@@ -449,12 +449,13 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (onTheRecord)
             {
                 var witness = deposition.Participants.FirstOrDefault(p => p.Role == ParticipantType.Witness);
-                var identity = new TwilioIdentity
+                var identity = new TwilioIdentity();
+                if(witness != null)
                 {
-                    Email = witness?.Email,
-                    Name = witness?.Name,
-                    Role = Enum.GetName(typeof(ParticipantType), witness?.Role)
-                };
+                    identity.Email = witness.Email;
+                    identity.Name = witness.Name;
+                    identity.Role = Enum.GetName(typeof(ParticipantType), witness.Role);
+                }
 
                 _logger.LogInformation($"{nameof(DepositionService)}.{nameof(DepositionService.GoOnTheRecord)} Deposition is ON the record {depositionEvent.EventType}: in deposition {deposition.Id} with Witness {witness} Started by {userResult} with Twilio identity {identity}");
 
