@@ -1,6 +1,6 @@
 ﻿namespace PrecisionReporters.Platform.Domain.Wrappers.Interfaces
 {
-    public interface IMediaToolKitWrapper
+    public interface ITagLibWrapper
     {
         int GetVideoDuration(string filePath);
     }

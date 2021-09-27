@@ -1,6 +1,4 @@
 ﻿using FluentResults;
-using MediaToolkit;
-using MediaToolkit.Model;
 using Microsoft.Extensions.Logging;
 using Moq;
 using PrecisionReporters.Platform.Data.Entities;
@@ -35,7 +33,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         private readonly Mock<ILogger<CompositionService>> _loggerMock;
         private readonly Mock<IBackgroundTaskQueue> _backgroundTaskQueue;
         private readonly Mock<ICompositionHelper> _compositionHelperMock;
-        private readonly Mock<IMediaToolKitWrapper> _IMediaToolKitWrapperMock;
+        private readonly Mock<ITagLibWrapper> _ITagLibWrapperMock;
 
         public CompositionServiceTest()
         {
@@ -46,10 +44,10 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _loggerMock = new Mock<ILogger<CompositionService>>();
             _backgroundTaskQueue = new Mock<IBackgroundTaskQueue>();
             _compositionHelperMock = new Mock<ICompositionHelper>();
-            _IMediaToolKitWrapperMock = new Mock<IMediaToolKitWrapper>();
+            _ITagLibWrapperMock = new Mock<ITagLibWrapper>();
 
             _service = new CompositionService(_compositionRepositoryMock.Object, _twilioServiceMock.Object,
-                _roomServiceMock.Object, _depositionServiceMock.Object, _loggerMock.Object, _backgroundTaskQueue.Object, _compositionHelperMock.Object, _IMediaToolKitWrapperMock.Object);
+                _roomServiceMock.Object, _depositionServiceMock.Object, _loggerMock.Object, _backgroundTaskQueue.Object, _compositionHelperMock.Object, _ITagLibWrapperMock.Object);
         }
 
         public void Dispose()
@@ -133,7 +131,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _twilioServiceMock.Setup(x => x.GetCompositionMediaAsync(It.IsAny<Composition>())).ReturnsAsync(true);
             _twilioServiceMock.Setup(x => x.UploadCompositionMediaAsync(It.IsAny<Composition>()));
             _compositionRepositoryMock.Setup(x => x.Update(It.IsAny<Composition>()));
-            _IMediaToolKitWrapperMock.Setup(x => x.GetVideoDuration(It.IsAny<string>())).Returns(It.IsAny<int>);
+            _ITagLibWrapperMock.Setup(x => x.GetVideoDuration(It.IsAny<string>())).Returns(It.IsAny<int>);
 
             //Act
             var result = await _service.StoreCompositionMediaAsync(composition);
@@ -142,7 +140,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _twilioServiceMock.Verify(x => x.GetCompositionMediaAsync(It.IsAny<Composition>()), Times.Once);
             _compositionRepositoryMock.Verify(x => x.Update(It.IsAny<Composition>()), Times.Once);
             _twilioServiceMock.Verify(x => x.UploadCompositionMediaAsync(It.IsAny<Composition>()), Times.Once);
-            _IMediaToolKitWrapperMock.Verify(x => x.GetVideoDuration(It.IsAny<string>()), Times.Once);
+            _ITagLibWrapperMock.Verify(x => x.GetVideoDuration(It.IsAny<string>()), Times.Once);
             Assert.True(result.IsSuccess);
         }
 

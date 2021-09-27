@@ -1,6 +1,4 @@
 ﻿using FluentResults;
-using MediaToolkit;
-using MediaToolkit.Model;
 using Microsoft.Extensions.Logging;
 using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Data.Enums;
@@ -29,11 +27,11 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly IBackgroundTaskQueue _backgroundTaskQueue;
         private readonly ICompositionHelper _compositionHelper;
         private readonly ILogger<CompositionService> _logger;
-        private readonly IMediaToolKitWrapper _mediaToolKitWrapper;
+        private readonly ITagLibWrapper _tagLibWrapperWrapper;
 
         public CompositionService(ICompositionRepository compositionRepository,
             ITwilioService twilioService, IRoomService roomService, IDepositionService depositionService,
-            ILogger<CompositionService> logger, IBackgroundTaskQueue backgroundTaskQueue, ICompositionHelper compositionHelper, IMediaToolKitWrapper mediaToolKitWrapper)
+            ILogger<CompositionService> logger, IBackgroundTaskQueue backgroundTaskQueue, ICompositionHelper compositionHelper, ITagLibWrapper tagLibWrapperWrapper)
         {
             _compositionRepository = compositionRepository;
             _twilioService = twilioService;
@@ -42,7 +40,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             _backgroundTaskQueue = backgroundTaskQueue;
             _compositionHelper = compositionHelper;
             _logger = logger;
-            _mediaToolKitWrapper = mediaToolKitWrapper;
+            _tagLibWrapperWrapper = tagLibWrapperWrapper;
         }
 
         public async Task<Result> StoreCompositionMediaAsync(Composition composition)
@@ -55,7 +53,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 return Result.Fail(new ExceptionalError("Could not download composition media.", null));
             }
 
-            var duration = _mediaToolKitWrapper.GetVideoDuration($"{composition.SId}.{ApplicationConstants.Mp4}");
+            var duration = _tagLibWrapperWrapper.GetVideoDuration($"{composition.SId}.{ApplicationConstants.Mp4}");
 
             composition.RecordDuration = duration;
 
