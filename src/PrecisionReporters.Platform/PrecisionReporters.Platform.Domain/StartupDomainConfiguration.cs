@@ -70,6 +70,7 @@ namespace PrecisionReporters.Platform.Domain
             services.Configure<VerificationLinkConfiguration>(x => { x.ExpirationTime = appConfiguration.VerificationLinkConfiguration.ExpirationTime; });
             services.Configure<DepositionConfiguration>(x => { x.CancelAllowedOffsetSeconds = appConfiguration.DepositionConfiguration.CancelAllowedOffsetSeconds; });
             services.Configure<DepositionConfiguration>(x => { x.MinimumReScheduleSeconds = appConfiguration.DepositionConfiguration.MinimumReScheduleSeconds; });
+            services.Configure<DepositionConfiguration>(x => { x.DepositionScheduleRestrictionHours = appConfiguration.DepositionConfiguration.DepositionScheduleRestrictionHours; });
 
             // Authorization
             services.AddScoped<IAuthorizationHandler, UserAuthorizeHandler>();

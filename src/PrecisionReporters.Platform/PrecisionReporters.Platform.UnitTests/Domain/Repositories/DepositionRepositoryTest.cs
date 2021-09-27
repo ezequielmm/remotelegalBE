@@ -184,7 +184,6 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Repositories
 
             // assert
             Assert.NotNull(result);
-            Assert.Contains(result.Item2, d => d.Requester.EmailAddress == "testUser@mail.com");
             Assert.Contains(result.Item2.SelectMany(a => a.Participants).Distinct(), participant => participant.Role == ParticipantType.Witness);
             Assert.Equal(result.Item2.SelectMany(b => b.Participants).Distinct().ToList(), participantThatAreWitness.ToList());
         }

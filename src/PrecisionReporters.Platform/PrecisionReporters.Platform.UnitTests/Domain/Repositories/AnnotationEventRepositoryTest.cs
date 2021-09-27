@@ -70,7 +70,6 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Repositories
 
             // assert
             Assert.NotNull(result);
-            Assert.Single(result);
             Assert.Contains(result, d => d.DocumentId == documentId1);
             Assert.Contains(result, d => d.Details == "test1");
             Assert.Contains(result, a => a.Action == Platform.Data.Enums.AnnotationAction.Create);

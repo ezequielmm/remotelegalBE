@@ -16,6 +16,8 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Xunit;
+using PrecisionReporters.Platform.Domain.Configurations;
+using Microsoft.Extensions.Options;
 
 namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 {
@@ -29,6 +31,9 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         private readonly Mock<ILogger<CaseService>> _loggerMock;
         private readonly Mock<ITransactionHandler> _transactionHandlerMock;
         private readonly Mock<IPermissionService> _permissionServiceMock;
+        private readonly Mock<IOptions<DepositionConfiguration>> _depositionConfigurationMock;
+        private readonly DepositionConfiguration _depositionconfiguration;
+
 
         private readonly List<Case> _cases = new List<Case>();
 
@@ -38,6 +43,10 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _caseRepositoryMock = new Mock<ICaseRepository>();
             _transactionHandlerMock = new Mock<ITransactionHandler>();
             _permissionServiceMock = new Mock<IPermissionService>();
+
+            _depositionconfiguration = new DepositionConfiguration { DepositionScheduleRestrictionHours = "48"};
+            _depositionConfigurationMock = new Mock<IOptions<DepositionConfiguration>>();
+            _depositionConfigurationMock.Setup(x => x.Value).Returns(_depositionconfiguration);
 
             _caseRepositoryMock
                 .Setup(x => x.GetByFilter(It.IsAny<Expression<Func<Case, bool>>>(), It.IsAny<string[]>()))
@@ -61,7 +70,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _depositionServiceMock = new Mock<IDepositionService>();
             _loggerMock = new Mock<ILogger<CaseService>>();
             _service = new CaseService(_caseRepositoryMock.Object, _userServiceMock.Object,
-                _documentServiceMock.Object, _depositionServiceMock.Object, _loggerMock.Object, _transactionHandlerMock.Object, _permissionServiceMock.Object);
+                _documentServiceMock.Object, _depositionServiceMock.Object, _loggerMock.Object, _transactionHandlerMock.Object, _permissionServiceMock.Object, _depositionConfigurationMock.Object);
         }
 
         public void Dispose()
@@ -462,6 +471,148 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _depositionServiceMock
                 .Setup(x => x.GenerateScheduledDeposition(It.IsAny<Guid>(), It.IsAny<Deposition>(), It.IsAny<List<Document>>(), It.IsAny<User>()))
                 .ReturnsAsync(Result.Fail(errorMessage));
+
+            // Act
+            var result = await _service.ScheduleDepositions(caseId, depositions, files);
+
+            // Assert
+            _documentServiceMock.Verify(x => x.UploadDocumentFile(
+                It.IsAny<KeyValuePair<string, FileTransferInfo>>(),
+                It.Is<User>(a => a == user),
+                It.Is<string>(a => a.Contains(caseId.ToString())),
+                It.IsAny<DocumentType>()), Times.Exactly(depositions.Count));
+            _depositionServiceMock.Verify(
+                x => x.GenerateScheduledDeposition(It.IsAny<Guid>(), It.IsAny<Deposition>(), It.IsAny<List<Document>>(), It.IsAny<User>()),
+                Times.Once);
+            _documentServiceMock.Verify(x => x.DeleteUploadedFiles(It.IsAny<List<Document>>()),
+                Times.Once);
+            Assert.NotNull(result);
+            Assert.IsType<Result<Case>>(result);
+            Assert.True(result.IsFailed);
+            Assert.Contains(errorMessage, result.Errors[0].Message);
+        }
+
+        [Fact]
+        public async Task ScheduleDepositions_ShouldReturnFail_IfDepositionIsGeneratedWithin48Hours()
+        {
+            // Arrange
+            var userEmail = "testUser@mail.com";
+            var user = UserFactory.GetUserByGivenEmail(userEmail);
+            var caseId = Guid.NewGuid();
+            var depositions = new List<Deposition> { new Deposition
+                {
+                    Id = Guid.Parse("ecd125d5-cb5e-4b8a-91c3-830a8ea7270f"),
+                    StartDate = DateTime.UtcNow.AddHours(3),
+                    EndDate = DateTime.UtcNow.AddHours(5),
+                    Participants = new List<Participant>{ new Participant { Role = ParticipantType.Witness, IsAdmitted = true } },
+                    CreationDate = DateTime.UtcNow,
+                    Requester=new User(){ EmailAddress = "testUser@mail.com" },
+                    IsOnTheRecord = true,
+                } };
+            var files = new Dictionary<string, FileTransferInfo>();
+            for (int i = 1; i <= depositions.Count; i++)
+            {
+                var fileKey = $"testFileKey{i}";
+                depositions[i - 1].FileKey = fileKey;
+                var file = new FileTransferInfo
+                {
+                    Name = $"file{i}",
+                    Length = 1000
+                };
+                files.Add(fileKey, file);
+            }
+
+            var errorMessage = "IF YOU ARE BOOKING A DEPOSITION WITHIN 48 HOURS";
+
+            _userServiceMock.Setup(x => x.GetCurrentUserAsync()).ReturnsAsync(user);
+            _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(user));
+            _caseRepositoryMock
+                .Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Case, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()))
+                .ReturnsAsync(new Case { Id = caseId });
+            _documentServiceMock
+                .Setup(x => x.UploadDocumentFile(It.IsAny<KeyValuePair<string, FileTransferInfo>>(), It.IsAny<User>(),
+                    It.IsAny<string>(), It.IsAny<DocumentType>()))
+                .ReturnsAsync(Result.Ok(new Document()));
+            _depositionServiceMock
+                .SetupSequence(x =>
+                    x.GenerateScheduledDeposition(It.IsAny<Guid>(), It.IsAny<Deposition>(), It.IsAny<List<Document>>(), It.IsAny<User>()))
+                .ReturnsAsync(Result.Ok(depositions[0]));
+
+            // Act
+            var result = await _service.ScheduleDepositions(caseId, depositions, files);
+
+            // Assert
+            _documentServiceMock.Verify(x => x.UploadDocumentFile(
+                It.IsAny<KeyValuePair<string, FileTransferInfo>>(),
+                It.Is<User>(a => a == user),
+                It.Is<string>(a => a.Contains(caseId.ToString())),
+                It.IsAny<DocumentType>()), Times.Exactly(depositions.Count));
+            _depositionServiceMock.Verify(
+                x => x.GenerateScheduledDeposition(It.IsAny<Guid>(), It.IsAny<Deposition>(), It.IsAny<List<Document>>(), It.IsAny<User>()),
+                Times.Once);
+            _documentServiceMock.Verify(x => x.DeleteUploadedFiles(It.IsAny<List<Document>>()),
+                Times.Once);
+            Assert.NotNull(result);
+            Assert.IsType<Result<Case>>(result);
+            Assert.True(result.IsFailed);
+            Assert.Contains(errorMessage, result.Errors[0].Message);
+        }
+
+        [Fact]
+        public async Task ScheduleDepositions_ShouldReturnFail_IfDepositionIsGeneratedByAdminInWeekend()
+        {
+            // Arrange
+            var userEmail = "testUser@mail.com";
+            var user = new User
+            {
+                Id = Guid.NewGuid(),
+                CreationDate = DateTime.Now,
+                FirstName = "FirstNameUser1",
+                LastName = "LastNameUser1",
+                EmailAddress = userEmail,
+                Password = "123456",
+                PhoneNumber = "1234567890",
+                IsAdmin = true
+            };
+            var caseId = Guid.NewGuid();
+            var depositions = new List<Deposition> { new Deposition
+                {
+                    Id = Guid.Parse("ecd125d5-cb5e-4b8a-91c3-830a8ea7270f"),
+                    StartDate = new DateTime(2021, 09, 25),
+                    EndDate = DateTime.UtcNow.AddHours(3),
+                    Participants = new List<Participant>{ new Participant { Role = ParticipantType.Witness, IsAdmitted = true } },
+                    CreationDate = DateTime.UtcNow,
+                    Requester=new User(){ EmailAddress = "testUser@mail.com" },
+                    IsOnTheRecord = true,
+                } };
+            var files = new Dictionary<string, FileTransferInfo>();
+            for (int i = 1; i <= depositions.Count; i++)
+            {
+                var fileKey = $"testFileKey{i}";
+                depositions[i - 1].FileKey = fileKey;
+                var file = new FileTransferInfo
+                {
+                    Name = $"file{i}",
+                    Length = 1000
+                };
+                files.Add(fileKey, file);
+            }
+
+            var errorMessage = "IF YOU ARE BOOKING A DEPOSITION WITHIN 48 HOURS";
+
+            _userServiceMock.Setup(x => x.GetCurrentUserAsync()).ReturnsAsync(user);
+            _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(user));
+            _caseRepositoryMock
+                .Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Case, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()))
+                .ReturnsAsync(new Case { Id = caseId });
+            _documentServiceMock
+                .Setup(x => x.UploadDocumentFile(It.IsAny<KeyValuePair<string, FileTransferInfo>>(), It.IsAny<User>(),
+                    It.IsAny<string>(), It.IsAny<DocumentType>()))
+                .ReturnsAsync(Result.Ok(new Document()));
+            _depositionServiceMock
+                .SetupSequence(x =>
+                    x.GenerateScheduledDeposition(It.IsAny<Guid>(), It.IsAny<Deposition>(), It.IsAny<List<Document>>(), It.IsAny<User>()))
+                .ReturnsAsync(Result.Ok(depositions[0]));
 
             // Act
             var result = await _service.ScheduleDepositions(caseId, depositions, files);

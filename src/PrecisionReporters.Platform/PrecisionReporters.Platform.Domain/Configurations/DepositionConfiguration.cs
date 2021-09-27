@@ -5,5 +5,6 @@
         public const string SectionName = "DepositionConfiguration";
         public string CancelAllowedOffsetSeconds { get; set; }
         public string MinimumReScheduleSeconds { get; set; }
+        public string DepositionScheduleRestrictionHours { get; set; }
     }
 }

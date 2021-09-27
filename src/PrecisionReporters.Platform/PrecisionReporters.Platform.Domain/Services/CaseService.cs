@@ -13,6 +13,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
+using PrecisionReporters.Platform.Domain.Configurations;
+using Microsoft.Extensions.Options;
+using PrecisionReporters.Platform.Shared.Helpers;
 
 namespace PrecisionReporters.Platform.Domain.Services
 {
@@ -25,8 +28,10 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly ILogger<CaseService> _logger;
         private readonly ITransactionHandler _transactionHandler;
         private readonly IPermissionService _permissionService;
+        private readonly DepositionConfiguration _depositionConfiguration;
 
-        public CaseService(ICaseRepository caseRepository, IUserService userService, IDocumentService documentService, IDepositionService depositionService, ILogger<CaseService> logger, ITransactionHandler transactionHandler, IPermissionService permissionService)
+
+        public CaseService(ICaseRepository caseRepository, IUserService userService, IDocumentService documentService, IDepositionService depositionService, ILogger<CaseService> logger, ITransactionHandler transactionHandler, IPermissionService permissionService, IOptions<DepositionConfiguration> depositionConfiguration)
         {
             _caseRepository = caseRepository;
             _userService = userService;
@@ -35,6 +40,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             _depositionService = depositionService;
             _transactionHandler = transactionHandler;
             _permissionService = permissionService;
+            _depositionConfiguration = depositionConfiguration.Value;
         }
 
         public async Task<List<Case>> GetCases(Expression<Func<Case, bool>> filter = null, string[] include = null)
@@ -162,6 +168,20 @@ namespace PrecisionReporters.Platform.Domain.Services
                             return depositionResult.ToResult<Case>();
                         }
                         var newDeposition = depositionResult.Value;
+
+                        var offsetHours = int.Parse(_depositionConfiguration.DepositionScheduleRestrictionHours);
+
+                        DateTime now = DateTime.UtcNow;
+
+                        DateTime limitDate = WorkingDayHelper.WorkingDayUsingOffset(now, offsetHours);
+
+                        if ((newDeposition.StartDate >= now && newDeposition.StartDate < limitDate && !userResult.IsAdmin) || ((userResult.IsAdmin && newDeposition.StartDate.DayOfWeek == DayOfWeek.Saturday) || (userResult.IsAdmin && newDeposition.StartDate.DayOfWeek == DayOfWeek.Sunday)))
+                        {
+                            _logger.LogError($"Unable to schedule a Deposition within 48 Hours for Deposition ID: {newDeposition.Id}");
+                            _logger.LogInformation("Removing uploaded documents");
+                            await _documentService.DeleteUploadedFiles(uploadedDocuments);
+                            return Result.Fail(new Error("IF YOU ARE BOOKING A DEPOSITION WITHIN 48 HOURS, PLEASE CALL REMOTE LEGAL AT (646) 461-3400 OR EMAIL scheduling@remotelegal.com"));
+                        }
 
                         if (newDeposition.Participants != null)
                         {
