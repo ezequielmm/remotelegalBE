@@ -1,0 +1,135 @@
+version: "3.9"
+services:
+  db:
+    image: mysql:5.7
+    volumes:
+      - ./src/temp/database:/docker-entrypoint-initdb.d/:ro
+    ports: 
+      - "3306:3306"
+    restart: always
+    environment: 
+      MYSQL_ROOT_USER: root
+      MYSQL_ALLOW_EMPTY_PASSWORD: 'true'
+      MYSQL_DATABASE: RemoteLegal-Dev
+  redis:
+    image: redis:6.2
+  transcript-api:
+    build:
+      context: .
+      dockerfile: ./src/PrecisionReporters.Platform/PrecisionReporters.Platform.Transcript.Api/Docker/Dockerfile
+    image: prp-be-transcription-api
+    ports:
+      - "44337:80"
+    depends_on: 
+      - db
+      - redis
+    restart: on-failure
+    environment:
+      AppConfiguration__UrlPathConfiguration__VerifyUserUrl: /VerifyUser
+      AppConfiguration__TwilioAccountConfiguration__StatusCallbackUrl: $TWILIO_STATUSCALLBACKURL
+      AppConfiguration__TwilioAccountConfiguration__S3DestinationSecret: $TWILIO_S3DESTINATIONSECRET
+      AppConfiguration__TwilioAccountConfiguration__S3DestinationKey: $TWILIO_S3DESTINATIONKEY
+      AppConfiguration__TwilioAccountConfiguration__S3DestinationBucket: $TWILIO_S3DESTINATIONBUCKET
+      AppConfiguration__TwilioAccountConfiguration__ConversationServiceId: $TWILIO_CONV_SERVICE_ID
+      AppConfiguration__TwilioAccountConfiguration__AuthToken: $TWILIO_AUTH_TOKEN
+      AppConfiguration__TwilioAccountConfiguration__ApiKeySid: $TWILIO_APIKEY_SID
+      AppConfiguration__TwilioAccountConfiguration__ApiKeySecret: $TWILIO_APIKEY_SECRET
+      AppConfiguration__TwilioAccountConfiguration__AccountSid: $TWILIO_ACCOUNT_SID
+      AppConfiguration__GcpConfiguration__type: service_account
+      AppConfiguration__GcpConfiguration__token_uri: https://oauth2.googleapis.com/token
+      AppConfiguration__GcpConfiguration__project_id: $GCP_PROJECT_ID
+      AppConfiguration__GcpConfiguration__private_key_id: $GCP_PRIVATE_KEY_ID
+      AppConfiguration__GcpConfiguration__private_key: $GCP_PRIVATE_KEY
+      AppConfiguration__GcpConfiguration__client_x509_cert_url: $GCP_X509_CERT_URL
+      AppConfiguration__GcpConfiguration__client_id: $GCP_CLIENT_ID
+      AppConfiguration__GcpConfiguration__client_email: $GCP_CLIENT_EMAIL
+      AppConfiguration__GcpConfiguration__auth_uri: https://accounts.google.com/o/oauth2/auth
+      AppConfiguration__GcpConfiguration__auth_provider_x509_cert_url: https://www.googleapis.com/oauth2/v1/certs
+      AppConfiguration__EmailConfiguration__VerifyEmailTemplate: Content\\html\\verify-account-email-template.html
+      AppConfiguration__EmailConfiguration__VerifyEmailSubject: Verify your Remote Legal account
+      AppConfiguration__EmailConfiguration__Sender: help@remotelegal.com
+      AppConfiguration__EmailConfiguration__EmailHelp: help@remotelegal.com
+      AppConfiguration__DocumentConfiguration__PostDepoVideoBucket: $DOCUMENT_POSTDEPOVIDEOBUCKET
+      AppConfiguration__DocumentConfiguration__EnvironmentFilesBucket: $DOCUMENT_ENVIRONMENTFILESBUCKET
+      AppConfiguration__DocumentConfiguration__CloudfrontXmlKey: $CLOUD_FRONT_XML_KEY
+      AppConfiguration__DocumentConfiguration__CloudfrontPrivateKey: $CLOUD_FRONT_PRIVATE_KEY
+      AppConfiguration__DocumentConfiguration__CloudfrontPolicyStatement: '{\"Statement\":[{\"Resource\":\"RESOURCE\",\"Condition\":{\"DateLessThan\":{\"AWS:EpochTime\":EXPIRES}}}]}'
+      AppConfiguration__DocumentConfiguration__BucketName: $DOCUMENT_BUCKETNAME
+      AppConfiguration__DocumentConfiguration__PDFTronLicenseKey: $DOCUMENT_PDFTRON_LICENCE
+      AppConfiguration__ConnectionStrings__RedisConnectionString: redis:6379
+      AppConfiguration__ConnectionStrings__MySqlConnection: server=db;database=RemoteLegal-Dev;user=root;Allow User Variables=True
+      AppConfiguration__ConfigurationFlags__IsSwaggerUiEnabled: 'true'
+      AppConfiguration__ConfigurationFlags__IsDeveloperExceptionPageEnabled: 'true'
+      AppConfiguration__CognitoConfiguration__UserPoolId: $COGNITO_USERPOOLID
+      AppConfiguration__CognitoConfiguration__GuestUsersPass: $COGNITO_GUEST_PASS
+      AppConfiguration__CognitoConfiguration__GuestUsersGroup: Guests
+      AppConfiguration__CognitoConfiguration__GuestClientId: $COGNITO_GUEST_CLIENTID
+      AppConfiguration__CognitoConfiguration__ClientId: $COGNITO_CLIENTID
+      AppConfiguration__CognitoConfiguration__AWSSecretAccessKey: $COGNITO_AWSSECRETACCESSID
+      AppConfiguration__CognitoConfiguration__AWSRegion: $COGNITO_AWSREGION
+      AppConfiguration__CognitoConfiguration__AWSAccessKey: $COGNITO_AWSACCESSKEY
+      AppConfiguration__CognitoConfiguration__Authority: $COGNITO_AUTHORITY
+      AppConfiguration__AzureCognitiveServiceConfiguration__SubscriptionKey: $AZURE_SUBS_KEY
+      AppConfiguration__AwsStorageConfiguration__S3DestinationSecret: $AWSSTORAGE_S3DESTINATIONSECRET
+      AppConfiguration__AwsStorageConfiguration__S3DestinationKey: $AWSSTORAGE_S3DESTINATIONKEY
+      AppConfiguration__AwsStorageConfiguration__S3BucketRegion: $AWSSTORAGE_S3BUCKETREGION
+  be-api:
+    build:
+      context: .
+      dockerfile: ./src/PrecisionReporters.Platform/PrecisionReporters.Platform.Api/Docker/Dockerfile
+    image: prp-be-api
+    ports:
+      - "5000:80"
+    depends_on: 
+      - db
+      - redis
+    restart: on-failure
+    environment:
+      AppConfiguration__UrlPathConfiguration__VerifyUserUrl: /VerifyUser
+      AppConfiguration__TwilioAccountConfiguration__StatusCallbackUrl: $TWILIO_STATUSCALLBACKURL
+      AppConfiguration__TwilioAccountConfiguration__S3DestinationSecret: $TWILIO_S3DESTINATIONSECRET
+      AppConfiguration__TwilioAccountConfiguration__S3DestinationKey: $TWILIO_S3DESTINATIONKEY
+      AppConfiguration__TwilioAccountConfiguration__S3DestinationBucket: $TWILIO_S3DESTINATIONBUCKET
+      AppConfiguration__TwilioAccountConfiguration__ConversationServiceId: $TWILIO_CONV_SERVICE_ID
+      AppConfiguration__TwilioAccountConfiguration__AuthToken: $TWILIO_AUTH_TOKEN
+      AppConfiguration__TwilioAccountConfiguration__ApiKeySid: $TWILIO_APIKEY_SID
+      AppConfiguration__TwilioAccountConfiguration__ApiKeySecret: $TWILIO_APIKEY_SECRET
+      AppConfiguration__TwilioAccountConfiguration__AccountSid: $TWILIO_ACCOUNT_SID
+      AppConfiguration__GcpConfiguration__type: service_account
+      AppConfiguration__GcpConfiguration__token_uri: https://oauth2.googleapis.com/token
+      AppConfiguration__GcpConfiguration__project_id: $GCP_PROJECT_ID
+      AppConfiguration__GcpConfiguration__private_key_id: $GCP_PRIVATE_KEY_ID
+      AppConfiguration__GcpConfiguration__private_key: $GCP_PRIVATE_KEY
+      AppConfiguration__GcpConfiguration__client_x509_cert_url: $GCP_X509_CERT_URL
+      AppConfiguration__GcpConfiguration__client_id: $GCP_CLIENT_ID
+      AppConfiguration__GcpConfiguration__client_email: $GCP_CLIENT_EMAIL
+      AppConfiguration__GcpConfiguration__auth_uri: https://accounts.google.com/o/oauth2/auth
+      AppConfiguration__GcpConfiguration__auth_provider_x509_cert_url: https://www.googleapis.com/oauth2/v1/certs
+      AppConfiguration__EmailConfiguration__VerifyEmailTemplate: Content\\html\\verify-account-email-template.html
+      AppConfiguration__EmailConfiguration__VerifyEmailSubject: Verify your Remote Legal account
+      AppConfiguration__EmailConfiguration__Sender: help@remotelegal.com
+      AppConfiguration__EmailConfiguration__EmailHelp: help@remotelegal.com
+      AppConfiguration__DocumentConfiguration__PostDepoVideoBucket: $DOCUMENT_POSTDEPOVIDEOBUCKET
+      AppConfiguration__DocumentConfiguration__EnvironmentFilesBucket: $DOCUMENT_ENVIRONMENTFILESBUCKET
+      AppConfiguration__DocumentConfiguration__CloudfrontXmlKey: $CLOUD_FRONT_XML_KEY
+      AppConfiguration__DocumentConfiguration__CloudfrontPrivateKey: $CLOUD_FRONT_PRIVATE_KEY
+      AppConfiguration__DocumentConfiguration__CloudfrontPolicyStatement: '{\"Statement\":[{\"Resource\":\"RESOURCE\",\"Condition\":{\"DateLessThan\":{\"AWS:EpochTime\":EXPIRES}}}]}'
+      AppConfiguration__DocumentConfiguration__BucketName: $DOCUMENT_BUCKETNAME
+      AppConfiguration__DocumentConfiguration__PDFTronLicenseKey: $DOCUMENT_PDFTRON_LICENCE
+      AppConfiguration__ConnectionStrings__RedisConnectionString: redis:6379
+      AppConfiguration__ConnectionStrings__MySqlConnection: server=db;database=RemoteLegal-Dev;user=root;Allow User Variables=True
+      AppConfiguration__ConfigurationFlags__IsSwaggerUiEnabled: 'true'
+      AppConfiguration__ConfigurationFlags__IsDeveloperExceptionPageEnabled: 'true'
+      AppConfiguration__CognitoConfiguration__UserPoolId: $COGNITO_USERPOOLID
+      AppConfiguration__CognitoConfiguration__GuestUsersPass: $COGNITO_GUEST_PASS
+      AppConfiguration__CognitoConfiguration__GuestUsersGroup: Guests
+      AppConfiguration__CognitoConfiguration__GuestClientId: $COGNITO_GUEST_CLIENTID
+      AppConfiguration__CognitoConfiguration__ClientId: $COGNITO_CLIENTID
+      AppConfiguration__CognitoConfiguration__AWSSecretAccessKey: $COGNITO_AWSSECRETACCESSID
+      AppConfiguration__CognitoConfiguration__AWSRegion: $COGNITO_AWSREGION
+      AppConfiguration__CognitoConfiguration__AWSAccessKey: $COGNITO_AWSACCESSKEY
+      AppConfiguration__CognitoConfiguration__Authority: $COGNITO_AUTHORITY
+      AppConfiguration__AzureCognitiveServiceConfiguration__SubscriptionKey: $AZURE_SUBS_KEY
+      AppConfiguration__AwsStorageConfiguration__S3DestinationSecret: $AWSSTORAGE_S3DESTINATIONSECRET
+      AppConfiguration__AwsStorageConfiguration__S3DestinationKey: $AWSSTORAGE_S3DESTINATIONKEY
+      AppConfiguration__AwsStorageConfiguration__S3BucketRegion: $AWSSTORAGE_S3BUCKETREGION

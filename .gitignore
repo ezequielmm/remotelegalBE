@@ -353,3 +353,4 @@ src/PrecisionReporters.Platform/PrecisionReporters.Platform.UnitTests/coverage.o
 src/PrecisionReporters.Platform/PrecisionReporters.Platform.Api/appsettings.Localhost.json
 .vscode/tasks.json
 .vscode/launch.json
+.env
