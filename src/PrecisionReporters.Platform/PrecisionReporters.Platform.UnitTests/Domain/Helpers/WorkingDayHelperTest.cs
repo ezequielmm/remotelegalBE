@@ -15,7 +15,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Helpers
             DateTime actual;
 
             // Act
-            actual = WorkingDayHelper.WorkingDayUsingOffset(date, 48);
+            actual = WorkingDayHelper.GetWorkingDayUsingOffset(date, 48);
 
             // Assert
             Assert.Equal(expected, actual);
@@ -30,7 +30,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Helpers
             DateTime actual;
 
             // Act
-            actual = WorkingDayHelper.WorkingDayUsingOffset(date, 48);
+            actual = WorkingDayHelper.GetWorkingDayUsingOffset(date, 48);
 
             // Assert
             Assert.Equal(expected, actual);
@@ -45,7 +45,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Helpers
             DateTime actual;
 
             // Act
-            actual = WorkingDayHelper.WorkingDayUsingOffset(date, 48);
+            actual = WorkingDayHelper.GetWorkingDayUsingOffset(date, 48);
 
             // Assert
             Assert.Equal(expected, actual);
@@ -61,7 +61,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Helpers
             DateTime actual;
 
             // Act
-            actual = WorkingDayHelper.WorkingDayUsingOffset(date, 48);
+            actual = WorkingDayHelper.GetWorkingDayUsingOffset(date, 48);
 
             // Assert
             Assert.Equal(expected, actual);
@@ -76,7 +76,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Helpers
             DateTime actual;
 
             // Act
-            actual = WorkingDayHelper.WorkingDayUsingOffset(date, 48);
+            actual = WorkingDayHelper.GetWorkingDayUsingOffset(date, 48);
 
             // Assert
             Assert.Equal(expected, actual);
@@ -92,7 +92,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Helpers
             DateTime actual;
 
             // Act
-            actual = WorkingDayHelper.WorkingDayUsingOffset(date, 48);
+            actual = WorkingDayHelper.GetWorkingDayUsingOffset(date, 48);
 
             // Assert
             Assert.Equal(expected, actual);
@@ -107,7 +107,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Helpers
             DateTime actual;
 
             // Act
-            actual = WorkingDayHelper.WorkingDayUsingOffset(date, 48);
+            actual = WorkingDayHelper.GetWorkingDayUsingOffset(date, 48);
 
             // Assert
             Assert.Equal(expected, actual);
@@ -122,7 +122,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Helpers
             DateTime actual;
 
             // Act
-            actual = WorkingDayHelper.WorkingDayUsingOffset(date, 72);
+            actual = WorkingDayHelper.GetWorkingDayUsingOffset(date, 72);
 
             // Assert
             Assert.Equal(expected, actual);
@@ -137,7 +137,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Helpers
             DateTime actual;
 
             // Act
-            actual = WorkingDayHelper.WorkingDayUsingOffset(date, 72);
+            actual = WorkingDayHelper.GetWorkingDayUsingOffset(date, 72);
 
             // Assert
             Assert.Equal(expected, actual);
@@ -154,7 +154,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Helpers
             DateTime actual;
 
             // Act
-            actual = WorkingDayHelper.WorkingDayUsingOffset(date, 72);
+            actual = WorkingDayHelper.GetWorkingDayUsingOffset(date, 72);
 
             // Assert
             Assert.Equal(expected, actual);
@@ -169,7 +169,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Helpers
             DateTime actual;
 
             // Act
-            actual = WorkingDayHelper.WorkingDayUsingOffset(date, 72);
+            actual = WorkingDayHelper.GetWorkingDayUsingOffset(date, 72);
 
             // Assert
             Assert.Equal(expected, actual);
@@ -184,7 +184,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Helpers
             DateTime actual;
 
             // Act
-            actual = WorkingDayHelper.WorkingDayUsingOffset(date, 72);
+            actual = WorkingDayHelper.GetWorkingDayUsingOffset(date, 72);
 
             // Assert
             Assert.Equal(expected, actual);
@@ -199,7 +199,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Helpers
             DateTime actual;
 
             // Act
-            actual = WorkingDayHelper.WorkingDayUsingOffset(date, 72);
+            actual = WorkingDayHelper.GetWorkingDayUsingOffset(date, 72);
 
             // Assert
             Assert.Equal(expected, actual);
@@ -215,7 +215,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Helpers
             DateTime actual;
 
             // Act
-            actual = WorkingDayHelper.WorkingDayUsingOffset(date, 72);
+            actual = WorkingDayHelper.GetWorkingDayUsingOffset(date, 72);
 
             // Assert
             Assert.Equal(expected, actual);
@@ -230,7 +230,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Helpers
             DateTime actual;
 
             // Act
-            actual = WorkingDayHelper.WorkingDayUsingOffset(date, 96);
+            actual = WorkingDayHelper.GetWorkingDayUsingOffset(date, 96);
 
             // Assert
             Assert.Equal(expected, actual);
@@ -245,7 +245,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Helpers
             DateTime actual;
 
             // Act
-            actual = WorkingDayHelper.WorkingDayUsingOffset(date, 96);
+            actual = WorkingDayHelper.GetWorkingDayUsingOffset(date, 96);
 
             // Assert
             Assert.Equal(expected, actual);
@@ -260,7 +260,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Helpers
             DateTime actual;
 
             // Act
-            actual = WorkingDayHelper.WorkingDayUsingOffset(date, 96);
+            actual = WorkingDayHelper.GetWorkingDayUsingOffset(date, 96);
 
             // Assert
             Assert.Equal(expected, actual);
@@ -275,7 +275,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Helpers
             DateTime actual;
 
             // Act
-            actual = WorkingDayHelper.WorkingDayUsingOffset(date, 96);
+            actual = WorkingDayHelper.GetWorkingDayUsingOffset(date, 96);
 
             // Assert
             Assert.Equal(expected, actual);
@@ -290,7 +290,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Helpers
             DateTime actual;
 
             // Act
-            actual = WorkingDayHelper.WorkingDayUsingOffset(date, 96);
+            actual = WorkingDayHelper.GetWorkingDayUsingOffset(date, 96);
 
             // Assert
             Assert.Equal(expected, actual);
@@ -305,7 +305,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Helpers
             DateTime actual;
 
             // Act
-            actual = WorkingDayHelper.WorkingDayUsingOffset(date, 96);
+            actual = WorkingDayHelper.GetWorkingDayUsingOffset(date, 96);
 
             // Assert
             Assert.Equal(expected, actual);
@@ -320,7 +320,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Helpers
             DateTime actual;
 
             // Act
-            actual = WorkingDayHelper.WorkingDayUsingOffset(date, 96);
+            actual = WorkingDayHelper.GetWorkingDayUsingOffset(date, 96);
 
             // Assert
             Assert.Equal(expected, actual);
@@ -336,7 +336,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Helpers
             DateTime actual;
 
             // Act
-            actual = WorkingDayHelper.WorkingDayUsingOffset(date, 120);
+            actual = WorkingDayHelper.GetWorkingDayUsingOffset(date, 120);
 
             // Assert
             Assert.Equal(expected, actual);
@@ -351,7 +351,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Helpers
             DateTime actual;
 
             // Act
-            actual = WorkingDayHelper.WorkingDayUsingOffset(date, 120);
+            actual = WorkingDayHelper.GetWorkingDayUsingOffset(date, 120);
 
             // Assert
             Assert.Equal(expected, actual);
@@ -366,7 +366,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Helpers
             DateTime actual;
 
             // Act
-            actual = WorkingDayHelper.WorkingDayUsingOffset(date, 120);
+            actual = WorkingDayHelper.GetWorkingDayUsingOffset(date, 120);
 
             // Assert
             Assert.Equal(expected, actual);
@@ -381,7 +381,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Helpers
             DateTime actual;
 
             // Act
-            actual = WorkingDayHelper.WorkingDayUsingOffset(date, 120);
+            actual = WorkingDayHelper.GetWorkingDayUsingOffset(date, 120);
 
             // Assert
             Assert.Equal(expected, actual);
@@ -396,7 +396,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Helpers
             DateTime actual;
 
             // Act
-            actual = WorkingDayHelper.WorkingDayUsingOffset(date, 120);
+            actual = WorkingDayHelper.GetWorkingDayUsingOffset(date, 120);
 
             // Assert
             Assert.Equal(expected, actual);
@@ -411,7 +411,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Helpers
             DateTime actual;
 
             // Act
-            actual = WorkingDayHelper.WorkingDayUsingOffset(date, 120);
+            actual = WorkingDayHelper.GetWorkingDayUsingOffset(date, 120);
 
             // Assert
             Assert.Equal(expected, actual);
@@ -426,7 +426,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Helpers
             DateTime actual;
 
             // Act
-            actual = WorkingDayHelper.WorkingDayUsingOffset(date, 120);
+            actual = WorkingDayHelper.GetWorkingDayUsingOffset(date, 120);
 
             // Assert
             Assert.Equal(expected, actual);
@@ -441,7 +441,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Helpers
             DateTime actual;
 
             // Act
-            actual = WorkingDayHelper.WorkingDayUsingOffset(date, 144);
+            actual = WorkingDayHelper.GetWorkingDayUsingOffset(date, 144);
 
             // Assert
             Assert.Equal(expected, actual);
@@ -456,7 +456,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Helpers
             DateTime actual;
 
             // Act
-            actual = WorkingDayHelper.WorkingDayUsingOffset(date, 144);
+            actual = WorkingDayHelper.GetWorkingDayUsingOffset(date, 144);
 
             // Assert
             Assert.Equal(expected, actual);
@@ -471,7 +471,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Helpers
             DateTime actual;
 
             // Act
-            actual = WorkingDayHelper.WorkingDayUsingOffset(date, 144);
+            actual = WorkingDayHelper.GetWorkingDayUsingOffset(date, 144);
 
             // Assert
             Assert.Equal(expected, actual);
@@ -486,7 +486,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Helpers
             DateTime actual;
 
             // Act
-            actual = WorkingDayHelper.WorkingDayUsingOffset(date, 144);
+            actual = WorkingDayHelper.GetWorkingDayUsingOffset(date, 144);
 
             // Assert
             Assert.Equal(expected, actual);
@@ -501,7 +501,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Helpers
             DateTime actual;
 
             // Act
-            actual = WorkingDayHelper.WorkingDayUsingOffset(date, 144);
+            actual = WorkingDayHelper.GetWorkingDayUsingOffset(date, 144);
 
             // Assert
             Assert.Equal(expected, actual);
@@ -516,7 +516,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Helpers
             DateTime actual;
 
             // Act
-            actual = WorkingDayHelper.WorkingDayUsingOffset(date, 144);
+            actual = WorkingDayHelper.GetWorkingDayUsingOffset(date, 144);
 
             // Assert
             Assert.Equal(expected, actual);
@@ -531,7 +531,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Helpers
             DateTime actual;
 
             // Act
-            actual = WorkingDayHelper.WorkingDayUsingOffset(date, 144);
+            actual = WorkingDayHelper.GetWorkingDayUsingOffset(date, 144);
 
             // Assert
             Assert.Equal(expected, actual);

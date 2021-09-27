@@ -6,7 +6,7 @@ namespace PrecisionReporters.Platform.Shared.Helpers
 {
     public static class WorkingDayHelper
     {
-        public static DateTime WorkingDayUsingOffset(DateTime date, int offset)
+        public static DateTime GetWorkingDayUsingOffset(DateTime date, int offset)
         {
             DateTime workingDay = date;
 

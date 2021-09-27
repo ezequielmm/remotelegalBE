@@ -173,7 +173,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
                         DateTime now = DateTime.UtcNow;
 
-                        DateTime limitDate = WorkingDayHelper.WorkingDayUsingOffset(now, offsetHours);
+                        DateTime limitDate = WorkingDayHelper.GetWorkingDayUsingOffset(now, offsetHours);
 
                         if ((newDeposition.StartDate >= now && newDeposition.StartDate < limitDate && !userResult.IsAdmin) || ((userResult.IsAdmin && newDeposition.StartDate.DayOfWeek == DayOfWeek.Saturday) || (userResult.IsAdmin && newDeposition.StartDate.DayOfWeek == DayOfWeek.Sunday)))
                         {
