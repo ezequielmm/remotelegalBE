@@ -32,7 +32,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         private PushAudioInputStream _audioInputStream;
         private SpeechRecognizer _recognizer;
-        private bool _speechRecognizerSessionStopped = false;
+        private bool _continuousRecognitionStopped = false;
 
         private bool _disposed = false;
 
@@ -54,7 +54,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task StartRecognitionAsync(string userEmail, string depositionId, int sampleRate)
         {
-            _logger.LogDebug("Starting continuous recognition. Deposition: {DepositionId}. User: {UserEmail}. Sample rate: {SampleRate}.",
+            _logger.LogInformation("Starting continuous recognition. Deposition: {DepositionId}. User: {UserEmail}. Sample rate: {SampleRate}.",
                 depositionId, userEmail, sampleRate);
 
             await InitializeInstanceInformationAsync(userEmail, depositionId);
@@ -80,7 +80,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public bool TryAddAudioChunkToBuffer(byte[] audioChunk)
         {
-            if (_speechRecognizerSessionStopped)
+            if (_continuousRecognitionStopped)
             {
                 return false;
             }
@@ -91,8 +91,9 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public Task StopRecognitionAsync()
         {
-            _logger.LogDebug("Stopping continuous recognition. Deposition: {DepositionId}. User: {UserEmail}. Transcription: {CurrentTranscriptionInfoId}.",
+            _logger.LogInformation("Stopping continuous recognition. Deposition: {DepositionId}. User: {UserEmail}. Transcription: {CurrentTranscriptionInfoId}.",
                 _instanceDepositionId, _instanceUserEmail, _currentTranscriptionInfo?.Id);
+            _continuousRecognitionStopped = true;
             return _recognizer.StopContinuousRecognitionAsync();
         }
 
@@ -108,7 +109,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             var eventDateTime = DateTime.UtcNow;
             if (e.Result.Reason != ResultReason.RecognizingSpeech)
             {
-                _logger.LogDebug("On SpeechRecognizer Recognized event had an invalid reason: {Reason}. Deposition: {DepositionId}. User: {UserEmail}. Transcription: {CurrentTranscriptionInfoId}.",
+                _logger.LogInformation("On SpeechRecognizer Recognized event had an invalid reason: {Reason}. Deposition: {DepositionId}. User: {UserEmail}. Transcription: {CurrentTranscriptionInfoId}.",
                     e.Result.Reason, _instanceDepositionId, _instanceUserEmail, _currentTranscriptionInfo?.Id);
                 return;
             }
@@ -132,7 +133,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             var eventDateTime = DateTime.UtcNow;
             if (e.Result.Reason != ResultReason.RecognizedSpeech)
             {
-                _logger.LogDebug("On SpeechRecognizer Recognized event had an invalid reason: {Reason}. Deposition: {DepositionId}. User: {UserEmail}. Transcription: {CurrentTranscriptionInfoId}.",
+                _logger.LogInformation("On SpeechRecognizer Recognized event had an invalid reason: {Reason}. Deposition: {DepositionId}. User: {UserEmail}. Transcription: {CurrentTranscriptionInfoId}.",
                     e.Result.Reason, _instanceDepositionId, _instanceUserEmail, _currentTranscriptionInfo?.Id);
                 return;
             }
@@ -140,7 +141,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             var silenceRecognized = string.IsNullOrEmpty(e.Result.Text);
             if (silenceRecognized)
             {
-                _logger.LogDebug("On SpeechRecognizer Recognized event recognized a silence. Deposition: {DepositionId}. User: {UserEmail}. Transcription: {CurrentTranscriptionInfoId}.",
+                _logger.LogInformation("On SpeechRecognizer Recognized event recognized a silence. Deposition: {DepositionId}. User: {UserEmail}. Transcription: {CurrentTranscriptionInfoId}.",
                     e.Result.Reason, _instanceDepositionId, _instanceUserEmail, _currentTranscriptionInfo?.Id);
                 return;
             }
@@ -152,8 +153,8 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         private void OnSpeechRecognizerSessionStopped(object sender, SessionEventArgs e)
         {
-            _speechRecognizerSessionStopped = true;
-            _logger.LogDebug("Speech recognition session stopped. Deposition: {DepositionId}. User: {UserEmail}. Transcription: {CurrentTranscriptionInfoId}.",
+            _continuousRecognitionStopped = true;
+            _logger.LogInformation("Speech recognition session stopped. Deposition: {DepositionId}. User: {UserEmail}. Transcription: {CurrentTranscriptionInfoId}.",
                 _instanceDepositionId, _instanceUserEmail, _currentTranscriptionInfo?.Id);
         }
 
@@ -161,12 +162,15 @@ namespace PrecisionReporters.Platform.Domain.Services
         {
             var speechRecognitionResult = e.Result;
             var cancellationDetails = CancellationDetails.FromResult(speechRecognitionResult);
-            _logger.LogWarning("Speech recognition canceled due to {Reason}. Deposition: {DepositionId}. User: {UserEmail}. Transcription: {CurrentTranscriptionInfoId}.",
-                cancellationDetails.Reason, _instanceDepositionId, _instanceUserEmail, _currentTranscriptionInfo?.Id);
+            _logger.LogInformation("Speech recognition canceled due to {Reason}. Deposition: {DepositionId}. User: {UserEmail}. Transcription: {CurrentTranscriptionInfoId}. ContinuousRecognitionStopped: {ContinuousRecognitionStopped}.",
+                cancellationDetails.Reason, _instanceDepositionId, _instanceUserEmail, _currentTranscriptionInfo?.Id, _continuousRecognitionStopped);
             if (cancellationDetails.Reason == CancellationReason.Error)
             {
-                _logger.LogError("Speech recognition canceled due to an error. (ErrorCode: {ErrorCode} | ErrorDetails: {ErrorDetails}). Deposition: {DepositionId}. User: {UserEmail}. Transcription: {CurrentTranscriptionInfoId}.",
-                    cancellationDetails.ErrorCode, cancellationDetails.ErrorDetails, _instanceDepositionId, _instanceUserEmail, _currentTranscriptionInfo?.Id);
+                var logLevel = _continuousRecognitionStopped
+                    ? LogLevel.Warning
+                    : LogLevel.Error;
+                _logger.Log(logLevel, "Speech recognition canceled due to an error. (ErrorCode: {ErrorCode} | ErrorDetails: {ErrorDetails}). Deposition: {DepositionId}. User: {UserEmail}. Transcription: {CurrentTranscriptionInfoId}. ContinuousRecognitionStopped: {ContinuousRecognitionStopped}.",
+                    cancellationDetails.ErrorCode, cancellationDetails.ErrorDetails, _instanceDepositionId, _instanceUserEmail, _currentTranscriptionInfo?.Id, _continuousRecognitionStopped);
                 ThrowExceptionIfAzureClosedConnectionDueToInactivity(cancellationDetails);
             }
         }
@@ -184,7 +188,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 return;
             }
 
-            _speechRecognizerSessionStopped = true;
+            _continuousRecognitionStopped = true;
             throw new SpeechRecognizerInactivityException(cancellationDetails);
         }
 
@@ -241,7 +245,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             transcriptionToStore.CopyFrom(transcription);
             transcriptionToStore.TranscriptDateTime = transcriptionToStore.TranscriptDateTime.AddMilliseconds(-transcriptionToStore.TranscriptDateTime.Millisecond);
 
-            _logger.LogDebug("Attempting to store transcription. Deposition: {DepositionId}. User: {UserEmail}. Transcription: {TranscriptionId}.",
+            _logger.LogInformation("Attempting to store transcription. Deposition: {DepositionId}. User: {UserEmail}. Transcription: {TranscriptionId}.",
                 transcription.DepositionId, _instanceUserEmail, transcription.Id);
 
             _fireAndForgetService.Execute<ITranscriptionService>(x =>
@@ -265,7 +269,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (disposing)
             {
                 // Dispose managed resources
-                _logger.LogDebug("Disposing live transcription service. Deposition: {DepositionId}. User: {UserEmail}. Transcription: {CurrentTranscriptionInfoId}.",
+                _logger.LogInformation("Disposing live transcription service. Deposition: {DepositionId}. User: {UserEmail}. Transcription: {CurrentTranscriptionInfoId}.",
                     _instanceDepositionId, _instanceUserEmail, _currentTranscriptionInfo?.Id);
                 Task.Run(() =>
                 {
@@ -274,7 +278,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                         // This takes too long so we are using fire and forget
                         _recognizer?.Dispose();
                         _audioInputStream?.Dispose();
-                        _logger.LogDebug("Successfully dispos live transcription service. Deposition: {DepositionId}. User: {UserEmail}. Transcription: {CurrentTranscriptionInfoId}.",
+                        _logger.LogInformation("Successfully dispos live transcription service. Deposition: {DepositionId}. User: {UserEmail}. Transcription: {CurrentTranscriptionInfoId}.",
                             _instanceDepositionId, _instanceUserEmail, _currentTranscriptionInfo?.Id);
                     }
                     catch (Exception ex)

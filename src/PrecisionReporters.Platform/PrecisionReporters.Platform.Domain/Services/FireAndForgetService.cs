@@ -21,7 +21,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         {
             Task.Run(async () =>
             {
-                _logger.LogDebug("Registered fire and forget task for service {Service}.", typeof(TRequiredService).Name);
+                _logger.LogInformation("Registered fire and forget task for service {Service}.", typeof(TRequiredService).Name);
                 try
                 {
                     using var scope = _serviceScopeFactory.CreateScope();

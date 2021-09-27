@@ -31,14 +31,14 @@ namespace PrecisionReporters.Platform.Transcript.Api.Utils
                 await semaphoreSlim.WaitAsync();
                 if (_transcriptionLiveServices.ContainsKey(connectionId))
                 {
-                    _logger.LogDebug($"A {nameof(ITranscriptionLiveService)} for {{ConnectionId}} was found. Recognition was already initialized.", connectionId);
+                    _logger.LogInformation($"A {nameof(ITranscriptionLiveService)} for {{ConnectionId}} was found. Recognition was already initialized.", connectionId);
                     return;
                 }
 
                 _logger.LogInformation($"Creating {nameof(ITranscriptionLiveService)} and initializing recognition for user {{UserEmail}} on deposition {{DepositionId}} with sample rate {{SampleRate}}.", userEmail, depositionId, sampleRate);
                 var transcriptionService = await CreateAndStartTranscriptionServiceAsync(userEmail, depositionId, sampleRate);
                 _transcriptionLiveServices.TryAdd(connectionId, transcriptionService);
-                _logger.LogDebug("Recognition started for {ConnectionId}.", connectionId);
+                _logger.LogInformation("Recognition started for {ConnectionId}.", connectionId);
             }
             finally
             {
@@ -51,10 +51,10 @@ namespace PrecisionReporters.Platform.Transcript.Api.Utils
 
         public async Task UnsubscribeAsync(string connectionId)
         {
-            _logger.LogDebug("Attempting to stop recognition for {ConnectionId}.", connectionId);
+            _logger.LogInformation("Attempting to stop recognition for {ConnectionId}.", connectionId);
             if (!_transcriptionLiveServices.TryRemove(connectionId, out var transcriptionService))
             {
-                _logger.LogDebug("Recognition for {ConnectionId} was already stopped.", connectionId);
+                _logger.LogInformation("Recognition for {ConnectionId} was already stopped.", connectionId);
                 return;
             }
 
