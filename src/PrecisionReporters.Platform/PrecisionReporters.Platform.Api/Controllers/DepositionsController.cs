@@ -38,6 +38,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
         private readonly IMapper<UserSystemInfo, UserSystemInfoDto, object> _userSystemInfoMapper;
         private readonly IMapper<DeviceInfo, DeviceInfoDto, object> _userDeviceMapper;
         private readonly IMapper<AwsSessionInfo, AwsInfoDto, object> _awsSessionInfoMapper;
+        private readonly IUserService _userService;
 
         public DepositionsController(IDepositionService depositionService,
             IMapper<Deposition, DepositionDto, CreateDepositionDto> depositionMapper,
@@ -48,7 +49,8 @@ namespace PrecisionReporters.Platform.Api.Controllers
             IMapper<Participant, ParticipantTechStatusDto, object> participantTechStatusMapper,
             IMapper<UserSystemInfo, UserSystemInfoDto, object> userSystemInfoMapper,
             IMapper<DeviceInfo, DeviceInfoDto, object> userDeviceMapper,
-            IMapper<AwsSessionInfo, AwsInfoDto, object> awsInfoMapper)
+            IMapper<AwsSessionInfo, AwsInfoDto, object> awsInfoMapper,
+            IUserService userService)
         {
             _depositionService = depositionService;
             _depositionMapper = depositionMapper;
@@ -64,6 +66,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
             _userSystemInfoMapper = userSystemInfoMapper;
             _userDeviceMapper = userDeviceMapper;
             _awsSessionInfoMapper = awsInfoMapper;
+            _userService = userService;
         }
 
         [HttpGet]
@@ -138,9 +141,16 @@ namespace PrecisionReporters.Platform.Api.Controllers
         [UserAuthorize(ResourceType.Deposition, ResourceAction.View)]
         public async Task<ActionResult<DepositionDto>> GetDeposition([ResourceId(ResourceType.Deposition)] Guid id)
         {
+            var user = await _userService.GetCurrentUserAsync();
             var endDepositionResult = await _depositionService.GetDepositionById(id);
-            if (endDepositionResult.IsFailed)
+
+            if (user == null || endDepositionResult.IsFailed)
                 return WebApiResponses.GetErrorResponse(endDepositionResult);
+            
+            // TODO: Isolate this constraint using Pattern Decorator
+            // Forbid End-User's access to Predepo
+            if (!user.IsAdmin && endDepositionResult.Value.Status == DepositionStatus.Pending)
+                return new ForbidResult();
 
             return Ok(_depositionMapper.ToDto(endDepositionResult.Value));
         }
