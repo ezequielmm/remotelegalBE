@@ -41,13 +41,24 @@ jobs:
           task-definition: ./.github/workflows/task-definition-${{ steps.extract-branch.outputs.branch }}.json
           container-name: prp-be-container-${{ steps.extract-branch.outputs.branch }}
           image: ${{ github.event.inputs.api-image }}
-      - name: Update Amazon ECS Cluster Service
+
+      - name: Update Amazon ECS Cluster Service for QA environment
+        if: contains('refs/heads/qa', github.ref)
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
           task-definition: ${{ steps.api-task-def.outputs.task-definition }}
           service: prp-be-srv-${{ steps.extract-branch.outputs.branch }}
           cluster: prp-cluster-nonprod
           wait-for-service-stability: true
+
+      - name: Update Amazon ECS Cluster Service for Performance environment
+        if: contains('refs/heads/performance', github.ref)
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.api-task-def.outputs.task-definition }}
+          service: prp-be-srv-${{ steps.extract-branch.outputs.branch }}
+          cluster: prp-cluster-performance
+          wait-for-service-stability: true          
 
   pack-deploy-transcript:
     runs-on: ubuntu-latest
@@ -76,13 +87,24 @@ jobs:
           task-definition: ./.github/workflows/transcript-task-definition-${{ steps.extract-branch.outputs.branch }}.json
           container-name: prp-transcript-container-${{ steps.extract-branch.outputs.branch }}
           image: ${{ github.event.inputs.transcript-image }}
-      - name: Update Amazon ECS Cluster Service
+
+      - name: Update Amazon ECS Cluster Service for QA environment
+        if: contains('refs/heads/qa', github.ref)
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
           task-definition: ${{ steps.transcript-task-def.outputs.task-definition }}
           service: prp-transcript-srv-${{ steps.extract-branch.outputs.branch }}
           cluster: prp-cluster-nonprod
           wait-for-service-stability: true
+
+      - name: Update Amazon ECS Cluster Service for Performance environment
+        if: contains('refs/heads/performance', github.ref)
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.transcript-task-def.outputs.task-definition }}
+          service: prp-transcript-srv-${{ steps.extract-branch.outputs.branch }}
+          cluster: prp-cluster-performance
+          wait-for-service-stability: true          
 
   deploy-lambdas:
     runs-on: ubuntu-latest
