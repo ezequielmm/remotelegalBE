@@ -43,7 +43,7 @@
                 },
                 {
                     "name": "AppConfiguration__TwilioAccountConfiguration__S3DestinationBucket",
-                    "value": "input-post-depo-qa"
+                    "value": "input-post-depo-performance"
                 },
                 {
                     "name": "AppConfiguration__AwsStorageConfiguration__S3BucketRegion",
@@ -55,7 +55,7 @@
                 },
                 {
                     "name": "AppConfiguration__DocumentConfiguration__PostDepoVideoBucket",
-                    "value": "output-post-depo-qa"
+                    "value": "output-post-depo-performance"
                 },
                 {
                     "name": "AppConfiguration__DocumentConfiguration__EnvironmentFilesBucket",
@@ -83,7 +83,7 @@
                 },
                 {
                     "name": "AppConfiguration__EmailConfiguration__XSesConfigurationSetHeader",
-                    "value": "configset-open"
+                    "value": "configset-performance"
                 },
                 {
                     "name": "AppConfiguration__ConfigurationFlags__IsDeveloperExceptionPageEnabled",
@@ -163,7 +163,7 @@
                 },
                 {
                     "name": "AppConfiguration__ConnectionStrings__RedisConnectionString",
-                    "value": "tf-rep-group-qa.xzj4s3.ng.0001.use1.cache.amazonaws.com:6379"
+                    "value": "tf-rep-group-performance.xzj4s3.ng.0001.use1.cache.amazonaws.com:6379"
                 },
                 {
                     "name": "AppConfiguration__EmailConfiguration__SesRegion",
