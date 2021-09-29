@@ -33,7 +33,13 @@ namespace PrecisionReporters.Platform.Data.Migrations
                     b.Property<DateTime>("ActivityDate")
                         .HasColumnType("datetime");
 
+                    b.Property<string>("AmazonAvailability")
+                        .HasColumnType("text");
+
                     b.Property<string>("Browser")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ContainerId")
                         .HasColumnType("text");
 
                     b.Property<DateTime>("CreationDate")
