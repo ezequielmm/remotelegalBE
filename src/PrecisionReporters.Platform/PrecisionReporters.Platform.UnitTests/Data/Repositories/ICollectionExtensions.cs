@@ -6,7 +6,7 @@ using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace PrecisionReporters.Platform.UnitTests.Domain.Repositories
+namespace PrecisionReporters.Platform.UnitTests.Data.Repositories
 {
     public static class ICollectionExtensions
     {

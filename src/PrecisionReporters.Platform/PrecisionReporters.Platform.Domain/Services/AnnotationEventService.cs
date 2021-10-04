@@ -32,16 +32,12 @@ namespace PrecisionReporters.Platform.Domain.Services
                 return Result.Fail(new ResourceNotFoundError($"There is no shared document for deposition {depositionId}"));
 
             var documentId = depositionResult.Value.SharingDocumentId.Value;
-            var include = new[] { nameof(AnnotationEvent.Author) };
-            Expression<Func<AnnotationEvent, bool>> filter = x => x.DocumentId == documentId;
 
             if (annotationId.HasValue)
             {
                 var lastIncludedAnnotation = await _annotationEventRepository.GetById(annotationId.Value);
                 if (lastIncludedAnnotation == null)
                     return Result.Fail(new ResourceNotFoundError($"annotation with Id {annotationId} could not be found"));
-
-                filter = x => x.DocumentId == documentId && x.CreationDate > lastIncludedAnnotation.CreationDate;
             }
 
             var annotations = await _annotationEventRepository.GetAnnotationsByDocument(documentId, annotationId);

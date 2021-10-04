@@ -8,7 +8,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace PrecisionReporters.Platform.UnitTests.Domain.Repositories
+namespace PrecisionReporters.Platform.UnitTests.Data.Repositories
 {
     public class AnnotationEventRepositoryTest
     {
@@ -17,9 +17,16 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Repositories
 
         private AnnotationEventRepository _repository;
 
+        private List<AnnotationEvent> annotations;
+
+
         private readonly Guid documentId1 = Guid.Parse("daf5f6f9-6ba8-40e5-8a5b-bd2303c556dc");
         private readonly Guid documentId2 = Guid.Parse("e3f109ce-b095-4744-9141-b7640f561eda");
         private readonly Guid documentId3 = Guid.Parse("981a96c7-731d-4ac9-acd4-16b030697054");
+
+        private readonly Guid annotationId1 = Guid.Parse("1c147a9d-de27-4941-9505-56b4987d3787");
+        private readonly Guid annotationId2 = Guid.Parse("d72d98f6-39d5-4d8c-a7af-1018393d539d");
+        private readonly Guid annotationId3 = Guid.Parse("8fbddf26-2c74-48a7-9949-a757137bc6ab");
 
         public AnnotationEventRepositoryTest()
         {
@@ -34,47 +41,54 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Repositories
         }
 
         private async Task SeedDb()
-        {           
-            var annotations = new List<AnnotationEvent>
+        {
+            annotations = new List<AnnotationEvent>
             {
-                new AnnotationEvent { 
+                new AnnotationEvent {
                     DocumentId = documentId1,
+                    Id = annotationId1,
                     Action = Platform.Data.Enums.AnnotationAction.Create,
                     Details = "test1",
-                    Author = UserFactory.GetUserByGivenId(Guid.NewGuid())                
+                    Author = UserFactory.GetUserByGivenId(Guid.NewGuid()),
+                    CreationDate = DateTime.UtcNow.AddDays(1)
                 },
                 new AnnotationEvent {
                     DocumentId = documentId2,
+                    Id = annotationId2,
                     Action = Platform.Data.Enums.AnnotationAction.Create,
                     Details = "test2",
-                    Author = UserFactory.GetUserByGivenId(Guid.NewGuid())
+                    Author = UserFactory.GetUserByGivenId(Guid.NewGuid()),
+                    CreationDate = DateTime.UtcNow.AddDays(2)
+
                 },
                 new AnnotationEvent {
                     DocumentId = documentId3,
+                    Id = annotationId3,
                     Action = Platform.Data.Enums.AnnotationAction.Create,
                     Details = "test3",
-                    Author = UserFactory.GetUserByGivenId(Guid.NewGuid())
-                },
+                    Author = UserFactory.GetUserByGivenId(Guid.NewGuid()),
+                    CreationDate = DateTime.UtcNow.AddDays(3)
+                }
             };
             await _repository.CreateRange(annotations);
         }
 
         [Fact]
-        public async Task GetAnnotationsByDocument_UsingInMemoryRepository()
+        public async Task GetAnnotationsByDocumentWithAnnotationId_UsingInMemoryRepository()
         {
             // arrange
             await SeedDb();
 
             // act
-            var result = await _repository.GetAnnotationsByDocument(documentId1, null);
+            var result = await _repository.GetAnnotationsByDocument(documentId3, annotationId1);
 
             // assert
             Assert.NotNull(result);
-            Assert.Contains(result, d => d.DocumentId == documentId1);
-            Assert.Contains(result, d => d.Details == "test1");
-            Assert.Contains(result, a => a.Action == Platform.Data.Enums.AnnotationAction.Create);
-            Assert.Contains(result, a => a.Author.FirstName == "FirstNameUser1");
-            Assert.Contains(result, a => a.Author.LastName == "LastNameUser1");
+            Assert.Equal(result.ToString(), annotations.FindAll(x => x.DocumentId == documentId3).ToString());
+            Assert.Equal(result.ToString(), annotations.FindAll(x => x.Details == "test3").ToString());
+            Assert.Equal(result.ToString(), annotations.FindAll(x => x.Action == Platform.Data.Enums.AnnotationAction.Create).ToString());
+            Assert.Equal(result.ToString(), annotations.FindAll(x => x.Author.FirstName == "FirstNameUser1").ToString());
+            Assert.Equal(result.ToString(), annotations.FindAll(x => x.Author.LastName == "LastNameUser1").ToString());
         }
     }
 }

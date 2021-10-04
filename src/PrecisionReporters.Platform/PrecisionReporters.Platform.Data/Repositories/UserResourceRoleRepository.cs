@@ -10,16 +10,13 @@ using System.Threading.Tasks;
 
 namespace PrecisionReporters.Platform.Data.Repositories
 {
-    public class UserResourceRoleRepository : IUserResourceRoleRepository
+    public class UserResourceRoleRepository : BaseRepository<UserResourceRole>, IUserResourceRoleRepository
     {
         //TODO: Refactor the entity and add new BaseEntity without Id Field
         //TODO: Refactor - Create a new BaseRepository with the new BaseEntity 
 
-        private readonly ApplicationDbContext _dbContext;
-
-        public UserResourceRoleRepository(ApplicationDbContext dbContext)
+        public UserResourceRoleRepository( ApplicationDbContext dbContext) : base(dbContext)
         {
-            _dbContext = dbContext;
         }
 
         public async Task<bool> CheckUserHasPermissionForAction(Guid userId, ResourceType resourceType, Guid resourceId, ResourceAction resourceAction)
@@ -39,14 +36,14 @@ namespace PrecisionReporters.Platform.Data.Repositories
                 .Select(x => x.RolePermission.Action).ToListAsync();
         }
 
-        public async Task<UserResourceRole> Create(UserResourceRole entity)
+        public new async Task<UserResourceRole> Create(UserResourceRole entity)
         {
             await _dbContext.Set<UserResourceRole>().AddAsync(entity);
             await _dbContext.SaveChangesAsync();
             return entity;
         }
 
-        public async Task Remove(UserResourceRole entity)
+        public async new Task Remove(UserResourceRole entity)
         {
             _dbContext.Set<UserResourceRole>().Remove(entity);
             await _dbContext.SaveChangesAsync();

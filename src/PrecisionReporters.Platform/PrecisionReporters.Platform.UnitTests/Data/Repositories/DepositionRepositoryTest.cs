@@ -9,8 +9,9 @@ using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 using System.Linq.Expressions;
+using Microsoft.EntityFrameworkCore;
 
-namespace PrecisionReporters.Platform.UnitTests.Domain.Repositories
+namespace PrecisionReporters.Platform.UnitTests.Data.Repositories
 {
     public class DepositionRepositoryTest
     {
@@ -18,6 +19,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Repositories
         private readonly DataAccessContextForTest _dataAccess;
 
         private DepositionRepository _repository;
+
+        private List<Deposition> depositions;
 
         private List<Deposition> _depositions;
 
@@ -36,7 +39,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Repositories
 
         private async Task SeedDb()
         {
-            List<Deposition> depositions = new List<Deposition> {
+            depositions = new List<Deposition> {
                 new Deposition
                 {
                     Id = Guid.Parse("6d5879aa-32ce-40a3-976d-fcc927e6487f"),
@@ -91,6 +94,11 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Repositories
             await SeedDb();
 
             Expression<Func<Deposition, object>> orderBy = x => x.StartDate;
+            Expression<Func<Deposition, object>> orderByThen = x => x.CreationDate;
+            Expression<Func<Deposition, bool>> filter = x => x.IsOnTheRecord;
+
+            string[] include = new[] { nameof(Deposition.Participants) };
+
 
             var upcomingList = _depositions.FindAll(w => w.Requester.EmailAddress == "testUser@mail.com");
             var depostionsResult = new Tuple<int, IQueryable<Deposition>>(upcomingList.Count, upcomingList.AsAsyncQueryable());
@@ -99,7 +107,36 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Repositories
             var participantThatAreWitness = participantList.Where(p => p.Role == ParticipantType.Witness);
 
             // act
-            var result = await _repository.GetByStatus(orderBy, It.IsAny<SortDirection>(), null, null);
+            var result = await _repository.GetByStatus(orderBy, SortDirection.Ascend, filter, include, orderByThen);
+
+            // assert
+            Assert.NotNull(result);
+            Assert.Contains(result, d => d.Requester.EmailAddress == "testUser@mail.com");
+            Assert.Contains(result.SelectMany(a => a.Participants).Distinct(), participant => participant.Role == ParticipantType.Witness);
+            Assert.Equal(result.SelectMany(b => b.Participants).Distinct().ToList(), participantThatAreWitness.ToList());
+
+        }
+
+        [Fact]
+        public async Task GetByStatusOrderByThenNull_UsingInMemoryRepository()
+        {
+            // arrange
+            await SeedDb();
+
+            Expression<Func<Deposition, object>> orderBy = x => x.StartDate;
+            Expression<Func<Deposition, bool>> filter = x => x.IsOnTheRecord;
+
+            string[] include = new[] { nameof(Deposition.Participants) };
+
+
+            var upcomingList = _depositions.FindAll(w => w.Requester.EmailAddress == "testUser@mail.com");
+            var depostionsResult = new Tuple<int, IQueryable<Deposition>>(upcomingList.Count, upcomingList.AsAsyncQueryable());
+
+            var participantList = _depositions.SelectMany(b => b.Participants).Distinct();
+            var participantThatAreWitness = participantList.Where(p => p.Role == ParticipantType.Witness);
+
+            // act
+            var result = await _repository.GetByStatus(orderBy, SortDirection.Ascend, filter, include, null);
 
             // assert
             Assert.NotNull(result);
@@ -139,14 +176,39 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Repositories
             var participantList = _depositions.SelectMany(b => b.Participants).Distinct();
             var participantThatAreWitness = participantList.Where(p => p.Role == ParticipantType.Witness);
 
+            Expression<Func<Deposition, bool>> filter = x => x.IsOnTheRecord;
+            string[] include = new[] { nameof(Deposition.Participants) };
+
             // act
-            var result = await _repository.GetByFilter(null);
+            var result = await _repository.GetByFilter(filter, include);
 
             // assert
             Assert.NotNull(result);
             Assert.Contains(result, d => d.Requester.EmailAddress == "testUser@mail.com");
             Assert.Contains(result.SelectMany(a => a.Participants).Distinct(), participant => participant.Role == ParticipantType.Witness);
             Assert.Equal(result.SelectMany(b => b.Participants).Distinct().ToList(), participantThatAreWitness.ToList());
+        }
+
+        [Fact]
+        public async Task GetDepositionWithGetByFilterComplex_UsingInMemoryRepository()
+        {
+            // arrange
+            await SeedDb();
+
+            var participantList = _depositions.SelectMany(b => b.Participants).Distinct();
+            var participantThatAreWitness = participantList.Where(p => p.Role == ParticipantType.Witness);
+
+            Expression<Func<Deposition, object>> orderBy = x => x.StartDate;
+            Expression<Func<Deposition, bool>> filter = x => x.IsOnTheRecord;
+            string[] include = new[] { nameof(Deposition.Participants) };
+
+            // act
+            var result = await _repository.GetByFilter(orderBy, It.IsAny<SortDirection>(), filter, include);
+
+            // assert
+            Assert.NotNull(result);
+            Assert.Contains(result.ToString(), _depositions.Where(x => x.IsOnTheRecord).ToList().ToString());
+            Assert.Equal(result.SelectMany(b => b.Participants).Distinct().ToList().ToString(), participantThatAreWitness.ToList().ToString());
         }
 
         [Fact]
@@ -165,9 +227,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Repositories
 
             // assert
             Assert.NotNull(result);
-            Assert.Contains(result, d => d.Requester.EmailAddress == "testUser@mail.com");
-            Assert.Contains(result.SelectMany(a => a.Participants).Distinct(), participant => participant.Role == ParticipantType.Witness);
-            Assert.Equal(result.SelectMany(b => b.Participants).Distinct().ToList(), participantThatAreWitness.ToList());
+            Assert.Contains(result.SelectMany(a => a.Participants).Distinct().ToList().ToString(), participantThatAreWitness.ToList().ToString());
+            Assert.Equal(result.SelectMany(b => b.Participants).Distinct().ToList().ToString(), participantThatAreWitness.ToList().ToString());
         }
 
         [Fact]
@@ -176,16 +237,19 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Repositories
             // arrange
             await SeedDb();
 
-            var participantList = _depositions.SelectMany(b => b.Participants).Distinct();
-            var participantThatAreWitness = participantList.Where(p => p.Role == ParticipantType.Witness);
+            var participantList = await _depositions.AsAsyncQueryable().SelectMany(b => b.Participants).Distinct().ToListAsync();
+
+            Expression<Func<Deposition, bool>> filter = x => x.IsOnTheRecord;
+            string[] include = new[] { nameof(Deposition.Participants) };
+            int page = 1;
+            int pageSize = 4;
 
             // act
-            var result = await _repository.GetByFilterPagination(null, null, null, null, null);
+            var result = await _repository.GetByFilterPagination(filter, It.IsAny<Func<IQueryable<Deposition>, IOrderedQueryable<Deposition>>>(), include, page, pageSize);
 
             // assert
             Assert.NotNull(result);
-            Assert.Contains(result.Item2.SelectMany(a => a.Participants).Distinct(), participant => participant.Role == ParticipantType.Witness);
-            Assert.Equal(result.Item2.SelectMany(b => b.Participants).Distinct().ToList(), participantThatAreWitness.ToList());
+            Assert.Equal(result.Item2.SelectMany(b => b.Participants).Distinct().ToList().ToString(), participantList.ToList().ToString());
         }
 
         [Fact]
@@ -197,14 +261,18 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Repositories
             var participantList = _depositions.SelectMany(b => b.Participants).Distinct();
             var participantThatAreWitness = participantList.Where(p => p.Role == ParticipantType.Witness);
 
+            Expression<Func<Deposition, bool>> filter = x => x.IsOnTheRecord;
+            string[] include = new[] { nameof(Deposition.Participants) };
+            int page = 1;
+            int pageSize = 4;
+
             // act
-            var result = await _repository.GetByFilterPaginationQueryable(null, null, null, null, null);
+            var result = await _repository.GetByFilterPaginationQueryable(filter, It.IsAny<Func<IQueryable<Deposition>, IOrderedQueryable<Deposition>>>(), include, page, pageSize);
 
             // assert
             Assert.NotNull(result);
-            Assert.Contains(result.Item2, d => d.Requester.EmailAddress == "testUser@mail.com");
-            Assert.Contains(result.Item2.SelectMany(a => a.Participants).Distinct(), participant => participant.Role == ParticipantType.Witness);
-            Assert.Equal(result.Item2.SelectMany(b => b.Participants).Distinct().ToList(), participantThatAreWitness.ToList());
+            Assert.Contains(result.Item2.SelectMany(a => a.Participants).Distinct().ToList().ToString(), _depositions.SelectMany(x => x.Participants).ToList().ToString());
+            Assert.Equal(result.Item2.SelectMany(b => b.Participants).Distinct().ToList().ToString(), participantThatAreWitness.ToList().ToString());
         }
 
         [Fact]
@@ -229,13 +297,14 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Repositories
             await SeedDb();
 
             Expression<Func<Deposition, bool>> filter = x => x.IsOnTheRecord;
-
+            string[] include = new[] { nameof(Deposition.Participants) };
+            bool tracking = false;
             // act
-            var result = await _repository.GetFirstOrDefaultByFilter(filter);
+            var result = await _repository.GetFirstOrDefaultByFilter(filter, include, tracking);
 
             // assert
             Assert.NotNull(result);
-            Assert.Equal(result, _depositions.FirstOrDefault(x => x.IsOnTheRecord == true));
+            Assert.Equal(result.ToString(), _depositions.FirstOrDefault(x => x.IsOnTheRecord == true).ToString());
         }
 
         [Fact]
@@ -246,12 +315,34 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Repositories
 
             Expression<Func<Deposition, object>> orderBy = x => x.StartDate;
             Expression<Func<Deposition, object>> orderByThen = x => x.CreationDate;
+            Expression<Func<Deposition, bool>> filter = x => x.IsOnTheRecord;
+            string[] include = new[] { nameof(Deposition.Participants) };
+
 
             var participantList = _depositions.SelectMany(b => b.Participants).Distinct();
             var participantThatAreWitness = participantList.Where(p => p.Role == ParticipantType.Witness);
 
             // act
-            var result = await _repository.GetByFilterOrderByThen(orderBy, It.IsAny<SortDirection>(), null, null, orderByThen);
+            var result = await _repository.GetByFilterOrderByThen(orderBy, It.IsAny<SortDirection>(), filter, include, orderByThen);
+
+            // assert
+            Assert.NotNull(result);
+            Assert.Equal(result.SelectMany(b => b.Participants).Distinct().ToList().ToString(), participantThatAreWitness.ToList().ToString());
+        }
+
+        [Fact]
+        public async Task GetDepositionWithGetByFilterOrderByThenNull_UsingInMemoryRepository()
+        {
+            // arrange
+            await SeedDb();
+
+            Expression<Func<Deposition, object>> orderBy = x => x.StartDate;
+
+            var participantList = _depositions.SelectMany(b => b.Participants).Distinct();
+            var participantThatAreWitness = participantList.Where(p => p.Role == ParticipantType.Witness);
+
+            // act
+            var result = await _repository.GetByFilterOrderByThen(orderBy, It.IsAny<SortDirection>(), null, null, null);
 
             // assert
             Assert.NotNull(result);
@@ -266,12 +357,92 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Repositories
             // arrange
             await SeedDb();
 
+            string[] include = new[] { nameof(Deposition.Participants) };
+
             // act
-            var result = await _repository.GetById(Guid.Parse("bc627ed1-9e16-4522-93b5-ee96e6d73923"));
+            var result = await _repository.GetById(Guid.Parse("bc627ed1-9e16-4522-93b5-ee96e6d73923"), include);
 
             // assert
             Assert.NotNull(result);
-            Assert.Equal(result, _depositions.FirstOrDefault(x => x.Id == Guid.Parse("bc627ed1-9e16-4522-93b5-ee96e6d73923")));
+            Assert.Equal(result.ToString(), _depositions.FirstOrDefault(x => x.Id == Guid.Parse("bc627ed1-9e16-4522-93b5-ee96e6d73923")).ToString());
+        }
+
+        [Fact]
+        public async Task Create_UsingInMemoryRepository()
+        {
+            // arrange
+            await SeedDb();
+
+            var newDeposition = new Deposition
+            {
+                Id = Guid.Parse("ea686a4d-4c0d-429f-aaf6-55ddec8f6d97"),
+                StartDate = DateTime.Now,
+                EndDate = DateTime.Now.AddHours(5),
+                Participants = new List<Participant> { new Participant { Role = ParticipantType.Witness, IsAdmitted = true } },
+                CreationDate = DateTime.UtcNow,
+                Requester = new User() { EmailAddress = "testUser@mail.com" },
+                IsOnTheRecord = true,
+            };
+
+            // act
+            var result = await _repository.Create(newDeposition);
+
+            // assert
+            Assert.NotNull(result);
+            Assert.Equal(result, newDeposition);
+        }
+
+        [Fact]
+        public async Task DepositionUpdate_UsingInMemoryRepository()
+        {
+            // arrange
+            await SeedDb();
+
+            var newDeposition = new Deposition
+            {
+                Id = Guid.Parse("6d5879aa-32ce-40a3-976d-fcc927e6487f"),
+                StartDate = DateTime.Now,
+                EndDate = DateTime.Now.AddHours(5),
+                Participants = new List<Participant> { new Participant { Role = ParticipantType.Witness, IsAdmitted = true } },
+                CreationDate = DateTime.UtcNow,
+                Requester = new User() { EmailAddress = "testUser2@mail.com" },
+                IsOnTheRecord = true,
+            };
+
+            // act
+            var result = await _repository.Update(newDeposition);
+
+            // assert
+            Assert.NotNull(result);
+            Assert.Equal(result.ToString(), newDeposition.ToString());
+
+        }
+
+        [Fact]
+        public async Task Remove_UsingInMemoryRepository()
+        {
+            // arrange
+            await SeedDb();
+
+            // act
+            var result = _repository.Remove(depositions.FirstOrDefault(x => x.Id == Guid.Parse("6d5879aa-32ce-40a3-976d-fcc927e6487f")));
+
+            // assert
+            Assert.Equal(Task.CompletedTask.IsCompleted, result.IsCompleted);
+
+        }
+
+        [Fact]
+        public async Task RemoveRange_UsingInMemoryRepository()
+        {
+            // arrange
+            await SeedDb();
+
+            // act
+            var result = _repository.RemoveRange(_depositions);
+
+            // assert
+            Assert.Equal(Task.CompletedTask.IsCompleted, result.IsCompleted);
         }
     }
 }

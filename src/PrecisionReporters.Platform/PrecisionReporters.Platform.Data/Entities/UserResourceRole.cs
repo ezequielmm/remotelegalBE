@@ -6,10 +6,10 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace PrecisionReporters.Platform.Data.Entities
 {
     //TODO: Refactor the entity and add new BaseEntity without Id Field
-    public class UserResourceRole
+    public class UserResourceRole : BaseEntity<UserResourceRole>
     {
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public DateTime CreationDate { get; set; }
+        public new DateTime CreationDate { get; set; }
         [Key]
         [ForeignKey(nameof(Role))]
         [Column(TypeName = "char(36)")]
@@ -30,7 +30,7 @@ namespace PrecisionReporters.Platform.Data.Entities
 
         public ResourceType ResourceType { get; set; }
 
-        public void CopyFrom(UserResourceRole entity)
+        public override void CopyFrom(UserResourceRole entity)
         {
             Role = entity.Role;
             User = entity.User;

@@ -21,12 +21,9 @@ namespace PrecisionReporters.Platform.Data.Repositories
 
             string[] include = new[] { nameof(AnnotationEvent.Author) };
 
-            if (include != null)
+            foreach (var property in include)
             {
-                foreach (var property in include)
-                {
-                    query = query.Include(property);
-                }
+                query = query.Include(property);
             }
 
             query = query.Where(x => x.DocumentId == documentId);
@@ -34,7 +31,8 @@ namespace PrecisionReporters.Platform.Data.Repositories
             if (annotationId != null)
             {
                 var lastIncludedAnnotation = await GetById(annotationId.Value);
-                query = query.Where(x => x.CreationDate > lastIncludedAnnotation.CreationDate);
+                if (lastIncludedAnnotation != null)
+                    query = query.Where(x => x.CreationDate > lastIncludedAnnotation.CreationDate);
             }
 
             // Order by ascend
