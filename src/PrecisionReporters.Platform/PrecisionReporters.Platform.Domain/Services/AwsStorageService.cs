@@ -13,10 +13,12 @@ using PrecisionReporters.Platform.Shared.Commons;
 using PrecisionReporters.Platform.Shared.Extensions;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Threading.Tasks;
 using System.Web;
+using PrecisionReporters.Platform.Shared.Helpers;
 
 namespace PrecisionReporters.Platform.Domain.Services
 {
@@ -133,6 +135,10 @@ namespace PrecisionReporters.Platform.Domain.Services
         public string GetCannedPrivateURL(string key, DateTime expirationDate, string privateKeyId, string xmlKey, string policyStatement)
         {
             var filePublicUri = $"{_urlPathConfiguration.FrontendBaseUrl}{key}";
+            if (Debugger.IsAttached)
+            {
+                return $"{_urlPathConfiguration.FrontendBaseUrl}/{_documentsConfiguration.BucketName}/{filePublicUri}";
+            }
             var duration = (expirationDate - DateTime.UtcNow);
             var durationNumber = (int)duration.TotalSeconds;
 
@@ -168,7 +174,8 @@ namespace PrecisionReporters.Platform.Domain.Services
                     BucketName = bucketName,
                     Key = key,
                     Verb = HttpVerb.PUT,
-                    Expires = expirationTime
+                    Expires = expirationTime,
+                    Protocol = Debugger.IsAttached? Protocol.HTTP : Protocol.HTTPS
                 };
                 
                 presigned = new PreSignedUrlDto();

@@ -1,0 +1,33 @@
+version: "3.9"
+services:
+  localstack:
+    image: localstack/localstack:latest
+    container_name: localstack
+    networks:
+      - localstack-net
+    ports:
+      - 4566:4566
+      - 443:443
+      - 4571:4571
+    restart: always
+    environment:
+      - SERVICES=s3,sns,lambda,iam,secretsmanager
+      - DEBUG=1
+      - DATA_DIR=../temp/localstack/data
+      - LAMBDA_DOCKER_NETWORK=localstack-net
+      - LAMBDA_EXECUTOR=docker-reuse
+      - AWS_REGION=us-east-1
+      - DOCUMENT_PDFTRON_DEMO=${DOCUMENT_PDFTRON_DEMO}
+      - DOCUMENT_BUCKETNAME=${DOCUMENT_BUCKETNAME}
+      - EXHIBIT_LAMBDA_NAME=${EXHIBIT_LAMBDA_NAME}
+      - LOCALSTACK_NOTIFICATION_ENDPOINT=${LOCALSTACK_NOTIFICATION_ENDPOINT}
+    command: sh -c "./localstack-script.sh && exec localstack-script.sh"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./localstack-script.sh:/docker-entrypoint-initaws.d/localstack-script.sh
+      - ./lambda-notification.json:/docker-entrypoint-initaws.d/lambda-notification.json
+      - ./publish.zip:/docker-entrypoint-initaws.d/publish.zip
+networks:
+  localstack-net:
+    name: localstack-net
+    driver: bridge

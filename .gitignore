@@ -354,3 +354,5 @@ src/PrecisionReporters.Platform/PrecisionReporters.Platform.Api/appsettings.Loca
 .vscode/tasks.json
 .vscode/launch.json
 .env
+src/temp/localstack
+src/LocalStack/publish.zip

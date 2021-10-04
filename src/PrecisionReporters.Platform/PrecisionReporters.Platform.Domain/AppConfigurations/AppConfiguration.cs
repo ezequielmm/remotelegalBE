@@ -22,5 +22,6 @@ namespace PrecisionReporters.Platform.Domain
         public VerificationLinkConfiguration VerificationLinkConfiguration { get; set; }
         public DepositionConfiguration DepositionConfiguration { get; set; }
         public ReminderConfiguration ReminderConfiguration { get; set; }
+        public LocalStackConfiguration LocalStackConfiguration { get; set; }
     }
 }

@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using PrecisionReporters.Platform.Shared.Helpers;
 using System.Threading.Tasks;
@@ -18,7 +17,6 @@ namespace PrecisionReporters.Platform.Api.Controllers
         }
 
         [HttpPost]
-        [Consumes("text/plain; charset=UTF-8")]
         [Route("Notifications/SnsCallback")]
         public async Task<IActionResult> SnsCallback()
         {

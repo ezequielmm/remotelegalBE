@@ -25,6 +25,7 @@ using PrecisionReporters.Platform.Shared.Helpers.Interfaces;
 using PrecisionReporters.Platform.Shared.Middlewares;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Hosting;
 
 namespace PrecisionReporters.Platform.Api
 {
@@ -92,7 +93,6 @@ namespace PrecisionReporters.Platform.Api
                 x.PreSignedUploadUrlValidSeconds = appConfiguration.DocumentConfiguration.PreSignedUploadUrlValidSeconds;
                 x.UseSignatureVersion4 = appConfiguration.DocumentConfiguration.UseSignatureVersion4;
             });
-            services.AddScoped<IAwsSnsWrapper, AwsSnsWrapper>();
             services.AddScoped<ITagLibWrapper, TagLibWrapper>();
             services.AddScoped<ISnsHelper, SnsHelper>();
             services.AddScoped<ILoggingHelper, LoggingHelper>();

@@ -31,6 +31,8 @@ using PrecisionReporters.Platform.Shared.Helpers;
 using PrecisionReporters.Platform.Shared.Helpers.Interfaces;
 using PrecisionReporters.Platform.Shared.Hubs;
 using System;
+using System.Threading.Tasks;
+using Microsoft.Extensions.Hosting;
 
 namespace PrecisionReporters.Platform.Domain
 {
@@ -49,7 +51,12 @@ namespace PrecisionReporters.Platform.Domain
                     MaxErrorRetry = 3,
                     RegionEndpoint = RegionEndpoint.GetBySystemName(appConfiguration.AwsStorageConfiguration.S3BucketRegion)
                 };
-
+                if (sp.GetService<IHostEnvironment>().IsDevelopment())
+                {
+                    config.ForcePathStyle = true;
+                    config.ServiceURL = appConfiguration.LocalStackConfiguration.ServiceUrl;
+                    config.UseHttp = true;
+                }
                 var s3Client = new AmazonS3Client(config);
 
                 return new TransferUtility(s3Client);
@@ -193,8 +200,15 @@ namespace PrecisionReporters.Platform.Domain
 
             services.AddScoped<IDatabaseTransactionProvider, ApplicationDbContextTransactionProvider>();
             services.AddScoped<ITransactionHandler, TransactionHandler>();
-            services.AddScoped<IAwsSnsWrapper, AwsSnsWrapper>();
             services.AddScoped<ISnsHelper, SnsHelper>();
+            services.AddScoped<IAwsSnsWrapper>(sp =>
+            {
+                if (sp.GetService<IHostEnvironment>().IsDevelopment())
+                {
+                    return new AwsSnsWrapperLocal();
+                }
+                return new AwsSnsWrapper();
+            });
 
             if (!string.IsNullOrWhiteSpace(appConfiguration.DocumentConfiguration.PDFTronLicenseKey))
             {
@@ -206,4 +220,6 @@ namespace PrecisionReporters.Platform.Domain
             }
         }
     }
+    
+
 }

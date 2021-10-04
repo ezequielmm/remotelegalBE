@@ -42,9 +42,30 @@ namespace UploadExhibitLambda
         {
             _cleanUpTmpFolderWrapper = new CleanUpTmpFolderWrapper();
             _logger = new Logger();
-            _s3Client = new AmazonS3Client();
-            _snsClient = new AmazonSimpleNotificationServiceClient();
-            _secretsManagerClient = new AmazonSecretsManagerClient();
+            if (IsRunningOnDebugMode())
+            {
+                _s3Client = new AmazonS3Client(new AmazonS3Config
+                {
+                    ServiceURL = $"http://{Environment.GetEnvironmentVariable("LOCALSTACK_HOSTNAME")}:4566",
+                    UseHttp = true,
+                    ForcePathStyle = true,
+                    AuthenticationRegion = "us-east-1"
+                });
+                _snsClient = new AmazonSimpleNotificationServiceClient(new AmazonSimpleNotificationServiceConfig
+                {
+                    ServiceURL = $"http://{Environment.GetEnvironmentVariable("LOCALSTACK_HOSTNAME")}:4566"
+                });
+                _secretsManagerClient = new AmazonSecretsManagerClient(new AmazonSecretsManagerConfig
+                {
+                    ServiceURL = $"http://{Environment.GetEnvironmentVariable("LOCALSTACK_HOSTNAME")}:4566"
+                });
+            }
+            else
+            {
+                _s3Client = new AmazonS3Client();
+                _snsClient = new AmazonSimpleNotificationServiceClient();
+                _secretsManagerClient = new AmazonSecretsManagerClient();
+            }
             _metadataWrapper = new MetadataWrapper();
         }
 
@@ -280,6 +301,15 @@ namespace UploadExhibitLambda
             };
             var response = await _secretsManagerClient.GetSecretValueAsync(request, cancellationToken);
             return response?.SecretString;
+        }
+
+        private bool IsRunningOnDebugMode()
+        {
+#if DEBUG
+            return true;
+#else
+            return false;
+#endif
         }
     }
 }

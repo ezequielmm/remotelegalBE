@@ -1,4 +1,5 @@
-﻿using Amazon.SimpleNotificationService.Util;
+﻿using System.Diagnostics;
+using Amazon.SimpleNotificationService.Util;
 using PrecisionReporters.Platform.Domain.Handlers.Notifications.Interfaces;
 using PrecisionReporters.Platform.Domain.Wrappers.Interfaces;
 using System.Threading.Tasks;
