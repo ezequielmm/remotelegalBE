@@ -114,5 +114,14 @@ namespace PrecisionReporters.Platform.Domain.Services
                     break;
             }
         }
+
+        public async Task SetCompletedDepositionPermissions(Participant participant, Guid depositionId)
+        {
+            // Only Add permission to Non-Guest Participant
+            if (participant.User != null)
+            {
+                await AddUserRole(participant.User.Id, depositionId, ResourceType.Deposition, RoleName.DepositionCompletedAtendee);
+            }
+        }
     }
 }

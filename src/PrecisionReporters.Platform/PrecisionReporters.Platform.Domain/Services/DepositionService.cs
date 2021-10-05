@@ -171,26 +171,36 @@ namespace PrecisionReporters.Platform.Domain.Services
         {
             if (deposition.Participants != null)
             {
-                var participantUsers = await _userService.GetUsersByFilter(x => deposition.Participants.Select(p => p.Email).Contains(x.EmailAddress));
-                foreach (var participant in deposition.Participants.Where(participant => !string.IsNullOrWhiteSpace(participant.Email)))
+                var participants = await GetDepositionParticipants(deposition);
+                foreach (var participant in participants)
                 {
-                    var user = participantUsers.Find(x => x.EmailAddress == participant.Email);
-                    if (user != null)
-                    {
-                        participant.User = user;
-                        if (user.IsGuest)
-                        {
-                            user.FirstName = string.IsNullOrEmpty(participant.Name) ? user.FirstName : participant.Name;
-                            user.PhoneNumber = string.IsNullOrEmpty(participant.Phone) ? user.PhoneNumber : participant.Phone;
-                        }
-                        else
-                        {
-                            participant.Name = $"{user.FirstName} {user.LastName}";
-                        }
-                        await _permissionService.AddRolesToParticipants(participant, deposition.Id);
-                    }
+                    await _permissionService.AddRolesToParticipants(participant, deposition.Id);
                 }
             }
+        }
+
+        private async Task<IEnumerable<Participant>> GetDepositionParticipants(Deposition deposition)
+        {
+            var participantUsers = await _userService.GetUsersByFilter(x => deposition.Participants.Select(p => p.Email).Contains(x.EmailAddress));
+            return deposition.Participants?
+                        .Where(participant => !string.IsNullOrWhiteSpace(participant.Email))
+                        .Select(participant => {
+                            var user = participantUsers.Find(x => x.EmailAddress == participant.Email);
+                            if (user != null)
+                            {
+                                participant.User = user;
+                                if (user.IsGuest)
+                                {
+                                    user.FirstName = string.IsNullOrEmpty(participant.Name) ? user.FirstName : participant.Name;
+                                    user.PhoneNumber = string.IsNullOrEmpty(participant.Phone) ? user.PhoneNumber : participant.Phone;
+                                }
+                                else
+                                {
+                                    participant.Name = $"{user.FirstName} {user.LastName}";
+                                }
+                            }
+                            return participant;
+                        });
         }
 
         private void AddBreakRooms(Deposition deposition)
@@ -349,7 +359,9 @@ namespace PrecisionReporters.Platform.Domain.Services
 
                 await GoOnTheRecord(deposition.Id, false, email);
                 await _userService.RemoveGuestParticipants(deposition.Participants);
-
+                var updatePermissionStatus = await UpdateParticipantPermissions(deposition);
+                if (updatePermissionStatus.IsFailed)
+                    return updatePermissionStatus;
                 _logger.LogInformation($"{nameof(DepositionService)}.{nameof(DepositionService.EndDeposition)} Deposition completed: {deposition.Id} with Witness {witness} finished by user {currentUser} with id {deposition.EndedById}");
 
                 return Result.Ok(updatedDeposition);
@@ -891,6 +903,10 @@ namespace PrecisionReporters.Platform.Domain.Services
                 participant.User = user;
                 participant.UserId = user.Id;
                 await _permissionService.AddParticipantPermissions(participant);
+                if (deposition.Status == DepositionStatus.Completed)
+                { 
+                    await _permissionService.SetCompletedDepositionPermissions(participant, deposition.Id);
+                }
                 await _depositionRepository.Update(deposition);
             }
 
@@ -1449,6 +1465,28 @@ namespace PrecisionReporters.Platform.Domain.Services
             };
 
             return await _activityHistoryService.SaveAwsSessionInfo(depositionId, awsInfo, currentUser);
+        }
+
+        private async Task<Result> UpdateParticipantPermissions(Deposition deposition)
+        {
+            if (deposition?.Participants != null)
+            {
+                try
+                {
+                    var participants = await GetDepositionParticipants(deposition);
+                    foreach (var participant in participants)
+                    {
+                        await _permissionService.SetCompletedDepositionPermissions(participant, deposition.Id);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    var msg = $"Fail to Update Participant's role - Deposition: {deposition.Id} - {ex.Message}";
+                    _logger.LogError(ex, msg);
+                    return Result.Fail(new ExceptionalError(msg, ex));
+                }
+            }
+            return Result.Ok();
         }
     }
 }

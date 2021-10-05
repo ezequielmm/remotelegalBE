@@ -1246,6 +1246,13 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             _roomServiceMock.Setup(x => x.EndRoom(It.IsAny<Room>(), It.IsAny<string>())).ReturnsAsync(() => Result.Ok(new Room()));
             _backgroundTaskQueueMock.Setup(x => x.QueueBackgroundWorkItem(It.IsAny<BackgroundTaskDto>()));
+            var userMock = Mock.Of<User>();
+            userMock.EmailAddress = deposition.Participants.First().Email;
+            var users = new List<User>() { 
+                userMock
+            };
+            _userServiceMock.Setup(x => x.GetUsersByFilter(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<string[]>())).ReturnsAsync(users);
+            _permissionServiceMock.Setup(x => x.SetCompletedDepositionPermissions(It.IsAny<Participant>(), It.IsAny<Guid>()));
 
             // Act
             var result = await _depositionService.EndDeposition(depositionId);
@@ -1254,8 +1261,45 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _depositionRepositoryMock.Verify(mock => mock.GetById(It.Is<Guid>(a => a == depositionId), It.IsAny<string[]>()), Times.AtLeast(1));
             _depositionRepositoryMock.Verify(mock => mock.Update(It.Is<Deposition>(d => d.Status == DepositionStatus.Completed && d.CompleteDate.HasValue)), Times.AtLeast(1));
             _roomServiceMock.Verify(mock => mock.EndRoom(It.IsAny<Room>(), It.IsAny<string>()), Times.Once());
+            _permissionServiceMock.Verify(x => x.SetCompletedDepositionPermissions(It.IsAny<Participant>(), It.IsAny<Guid>()), Times.Once);
             Assert.NotNull(result);
             Assert.True(result.IsSuccess);
+        }
+
+        [Fact]
+        public async Task EndDeposition_ShouldReturnFail_WhenPermissionServiceFail()
+        {
+            // Arrange
+            var token = Guid.NewGuid().ToString();
+            var identity = Guid.NewGuid().ToString();
+            var depositionId = Guid.NewGuid();
+            var caseId = Guid.NewGuid();
+            var deposition = DepositionFactory.GetDeposition(depositionId, caseId);
+            _depositions.Add(deposition);
+            _userServiceMock.Setup(x => x.GetCurrentUserAsync()).ReturnsAsync(new User());
+            _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(new User()));
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(() => _depositions.FirstOrDefault());
+
+            _roomServiceMock.Setup(x => x.EndRoom(It.IsAny<Room>(), It.IsAny<string>())).ReturnsAsync(() => Result.Ok(new Room()));
+            _backgroundTaskQueueMock.Setup(x => x.QueueBackgroundWorkItem(It.IsAny<BackgroundTaskDto>()));
+            var userMock = Mock.Of<User>();
+            userMock.EmailAddress = deposition.Participants.First().Email;
+            var users = new List<User>() {
+                userMock
+            };
+            _userServiceMock.Setup(x => x.GetUsersByFilter(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<string[]>())).ReturnsAsync(users);
+            _permissionServiceMock.Setup(x => x.SetCompletedDepositionPermissions(It.IsAny<Participant>(), It.IsAny<Guid>())).Throws(new Exception());
+
+            // Act
+            var result = await _depositionService.EndDeposition(depositionId);
+
+            // Assert
+            _depositionRepositoryMock.Verify(mock => mock.GetById(It.Is<Guid>(a => a == depositionId), It.IsAny<string[]>()), Times.AtLeast(1));
+            _depositionRepositoryMock.Verify(mock => mock.Update(It.Is<Deposition>(d => d.Status == DepositionStatus.Completed && d.CompleteDate.HasValue)), Times.AtLeast(1));
+            _roomServiceMock.Verify(mock => mock.EndRoom(It.IsAny<Room>(), It.IsAny<string>()), Times.Once());
+            _permissionServiceMock.Verify(x => x.SetCompletedDepositionPermissions(It.IsAny<Participant>(), It.IsAny<Guid>()), Times.Once);
+            Assert.NotNull(result);
+            Assert.True(result.IsFailed);
         }
 
         [Fact]

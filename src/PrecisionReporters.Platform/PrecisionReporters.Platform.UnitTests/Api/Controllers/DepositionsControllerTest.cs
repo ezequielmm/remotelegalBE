@@ -42,7 +42,6 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
         private readonly IMapper<DeviceInfo, DeviceInfoDto, object> _deviceInfoMapper;
         private readonly IMapper<AwsSessionInfo, AwsInfoDto, object> _awsInfoMapper;
         private readonly DepositionsController _classUnderTest;
-        private readonly Mock<IUserService> _userService;
 
         public DepositionsControllerTest()
         {
@@ -59,7 +58,6 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
             _userSystemInfoMapper = new UserSystemInfoMapper();
             _deviceInfoMapper = new DeviceInfoMapper();
             _awsInfoMapper = new AwsInfoMapper();
-            _userService = new Mock<IUserService>();
 
             // Deposition mapper arguments
             _compositionMapper = new CompositionMapper();
@@ -83,8 +81,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
                 _participantTechStatusMapper,
                 _userSystemInfoMapper,
                 _deviceInfoMapper,
-                _awsInfoMapper,
-                _userService.Object);
+                _awsInfoMapper);
         }
 
         [Fact]
@@ -239,15 +236,9 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
             var depositionId = Guid.NewGuid();
             var caseId = Guid.NewGuid();
             var deposition = DepositionFactory.GetDeposition(depositionId, caseId);
-            deposition.Status = DepositionStatus.Completed;
             _depositionService
                 .Setup(mock => mock.GetDepositionById(It.IsAny<Guid>()))
                 .ReturnsAsync(Result.Ok(deposition));
-
-            var endUser = Mock.Of<User>();
-            _userService
-                .Setup(mock => mock.GetCurrentUserAsync())
-                .ReturnsAsync(endUser);
 
             // Act
             var result = await _classUnderTest.GetDeposition(It.IsAny<Guid>());
@@ -280,49 +271,6 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
             var errorResult = Assert.IsType<InternalServerErrorResult>(result.Result);
             Assert.Equal((int) HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _depositionService.Verify(mock => mock.GetDepositionById(It.IsAny<Guid>()), Times.Once);
-        }
-
-        [Fact]
-        public async Task GetDeposition_ReturnsError_WhenGetCurrentUserFails()
-        {
-            // Arrange
-            _depositionService
-                .Setup(mock => mock.GetDepositionById(It.IsAny<Guid>()))
-                .ReturnsAsync(Result.Fail(new Error()));
-            _userService
-                .Setup(mock => mock.GetCurrentUserAsync())
-                .ReturnsAsync((User) null);
-
-            // Act
-            var result = await _classUnderTest.GetDeposition(It.IsAny<Guid>());
-
-            // Assert
-            Assert.NotNull(result);
-            var errorResult = Assert.IsType<InternalServerErrorResult>(result.Result);
-            Assert.Equal((int)HttpStatusCode.InternalServerError, errorResult.StatusCode);
-            _userService.Verify(mock => mock.GetCurrentUserAsync(), Times.Once);
-        }
-
-        [Fact]
-        public async Task GetDeposition_ReturnsForbid_WhenEndUserAccessPreDepo()
-        {
-            // Arrange
-            var endUser = Mock.Of<User>();
-            endUser.IsAdmin = false;
-            _userService
-                .Setup(mock => mock.GetCurrentUserAsync())
-                .ReturnsAsync(endUser);
-            _depositionService
-                .Setup(mock => mock.GetDepositionById(It.IsAny<Guid>()))
-                .ReturnsAsync(Result.Ok(Mock.Of<Deposition>()));
-
-            // Act
-            var result = await _classUnderTest.GetDeposition(It.IsAny<Guid>());
-
-            // Assert
-            Assert.NotNull(result);
-            var errorResult = Assert.IsType<ForbidResult>(result.Result);
-            _userService.Verify(mock => mock.GetCurrentUserAsync(), Times.Once);
         }
 
         [Fact]

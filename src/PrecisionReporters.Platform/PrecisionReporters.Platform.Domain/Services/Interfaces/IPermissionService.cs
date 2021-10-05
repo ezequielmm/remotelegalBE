@@ -16,6 +16,6 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
         Task AddParticipantPermissions(Participant participant);
         Task RemoveParticipantPermissions(Guid depositionId, Participant participant);
         Task AddRolesToParticipants(Participant participant, Guid depositionId);
-
+        Task SetCompletedDepositionPermissions(Participant participant, Guid depositionId);
     }
 }

@@ -167,5 +167,58 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             //Assert
             _userResourceRoleRepositoryMock.Verify(x => x.Remove(It.IsAny<UserResourceRole>()), Times.Once);
         }
+
+        [Fact]
+        public async Task SetCompletedDepositionPermissions_ShouldReturnOk()
+        {
+            //Arrange
+            var depositionId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
+            var participant = new Participant
+            {
+                UserId = userId,
+                User = new User()
+                {
+                    Id = userId
+                }
+            };
+            var roleName = RoleName.DepositionCompletedAtendee;
+            var role = new Role { Id = Guid.NewGuid(), Name = roleName };
+            _roleRepositoryMock.Setup(r => r.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Role, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>())).ReturnsAsync(role);
+            var userResourceRole = new UserResourceRole() { UserId = userId, ResourceId = depositionId };
+            _userResourceRoleRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<UserResourceRole, bool>>>(),
+                It.IsAny<string[]>())).ReturnsAsync(userResourceRole);
+
+            //Act
+            await _permissionService.SetCompletedDepositionPermissions(participant, depositionId);
+
+            //Assert
+            _roleRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Role, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()), Times.Once);
+            _userResourceRoleRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<UserResourceRole, bool>>>(), It.IsAny<string[]>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task SetCompletedDepositionPermissions_ShouldReturnFail()
+        {
+            //Arrange
+            var depositionId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
+            var participant = new Participant
+            {
+                UserId = userId,
+                User = new User()
+                {
+                    Id = userId
+                }
+            };
+            _roleRepositoryMock.Setup(r => r.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Role, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>())).ReturnsAsync((Role) null);
+            
+            //Act
+            await _permissionService.SetCompletedDepositionPermissions(participant, depositionId);
+
+            //Assert
+            _roleRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Role, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()), Times.Once);
+        }
+
     }
 }

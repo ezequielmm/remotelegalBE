@@ -18,6 +18,7 @@
         Notify,
         List,
         ViewDepositionStatus,
-        UploadTranscript
+        UploadTranscript,
+        ViewDetails
     }
 }

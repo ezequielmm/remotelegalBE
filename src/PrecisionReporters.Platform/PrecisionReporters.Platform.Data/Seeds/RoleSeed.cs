@@ -58,6 +58,11 @@ namespace PrecisionReporters.Platform.Data.Seeds
             modelBuilder.Entity<RolePermission>().HasData(new RolePermission { RoleId = documentOwnerRoleId, Action = ResourceAction.Delete });
             modelBuilder.Entity<RolePermission>().HasData(new RolePermission { RoleId = documentOwnerRoleId, Action = ResourceAction.Update });
             modelBuilder.Entity<RolePermission>().HasData(new RolePermission { RoleId = documentOwnerRoleId, Action = ResourceAction.View });
+
+            //Deposition Completed Attendee
+            var depositionCompletedAttendeeRoleId = Guid.Parse("4b665d69-5f6f-433d-bbe2-d16abe03d8d0");
+            modelBuilder.Entity<Role>().HasData(new Role { Id = depositionCompletedAttendeeRoleId, Name = RoleName.DepositionCompletedAtendee });
+            modelBuilder.Entity<RolePermission>().HasData(new RolePermission { RoleId = depositionCompletedAttendeeRoleId, Action = ResourceAction.ViewDetails });
         }
     }
 }
