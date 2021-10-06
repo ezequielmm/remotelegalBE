@@ -284,7 +284,7 @@
         },
         {
           "name": "DD_APM_ENABLED",
-          "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:QA/DD_APM_ENABLED-Lp9Jtv"
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:747865543072:secret:PERFORMANCE/DD_APM_ENABLED-duiH44"
         }
       ],
       "mountPoints": [],
@@ -297,8 +297,8 @@
           "awslogs-stream-prefix": "ecs"
         }
       },
-      "memoryReservation": 256,
-      "cpu": 150
+      "memoryReservation": 512,
+      "cpu": 300
     }
   ],
   "family": "prp-transcript-task-performance",
@@ -310,6 +310,6 @@
   "requiresCompatibilities": [
     "FARGATE"
   ],
-  "cpu": "1024",
-  "memory": "2048"
+  "cpu": "4096",
+  "memory": "8192"
 }
