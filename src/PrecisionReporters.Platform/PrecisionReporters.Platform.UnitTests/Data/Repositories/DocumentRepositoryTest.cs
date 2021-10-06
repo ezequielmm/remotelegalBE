@@ -4,16 +4,14 @@ using System;
 
 namespace PrecisionReporters.Platform.UnitTests.Data.Repositories
 {
-
-    public class CaseRepositoryTest:BaseRepositoryTest<Case>
+    public class DocumentRepositoryTest : BaseRepositoryTest<Document>
     {
         private static DataAccessContextForTest _dataAccess;
-        private static CaseRepository _repository;
-
-        public CaseRepositoryTest() 
+        private static DocumentRepository _repository;
+        public DocumentRepositoryTest()
         {
             _dataAccess = new DataAccessContextForTest(Guid.NewGuid());
-            _repository = new CaseRepository(_dataAccess);
+            _repository = new DocumentRepository(_dataAccess);
         }
-    }
+}
 }

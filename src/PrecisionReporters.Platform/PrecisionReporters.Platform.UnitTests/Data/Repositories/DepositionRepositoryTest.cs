@@ -15,7 +15,6 @@ namespace PrecisionReporters.Platform.UnitTests.Data.Repositories
 {
     public class DepositionRepositoryTest
     {
-        private readonly Mock<IConfiguration> _configuration;
         private readonly DataAccessContextForTest _dataAccess;
 
         private DepositionRepository _repository;
@@ -28,9 +27,7 @@ namespace PrecisionReporters.Platform.UnitTests.Data.Repositories
         {
             _depositions = new List<Deposition>();
 
-            _configuration = new Mock<IConfiguration>();
-
-            _dataAccess = new DataAccessContextForTest(Guid.NewGuid(), _configuration.Object);
+            _dataAccess = new DataAccessContextForTest(Guid.NewGuid());
             _dataAccess.Database.EnsureDeleted();
             _dataAccess.Database.EnsureCreated();
 

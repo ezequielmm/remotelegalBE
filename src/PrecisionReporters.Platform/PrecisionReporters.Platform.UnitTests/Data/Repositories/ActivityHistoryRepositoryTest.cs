@@ -4,14 +4,15 @@ using System;
 
 namespace PrecisionReporters.Platform.UnitTests.Data.Repositories
 {
-    public class BreakRoomRepositoryTest : BaseRepositoryTest<BreakRoom>
+    public class ActivityHistoryRepositoryTest : BaseRepositoryTest<ActivityHistory>
     {
+
         private static DataAccessContextForTest _dataAccess;
-        private static BreakRoomRepository _repository;
-        public BreakRoomRepositoryTest()
+        private static ActivityHistoryRepository _repository;
+        public ActivityHistoryRepositoryTest()
         {
             _dataAccess = new DataAccessContextForTest(Guid.NewGuid());
-            _repository = new BreakRoomRepository(_dataAccess);
+            _repository = new ActivityHistoryRepository(_dataAccess);
         }
-}
+    }
 }

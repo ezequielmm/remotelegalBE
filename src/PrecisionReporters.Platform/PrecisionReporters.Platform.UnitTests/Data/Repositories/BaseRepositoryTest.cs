@@ -20,18 +20,14 @@ using Xunit;
 namespace PrecisionReporters.Platform.UnitTests.Data.Repositories
 {
     public abstract class BaseRepositoryTest<T> where T : BaseEntity<T>
-    {
-        //TODO: Add classes for others Repositories and they will be similar to BreakRoomRepositoryTest and CaseRepositoryTest
-
-        private readonly Mock<IConfiguration> _configuration;
+    {        
         private readonly Mock<DataAccessContextForTest> _dataAccessMock;
         private readonly BaseRepository<T> _repository;
         private readonly DataAccessContextForTest _dataAccess;
         public BaseRepositoryTest()
         {
-            _configuration = new Mock<IConfiguration>();
-            _dataAccessMock = new Mock<DataAccessContextForTest>(Guid.NewGuid(), _configuration.Object);
-            _dataAccess = new DataAccessContextForTest(Guid.NewGuid(), _configuration.Object);
+            _dataAccessMock = new Mock<DataAccessContextForTest>(Guid.NewGuid());
+            _dataAccess = new DataAccessContextForTest(Guid.NewGuid());
             _repository = new BaseRepository<T>(_dataAccessMock.Object);
         }
 
@@ -84,17 +80,22 @@ namespace PrecisionReporters.Platform.UnitTests.Data.Repositories
                 (T)Activator.CreateInstance(typeof(T), new object[] { })
             };
             testList.ForEach(x => x.Id = Guid.NewGuid());
+            var itemMock = new Mock<T>();
+            itemMock.Setup(x => x.CopyFrom(It.IsAny<T>())).Verifiable();
+            var itemToUpdate = testList.FirstOrDefault();
+            itemMock.Object.CreationDate = DateTime.Now;
+            itemMock.Object.Id = Guid.NewGuid();
+            testList.Add(itemMock.Object);
             var repository = new BaseRepository<T>(_dataAccess);
             await repository.CreateRange(testList);
-            var itemToUpdate = testList.FirstOrDefault();
-            itemToUpdate.CreationDate = DateTime.Now;
 
             // Act
-            var result = await repository.Update(itemToUpdate);
+            var result = await repository.Update(itemMock.Object);
 
             //Assert
             Assert.NotNull(itemToUpdate);
-            Assert.Equal(itemToUpdate, result);
+            Assert.Equal(itemMock.Object, result);
+            itemMock.Verify(x => x.CopyFrom(It.IsAny<T>()), Times.Once);
         }
 
         [Fact]

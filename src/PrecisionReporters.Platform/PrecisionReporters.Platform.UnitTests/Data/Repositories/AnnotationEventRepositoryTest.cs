@@ -12,7 +12,6 @@ namespace PrecisionReporters.Platform.UnitTests.Data.Repositories
 {
     public class AnnotationEventRepositoryTest
     {
-        private readonly Mock<IConfiguration> _configuration;
         private readonly DataAccessContextForTest _dataAccess;
 
         private AnnotationEventRepository _repository;
@@ -30,10 +29,7 @@ namespace PrecisionReporters.Platform.UnitTests.Data.Repositories
 
         public AnnotationEventRepositoryTest()
         {
-
-            _configuration = new Mock<IConfiguration>();
-
-            _dataAccess = new DataAccessContextForTest(Guid.NewGuid(), _configuration.Object);
+            _dataAccess = new DataAccessContextForTest(Guid.NewGuid());
             _dataAccess.Database.EnsureDeleted();
             _dataAccess.Database.EnsureCreated();
 

@@ -9,7 +9,6 @@
     <EmbeddedResource Remove="02 Domain\**" />
     <None Remove="02 Domain\**" />
   </ItemGroup>
-
   <ItemGroup>
     <PackageReference Include="coverlet.msbuild" Version="2.9.0">
       <PrivateAssets>all</PrivateAssets>

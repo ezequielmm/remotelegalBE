@@ -14,7 +14,6 @@ namespace PrecisionReporters.Platform.UnitTests.Data.Repositories
 {
     public class UserResourceRoleRepositoryTest
     {
-        private readonly Mock<IConfiguration> _configuration;
         private readonly DataAccessContextForTest _dataAccessUserResourceRole;
 
         private UserResourceRoleRepository rolePermissionResult;
@@ -37,9 +36,7 @@ namespace PrecisionReporters.Platform.UnitTests.Data.Repositories
 
             rolePermissionList = new List<RolePermission>();
 
-            _configuration = new Mock<IConfiguration>();
-
-            _dataAccessUserResourceRole = new DataAccessContextForTest(Guid.NewGuid(), _configuration.Object);
+            _dataAccessUserResourceRole = new DataAccessContextForTest(Guid.NewGuid());
             _dataAccessUserResourceRole.Database.EnsureDeleted();
             _dataAccessUserResourceRole.Database.EnsureCreated();
 
@@ -94,7 +91,7 @@ namespace PrecisionReporters.Platform.UnitTests.Data.Repositories
 
             // assert
             Assert.Equal(expectedResult.ToString(), result.ToString());
-           
+
         }
 
         [Fact]
@@ -171,7 +168,7 @@ namespace PrecisionReporters.Platform.UnitTests.Data.Repositories
                     IsAdmin = false,
                 }
             };
-               
+
 
             // act
             var result = rolePermissionResult.Remove(userResourceRoleToRemove);
