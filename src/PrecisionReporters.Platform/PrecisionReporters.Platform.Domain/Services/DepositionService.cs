@@ -174,6 +174,8 @@ namespace PrecisionReporters.Platform.Domain.Services
                 var participants = await GetDepositionParticipants(deposition);
                 foreach (var participant in participants)
                 {
+                    if (participant.User == null) 
+                        continue;
                     await _permissionService.AddRolesToParticipants(participant, deposition.Id);
                 }
             }
