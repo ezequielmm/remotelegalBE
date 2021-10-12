@@ -31,8 +31,7 @@ namespace PrecisionReporters.Platform.Data.Repositories
             if (annotationId != null)
             {
                 var lastIncludedAnnotation = await GetById(annotationId.Value);
-                if (lastIncludedAnnotation != null)
-                    query = query.Where(x => x.CreationDate > lastIncludedAnnotation.CreationDate);
+                query = query.Where(x => x.CreationDate > lastIncludedAnnotation.CreationDate);
             }
 
             // Order by ascend

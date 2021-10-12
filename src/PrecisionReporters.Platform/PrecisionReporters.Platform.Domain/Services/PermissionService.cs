@@ -36,7 +36,8 @@ namespace PrecisionReporters.Platform.Domain.Services
                 ResourceId = resourceId,
                 ResourceType = resourceType,
                 RoleId = role.Id,
-                UserId = userId
+                UserId = userId,
+                Id = Guid.NewGuid()
             };
             //Skip adding permissions if they already exists
             var result = await _userResourceRoleRepository.GetFirstOrDefaultByFilter(x => x.ResourceId == resourceId && x.ResourceType == resourceType && x.RoleId == role.Id && x.UserId == userId);
