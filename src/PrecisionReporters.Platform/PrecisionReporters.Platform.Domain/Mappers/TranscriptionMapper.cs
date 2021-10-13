@@ -1,5 +1,6 @@
 ﻿using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Domain.Dtos;
+using PrecisionReporters.Platform.Domain.Enums;
 using System;
 
 namespace PrecisionReporters.Platform.Domain.Mappers
@@ -32,9 +33,10 @@ namespace PrecisionReporters.Platform.Domain.Mappers
                 UserName = model.User?.GetFullName(),
                 TranscriptDateTime = new DateTimeOffset(model.TranscriptDateTime, TimeSpan.Zero),
                 UserEmail = model.User.EmailAddress,
-                PostProcessed = model.PostProcessed
+                PostProcessed = model.PostProcessed,
+                Status = TranscriptionStatus.Unknown
             };
-        }        
+        }
 
         public Transcription ToModel(object dto)
         {

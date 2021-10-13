@@ -7,6 +7,7 @@ using PrecisionReporters.Platform.Data.Enums;
 using PrecisionReporters.Platform.Data.Repositories.Interfaces;
 using PrecisionReporters.Platform.Domain.Configurations;
 using PrecisionReporters.Platform.Domain.Dtos;
+using PrecisionReporters.Platform.Domain.Enums;
 using PrecisionReporters.Platform.Domain.Exceptions.CognitiveServices;
 using PrecisionReporters.Platform.Domain.Mappers;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
@@ -25,10 +26,9 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly IMapper<Transcription, TranscriptionDto, object> _transcriptionMapper;
         private readonly IUserRepository _userRepository;
 
-        private string _instanceDepositionId;
+        private Guid _instanceDepositionId;
         private string _instanceUserEmail;
         private User _instanceUser;
-        private TranscriptionInfo _currentTranscriptionInfo = null;
 
         private PushAudioInputStream _audioInputStream;
         private SpeechRecognizer _recognizer;
@@ -91,16 +91,16 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public Task StopRecognitionAsync()
         {
-            _logger.LogInformation("Stopping continuous recognition. Deposition: {DepositionId}. User: {UserEmail}. Transcription: {CurrentTranscriptionInfoId}.",
-                _instanceDepositionId, _instanceUserEmail, _currentTranscriptionInfo?.Id);
             _continuousRecognitionStopped = true;
+            _logger.LogInformation("Stopping continuous recognition. Deposition: {DepositionId}. User: {UserEmail}.",
+                _instanceDepositionId, _instanceUserEmail);
             return _recognizer.StopContinuousRecognitionAsync();
         }
 
         private async Task InitializeInstanceInformationAsync(string userEmail, string depositionId)
         {
             _instanceUserEmail = userEmail;
-            _instanceDepositionId = depositionId;
+            _instanceDepositionId = Guid.Parse(depositionId);
             _instanceUser = await _userRepository.GetFirstOrDefaultByFilter(x => x.EmailAddress == userEmail, tracking: false);
         }
 
@@ -109,23 +109,12 @@ namespace PrecisionReporters.Platform.Domain.Services
             var eventDateTime = DateTime.UtcNow;
             if (e.Result.Reason != ResultReason.RecognizingSpeech)
             {
-                _logger.LogInformation("On SpeechRecognizer Recognized event had an invalid reason: {Reason}. Deposition: {DepositionId}. User: {UserEmail}. Transcription: {CurrentTranscriptionInfoId}.",
-                    e.Result.Reason, _instanceDepositionId, _instanceUserEmail, _currentTranscriptionInfo?.Id);
+                _logger.LogInformation("On SpeechRecognizer Recognized event had an invalid reason: {Reason}. Deposition: {DepositionId}. User: {UserEmail}.",
+                    e.Result.Reason, _instanceDepositionId, _instanceUserEmail);
                 return;
             }
 
-            var newTranscription = _currentTranscriptionInfo == null;
-            if (newTranscription)
-            {
-                _currentTranscriptionInfo = new TranscriptionInfo
-                {
-                    Id = Guid.NewGuid(),
-                    FirstRecognizingAudioChunkDateTime = eventDateTime,
-                };
-            }
-
-            var transcriptionInfo = _currentTranscriptionInfo.CreateCopy();
-            await HandleRecognizingEventAsync(e, transcriptionInfo);
+            await HandleRecognizingEventAsync(e, eventDateTime);
         }
 
         private async void OnSpeechRecognizerRecognized(object sender, SpeechRecognitionEventArgs e)
@@ -133,44 +122,42 @@ namespace PrecisionReporters.Platform.Domain.Services
             var eventDateTime = DateTime.UtcNow;
             if (e.Result.Reason != ResultReason.RecognizedSpeech)
             {
-                _logger.LogInformation("On SpeechRecognizer Recognized event had an invalid reason: {Reason}. Deposition: {DepositionId}. User: {UserEmail}. Transcription: {CurrentTranscriptionInfoId}.",
-                    e.Result.Reason, _instanceDepositionId, _instanceUserEmail, _currentTranscriptionInfo?.Id);
+                _logger.LogInformation("On SpeechRecognizer Recognized event had an invalid reason: {Reason}. Deposition: {DepositionId}. User: {UserEmail}.",
+                    e.Result.Reason, _instanceDepositionId, _instanceUserEmail);
                 return;
             }
 
             var silenceRecognized = string.IsNullOrEmpty(e.Result.Text);
             if (silenceRecognized)
             {
-                _logger.LogInformation("On SpeechRecognizer Recognized event recognized a silence. Deposition: {DepositionId}. User: {UserEmail}. Transcription: {CurrentTranscriptionInfoId}.",
-                    e.Result.Reason, _instanceDepositionId, _instanceUserEmail, _currentTranscriptionInfo?.Id);
+                _logger.LogInformation("On SpeechRecognizer Recognized event recognized a silence. Deposition: {DepositionId}. User: {UserEmail}.",
+                    e.Result.Reason, _instanceDepositionId, _instanceUserEmail);
                 return;
             }
 
-            var transcriptionInfo = _currentTranscriptionInfo.CreateCopy();
-            _currentTranscriptionInfo = null;
-            await HandleRecognizedEventAsync(e, eventDateTime, transcriptionInfo);
+            await HandleRecognizedEventAsync(e, eventDateTime);
         }
 
         private void OnSpeechRecognizerSessionStopped(object sender, SessionEventArgs e)
         {
             _continuousRecognitionStopped = true;
-            _logger.LogInformation("Speech recognition session stopped. Deposition: {DepositionId}. User: {UserEmail}. Transcription: {CurrentTranscriptionInfoId}.",
-                _instanceDepositionId, _instanceUserEmail, _currentTranscriptionInfo?.Id);
+            _logger.LogInformation("Speech recognition session stopped. Deposition: {DepositionId}. User: {UserEmail}.",
+                _instanceDepositionId, _instanceUserEmail);
         }
 
         private void OnSpeechRecognizerCanceled(object sender, SpeechRecognitionCanceledEventArgs e)
         {
             var speechRecognitionResult = e.Result;
             var cancellationDetails = CancellationDetails.FromResult(speechRecognitionResult);
-            _logger.LogInformation("Speech recognition canceled due to {Reason}. Deposition: {DepositionId}. User: {UserEmail}. Transcription: {CurrentTranscriptionInfoId}. ContinuousRecognitionStopped: {ContinuousRecognitionStopped}.",
-                cancellationDetails.Reason, _instanceDepositionId, _instanceUserEmail, _currentTranscriptionInfo?.Id, _continuousRecognitionStopped);
+            _logger.LogInformation("Speech recognition canceled due to {Reason}. Deposition: {DepositionId}. User: {UserEmail}.",
+                cancellationDetails.Reason, _instanceDepositionId, _instanceUserEmail);
             if (cancellationDetails.Reason == CancellationReason.Error)
             {
                 var logLevel = _continuousRecognitionStopped
                     ? LogLevel.Warning
                     : LogLevel.Error;
-                _logger.Log(logLevel, "Speech recognition canceled due to an error. (ErrorCode: {ErrorCode} | ErrorDetails: {ErrorDetails}). Deposition: {DepositionId}. User: {UserEmail}. Transcription: {CurrentTranscriptionInfoId}. ContinuousRecognitionStopped: {ContinuousRecognitionStopped}.",
-                    cancellationDetails.ErrorCode, cancellationDetails.ErrorDetails, _instanceDepositionId, _instanceUserEmail, _currentTranscriptionInfo?.Id, _continuousRecognitionStopped);
+                _logger.Log(logLevel, "Speech recognition canceled due to an error. (ErrorCode: {ErrorCode} | ErrorDetails: {ErrorDetails}). Deposition: {DepositionId}. User: {UserEmail}.",
+                    cancellationDetails.ErrorCode, cancellationDetails.ErrorDetails, _instanceDepositionId, _instanceUserEmail);
                 ThrowExceptionIfAzureClosedConnectionDueToInactivity(cancellationDetails);
             }
         }
@@ -192,33 +179,33 @@ namespace PrecisionReporters.Platform.Domain.Services
             throw new SpeechRecognizerInactivityException(cancellationDetails);
         }
 
-        private Task HandleRecognizingEventAsync(SpeechRecognitionEventArgs e, TranscriptionInfo transcriptionInfo)
+        private Task HandleRecognizingEventAsync(SpeechRecognitionEventArgs e, DateTime eventDateTime)
         {
-            var transcription = BuildTranscription(e, transcriptionInfo);
-            return SendNotificationToDepositionMembersAsync(transcription);
+            var transcription = BuildTranscription(e, eventDateTime);
+            return SendRecognizingTranscriptionToDepositionMembersAsync(transcription);
         }
 
-        private Task HandleRecognizedEventAsync(SpeechRecognitionEventArgs e, DateTime eventDateTime, TranscriptionInfo transcriptionInfo)
+        private Task HandleRecognizedEventAsync(SpeechRecognitionEventArgs e, DateTime eventDateTime)
         {
-            var transcription = BuildTranscription(e, transcriptionInfo);
+            var transcription = BuildTranscription(e, eventDateTime);
             var bestTranscription = e.Result.Best().OrderByDescending(x => x.Confidence).First();
-            var latency = int.Parse(e.Result.Properties.GetProperty(PropertyId.SpeechServiceResponse_RecognitionLatencyMs, "0"));
             transcription.Confidence = bestTranscription.Confidence;
-            transcription.TranscriptDateTime = eventDateTime.AddMilliseconds(-e.Result.Duration.TotalMilliseconds).AddMilliseconds(-latency);
+            var latency = int.Parse(e.Result.Properties.GetProperty(PropertyId.SpeechServiceResponse_RecognitionLatencyMs, "0"));
+            transcription.TranscriptDateTime = transcription.TranscriptDateTime.AddMilliseconds(-latency);
             FireAndForgetStoreTranscription(transcription);
-            return SendNotificationToDepositionMembersAsync(transcription);
+            return SendRecognizedTranscriptionToDepositionMembersAsync(transcription);
         }
 
-        private Transcription BuildTranscription(SpeechRecognitionEventArgs e, TranscriptionInfo transcriptionInfo)
+        private Transcription BuildTranscription(SpeechRecognitionEventArgs e, DateTime eventDateTime)
         {
             var transcription = new Transcription
             {
-                Id = transcriptionInfo.Id,
-                TranscriptDateTime = transcriptionInfo.FirstRecognizingAudioChunkDateTime,
+                Id = Guid.NewGuid(),
+                TranscriptDateTime = eventDateTime.AddMilliseconds(-e.Result.Duration.TotalMilliseconds),
                 Text = e.Result.Text,
-                Duration = e.Result.Duration.Milliseconds,
+                Duration = Convert.ToInt32(e.Result.Duration.TotalMilliseconds),
                 Confidence = 0,
-                DepositionId = new Guid(_instanceDepositionId),
+                DepositionId = _instanceDepositionId,
                 UserId = _instanceUser.Id,
                 User = _instanceUser,
                 CreationDate = DateTime.UtcNow
@@ -226,9 +213,22 @@ namespace PrecisionReporters.Platform.Domain.Services
             return transcription;
         }
 
-        private Task SendNotificationToDepositionMembersAsync(Transcription transcription)
+        private Task SendRecognizingTranscriptionToDepositionMembersAsync(Transcription transcription)
         {
             var transcriptionDto = _transcriptionMapper.ToDto(transcription);
+            transcriptionDto.Status = TranscriptionStatus.Recognizing;
+            return SendNotificationToDepositionMembersAsync(transcriptionDto);
+        }
+
+        private Task SendRecognizedTranscriptionToDepositionMembersAsync(Transcription transcription)
+        {
+            var transcriptionDto = _transcriptionMapper.ToDto(transcription);
+            transcriptionDto.Status = TranscriptionStatus.Recognized;
+            return SendNotificationToDepositionMembersAsync(transcriptionDto);
+        }
+
+        private Task SendNotificationToDepositionMembersAsync(TranscriptionDto transcriptionDto)
+        {
             var notificationDto = new NotificationDto
             {
                 Action = NotificationAction.Create,
@@ -269,8 +269,8 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (disposing)
             {
                 // Dispose managed resources
-                _logger.LogInformation("Disposing live transcription service. Deposition: {DepositionId}. User: {UserEmail}. Transcription: {CurrentTranscriptionInfoId}.",
-                    _instanceDepositionId, _instanceUserEmail, _currentTranscriptionInfo?.Id);
+                _logger.LogInformation("Disposing live transcription service. Deposition: {DepositionId}. User: {UserEmail}.",
+                    _instanceDepositionId, _instanceUserEmail);
                 Task.Run(() =>
                 {
                     try
@@ -278,8 +278,8 @@ namespace PrecisionReporters.Platform.Domain.Services
                         // This takes too long so we are using fire and forget
                         _recognizer?.Dispose();
                         _audioInputStream?.Dispose();
-                        _logger.LogInformation("Successfully dispos live transcription service. Deposition: {DepositionId}. User: {UserEmail}. Transcription: {CurrentTranscriptionInfoId}.",
-                            _instanceDepositionId, _instanceUserEmail, _currentTranscriptionInfo?.Id);
+                        _logger.LogInformation("Successfully dispos live transcription service. Deposition: {DepositionId}. User: {UserEmail}.",
+                            _instanceDepositionId, _instanceUserEmail);
                     }
                     catch (Exception ex)
                     {
@@ -296,18 +296,6 @@ namespace PrecisionReporters.Platform.Domain.Services
         ~TranscriptionLiveAzureService()
         {
             Dispose(false);
-        }
-
-        private class TranscriptionInfo
-        {
-            public Guid Id { get; set; }
-            public DateTime FirstRecognizingAudioChunkDateTime { get; set; }
-
-            public TranscriptionInfo CreateCopy() => new TranscriptionInfo
-            {
-                Id = Id,
-                FirstRecognizingAudioChunkDateTime = FirstRecognizingAudioChunkDateTime
-            };
         }
     }
 }

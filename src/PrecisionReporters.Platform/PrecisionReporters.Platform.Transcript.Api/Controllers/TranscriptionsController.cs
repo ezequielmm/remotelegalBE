@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Domain.Dtos;
+using PrecisionReporters.Platform.Domain.Enums;
 using PrecisionReporters.Platform.Domain.Mappers;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using PrecisionReporters.Platform.Shared.Helpers;
@@ -39,7 +40,12 @@ namespace PrecisionReporters.Platform.Transcript.Api.Controllers
             if (transcriptionsResult.IsFailed)
                 return WebApiResponses.GetErrorResponse(transcriptionsResult);
 
-            var transcriptionList = transcriptionsResult.Value.Select(t => _transcriptionMapper.ToDto(t));
+            var transcriptionList = transcriptionsResult.Value.Select(t =>
+            {
+                var transcription = _transcriptionMapper.ToDto(t);
+                transcription.Status = TranscriptionStatus.Recognized;
+                return transcription;
+            });
             return Ok(transcriptionList);
         }
 

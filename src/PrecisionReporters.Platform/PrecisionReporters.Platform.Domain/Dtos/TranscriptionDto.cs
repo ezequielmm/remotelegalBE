@@ -1,5 +1,6 @@
 ﻿using System;
 using MessagePack;
+using PrecisionReporters.Platform.Domain.Enums;
 
 namespace PrecisionReporters.Platform.Domain.Dtos
 {
@@ -24,5 +25,7 @@ namespace PrecisionReporters.Platform.Domain.Dtos
         public string UserEmail { get; set; }
         [Key("postProcessed")]
         public bool PostProcessed { get; set; }
+        [Key("status")]
+        public TranscriptionStatus Status { get; set; }
     }
 }
