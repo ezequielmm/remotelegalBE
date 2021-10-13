@@ -13,6 +13,7 @@ namespace PrecisionReporters.Platform.Data.Entities
         public Guid UserId { get; set; }
         [Column(TypeName = "char(36)")]
         public Guid DepositionId { get; set; }
+        [Column(TypeName = "datetime(3)")]
         public DateTime TranscriptDateTime { get; set; }
         public User User { get; set; }
         public int Duration { get; set; }

@@ -1,9 +1,10 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PrecisionReporters.Platform.Data.Entities;
-using PrecisionReporters.Platform.Shared.Enums;
-using PrecisionReporters.Platform.Data.Seeds;
 using PrecisionReporters.Platform.Data.Enums;
+using PrecisionReporters.Platform.Data.Extensions;
+using PrecisionReporters.Platform.Data.Seeds;
+using PrecisionReporters.Platform.Shared.Enums;
 
 namespace PrecisionReporters.Platform.Data
 {
@@ -38,6 +39,8 @@ namespace PrecisionReporters.Platform.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.SetBaseEntityCreationDateProperties("datetime(3)", "CURRENT_TIMESTAMP(3)");
+
             modelBuilder.Entity<User>(u => u.HasIndex(e => e.EmailAddress).IsUnique());
 
             modelBuilder.Entity<Room>(x => x.HasIndex(i => i.Name).IsUnique());

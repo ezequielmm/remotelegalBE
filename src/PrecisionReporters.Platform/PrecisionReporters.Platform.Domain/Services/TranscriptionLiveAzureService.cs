@@ -243,7 +243,6 @@ namespace PrecisionReporters.Platform.Domain.Services
             // Create a copy in order to avoid trying to persist the untracked User entity
             var transcriptionToStore = new Transcription();
             transcriptionToStore.CopyFrom(transcription);
-            transcriptionToStore.TranscriptDateTime = transcriptionToStore.TranscriptDateTime.AddMilliseconds(-transcriptionToStore.TranscriptDateTime.Millisecond);
 
             _logger.LogInformation("Attempting to store transcription. Deposition: {DepositionId}. User: {UserEmail}. Transcription: {TranscriptionId}.",
                 transcription.DepositionId, _instanceUserEmail, transcription.Id);
