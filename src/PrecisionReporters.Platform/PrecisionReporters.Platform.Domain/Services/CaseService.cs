@@ -16,6 +16,8 @@ using System.Threading.Tasks;
 using PrecisionReporters.Platform.Domain.Configurations;
 using Microsoft.Extensions.Options;
 using PrecisionReporters.Platform.Shared.Helpers;
+using PrecisionReporters.Platform.Domain.Extensions;
+using System.Globalization;
 
 namespace PrecisionReporters.Platform.Domain.Services
 {
@@ -169,13 +171,9 @@ namespace PrecisionReporters.Platform.Domain.Services
                         }
                         var newDeposition = depositionResult.Value;
 
-                        var offsetHours = int.Parse(_depositionConfiguration.DepositionScheduleRestrictionHours);
+                        var depositionStartDateIsValid = DepositionStartDateIsValid(userResult, newDeposition);
 
-                        DateTime now = DateTime.UtcNow;
-
-                        DateTime limitDate = WorkingDayHelper.GetWorkingDayUsingOffset(now, offsetHours);
-
-                        if ((newDeposition.StartDate >= now && newDeposition.StartDate < limitDate && !userResult.IsAdmin) || ((userResult.IsAdmin && newDeposition.StartDate.DayOfWeek == DayOfWeek.Saturday) || (userResult.IsAdmin && newDeposition.StartDate.DayOfWeek == DayOfWeek.Sunday)))
+                        if (!depositionStartDateIsValid)
                         {
                             _logger.LogError($"Unable to schedule a Deposition within 48 Hours for Deposition ID: {newDeposition.Id}");
                             _logger.LogInformation("Removing uploaded documents");
@@ -248,6 +246,29 @@ namespace PrecisionReporters.Platform.Domain.Services
                 return Result.Fail(new InvalidInputError("Can not assign this role to the participants"));
             }
             return Result.Ok();
+        }
+
+        private bool DepositionStartDateIsValid(User user, Deposition deposition)
+        {
+            var offsetHours = int.Parse(_depositionConfiguration.DepositionScheduleRestrictionHours);
+            var now = DateTime.UtcNow;
+            var convertedTimeZoneNow = now.GetConvertedTime(deposition.TimeZone);
+            var limitDate = WorkingDayHelper.GetWorkingDayUsingOffset(convertedTimeZoneNow, offsetHours);
+
+            var convertedTimeZoneStartDate = deposition.StartDate.GetConvertedTime(deposition.TimeZone);
+
+            var depositionIsWeekend = convertedTimeZoneStartDate.DayOfWeek == DayOfWeek.Saturday || convertedTimeZoneStartDate.DayOfWeek == DayOfWeek.Sunday;
+            if (depositionIsWeekend)
+            {
+                return false;
+            }
+
+            if (user.IsAdmin)
+            {
+                return true;
+            }
+
+            return convertedTimeZoneStartDate >= limitDate;
         }
     }
 }

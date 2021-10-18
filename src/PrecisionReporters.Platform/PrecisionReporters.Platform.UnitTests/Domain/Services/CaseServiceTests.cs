@@ -18,6 +18,7 @@ using System.Threading.Tasks;
 using Xunit;
 using PrecisionReporters.Platform.Domain.Configurations;
 using Microsoft.Extensions.Options;
+using PrecisionReporters.Platform.Domain.Enums;
 
 namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 {
@@ -499,7 +500,9 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var userEmail = "testUser@mail.com";
             var user = UserFactory.GetUserByGivenEmail(userEmail);
             var caseId = Guid.NewGuid();
-            var depositions = new List<Deposition> { new Deposition
+            var depositions = new List<Deposition> 
+            { 
+                new Deposition
                 {
                     Id = Guid.Parse("ecd125d5-cb5e-4b8a-91c3-830a8ea7270f"),
                     StartDate = DateTime.UtcNow.AddHours(3),
@@ -508,7 +511,9 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                     CreationDate = DateTime.UtcNow,
                     Requester=new User(){ EmailAddress = "testUser@mail.com" },
                     IsOnTheRecord = true,
-                } };
+                    TimeZone = "America/New_York"
+                } 
+            };
             var files = new Dictionary<string, FileTransferInfo>();
             for (int i = 1; i <= depositions.Count; i++)
             {
@@ -575,16 +580,20 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 IsAdmin = true
             };
             var caseId = Guid.NewGuid();
-            var depositions = new List<Deposition> { new Deposition
+            var depositions = new List<Deposition> 
+            { 
+                new Deposition
                 {
                     Id = Guid.Parse("ecd125d5-cb5e-4b8a-91c3-830a8ea7270f"),
-                    StartDate = new DateTime(2021, 09, 25),
+                    StartDate = new DateTime(2021, 09, 25, 20, 00, 00),
                     EndDate = DateTime.UtcNow.AddHours(3),
                     Participants = new List<Participant>{ new Participant { Role = ParticipantType.Witness, IsAdmitted = true } },
                     CreationDate = DateTime.UtcNow,
                     Requester=new User(){ EmailAddress = "testUser@mail.com" },
                     IsOnTheRecord = true,
-                } };
+                    TimeZone = "America/New_York"
+                } 
+            };
             var files = new Dictionary<string, FileTransferInfo>();
             for (int i = 1; i <= depositions.Count; i++)
             {
@@ -642,7 +651,29 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var user = UserFactory.GetUserByGivenEmail(userEmail);
             user.IsAdmin = true;
             var caseId = Guid.NewGuid();
-            var depositions = DepositionFactory.GetDepositionList();
+            var depositions = new List<Deposition> 
+            {
+                new Deposition
+                {
+                    Id = Guid.NewGuid(),
+                    StartDate = DateTime.UtcNow,
+                    EndDate = DateTime.UtcNow.AddHours(5),
+                    Participants = new List<Participant> { new Participant { Role = ParticipantType.Witness } },
+                    CreationDate = DateTime.UtcNow,
+                    Requester = new User() { EmailAddress = "testUser@mail.com" },
+                    TimeZone = "America/New_York"
+                },
+                new Deposition
+                {
+                    Id = Guid.NewGuid(),
+                    StartDate = DateTime.UtcNow,
+                    EndDate = DateTime.UtcNow.AddHours(5),
+                    Participants = new List<Participant> { new Participant { Role = ParticipantType.Witness } },
+                    CreationDate = DateTime.UtcNow,
+                    Requester = new User() { EmailAddress = "testUser@mail.com" },
+                    TimeZone = "America/New_York"
+                }
+            };
             var files = new Dictionary<string, FileTransferInfo>();
             for (int i = 1; i <= depositions.Count; i++)
             {
@@ -772,7 +803,29 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var user = UserFactory.GetUserByGivenEmail(userEmail);
             user.IsAdmin = true;
             var caseId = Guid.NewGuid();
-            var depositions = DepositionFactory.GetDepositionList();
+            var depositions = new List<Deposition> 
+            {
+                new Deposition
+                {
+                    Id = Guid.NewGuid(),
+                    StartDate = new DateTime(2021, 10, 18, 17, 00, 00),
+                    EndDate = DateTime.UtcNow.AddHours(5),
+                    Participants = new List<Participant> { new Participant { Role = ParticipantType.Witness } },
+                    CreationDate = DateTime.UtcNow,
+                    Requester = new User() { EmailAddress = "testUser@mail.com" },
+                    TimeZone = "America/New_York"
+                },
+                new Deposition
+                {
+                    Id = Guid.NewGuid(),
+                    StartDate = new DateTime(2021, 10, 18, 17, 00, 00),
+                    EndDate = DateTime.UtcNow.AddHours(5),
+                    Participants = new List<Participant> { new Participant { Role = ParticipantType.Witness } },
+                    CreationDate = DateTime.UtcNow,
+                    Requester = new User() { EmailAddress = "testUser@mail.com" },
+                    TimeZone = "America/New_York"
+                }
+            };
             var files = new Dictionary<string, FileTransferInfo>();
             for (int i = 1; i <= depositions.Count; i++)
             {
