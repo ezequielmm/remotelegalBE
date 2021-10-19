@@ -19,6 +19,18 @@ namespace PrecisionReporters.Platform.UnitTests.Utils
             };
         }
 
+        public static Participant GetParticipantByGivenRole(ParticipantType role)
+        {
+            return new Participant
+            {
+                Id = Guid.NewGuid(),
+                Email = $"{role}@mockEmail.Com",
+                Name = "Name",
+                Phone = "2105428027",
+                Role = role
+            };
+        }
+
         public static ParticipantDto GetParticipantDtoByGivenRole(ParticipantType role)
         {
             return new ParticipantDto

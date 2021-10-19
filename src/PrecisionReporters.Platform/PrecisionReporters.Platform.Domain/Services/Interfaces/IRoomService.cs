@@ -24,5 +24,6 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
         Task<List<RoomResource>> GetTwilioRoomByNameAndStatus(string uniqueName, RoomStatusEnum status);
         Task<bool> RemoveRecordingRules(string roomSid);
         Task<bool> AddRecordingRules(string roomSid, TwilioIdentity witnessIdentity, bool IsVideoRecordingNeeded);
+        Task<string> RefreshRoomToken(Participant participant, Deposition deposition);
     }
 }

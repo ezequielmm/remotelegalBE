@@ -103,5 +103,17 @@ namespace PrecisionReporters.Platform.Api.Controllers
 
             return Ok(_participantMapper.ToDto(editParticipantResult.Value));
         }
+
+        [HttpPatch("Depositions/{id}/editParticipantRole")]
+        [UserAuthorize(ResourceType.Deposition, ResourceAction.EditParticipants)]
+        public async Task<ActionResult<ParticipantDto>> EditParticipantRole([ResourceId(ResourceType.Deposition)] Guid id, EditParticipantDto participant)
+        {
+            var participantToEdit = _editParticipantMapper.ToModel(participant);
+            var result = await _participantService.EditParticipantRole(id, participantToEdit);
+            if (result.IsFailed)
+                return WebApiResponses.GetErrorResponse(result);
+
+            return Ok(_participantMapper.ToDto(result.Value));
+        }
     }
 }

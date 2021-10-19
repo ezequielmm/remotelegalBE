@@ -172,6 +172,7 @@ namespace PrecisionReporters.Platform.Domain
             services.AddScoped<IDepositionEmailService, DepositionEmailService>();
             services.AddScoped<ICompositionHelper, CompositionHelper>();
             services.AddScoped<IFileHelper, FileHelper>();
+            services.AddScoped<IParticipantValidationHelper, ParticipantValidationHelper>();
 
             services.AddSingleton(typeof(IAmazonCognitoIdentityProvider),
                 _ => new AmazonCognitoIdentityProviderClient(RegionEndpoint.GetBySystemName(appConfiguration.CognitoConfiguration.AWSRegion)));

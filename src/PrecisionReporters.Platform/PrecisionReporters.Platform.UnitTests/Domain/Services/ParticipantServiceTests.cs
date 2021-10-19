@@ -11,7 +11,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using PrecisionReporters.Platform.Data.Enums;
+using PrecisionReporters.Platform.Domain.Helpers.Interfaces;
 using Xunit;
 using PrecisionReporters.Platform.Domain.Mappers;
 
@@ -28,6 +30,9 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         private readonly Mock<IPermissionService> _permissionServiceMock;
         private readonly Mock<IDepositionEmailService> _depositionEmailServiceMock;
         private readonly Mock<IMapper<Participant, ParticipantDto, CreateParticipantDto>> _participantMapperMock;
+        private readonly Mock<IParticipantValidationHelper> _participantValidatorHelper;
+        private readonly Mock<IRoomService> _roomServiceMock;
+        private readonly Mock<ILogger<ParticipantService>> _loggerMock;
         public ParticipantServiceTests()
         {
             _participantRepositoryMock = new Mock<IParticipantRepository>();
@@ -38,6 +43,9 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _depositionEmailServiceMock = new Mock<IDepositionEmailService>();
             _participantMapperMock = new Mock<IMapper<Participant, ParticipantDto, CreateParticipantDto>>();
             _deviceInfoRepositoryMock = new Mock<IDeviceInfoRepository>();
+            _participantValidatorHelper = new Mock<IParticipantValidationHelper>();
+            _roomServiceMock = new Mock<IRoomService>();
+            _loggerMock = new Mock<ILogger<ParticipantService>>();
             _participantService = new ParticipantService(_participantRepositoryMock.Object,
                 _signalRNotificationManagerMock.Object,
                 _userServiceMock.Object,
@@ -45,7 +53,10 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 _deviceInfoRepositoryMock.Object,
                 _permissionServiceMock.Object,
                 _depositionEmailServiceMock.Object,
-                _participantMapperMock.Object);
+                _participantMapperMock.Object,
+                _participantValidatorHelper.Object,
+                _roomServiceMock.Object,
+                _loggerMock.Object);
         }
 
         [Fact]
@@ -524,6 +535,84 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             Assert.True(result.IsFailed);
             Assert.Equal(errorMessage, result.Errors[0].Message);
+        }
+
+        [Theory]
+        [InlineData(ParticipantType.Witness)]
+        [InlineData(ParticipantType.CourtReporter)]
+        [InlineData(ParticipantType.Attorney)]
+        [InlineData(ParticipantType.Interpreter)]
+        [InlineData(ParticipantType.Paralegal)]
+        [InlineData(ParticipantType.TechExpert)]
+        public async Task EditParticipantRole_ShouldReturnOk_WhenIsOffTheRecord(ParticipantType participantType)
+        {
+            // Arrange
+            var baseRole = participantType;
+            var depositionId = Guid.NewGuid();
+            var targetParticipant = ParticipantFactory.GetParticipantByGivenRole(ParticipantType.Observer);
+            targetParticipant.User = new User { IsGuest = false };
+            var editedParticipant = new Participant { Id = targetParticipant.Id, Role = baseRole };
+            editedParticipant.User = targetParticipant.User;
+            var deposition = new Deposition { Id = depositionId, Participants = new List<Participant> { targetParticipant }, IsOnTheRecord = false };
+            var amazingTwilioToken = Guid.NewGuid().ToString();
+            _participantValidatorHelper
+                .Setup(mock => mock.GetValidDepositionForEditParticipantRoleAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(Result.Ok(deposition));
+            _participantValidatorHelper
+                .Setup(mock => mock.GetValidTargetParticipantForEditRole(It.IsAny<Deposition>(), It.IsAny<Participant>()))
+                .Returns(Result.Ok(targetParticipant));
+            _participantRepositoryMock
+                .Setup(x => x.Update(It.IsAny<Participant>()))
+                .ReturnsAsync(editedParticipant);
+            _roomServiceMock
+                .Setup(mock => mock.RefreshRoomToken(It.IsAny<Participant>(), It.IsAny<Deposition>()))
+                .ReturnsAsync(amazingTwilioToken);
+            _participantRepositoryMock
+                .Setup(mock => mock.GetByFilter(It.IsAny<Expression<Func<Participant, bool>>>(), It.IsAny<string[]>()))
+                .ReturnsAsync(new List<Participant> { targetParticipant });
+            //Act
+            var result = await _participantService.EditParticipantRole(depositionId, editedParticipant);
+
+            // Assert
+            _participantValidatorHelper.Verify(mock => mock.GetValidDepositionForEditParticipantRoleAsync(It.IsAny<Guid>()), Times.Once);
+            _participantValidatorHelper.Verify(mock => mock.GetValidTargetParticipantForEditRole(It.IsAny<Deposition>(), It.IsAny<Participant>()), Times.Once);
+            _participantRepositoryMock.Verify(x => x.Update(It.IsAny<Participant>()), Times.Once);
+            _signalRNotificationManagerMock.Verify(mock => mock.SendDirectMessage(It.IsAny<string>(), It.IsAny<NotificationDto>()), Times.Once);
+            _roomServiceMock.Verify(mock => mock.RefreshRoomToken(It.IsAny<Participant>(), It.IsAny<Deposition>()), Times.Once);
+            Assert.NotNull(result);
+            Assert.True(result.IsSuccess);
+            Assert.True(result.Errors.Count == 0);
+        }
+
+        [Fact]
+        public async Task EditParticipantRole_ShouldReturnInvalidInputError_WhenFailsToUpdateParticipant()
+        {
+            var depositionId = Guid.NewGuid();
+            var errorMessage = "There was an error updating Participant with Id:";
+            var targetParticipant = ParticipantFactory.GetParticipantByGivenRole(ParticipantType.Witness);
+            targetParticipant.User = new User { IsGuest = false };
+            var editedParticipant = new Participant { Id = targetParticipant.Id, Role = ParticipantType.Attorney };
+            var deposition = new Deposition { Id = depositionId, Participants = new List<Participant> { targetParticipant }, IsOnTheRecord = false };
+            _participantValidatorHelper
+                .Setup(mock => mock.GetValidDepositionForEditParticipantRoleAsync(It.IsAny<Guid>()))
+                .ReturnsAsync(Result.Ok(deposition));
+            _participantValidatorHelper
+                .Setup(mock => mock.GetValidTargetParticipantForEditRole(It.IsAny<Deposition>(), It.IsAny<Participant>()))
+                .Returns(Result.Ok(targetParticipant));
+            _participantRepositoryMock
+                .Setup(x => x.Update(It.IsAny<Participant>()))
+                .ReturnsAsync((Participant)null);
+
+            //Act
+            var result = await _participantService.EditParticipantRole(depositionId, editedParticipant);
+
+            // Assert
+            _participantValidatorHelper.Verify(mock => mock.GetValidDepositionForEditParticipantRoleAsync(It.IsAny<Guid>()), Times.Once);
+            _participantValidatorHelper.Verify(mock => mock.GetValidTargetParticipantForEditRole(It.IsAny<Deposition>(), It.IsAny<Participant>()), Times.Once);
+            _participantRepositoryMock.Verify(x => x.Update(It.IsAny<Participant>()), Times.Once);
+            _signalRNotificationManagerMock.Verify(mock => mock.SendDirectMessage(It.IsAny<string>(), It.IsAny<NotificationDto>()), Times.Never);
+            Assert.True(result.IsFailed);
+            Assert.Contains(errorMessage, result.Errors[0].Message);
         }
     }
 }

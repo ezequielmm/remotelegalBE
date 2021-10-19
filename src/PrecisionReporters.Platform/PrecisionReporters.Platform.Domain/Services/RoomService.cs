@@ -81,7 +81,8 @@ namespace PrecisionReporters.Platform.Domain.Services
             {
                 Name = $"{user.FirstName} {user.LastName}",
                 Role = Enum.GetName(typeof(ParticipantType), role),
-                Email = email
+                Email = email,
+                IsAdmin = user.IsAdmin
             };
 
             _logger.LogInformation($"{nameof(RoomService)}.{nameof(RoomService.GenerateRoomToken)} User Email: {email}");
@@ -243,6 +244,19 @@ namespace PrecisionReporters.Platform.Domain.Services
         public async Task<bool> AddRecordingRules(string roomSid, TwilioIdentity witnessIdentity, bool IsVideoRecordingNeeded)
         {
             return await _twilioService.AddRecordingRules(roomSid, witnessIdentity, IsVideoRecordingNeeded);
+        }
+
+        public async Task<string> RefreshRoomToken(Participant participant, Deposition deposition)
+        {
+            var chatInfo = new ChatDto
+            {
+                AddParticipant = true,
+                ChatName = deposition.Id.ToString(),
+                SId = deposition.ChatSid
+            };
+            var twilioToken = await GenerateRoomToken(deposition.Room.Name, participant.User, participant.Role, participant.Email, chatInfo);
+
+            return twilioToken.Value;
         }
     }
 }

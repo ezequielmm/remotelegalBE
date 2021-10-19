@@ -35,6 +35,7 @@ namespace PrecisionReporters.Platform.Data.Seeds
             modelBuilder.Entity<RolePermission>().HasData(new RolePermission { RoleId = courtReporterRoleId, Action = ResourceAction.View });
             modelBuilder.Entity<RolePermission>().HasData(new RolePermission { RoleId = courtReporterRoleId, Action = ResourceAction.AdmitParticipants });
             modelBuilder.Entity<RolePermission>().HasData(new RolePermission { RoleId = courtReporterRoleId, Action = ResourceAction.ViewDepositionStatus });
+            modelBuilder.Entity<RolePermission>().HasData(new RolePermission { RoleId = courtReporterRoleId, Action = ResourceAction.EditParticipants });
 
             // TechExpert
             var techExpertRoleId = Guid.Parse("ee816afa-0399-472d-947f-73bfcb17775e");

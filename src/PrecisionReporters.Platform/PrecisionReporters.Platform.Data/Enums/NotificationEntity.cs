@@ -12,6 +12,7 @@
         LockBreakRoom,
         EndDeposition,
         Exhibit,
-        Stamp
+        Stamp,
+        ParticipantRole
     }
 }

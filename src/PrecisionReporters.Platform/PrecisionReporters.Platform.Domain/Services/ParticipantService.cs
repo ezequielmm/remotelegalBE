@@ -10,6 +10,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
+using PrecisionReporters.Platform.Domain.Helpers.Interfaces;
 
 namespace PrecisionReporters.Platform.Domain.Services
 {
@@ -23,6 +25,9 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly IPermissionService _permissionService;
         private readonly IDepositionEmailService _depositionEmailService;
         private readonly IMapper<Participant, ParticipantDto, CreateParticipantDto> _participantMapper;
+        private readonly IParticipantValidationHelper _participantValidationHelper;
+        private readonly IRoomService _roomService;
+        private readonly ILogger<ParticipantService> _logger;
         public ParticipantService(IParticipantRepository participantRepository,
             ISignalRDepositionManager signalRNotificationManager,
             IUserService userService,
@@ -30,7 +35,10 @@ namespace PrecisionReporters.Platform.Domain.Services
             IDeviceInfoRepository deviceInfoRepository,
             IPermissionService permissionService,
             IDepositionEmailService depositionEmailService,
-            IMapper<Participant, ParticipantDto, CreateParticipantDto> participantMapper)
+            IMapper<Participant, ParticipantDto, CreateParticipantDto> participantMapper,
+            IParticipantValidationHelper participantValidationHelper,
+            IRoomService roomService,
+            ILogger<ParticipantService> logger)
         {
             _participantRepository = participantRepository;
             _signalRNotificationManager = signalRNotificationManager;
@@ -40,6 +48,9 @@ namespace PrecisionReporters.Platform.Domain.Services
             _permissionService = permissionService;
             _depositionEmailService = depositionEmailService;
             _participantMapper = participantMapper;
+            _participantValidationHelper = participantValidationHelper;
+            _roomService = roomService;
+            _logger = logger;
         }
 
         public async Task<Result<ParticipantStatusDto>> UpdateParticipantStatus(ParticipantStatusDto participantStatusDto, Guid depositionId)
@@ -221,6 +232,52 @@ namespace PrecisionReporters.Platform.Domain.Services
                 return Result.Fail(new ResourceNotFoundError($"There was an error updating Participant with Id: {participant.Value.Id}"));
 
             return Result.Ok();
+        }
+
+        public async Task<Result<Participant>> EditParticipantRole(Guid depositionId, Participant participant)
+        {
+            var depositionResult = await _participantValidationHelper.GetValidDepositionForEditParticipantRoleAsync(depositionId);
+            if (depositionResult.IsFailed)
+                return (Result)depositionResult;
+
+            var targetParticipant = _participantValidationHelper.GetValidTargetParticipantForEditRole(depositionResult.Value, participant);
+            if (targetParticipant.IsFailed)
+                return targetParticipant;
+
+            targetParticipant.Value.Role = participant.Role;
+            var updatedParticipant = await _participantRepository.Update(targetParticipant.Value);
+            if (updatedParticipant == null)
+                return Result.Fail(new ResourceNotFoundError($"There was an error updating Participant with Id: {targetParticipant.Value.Id}"));
+
+            if (updatedParticipant.Role == ParticipantType.Witness)
+                await RemoveDummyWitnessParticipantAsync(depositionId);
+            await _permissionService.EditRoleToParticipant(updatedParticipant, depositionId);
+            var newTwilioToken = await _roomService.RefreshRoomToken(updatedParticipant, depositionResult.Value);
+            await NotifyRoleChangedToParticipantAsync(updatedParticipant, newTwilioToken);
+            
+            _logger.LogInformation("Role changed successfully for user {user} on deposition {deposition} new role {role}", updatedParticipant.User.Id, depositionId, updatedParticipant.Role);
+            return Result.Ok(updatedParticipant);
+        }
+
+        private async Task NotifyRoleChangedToParticipantAsync(Participant updatedParticipant, string twilioToken)
+        {
+            var notificationMessage = new NotificationDto
+            {
+                EntityType = NotificationEntity.ParticipantRole,
+                Action = NotificationAction.Update,
+                Content = new { token = twilioToken, role = updatedParticipant.Role }
+            };
+            await _signalRNotificationManager.SendDirectMessage(updatedParticipant.Email, notificationMessage);
+        }
+
+        private async Task RemoveDummyWitnessParticipantAsync(Guid depositionId)
+        {
+            var dummyWitness = await _participantRepository.GetByFilter(w => 
+                w.DepositionId == depositionId && 
+                w.Role == ParticipantType.Witness && 
+                string.IsNullOrWhiteSpace(w.Email));
+            if (dummyWitness?.Any() ?? false)
+                await _participantRepository.Remove(dummyWitness.First());
         }
     }
 }

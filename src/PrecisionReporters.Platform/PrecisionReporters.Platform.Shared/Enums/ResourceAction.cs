@@ -19,6 +19,7 @@
         List,
         ViewDepositionStatus,
         UploadTranscript,
-        ViewDetails
+        ViewDetails,
+        EditParticipants
     }
 }
