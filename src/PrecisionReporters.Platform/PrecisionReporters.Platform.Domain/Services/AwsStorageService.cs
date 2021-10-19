@@ -116,7 +116,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             var uriBuilder = new UriBuilder(signedUrl);
             var queryString = HttpUtility.ParseQueryString(uriBuilder.Query);
 
-            uriBuilder.Query = queryString.ToString();
+            uriBuilder.Query = queryString.ToString().Replace("%2c", ""); //removing comma character as there's an error from AWS when using it on a URL.
             return uriBuilder.Uri.ToString();
         }
 
