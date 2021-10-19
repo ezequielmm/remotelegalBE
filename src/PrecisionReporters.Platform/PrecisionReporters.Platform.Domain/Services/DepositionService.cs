@@ -942,6 +942,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             currentDeposition.StartDate = deposition.StartDate;
             currentDeposition.EndDate = deposition.EndDate;
             currentDeposition.TimeZone = deposition.TimeZone;
+            currentDeposition.Room.IsRecordingEnabled = deposition.IsVideoRecordingNeeded;
 
             return currentDeposition;
         }
@@ -960,7 +961,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<Deposition>> EditDepositionDetails(Deposition deposition, FileTransferInfo file, bool deleteCaption)
         {
-            var includes = new[] { nameof(Deposition.Caption), nameof(Deposition.Case), nameof(Deposition.AddedBy), nameof(Deposition.Participants) };
+            var includes = new[] { nameof(Deposition.Caption), nameof(Deposition.Case), nameof(Deposition.AddedBy), nameof(Deposition.Participants), nameof(Deposition.Room) };
             var currentDepositionResult = await GetByIdWithIncludes(deposition.Id, includes);
             if (currentDepositionResult.IsFailed)
                 return currentDepositionResult;
@@ -1059,7 +1060,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<Deposition>> RevertCancel(Deposition deposition, FileTransferInfo file, bool deleteCaption)
         {
-            var includes = new[] { nameof(Deposition.Caption), nameof(Deposition.Case), nameof(Deposition.Participants) };
+            var includes = new[] { nameof(Deposition.Caption), nameof(Deposition.Case), nameof(Deposition.Participants), nameof(Deposition.Room) };
             var currentDepositionResult = await GetByIdWithIncludes(deposition.Id, includes);
             if (currentDepositionResult.IsFailed)
                 return currentDepositionResult;
@@ -1142,7 +1143,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (validateDatesResult.IsFailed)
                 return validateDatesResult;
 
-            var includes = new[] { nameof(Deposition.Case), nameof(Deposition.Caption), nameof(Deposition.Participants) };
+            var includes = new[] { nameof(Deposition.Case), nameof(Deposition.Caption), nameof(Deposition.Participants), nameof(Deposition.Room) };
             var currentDepositionResult = await GetByIdWithIncludes(deposition.Id, includes);
             if (currentDepositionResult.IsFailed)
                 return currentDepositionResult;

@@ -2452,12 +2452,10 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         public async Task EditDepositionDetails_ShouldOk_ChangeFieldsAndCaption()
         {
             //Arrange
-            var depositionMock = new Deposition() { Id = Guid.NewGuid(), CaseId = Guid.NewGuid(), Caption = new Document() };
-            var testPath = $"{depositionMock.CaseId}/caption";
+            var depositionMock = DepositionFactory.GetDeposition(Guid.NewGuid(), Guid.NewGuid());
+            depositionMock.Room = RoomFactory.GetRoomById(Guid.NewGuid());
             var testEmail = "test@test.com";
-            var expectedError = $"Unable to edit the deposition";
             var fileName = "testFile.pdf";
-            var keyName = $"/{testPath}/{fileName}";
             var userMock = new User() { EmailAddress = testEmail };
             var fileMock = new FileTransferInfo() { Name = fileName };
 
@@ -2487,14 +2485,10 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         public async Task EditDepositionDetails_ShouldOk_ChangeFieldsAndDeleteCaption()
         {
             //Arrange
-            var depositionMock = new Deposition() { Id = Guid.NewGuid(), CaseId = Guid.NewGuid(), Caption = new Document() };
-            var testPath = $"{depositionMock.CaseId}/caption";
+            var depositionMock = DepositionFactory.GetDeposition(Guid.NewGuid(), Guid.NewGuid());
+            depositionMock.Room = RoomFactory.GetRoomById(Guid.NewGuid());
             var testEmail = "test@test.com";
-            var expectedError = $"Unable to edit the deposition";
-            var fileName = "testFile.pdf";
-            var keyName = $"/{testPath}/{fileName}";
             var userMock = new User() { EmailAddress = testEmail };
-            var fileMock = new FileTransferInfo() { Name = fileName };
 
             _userServiceMock.Setup(u => u.GetCurrentUserAsync()).ReturnsAsync(userMock);
             _depositionRepositoryMock.Setup(d => d.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(depositionMock);
@@ -2516,14 +2510,10 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         public async Task EditDepositionDetails_ShouldOk_ChangeFieldsWithOutDeleteCaption()
         {
             //Arrange
-            var depositionMock = new Deposition() { Id = Guid.NewGuid(), CaseId = Guid.NewGuid(), Caption = new Document() };
-            var testPath = $"{depositionMock.CaseId}/caption";
+            var depositionMock = DepositionFactory.GetDeposition(Guid.NewGuid(), Guid.NewGuid());
+            depositionMock.Room = RoomFactory.GetRoomById(Guid.NewGuid());
             var testEmail = "test@test.com";
-            var expectedError = $"Unable to edit the deposition";
-            var fileName = "testFile.pdf";
-            var keyName = $"/{testPath}/{fileName}";
             var userMock = new User() { EmailAddress = testEmail };
-            var fileMock = new FileTransferInfo() { Name = fileName };
 
             _userServiceMock.Setup(u => u.GetCurrentUserAsync()).ReturnsAsync(userMock);
             _depositionRepositoryMock.Setup(d => d.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(depositionMock);
@@ -2710,7 +2700,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             //Assert
             _userServiceMock.Verify(u => u.GetCurrentUserAsync(), Times.Never);
-            _depositionRepositoryMock.Verify(d => d.GetById(It.Is<Guid>(i => i == depositionMock.Id), It.Is<string[]>(i => i.SequenceEqual(new[] { nameof(Deposition.Caption), nameof(Deposition.Case), nameof(Deposition.Participants) }))));
+            _depositionRepositoryMock.Verify(d => d.GetById(It.Is<Guid>(i => i == depositionMock.Id), It.Is<string[]>(i => i.SequenceEqual(new[] { nameof(Deposition.Caption), nameof(Deposition.Case), nameof(Deposition.Participants), nameof(Deposition.Room) }))));
             Assert.NotNull(result);
             Assert.True(result.IsFailed);
         }
@@ -2719,7 +2709,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         public async Task RevertCancel_ShouldFail_DocumentUploadFail()
         {
             //Arrange
-            var depositionMock = new Deposition() { Id = Guid.NewGuid(), CaseId = Guid.NewGuid() };
+            var depositionMock = new Deposition() { Id = Guid.NewGuid(), CaseId = Guid.NewGuid(), Room = RoomFactory.GetRoomById(Guid.NewGuid())};
             var testPath = $"{depositionMock.CaseId}/caption";
             var testEmail = "test@test.com";
             var expectedError = $"Unable to edit the deposition";
@@ -2737,7 +2727,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             //Assert
             _userServiceMock.Verify(u => u.GetCurrentUserAsync(), Times.Once);
-            _depositionRepositoryMock.Verify(d => d.GetById(It.Is<Guid>(i => i == depositionMock.Id), It.Is<string[]>(i => i.SequenceEqual(new[] { nameof(Deposition.Caption), nameof(Deposition.Case), nameof(Deposition.Participants) }))));
+            _depositionRepositoryMock.Verify(d => d.GetById(It.Is<Guid>(i => i == depositionMock.Id), It.Is<string[]>(i => i.SequenceEqual(new[] { nameof(Deposition.Caption), nameof(Deposition.Case), nameof(Deposition.Participants), nameof(Deposition.Room) }))));
             _documentServiceMock.Verify(dc => dc.UploadDocumentFile(
                 It.IsAny<FileTransferInfo>(),
                 It.Is<User>(u => u == userMock),
@@ -2752,8 +2742,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         public async Task RevertCancel_ShouldOk_ChangeStatusAndOtherFields()
         {
             //Arrange
-            var depositionMock = new Deposition() { Id = Guid.NewGuid(), Status = DepositionStatus.Pending, CaseId = Guid.NewGuid(), Caption = new Document() };
-            var currentDepositionMock = new Deposition() { Id = Guid.NewGuid(), Status = DepositionStatus.Canceled, CaseId = Guid.NewGuid(), Caption = new Document() };
+            var depositionMock = new Deposition() { Id = Guid.NewGuid(), Status = DepositionStatus.Pending, CaseId = Guid.NewGuid(), Caption = new Document()};
+            var currentDepositionMock = new Deposition() { Id = Guid.NewGuid(), Status = DepositionStatus.Canceled, CaseId = Guid.NewGuid(), Caption = new Document(), Room = RoomFactory.GetRoomById(Guid.NewGuid()) };
             var testPath = $"{depositionMock.CaseId}/caption";
             var testEmail = "test@test.com";
             var expectedError = $"Unable to edit the deposition";
@@ -2771,7 +2761,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             //Assert
             _userServiceMock.Verify(u => u.GetCurrentUserAsync(), Times.Once);
-            _depositionRepositoryMock.Verify(d => d.GetById(It.Is<Guid>(i => i == depositionMock.Id), It.Is<string[]>(i => i.SequenceEqual(new[] { nameof(Deposition.Caption), nameof(Deposition.Case), nameof(Deposition.Participants) }))));
+            _depositionRepositoryMock.Verify(d => d.GetById(It.Is<Guid>(i => i == depositionMock.Id), It.Is<string[]>(i => i.SequenceEqual(new[] { nameof(Deposition.Caption), nameof(Deposition.Case), nameof(Deposition.Participants), nameof(Deposition.Room) }))));
             _documentServiceMock.Verify(dc => dc.UploadDocumentFile(
                 It.IsAny<FileTransferInfo>(),
                 It.Is<User>(u => u == userMock),
@@ -2894,7 +2884,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         {
             // Arrange
             var depositionMock = new Deposition() { Id = Guid.NewGuid(), StartDate = DateTime.UtcNow.AddSeconds(400), EndDate = DateTime.UtcNow.AddSeconds(600), Status = DepositionStatus.Pending, CaseId = Guid.NewGuid(), Caption = new Document(), Case = new Case { Name = "test" } };
-            var currentDepositionMock = new Deposition() { Id = Guid.NewGuid(), StartDate = DateTime.UtcNow.AddDays(-1), TimeZone = "America/New_York", Status = DepositionStatus.Canceled, CaseId = Guid.NewGuid(), Caption = new Document(), Case = new Case { Name = "test" } };
+            var currentDepositionMock = new Deposition() { Id = Guid.NewGuid(), StartDate = DateTime.UtcNow.AddDays(-1), TimeZone = "America/New_York", Status = DepositionStatus.Canceled, CaseId = Guid.NewGuid(), Caption = new Document(), Case = new Case { Name = "test" }, Room = RoomFactory.GetRoomById(Guid.NewGuid())};
             var participant = new Participant { Name = "Jhon", Email = "test@test.com" };
             currentDepositionMock.Participants = new List<Participant> { participant };
             depositionMock.Participants = currentDepositionMock.Participants;
