@@ -91,12 +91,12 @@ namespace PrecisionReporters.Platform.Domain.Services
         public string GetFilePublicUri(string key, string bucketName, DateTime expirationDate, string displayName = null, bool inline = false)
         {
             string contentDisposition;
+            displayName = displayName.Replace(",", ""); //removing comma character as there's an error from AWS when using it on a URL.
+
             if (inline)
                 contentDisposition = "inline";
             else
             {
-                //HttpUtility.UrlEncode change the white space for a + character, with this line the URL is encoding the special characters and replace the + character for white space again
-                //This is necessary for getting the file name properly and avoid errors whenever the SignedURL is called
                 contentDisposition = string.IsNullOrWhiteSpace(displayName) ? "attachment" : $"attachment;filename={displayName}";
             }
 
