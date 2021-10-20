@@ -10,7 +10,6 @@ using PrecisionReporters.Platform.Domain.Dtos;
 using PrecisionReporters.Platform.Domain.Helpers;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using PrecisionReporters.Platform.Shared.Commons;
-using PrecisionReporters.Platform.Shared.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -18,7 +17,6 @@ using System.IO;
 using System.Net;
 using System.Threading.Tasks;
 using System.Web;
-using PrecisionReporters.Platform.Shared.Helpers;
 
 namespace PrecisionReporters.Platform.Domain.Services
 {

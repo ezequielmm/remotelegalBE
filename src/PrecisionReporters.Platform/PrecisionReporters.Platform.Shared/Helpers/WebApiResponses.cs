@@ -1,7 +1,6 @@
 ﻿using FluentResults;
 using Microsoft.AspNetCore.Mvc;
 using PrecisionReporters.Platform.Shared.Errors;
-using PrecisionReporters.Platform.Shared.Extensions;
 
 namespace PrecisionReporters.Platform.Shared.Helpers
 {

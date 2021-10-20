@@ -41,7 +41,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _loggerMock = new Mock<ILogger<DepositionEmailService>>();
             _loggingHelperMock = new Mock<ILoggingHelper>();
 
-            _service = new DepositionEmailService(_awsEmailServiceMock.Object,_urlPathConfigurationMock.Object,_loggerMock.Object,_emailConfigurationMock.Object, _loggingHelperMock.Object);
+            _service = new DepositionEmailService(_awsEmailServiceMock.Object,_urlPathConfigurationMock.Object,_emailConfigurationMock.Object, _loggingHelperMock.Object);
 
         }
 

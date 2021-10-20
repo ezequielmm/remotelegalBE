@@ -1,6 +1,4 @@
-﻿using FluentResults;
-using PrecisionReporters.Platform.Data.Entities;
-using System.Threading.Tasks;
+﻿using PrecisionReporters.Platform.Data.Entities;
 
 namespace PrecisionReporters.Platform.Data.Repositories.Interfaces
 {

@@ -11,7 +11,6 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using PrecisionReporters.Platform.Shared.Errors;
 
 namespace PrecisionReporters.Platform.Domain.Services
 {

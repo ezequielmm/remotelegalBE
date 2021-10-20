@@ -31,7 +31,6 @@ using PrecisionReporters.Platform.Shared.Helpers;
 using PrecisionReporters.Platform.Shared.Helpers.Interfaces;
 using PrecisionReporters.Platform.Shared.Hubs;
 using System;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 
 namespace PrecisionReporters.Platform.Domain

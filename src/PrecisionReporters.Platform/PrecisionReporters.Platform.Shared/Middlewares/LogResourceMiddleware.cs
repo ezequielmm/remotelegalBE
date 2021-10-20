@@ -7,8 +7,6 @@ using PrecisionReporters.Platform.Shared.Enums;
 using PrecisionReporters.Platform.Shared.Extensions;
 using Serilog.Context;
 using System;
-using System.Collections.Generic;
-using System.Dynamic;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;

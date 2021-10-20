@@ -17,7 +17,6 @@ using PrecisionReporters.Platform.Domain.Configurations;
 using Microsoft.Extensions.Options;
 using PrecisionReporters.Platform.Shared.Helpers;
 using PrecisionReporters.Platform.Domain.Extensions;
-using System.Globalization;
 
 namespace PrecisionReporters.Platform.Domain.Services
 {

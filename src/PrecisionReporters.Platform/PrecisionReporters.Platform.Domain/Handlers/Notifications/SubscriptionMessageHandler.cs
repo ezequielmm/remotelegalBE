@@ -13,11 +13,11 @@ namespace PrecisionReporters.Platform.Domain.Handlers.Notifications
         {
             _snsHelper = snsHelper;
         }
-        public override async Task HandleRequest(Message message)
+        public override async Task HandleRequest(Message request)
         {
-            if (message.IsSubscriptionType)
+            if (request.IsSubscriptionType)
             {
-                var result = await _snsHelper.SubscribeEndpoint(message.SubscribeURL);
+                var result = await _snsHelper.SubscribeEndpoint(request.SubscribeURL);
                 if (result.IsFailed)
                 {
                     var msg = $"There was an error subscribing URL, {result}";
@@ -25,7 +25,7 @@ namespace PrecisionReporters.Platform.Domain.Handlers.Notifications
                 }
             }
             else
-                await successor.HandleRequest(message);
+                await successor.HandleRequest(request);
         }
     }
 }

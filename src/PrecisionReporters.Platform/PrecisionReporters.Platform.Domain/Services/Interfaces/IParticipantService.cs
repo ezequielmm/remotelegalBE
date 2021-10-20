@@ -14,7 +14,7 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
         Task<Result> RemoveParticipantFromDeposition(Guid id, Guid participantId);
         Task<Result<Participant>> EditParticipantDetails(Guid depositionId, Participant participant);
         Task<Result<ParticipantStatusDto>> NotifyParticipantPresence(ParticipantStatusDto participantStatusDto, Guid depositionId);
-        Task<Result> SetUserDeviceInfo(Guid id, DeviceInfo userDeviceInfo);
+        Task<Result> SetUserDeviceInfo(Guid depositionId, DeviceInfo userDeviceInfo);
         Task<Result<Participant>> EditParticipantRole(Guid depositionId, Participant participant);
     }
 }

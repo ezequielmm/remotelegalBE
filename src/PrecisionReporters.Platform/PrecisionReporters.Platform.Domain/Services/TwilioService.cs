@@ -115,7 +115,6 @@ namespace PrecisionReporters.Platform.Domain.Services
             options.Trim = true;
             if (room.IsRecordingEnabled)
             {
-                var joinedWitnessSid = string.Join(",", witnessSid);
                 _log.LogInformation($"{nameof(TwilioService)}.{nameof(TwilioService.CreateComposition)} - Create Composition Room Sid: {room?.SId} - Array Witness SID: {witnessSid}");
                 options.VideoLayout = new
                 {
@@ -413,7 +412,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (IsVideoRecordingNeeded)
                 rules.Add(new RecordingRule(RecordingRule.TypeEnum.Include, null, null, null, RecordingRule.KindEnum.Video));
 
-            var recordingRules = await RecordingRulesResource.UpdateAsync(
+            await RecordingRulesResource.UpdateAsync(
                     rules: rules,
                     pathRoomSid: roomSid
                 );

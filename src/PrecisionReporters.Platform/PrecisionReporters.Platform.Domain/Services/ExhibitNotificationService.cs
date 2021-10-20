@@ -26,17 +26,17 @@ namespace PrecisionReporters.Platform.Domain.Services
             _handler.SetSuccessor(subscriptionMessageHandler);
         }
 
-        public async Task<Result<string>> Notify(Stream messageBytes)
+        public async Task<Result<string>> Notify(Stream message)
         {
             try
             {
                 _logger.LogInformation($"Init Exhibit Notification");
-                using var reader = new StreamReader(messageBytes);
+                using var reader = new StreamReader(message);
                 var rawMessage = await reader.ReadToEndAsync();
-                var message = _awsSnsWrapper.ParseMessage(rawMessage);
-                await _handler.HandleRequest(message);
-                _logger.LogInformation($"Exhibit Notification '{message.MessageId}' finished");
-                return Result.Ok(message.MessageId);
+                var awsMessage = _awsSnsWrapper.ParseMessage(rawMessage);
+                await _handler.HandleRequest(awsMessage);
+                _logger.LogInformation($"Exhibit Notification '{awsMessage.MessageId}' finished");
+                return Result.Ok(awsMessage.MessageId);
             }
             catch (Exception ex)
             {

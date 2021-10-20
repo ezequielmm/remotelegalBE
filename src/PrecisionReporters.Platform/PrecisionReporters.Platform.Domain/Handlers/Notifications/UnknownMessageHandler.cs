@@ -12,13 +12,13 @@ namespace PrecisionReporters.Platform.Domain.Handlers.Notifications
         {
             _logger = logger;
         }
-        public override async Task HandleRequest(Message message)
+        public override async Task HandleRequest(Message request)
         {
-            var msg = $"Unknown Message - Fail to Process: {message}";
+            var msg = $"Unknown Message - Fail to Process: {request}";
             _logger.LogError(msg);
 
             if (successor != null)
-                await successor.HandleRequest(message);
+                await successor.HandleRequest(request);
         }
     }
 }

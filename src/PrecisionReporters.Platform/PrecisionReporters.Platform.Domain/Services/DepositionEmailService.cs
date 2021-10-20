@@ -23,17 +23,14 @@ namespace PrecisionReporters.Platform.Domain.Services
     {
         private readonly IAwsEmailService _awsEmailService;
         private readonly EmailConfiguration _emailConfiguration;
-        private readonly ILogger<DepositionEmailService> _logger;
         private readonly ILoggingHelper _loggingHelper;
 
         public DepositionEmailService(IAwsEmailService awsEmailService,
             IOptions<UrlPathConfiguration> urlPathConfiguration,
-            ILogger<DepositionEmailService> logger,
             IOptions<EmailConfiguration> emailConfiguration,
             ILoggingHelper loggingHelper)
         {
             _awsEmailService = awsEmailService;
-            _logger = logger;
             _emailConfiguration = emailConfiguration.Value;
             _loggingHelper = loggingHelper;
         }

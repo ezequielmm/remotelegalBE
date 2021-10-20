@@ -1,5 +1,4 @@
-﻿using System.Diagnostics;
-using Amazon.SimpleNotificationService.Util;
+﻿using Amazon.SimpleNotificationService.Util;
 using PrecisionReporters.Platform.Domain.Handlers.Notifications.Interfaces;
 using PrecisionReporters.Platform.Domain.Wrappers.Interfaces;
 using System.Threading.Tasks;
@@ -13,15 +12,15 @@ namespace PrecisionReporters.Platform.Domain.Handlers.Notifications
         {
             _awsSnsWrapper = awsSnsWrapper;
         }
-        public override async Task HandleRequest(Message message)
+        public override async Task HandleRequest(Message request)
         {
-            if (_awsSnsWrapper.IsMessageSignatureValid(message))
+            if (_awsSnsWrapper.IsMessageSignatureValid(request))
             {
-                await successor.HandleRequest(message);
+                await successor.HandleRequest(request);
             }
             else
             {
-                var msg = $"Invalid Message Signature: {message.Signature}";
+                var msg = $"Invalid Message Signature: {request.Signature}";
                 throw new NotificationHandlerException(msg);
             }
         }

@@ -20,29 +20,27 @@ namespace PrecisionReporters.Platform.Domain.Handlers.Notifications
         private readonly IMapper<Document, Shared.Dtos.DocumentDto, object> _mapper;
         private readonly IUserRepository _userRepository;
         private readonly IDocumentRepository _documentRepository;
-        private readonly IDepositionRepository _depositionRepository;
         private readonly IDocumentUserDepositionRepository _documentUserDepositionRepository;
         private readonly IPermissionService _permissionService;
         private readonly ISignalRDepositionManager _signalRDepositionManager;
         private readonly ITransactionHandler _transactionHandler;
         private readonly ILogger<ExhibitNotificationHandler> _logger;
-        public ExhibitNotificationHandler(ILogger<ExhibitNotificationHandler> logger, IUserRepository userRepository, IMapper<Document, Shared.Dtos.DocumentDto, object> mapper, IDocumentRepository documentRepository, IDocumentUserDepositionRepository documentUserDepositionRepository, IDepositionRepository depositionRepository, IPermissionService permissionService, ISignalRDepositionManager signalRDepositionManager, ITransactionHandler transactionHandler)
+        public ExhibitNotificationHandler(ILogger<ExhibitNotificationHandler> logger, IUserRepository userRepository, IMapper<Document, Shared.Dtos.DocumentDto, object> mapper, IDocumentRepository documentRepository, IDocumentUserDepositionRepository documentUserDepositionRepository, IPermissionService permissionService, ISignalRDepositionManager signalRDepositionManager, ITransactionHandler transactionHandler)
         {
             _mapper = mapper;
             _documentRepository = documentRepository;
             _documentUserDepositionRepository = documentUserDepositionRepository;
-            _depositionRepository = depositionRepository;
             _permissionService = permissionService;
             _signalRDepositionManager = signalRDepositionManager;
             _userRepository = userRepository;
             _transactionHandler = transactionHandler;
             _logger = logger;
         }
-        public override async Task HandleRequest(Message message)
+        public override async Task HandleRequest(Message request)
         {
             try
             {
-                var exhibitNotification = SnsMessageParser.ParseExhibitNotification(message.MessageText);
+                var exhibitNotification = SnsMessageParser.ParseExhibitNotification(request.MessageText);
 
                 if (exhibitNotification != null)
                 {
@@ -82,11 +80,11 @@ namespace PrecisionReporters.Platform.Domain.Handlers.Notifications
                     await _signalRDepositionManager.SendDirectMessage(user.EmailAddress, notificationDto);
                 }
                 else if (successor != null)
-                    await successor.HandleRequest(message);
+                    await successor.HandleRequest(request);
             }
             catch (Exception ex)
             {
-                var msg = $"ExhibitNotificationHanlder Fail Message: {message.MessageId}";
+                var msg = $"ExhibitNotificationHanlder Fail Message: {request.MessageId}";
                 throw new NotificationHandlerException(msg, ex);
             }
         }

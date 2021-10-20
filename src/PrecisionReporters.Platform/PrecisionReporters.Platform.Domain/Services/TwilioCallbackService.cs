@@ -9,7 +9,6 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using PrecisionReporters.Platform.Shared.Errors;
-using Newtonsoft.Json;
 using PrecisionReporters.Platform.Data.Repositories.Interfaces;
 
 namespace PrecisionReporters.Platform.Domain.Services
