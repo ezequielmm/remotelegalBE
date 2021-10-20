@@ -153,7 +153,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Helpers
         {
             //Arrange
             var depositionId = Guid.NewGuid();
-            var errorMessage = "IsOnTheRecord A Witness participant cannot be exchanged if Deposition has been on the record.";
+            var errorMessage = "HasBeenOnTheRecord A Witness participant cannot be exchanged if Deposition has been on the record.";
             var events = new DepositionEvent { EventType = EventType.OnTheRecord };
             var targetParticipant = ParticipantFactory.GetParticipantByGivenRole(ParticipantType.Witness);
             targetParticipant.User = new User { IsGuest = false };
