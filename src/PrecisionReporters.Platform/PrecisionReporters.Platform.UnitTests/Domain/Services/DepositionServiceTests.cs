@@ -1843,6 +1843,33 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         }
 
         [Fact]
+        public async Task AddParticipant_ShouldAddParticipantInDeposition_ForAdminAsWitness()
+        {
+            // Arrange
+            var participantEmail = "admin@mail.com";
+            var adminUser = UserFactory.GetGuestUserByGivenIdAndEmail(Guid.NewGuid(), participantEmail);
+            adminUser.IsAdmin = true;
+            var depositionId = Guid.NewGuid();
+            var deposition = DepositionFactory.GetDepositionWithParticipantEmail("observer@participant.com");
+            var participant = new Participant
+            {
+                Email = participantEmail,
+                Role = ParticipantType.Witness,
+                User = adminUser
+            };
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
+            _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(adminUser));
+
+            // Act
+            var result = await _depositionService.AddParticipant(depositionId, participant);
+
+            // Assert
+            _depositionRepositoryMock.Verify(x => x.Update(It.Is<Deposition>(x => x.Id == deposition.Id)), Times.Once);
+            _permissionServiceMock.Verify(x => x.AddParticipantPermissions(It.Is<Participant>(x => x.Email == participantEmail)), Times.Once);
+            Assert.True(result.IsSuccess);
+        }
+
+        [Fact]
         public async Task AddParticipant_ShouldReturnFail_IfDepositionIsCompleted()
         {
             // Arrange

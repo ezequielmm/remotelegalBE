@@ -727,7 +727,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (witness != null && !string.IsNullOrWhiteSpace(witness.Email) && participant.Role == ParticipantType.Witness && witness.Email != participant.Email)
                 return Result.Fail(new InvalidInputError("The deposition already has a participant as witness"));
 
-            if (participant.Role == ParticipantType.Witness)
+            if (participant.Role == ParticipantType.Witness && witness != null)
                 deposition.Participants[deposition.Participants.FindIndex(x => x.Role == ParticipantType.Witness)] = participant;
             else
                 deposition.Participants.Add(participant);
