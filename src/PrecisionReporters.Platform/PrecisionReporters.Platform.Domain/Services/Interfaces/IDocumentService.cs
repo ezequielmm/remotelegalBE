@@ -23,7 +23,7 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
         Result<string> GetCannedPrivateURL(Document document);
         Task<Result<string>> GetCannedPrivateURL(Guid depositionId, Guid documentId);
         Task<Result<Document>> GetDocumentById(Guid documentId, string[] include = null);
-        Task<Result<Document>> AddAnnotation(Guid depositionId, AnnotationEvent annotation);
+        Task<Result> AddAnnotation(Guid depositionId, AnnotationEvent annotation);
         Task<Result> Share(Guid id, string userEmail);
         Task<Result> ShareEnteredExhibit(Guid depositionId, Guid documentId);
         Task<Result<Document>> GetDocument(Guid id);

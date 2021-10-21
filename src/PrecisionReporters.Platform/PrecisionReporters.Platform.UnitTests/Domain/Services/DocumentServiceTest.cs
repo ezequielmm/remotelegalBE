@@ -930,7 +930,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         }
 
         [Fact]
-        public async Task AddAnnotation_ShouldReturn_ADocumentWithAnnotationsEvents()
+        public async Task AddAnnotation_ShouldReturnOk()
         {
             // Arrange
             var document = new Document
@@ -954,8 +954,6 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var result = await _service.AddAnnotation(document.Id, annotation);
 
             // Assert
-            _documentRepositoryMock.Verify(x => x.Update(It.Is<Document>(a => a.Id == document.Id)), Times.Once);
-            _signalRNotificationManagerMock.Verify(x => x.SendNotificationToDepositionMembers(It.IsAny<Guid>(), It.IsAny<NotificationDto>()), Times.Once);
             Assert.NotNull(result);
             Assert.True(result.IsSuccess);
         }

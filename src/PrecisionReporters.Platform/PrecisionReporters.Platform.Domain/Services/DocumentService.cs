@@ -533,14 +533,11 @@ namespace PrecisionReporters.Platform.Domain.Services
             return Result.Ok(document);
         }
 
-        public async Task<Result<Document>> AddAnnotation(Guid depositionId, AnnotationEvent annotation)
+        public async Task<Result> AddAnnotation(Guid depositionId, AnnotationEvent annotation)
         {
             var currentUser = await _userService.GetCurrentUserAsync();
 
-            // TODO include sharingDocument
-            var includes = new[] { nameof(Deposition.Requester), nameof(Deposition.Participants),
-                nameof(Deposition.Case), nameof(Deposition.AddedBy),nameof(Deposition.Caption)};
-            var depositionResult = await _depositionRepository.GetById(depositionId, includes);
+            var depositionResult = await _depositionRepository.GetById(depositionId);
             if (depositionResult == null)
                 return Result.Fail(new ResourceNotFoundError($"Deposition with id {depositionId} not found."));
 
@@ -551,13 +548,9 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (documentResult.IsFailed)
                 return documentResult;
 
-            var document = documentResult.Value;
-            if (document.AnnotationEvents == null)
-                document.AnnotationEvents = new List<AnnotationEvent>();
-
+            annotation.DocumentId = depositionResult.SharingDocumentId.Value;
             annotation.Author = currentUser;
-            document.AnnotationEvents.Add(annotation);
-            var updatedDocument = await _documentRepository.Update(document);
+            annotation.CreationDate = DateTime.UtcNow;
 
             var notificationDto = new NotificationDto
             {
@@ -566,9 +559,13 @@ namespace PrecisionReporters.Platform.Domain.Services
                 Content = _annotationEventMapper.ToDto(annotation)
             };
 
-            await _signalRNotificationManager.SendNotificationToDepositionMembers(depositionId, notificationDto);
+            var transactionResult = await _transactionHandler.RunAsync(async () =>
+            {
+                await _annotationEventRepository.Create(annotation);
+                await _signalRNotificationManager.SendNotificationToDepositionMembers(depositionId, notificationDto);
+            });
 
-            return Result.Ok(updatedDocument);
+            return Result.Ok();
         }
 
         public async Task<Result> RemoveDepositionUserDocuments(Guid documentId)
