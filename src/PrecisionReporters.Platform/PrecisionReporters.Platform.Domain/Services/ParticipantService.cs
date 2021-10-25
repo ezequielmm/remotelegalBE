@@ -121,6 +121,11 @@ namespace PrecisionReporters.Platform.Domain.Services
             var user = await _userService.GetCurrentUserAsync();
             var participantResult = await GetParticipantToUpdate(depositionId, user);
 
+            if (participantResult.IsFailed)
+            {
+                return Result.Fail(participantResult.Errors.LastOrDefault() ?? new UnexpectedError("Unable to find or create participant."));
+            }
+
             var shouldSendAdminsNotifications = !participantResult.Value.IsAdmitted.HasValue ||
                 (participantResult.Value.IsAdmitted.HasValue && !participantResult.Value.IsAdmitted.Value);
 
