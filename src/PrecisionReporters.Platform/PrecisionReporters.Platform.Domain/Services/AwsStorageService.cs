@@ -89,13 +89,15 @@ namespace PrecisionReporters.Platform.Domain.Services
         public string GetFilePublicUri(string key, string bucketName, DateTime expirationDate, string displayName = null, bool inline = false)
         {
             string contentDisposition;
-            displayName = displayName.Replace(",", ""); //removing comma character as there's an error from AWS when using it on a URL.
-
+            
             if (inline)
                 contentDisposition = "inline";
             else
             {
-                contentDisposition = string.IsNullOrWhiteSpace(displayName) ? "attachment" : $"attachment;filename={displayName}";
+                var hasDisplayName = !string.IsNullOrWhiteSpace(displayName);
+                if (hasDisplayName)
+                    displayName = displayName.Replace(",", string.Empty); //removing comma character as there's an error from AWS when using it on a URL.
+                contentDisposition = hasDisplayName ? $"attachment;filename={displayName}" : "attachment";
             }
 
             AWSConfigsS3.UseSignatureVersion4 = bool.Parse(_documentsConfiguration.UseSignatureVersion4);
@@ -114,7 +116,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             var uriBuilder = new UriBuilder(signedUrl);
             var queryString = HttpUtility.ParseQueryString(uriBuilder.Query);
 
-            uriBuilder.Query = queryString.ToString().Replace("%2c", ""); //removing comma character as there's an error from AWS when using it on a URL.
+            uriBuilder.Query = queryString.ToString().Replace("%2c", string.Empty); //removing comma character as there's an error from AWS when using it on a URL.
             return uriBuilder.Uri.ToString();
         }
 
@@ -126,7 +128,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         
         public async Task<List<S3Object>> GetAllObjectInBucketAsync(string bucket)
         {
-            var result = await _fileTransferUtility.S3Client.ListObjectsAsync(bucket);
+            var result = await _fileTransferUtility.S3Client.ListObjectsV2Async(new ListObjectsV2Request(){BucketName = bucket});
             return result.S3Objects;
         }
 

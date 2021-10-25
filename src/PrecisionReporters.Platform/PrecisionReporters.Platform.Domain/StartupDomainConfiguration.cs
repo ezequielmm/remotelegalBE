@@ -47,8 +47,7 @@ namespace PrecisionReporters.Platform.Domain
                 {
                     Timeout = TimeSpan.FromMinutes(15),
                     RetryMode = RequestRetryMode.Standard,
-                    MaxErrorRetry = 3,
-                    RegionEndpoint = RegionEndpoint.GetBySystemName(appConfiguration.AwsStorageConfiguration.S3BucketRegion)
+                    MaxErrorRetry = 3
                 };
                 if (sp.GetService<IHostEnvironment>().IsDevelopment())
                 {
@@ -56,6 +55,7 @@ namespace PrecisionReporters.Platform.Domain
                     config.ServiceURL = appConfiguration.LocalStackConfiguration.ServiceUrl;
                     config.UseHttp = true;
                 }
+                config.RegionEndpoint = RegionEndpoint.GetBySystemName(appConfiguration.AwsStorageConfiguration.S3BucketRegion);
                 var s3Client = new AmazonS3Client(config);
 
                 return new TransferUtility(s3Client);
