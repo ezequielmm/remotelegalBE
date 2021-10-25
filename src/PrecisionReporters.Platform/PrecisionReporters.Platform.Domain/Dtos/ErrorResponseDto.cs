@@ -5,9 +5,5 @@ namespace PrecisionReporters.Platform.Domain.Dtos
     {
         public string Message { get; set; }
         public Exception Error { get; set; }
-
-        public ErrorResponseDto()
-        {
-        }
     }
 }
