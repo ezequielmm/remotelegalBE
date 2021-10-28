@@ -24,7 +24,7 @@ namespace PrecisionReporters.Platform.UnitTests.Utils
         {
             return new VerificationLinkConfiguration
             {
-                ExpirationTime = "24"
+                ExpirationTime = "720"
             };
         }
     }

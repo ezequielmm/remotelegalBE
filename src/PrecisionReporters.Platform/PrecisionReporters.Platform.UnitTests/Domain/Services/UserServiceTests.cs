@@ -188,13 +188,13 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         }
 
         [Fact]
-        public async Task VerifyUser_Should_LogWarning_WhenOlderThan24hours()
+        public async Task VerifyUser_Should_LogWarning_WhenOlderThanOneMonth()
         {
             // Arrange
             var id = Guid.NewGuid();
             var user = UserFactory.GetUserByGivenId(id);
 
-            var expirationTime = int.Parse(_verificationLinkConfiguration.ExpirationTime);
+            var expirationTime = int.Parse(ConfigurationFactory.GetVerificationLinkConfiguration().ExpirationTime);
             var dateNow = DateTime.UtcNow.AddHours(-expirationTime);
             var verifyUser = VerifyUserFactory.GetVerifyUserByGivenId(id, dateNow, user);
 
@@ -760,7 +760,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             // Arrange
             var id = Guid.NewGuid();
             var user = UserFactory.GetUserByGivenId(id);
-            var expirationTime = int.Parse(_verificationLinkConfiguration.ExpirationTime);
+            var expirationTime = int.Parse(ConfigurationFactory.GetVerificationLinkConfiguration().ExpirationTime);
             var dateNow = DateTime.UtcNow.AddHours(-expirationTime);
             var verifyUser = VerifyUserFactory.GetVerifyUserByGivenId(id, dateNow, user);
             var dto = new VerifyForgotPasswordDto { VerificationHash = verifyUser.Id };
