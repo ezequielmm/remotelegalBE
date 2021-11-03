@@ -7,6 +7,6 @@ namespace PrecisionReporters.Platform.Transcript.Api.Utils.Interfaces
     {
         Task InitializeRecognitionAsync(string connectionId, string userEmail, string depositionId, int sampleRate);
         bool TryGetTranscriptionLiveService(string connectionId, out ITranscriptionLiveService transcriptionLiveService);
-        Task UnsubscribeAsync(string connectionId);
+        void Unsubscribe(string connectionId);
     }
 }

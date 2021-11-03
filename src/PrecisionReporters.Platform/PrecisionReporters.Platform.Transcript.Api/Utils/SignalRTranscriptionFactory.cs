@@ -4,15 +4,13 @@ using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using PrecisionReporters.Platform.Transcript.Api.Utils.Interfaces;
 using System;
 using System.Collections.Concurrent;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace PrecisionReporters.Platform.Transcript.Api.Utils
 {
     public class SignalRTranscriptionFactory : ISignalRTranscriptionFactory
     {
-        private readonly ConcurrentDictionary<string, SemaphoreSlim> _namedMutex = new ConcurrentDictionary<string, SemaphoreSlim>();
-        private readonly ConcurrentDictionary<string, ITranscriptionLiveService> _transcriptionLiveServices = new ConcurrentDictionary<string, ITranscriptionLiveService>();
+        private readonly ConcurrentDictionary<string, ConnectionResources> _connectionsResources = new ConcurrentDictionary<string, ConnectionResources>();
 
         private readonly IServiceScopeFactory _serviceScopeFactory;
         private readonly ILogger _logger;
@@ -25,19 +23,20 @@ namespace PrecisionReporters.Platform.Transcript.Api.Utils
 
         public async Task InitializeRecognitionAsync(string connectionId, string userEmail, string depositionId, int sampleRate)
         {
-            var semaphoreSlim = _namedMutex.GetOrAdd(connectionId, (key) => new SemaphoreSlim(1, 1));
+            var connectionResources = _connectionsResources.GetOrAdd(connectionId, (key) => new ConnectionResources());
+            var semaphoreSlim = connectionResources.SemaphoreSlim;
             try
             {
                 await semaphoreSlim.WaitAsync();
-                if (_transcriptionLiveServices.ContainsKey(connectionId))
+                var transcriptionServiceAlreadyInitialized = connectionResources.ServiceScopeContainer != null;
+                if (transcriptionServiceAlreadyInitialized)
                 {
                     _logger.LogInformation($"A {nameof(ITranscriptionLiveService)} for {{ConnectionId}} was found. Recognition was already initialized.", connectionId);
                     return;
                 }
 
                 _logger.LogInformation($"Creating {nameof(ITranscriptionLiveService)} and initializing recognition for user {{UserEmail}} on deposition {{DepositionId}} with sample rate {{SampleRate}}.", userEmail, depositionId, sampleRate);
-                var transcriptionService = await CreateAndStartTranscriptionServiceAsync(userEmail, depositionId, sampleRate);
-                _transcriptionLiveServices.TryAdd(connectionId, transcriptionService);
+                connectionResources.ServiceScopeContainer = await CreateAndStartTranscriptionServiceAsync(userEmail, depositionId, sampleRate);
                 _logger.LogInformation("Recognition started for {ConnectionId}.", connectionId);
             }
             finally
@@ -47,49 +46,64 @@ namespace PrecisionReporters.Platform.Transcript.Api.Utils
         }
 
         public bool TryGetTranscriptionLiveService(string connectionId, out ITranscriptionLiveService transcriptionLiveService)
-            => _transcriptionLiveServices.TryGetValue(connectionId, out transcriptionLiveService);
+        {
+            if (!_connectionsResources.TryGetValue(connectionId, out var connectionResources))
+            {
+                transcriptionLiveService = default;
+                return false;
+            }
 
-        public async Task UnsubscribeAsync(string connectionId)
+            transcriptionLiveService = connectionResources.ServiceScopeContainer.Service;
+            return true;
+        }
+
+        public void Unsubscribe(string connectionId)
         {
             _logger.LogInformation("Attempting to stop recognition for {ConnectionId}.", connectionId);
-            if (!_transcriptionLiveServices.TryRemove(connectionId, out var transcriptionService))
+            if (!_connectionsResources.TryRemove(connectionId, out var connectionResources))
             {
                 _logger.LogInformation("Recognition for {ConnectionId} was already stopped.", connectionId);
                 return;
             }
 
-            try
+            Task.Run(async () =>
             {
-                using (transcriptionService)
+                // Both stopping and disposing TranscriptionLiveAzureService takes too long, so we are using fire and forget.
+                try
                 {
-                    await transcriptionService.StopRecognitionAsync();
+                    using (connectionResources)
+                    {
+                        var transcriptionLiveService = connectionResources.ServiceScopeContainer.Service;
+                        await transcriptionLiveService.StopRecognitionAsync();
+                    }
                 }
-            }
-            finally
-            {
-                if (_namedMutex.TryRemove(connectionId, out var semaphoreSlim))
+                catch (Exception ex)
                 {
-                    semaphoreSlim.Dispose();
+                    _logger.LogError(ex, $"An exception occur while trying stop and dispose {nameof(ITranscriptionLiveService)} for {{ConnectionId}}", connectionId);
                 }
-            }
+            });
         }
 
-        private async Task<ITranscriptionLiveService> CreateAndStartTranscriptionServiceAsync(string userEmail, string depositionId, int sampleRate)
+        private async Task<ServiceScopeContainer<ITranscriptionLiveService>> CreateAndStartTranscriptionServiceAsync(string userEmail, string depositionId, int sampleRate)
         {
-
             var scope = _serviceScopeFactory.CreateScope();
-            var transcriptionService = scope.ServiceProvider.GetRequiredService<ITranscriptionLiveService>();
+            var transcriptionLiveService = scope.ServiceProvider.GetRequiredService<ITranscriptionLiveService>();
             try
             {
-                await transcriptionService.StartRecognitionAsync(userEmail, depositionId, sampleRate);
+                await transcriptionLiveService.StartRecognitionAsync(userEmail, depositionId, sampleRate);
             }
             catch (Exception)
             {
-                transcriptionService.Dispose();
+                scope.Dispose();
                 throw;
             }
 
-            return transcriptionService;
+            var serviceScopeContainer = new ServiceScopeContainer<ITranscriptionLiveService>
+            {
+                ServiceScope = scope,
+                Service = transcriptionLiveService
+            };
+            return serviceScopeContainer;
         }
     }
 }

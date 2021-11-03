@@ -17,7 +17,10 @@ using System.Threading.Tasks;
 
 namespace PrecisionReporters.Platform.Domain.Services
 {
+    // Disable rule: It's wrong to use a finalizer without having unmanaged resources to clean. See https://docs.microsoft.com/en-us/dotnet/standard/garbage-collection/implementing-dispose#implement-the-dispose-pattern
+#pragma warning disable S3881 // "IDisposable" should be implemented correctly
     public class TranscriptionLiveAzureService : ITranscriptionLiveService
+#pragma warning restore S3881 // "IDisposable" should be implemented correctly
     {
         private readonly AzureCognitiveServiceConfiguration _azureConfiguration;
         private readonly IFireAndForgetService _fireAndForgetService;
@@ -251,15 +254,12 @@ namespace PrecisionReporters.Platform.Domain.Services
                 x.StoreTranscription(transcriptionToStore, transcription.DepositionId.ToString(), _instanceUserEmail));
         }
 
-        // Dispose Pattern
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
+        public void Dispose() => Dispose(true);
 
         protected virtual void Dispose(bool disposing)
         {
+            _logger.LogInformation($"Disposing {nameof(TranscriptionLiveAzureService)}. Deposition: {{DepositionId}}. User: {{UserEmail}}.", _instanceDepositionId, _instanceUserEmail);
+
             if (_disposed)
             {
                 return;
@@ -267,34 +267,13 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             if (disposing)
             {
-                // Dispose managed resources
-                _logger.LogInformation("Disposing live transcription service. Deposition: {DepositionId}. User: {UserEmail}.",
-                    _instanceDepositionId, _instanceUserEmail);
-                Task.Run(() =>
-                {
-                    try
-                    {
-                        // This takes too long so we are using fire and forget
-                        _recognizer?.Dispose();
-                        _audioInputStream?.Dispose();
-                        _logger.LogInformation("Successfully dispos live transcription service. Deposition: {DepositionId}. User: {UserEmail}.",
-                            _instanceDepositionId, _instanceUserEmail);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "An exception occurred while trying to dispose the {Service} as a fire and forget task.", nameof(ITranscriptionLiveService));
-                    }
-                });
+                _recognizer?.Dispose();
+                _audioInputStream?.Dispose();
             }
 
-            // Dispose of unmanaged resources if any
-
             _disposed = true;
-        }
-
-        ~TranscriptionLiveAzureService()
-        {
-            Dispose(false);
+            _logger.LogInformation($"Successfully disposed {nameof(TranscriptionLiveAzureService)}. Deposition: {{DepositionId}}. User: {{UserEmail}}.",
+                _instanceDepositionId, _instanceUserEmail);
         }
     }
 }

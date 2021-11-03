@@ -179,7 +179,7 @@ namespace PrecisionReporters.Platform.UnitTests.Hubs
                 .Returns(userIdentifier);
             _classUnderTest.Context = _clientContextMock.Object;
             _signalRTranscriptionFactoryMock
-                .Setup(mock => mock.UnsubscribeAsync(It.IsAny<string>()));
+                .Setup(mock => mock.Unsubscribe(It.IsAny<string>()));
 
             // Act
             await _classUnderTest.ChangeTranscriptionStatus(transcriptionsChangeStatusDto);
@@ -191,7 +191,7 @@ namespace PrecisionReporters.Platform.UnitTests.Hubs
                     It.IsAny<Exception>(),
                     It.Is<Func<It.IsAnyType, Exception, string>>((v, t) => true)),
                 Times.Once);
-            _signalRTranscriptionFactoryMock.Verify(mock => mock.UnsubscribeAsync(It.IsAny<string>()), Times.Once);
+            _signalRTranscriptionFactoryMock.Verify(mock => mock.Unsubscribe(It.IsAny<string>()), Times.Once);
         }
 
         [Fact]
@@ -310,7 +310,7 @@ namespace PrecisionReporters.Platform.UnitTests.Hubs
                     It.IsAny<Exception>(),
                     It.Is<Func<It.IsAnyType, Exception, string>>((v, t) => true)),
                 Times.Exactly(2));
-            _signalRTranscriptionFactoryMock.Verify(mock => mock.UnsubscribeAsync(It.IsAny<string>()), Times.Once);
+            _signalRTranscriptionFactoryMock.Verify(mock => mock.Unsubscribe(It.IsAny<string>()), Times.Once);
             _signalRTranscriptionFactoryMock.Verify(mock => mock.TryGetTranscriptionLiveService(It.IsAny<string>(), out transcriptionService), Times.Once);
             _signalRTranscriptionFactoryMock.Verify(
                 mock => mock.InitializeRecognitionAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>()),
@@ -354,7 +354,7 @@ namespace PrecisionReporters.Platform.UnitTests.Hubs
                     It.IsAny<Exception>(),
                     It.Is<Func<It.IsAnyType, Exception, string>>((v, t) => true)),
                 Times.Once);
-            _signalRTranscriptionFactoryMock.Verify(mock => mock.UnsubscribeAsync(It.IsAny<string>()), Times.Never);
+            _signalRTranscriptionFactoryMock.Verify(mock => mock.Unsubscribe(It.IsAny<string>()), Times.Never);
             _signalRTranscriptionFactoryMock.Verify(mock => mock.TryGetTranscriptionLiveService(It.IsAny<string>(), out transcriptionLiveService), Times.Once);
             _signalRTranscriptionFactoryMock.Verify(
                 mock => mock.InitializeRecognitionAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>()),
@@ -385,7 +385,7 @@ namespace PrecisionReporters.Platform.UnitTests.Hubs
                     It.IsAny<Exception>(),
                     It.Is<Func<It.IsAnyType, Exception, string>>((v, t) => true)),
                 Times.Once);
-            _signalRTranscriptionFactoryMock.Verify(mock => mock.UnsubscribeAsync(It.IsAny<string>()), Times.Once);
+            _signalRTranscriptionFactoryMock.Verify(mock => mock.Unsubscribe(It.IsAny<string>()), Times.Once);
         }
 
         [Fact]
@@ -418,7 +418,7 @@ namespace PrecisionReporters.Platform.UnitTests.Hubs
                     It.IsAny<Exception>(),
                     It.Is<Func<It.IsAnyType, Exception, string>>((v, t) => true)),
                 Times.Once);
-            _signalRTranscriptionFactoryMock.Verify(mock => mock.UnsubscribeAsync(It.IsAny<string>()), Times.Once);
+            _signalRTranscriptionFactoryMock.Verify(mock => mock.Unsubscribe(It.IsAny<string>()), Times.Once);
         }
 
         [Fact]
@@ -435,7 +435,7 @@ namespace PrecisionReporters.Platform.UnitTests.Hubs
             _classUnderTest.Context = _clientContextMock.Object;
             var logMessageInfo = $"OnDisconnectedAsync {_classUnderTest.Context.ConnectionId} user: {userIdentifier}";
             _signalRTranscriptionFactoryMock
-                .Setup(mock => mock.UnsubscribeAsync(It.IsAny<string>()))
+                .Setup(mock => mock.Unsubscribe(It.IsAny<string>()))
                 .Throws(new Exception());
             var logMessageError = "There was an error when unsubscribing user";
 
@@ -455,7 +455,7 @@ namespace PrecisionReporters.Platform.UnitTests.Hubs
                     It.IsAny<Exception>(),
                     It.Is<Func<It.IsAnyType, Exception, string>>((v, t) => true)),
                 Times.Once);
-            _signalRTranscriptionFactoryMock.Verify(mock => mock.UnsubscribeAsync(It.IsAny<string>()), Times.Once);
+            _signalRTranscriptionFactoryMock.Verify(mock => mock.Unsubscribe(It.IsAny<string>()), Times.Once);
         }
     }
 }

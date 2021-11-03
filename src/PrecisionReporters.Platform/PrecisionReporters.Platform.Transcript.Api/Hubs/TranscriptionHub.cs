@@ -45,7 +45,7 @@ namespace PrecisionReporters.Platform.Transcript.Api.Hubs
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "There was an error subscribing to Deposition {0}", dto.DepositionId);
+                    _logger.LogError(ex, "There was an error subscribing to Deposition {DepositionId}", dto.DepositionId);
                     return Result.Fail($"Unable to add user to Group {ApplicationConstants.DepositionGroupName}{dto.DepositionId}.");
                 }
             });
@@ -61,12 +61,12 @@ namespace PrecisionReporters.Platform.Transcript.Api.Hubs
                     var recognitionAlreadyInitialized = _signalRTranscriptionFactory.TryGetTranscriptionLiveService(Context.ConnectionId, out var transcriptionLiveService);
                     if (!recognitionAlreadyInitialized)
                     {
-                        _logger.LogWarning("Reconnecting transcription service for user {0} with connectionID {1} on deposition {2}", Context.UserIdentifier, Context.ConnectionId, dto.DepositionId);
+                        _logger.LogWarning("Reconnecting transcription service for user {UserIdentifier} with connectionID {ConnectionId} on deposition {DepositionId}", Context.UserIdentifier, Context.ConnectionId, dto.DepositionId);
                         await _signalRTranscriptionFactory.InitializeRecognitionAsync(Context.ConnectionId, Context.UserIdentifier, dto.DepositionId.ToString(), dto.SampleRate);
                         recognitionAlreadyInitialized = _signalRTranscriptionFactory.TryGetTranscriptionLiveService(Context.ConnectionId, out transcriptionLiveService);
                         if (!recognitionAlreadyInitialized)
                         {
-                            _logger.LogError("FAIL Reconnection transcription service for user {0} with connectionID {1} on deposition {2}", Context.UserIdentifier, Context.ConnectionId, dto.DepositionId);
+                            _logger.LogError("FAIL Reconnection transcription service for user {UserIdentifier} with connectionID {ConnectionId} on deposition {DepositionId}", Context.UserIdentifier, Context.ConnectionId, dto.DepositionId);
                             return Result.Fail($"FAIL Reconnection transcription service for user {Context.UserIdentifier} with connectionID {Context.ConnectionId} on deposition {dto.DepositionId}");
                         }
                     }
@@ -80,7 +80,7 @@ namespace PrecisionReporters.Platform.Transcript.Api.Hubs
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "There was an error uploading transcription of connectionId {0} on Deposition {1}", Context.ConnectionId, dto.DepositionId);
+                    _logger.LogError(ex, "There was an error uploading transcription of connectionId {ConnectionId} on Deposition {DepositionId}", Context.ConnectionId, dto.DepositionId);
                     throw;
                 }
             });
@@ -95,20 +95,19 @@ namespace PrecisionReporters.Platform.Transcript.Api.Hubs
                 {
                     if (dto.OffRecord)
                     {
-                        _logger.LogInformation("Going OFF Record: transcriptions of {0} on deposition {1}", Context.UserIdentifier, dto.DepositionId);
-
-                        await _signalRTranscriptionFactory.UnsubscribeAsync(Context.ConnectionId);
+                        _logger.LogInformation("Going OFF Record: transcriptions of {UserIdentifier} on deposition {DepositionId}", Context.UserIdentifier, dto.DepositionId);
+                        _signalRTranscriptionFactory.Unsubscribe(Context.ConnectionId);
                     }
                     else
                     {
-                        _logger.LogInformation("Going ON Record: transcriptions of {0} on deposition {1}", Context.UserIdentifier, dto.DepositionId.ToString());
+                        _logger.LogInformation("Going ON Record: transcriptions of {UserIdentifier} on deposition {DepositionId}", Context.UserIdentifier, dto.DepositionId);
                         await _signalRTranscriptionFactory.InitializeRecognitionAsync(Context.ConnectionId, Context.UserIdentifier, dto.DepositionId.ToString(), dto.SampleRate);
                     }
                     return true;
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "There was an error uploading transcription status of connectionId {0} on Deposition {1}", Context.ConnectionId, dto.DepositionId.ToString());
+                    _logger.LogError(ex, "There was an error uploading transcription status of connectionId {ConnectionId} on Deposition {DepositionId}", Context.ConnectionId, dto.DepositionId);
                     throw;
                 }
             });
@@ -122,10 +121,10 @@ namespace PrecisionReporters.Platform.Transcript.Api.Hubs
                 var recognitionAlreadyInitialized = _signalRTranscriptionFactory.TryGetTranscriptionLiveService(Context.ConnectionId, out var _);
                 if (recognitionAlreadyInitialized)
                 {
-                    _logger.LogInformation("Removing transcription service for user {0} on deposition {1}. Service already exist.", Context.UserIdentifier, dto.DepositionId);
-                    await _signalRTranscriptionFactory.UnsubscribeAsync(Context.ConnectionId);
+                    _logger.LogInformation("Removing transcription service for user {UserIdentifier} on deposition {DepositionId}. Service already exist.", Context.UserIdentifier, dto.DepositionId);
+                    _signalRTranscriptionFactory.Unsubscribe(Context.ConnectionId);
                 }
-                _logger.LogInformation("Initializing transcription service for user {0} on deposition {1} with sample rate {2}", Context.UserIdentifier, dto.DepositionId, dto.SampleRate);
+                _logger.LogInformation("Initializing transcription service for user {UserIdentifier} on deposition {DepositionId} with sample rate {SampleRate}", Context.UserIdentifier, dto.DepositionId, dto.SampleRate);
                 await _signalRTranscriptionFactory.InitializeRecognitionAsync(Context.ConnectionId, Context.UserIdentifier, dto.DepositionId.ToString(), dto.SampleRate);
                 return true;
             });
@@ -134,16 +133,16 @@ namespace PrecisionReporters.Platform.Transcript.Api.Hubs
         public override async Task OnDisconnectedAsync(Exception exception)
         {
             if (exception != null)
-                _logger.LogError(exception, "Exception OnDisconnectedAsync {0} from user: {1}", Context.ConnectionId, Context.UserIdentifier);
+                _logger.LogError(exception, "Exception OnDisconnectedAsync {ConnectionId} from user: {UserIdentifier}", Context.ConnectionId, Context.UserIdentifier);
 
-            _logger.LogInformation("OnDisconnectedAsync {0} user: {1}", Context.ConnectionId, Context.UserIdentifier);
+            _logger.LogInformation("OnDisconnectedAsync {ConnectionId} user: {UserIdentifier}", Context.ConnectionId, Context.UserIdentifier);
             try
             {
-                await _signalRTranscriptionFactory.UnsubscribeAsync(Context.ConnectionId);
+                _signalRTranscriptionFactory.Unsubscribe(Context.ConnectionId);
             }
             catch (Exception e)
             {
-                _logger.LogError(e, "There was an error when unsubscribing user {0} with connection id {1}", Context.UserIdentifier, Context.ConnectionId, e.Message);
+                _logger.LogError(e, "There was an error when unsubscribing user {UserIdentifier} with connection id {ConnectionId}", Context.UserIdentifier, Context.ConnectionId);
             }
             finally
             {
@@ -154,7 +153,7 @@ namespace PrecisionReporters.Platform.Transcript.Api.Hubs
         private async Task<Result> RenewTranscriptionServiceAndTryAddAudioChunkToBufferAsync(TranscriptionsHubDto dto)
         {
             _logger.LogWarning("Unable to send add audio chunk to buffer. Renewing transcription service for user {UserIdentifier} with connectionId {ConnectionId} on deposition {DepositionId}.", Context.UserIdentifier, Context.ConnectionId, dto.DepositionId);
-            await _signalRTranscriptionFactory.UnsubscribeAsync(Context.ConnectionId);
+            _signalRTranscriptionFactory.Unsubscribe(Context.ConnectionId);
             await _signalRTranscriptionFactory.InitializeRecognitionAsync(Context.ConnectionId, Context.UserIdentifier, dto.DepositionId.ToString(), dto.SampleRate);
             var recognitionAlreadyInitialized = _signalRTranscriptionFactory.TryGetTranscriptionLiveService(Context.ConnectionId, out var transcriptionLiveService);
             if (!recognitionAlreadyInitialized)
