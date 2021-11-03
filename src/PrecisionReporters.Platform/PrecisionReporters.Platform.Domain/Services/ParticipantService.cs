@@ -249,19 +249,29 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (targetParticipant.IsFailed)
                 return targetParticipant;
 
-            targetParticipant.Value.Role = participant.Role;
-            var updatedParticipant = await _participantRepository.Update(targetParticipant.Value);
+            var updatedParticipant = await UpdateParticipant(participant, targetParticipant.Value);
             if (updatedParticipant == null)
                 return Result.Fail(new ResourceNotFoundError($"There was an error updating Participant with Id: {targetParticipant.Value.Id}"));
 
             if (updatedParticipant.Role == ParticipantType.Witness)
+            {
                 await RemoveDummyWitnessParticipantAsync(depositionId);
+                await MigratePreviousWitness(depositionResult.Value, updatedParticipant.Id);
+            }
+
             await _permissionService.EditRoleToParticipant(updatedParticipant, depositionId);
             var newTwilioToken = await _roomService.RefreshRoomToken(updatedParticipant, depositionResult.Value);
             await NotifyRoleChangedToParticipantAsync(updatedParticipant, newTwilioToken);
             
             _logger.LogInformation("Role changed successfully for user {user} on deposition {deposition} new role {role}", updatedParticipant.User.Id, depositionId, updatedParticipant.Role);
             return Result.Ok(updatedParticipant);
+        }
+
+        private async Task<Participant> UpdateParticipant(Participant participant, Participant targetParticipant)
+        {
+            targetParticipant.Role = participant.Role;
+            var updatedParticipant = await _participantRepository.Update(targetParticipant);
+            return updatedParticipant;
         }
 
         private async Task NotifyRoleChangedToParticipantAsync(Participant updatedParticipant, string twilioToken)
@@ -283,6 +293,19 @@ namespace PrecisionReporters.Platform.Domain.Services
                 string.IsNullOrWhiteSpace(w.Email));
             if (dummyWitness?.Any() ?? false)
                 await _participantRepository.Remove(dummyWitness.First());
+        }
+
+        private async Task MigratePreviousWitness(Deposition deposition, Guid updatedParticipantId)
+        {
+            var previousWitness = deposition.Participants.FirstOrDefault(p => p.Id != updatedParticipantId && p.Role == ParticipantType.Witness);
+            if (previousWitness != null)
+            {
+                previousWitness.Role = ParticipantType.Observer;
+                var updatedPreviousWitness = await _participantRepository.Update(previousWitness);
+                await _permissionService.EditRoleToParticipant(updatedPreviousWitness, deposition.Id);
+                var newTwilioToken = await _roomService.RefreshRoomToken(updatedPreviousWitness, deposition);
+                await NotifyRoleChangedToParticipantAsync(updatedPreviousWitness, newTwilioToken);
+            }
         }
     }
 }

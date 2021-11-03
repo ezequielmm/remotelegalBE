@@ -172,26 +172,6 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Helpers
         }
 
         [Fact]
-        public void GetValidTargetParticipantForEditRole_ShouldReturnInvalidInputError_WhenTwoWitness()
-        {
-            //Arrange
-            var depositionId = Guid.NewGuid();
-            var errorMessage = "Only one participant with Witness role is allowed.";
-            var witnessParticipant = ParticipantFactory.GetParticipantByGivenRole(ParticipantType.Witness);
-            var targetParticipant = ParticipantFactory.GetParticipantByGivenRole(ParticipantType.Observer);
-            targetParticipant.User = new User { IsGuest = false };
-            var editedParticipant = new Participant { Email = targetParticipant.Email, Role = ParticipantType.Witness };
-            var deposition = new Deposition { Id = depositionId, Participants = new List<Participant> { targetParticipant, witnessParticipant }, IsOnTheRecord = false };
-
-            //Act
-            var result = _classUnderTest.GetValidTargetParticipantForEditRole(deposition, editedParticipant);
-
-            // Assert
-            Assert.True(result.IsFailed);
-            Assert.Contains(errorMessage, result.Errors[0].Message);
-        }
-
-        [Fact]
         public void GetValidTargetParticipantForEditRole_ShouldReturnOk()
         {
             //Arrange

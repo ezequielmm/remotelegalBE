@@ -49,9 +49,6 @@ namespace PrecisionReporters.Platform.Domain.Helpers
             if (targetParticipant.Role == ParticipantType.Witness && (deposition.Events?.Any(e => e.EventType == EventType.OnTheRecord) ?? false))
                 return Result.Fail(new InvalidInputError("HasBeenOnTheRecord A Witness participant cannot be exchanged if Deposition has been on the record."));
 
-            if (participant.Role == ParticipantType.Witness && deposition.Participants.Any(p => p.Role == ParticipantType.Witness && !string.IsNullOrWhiteSpace(p.Email)))
-                return Result.Fail(new ResourceConflictError("Only one participant with Witness role is allowed."));
-
             return Result.Ok(targetParticipant);
         }
     }
