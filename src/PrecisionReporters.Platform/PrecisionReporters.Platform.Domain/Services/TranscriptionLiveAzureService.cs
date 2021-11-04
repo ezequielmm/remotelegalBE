@@ -139,7 +139,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (silenceRecognized)
             {
                 _logger.LogInformation("On SpeechRecognizer Recognized event recognized a silence. Deposition: {DepositionId}. User: {UserEmail}.",
-                    e.Result.Reason, _instanceDepositionId, _instanceUserEmail);
+                    _instanceDepositionId, _instanceUserEmail);
                 return;
             }
 
