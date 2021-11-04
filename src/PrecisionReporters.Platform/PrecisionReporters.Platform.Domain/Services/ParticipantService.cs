@@ -115,7 +115,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             }
 
             return Result.Ok(participant);
-        } 
+        }
 
         public async Task<Result<ParticipantStatusDto>> NotifyParticipantPresence(ParticipantStatusDto participantStatusDto, Guid depositionId)
         {
@@ -139,15 +139,15 @@ namespace PrecisionReporters.Platform.Domain.Services
                     EntityType = NotificationEntity.JoinRequest,
                     Content = _participantMapper.ToDto(participantResult.Value)
                 };
-                if(!user.IsAdmin)
+                if (!user.IsAdmin)
                     await _signalRNotificationManager.SendNotificationToDepositionAdmins(depositionId, notificationtDto);
             }
 
             participantResult.Value.IsMuted = participantStatusDto.IsMuted;
             await _participantRepository.Update(participantResult.Value);
-            
+
             participantStatusDto.Email = user.EmailAddress;
-            
+
             var notificationDto = new NotificationDto
             {
                 Action = NotificationAction.Update,
@@ -155,7 +155,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 Content = participantStatusDto
             };
             await _signalRNotificationManager.SendNotificationToDepositionMembers(depositionId, notificationDto);
-            
+
             return Result.Ok(participantStatusDto);
         }
 
@@ -179,7 +179,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             await _permissionService.RemoveParticipantPermissions(id, participant);
             await _participantRepository.Remove(participant);
 
-            if(deposition.Status == DepositionStatus.Confirmed && !string.IsNullOrWhiteSpace(participant.Email))
+            if (deposition.Status == DepositionStatus.Confirmed && !string.IsNullOrWhiteSpace(participant.Email))
                 await _depositionEmailService.SendCancelDepositionEmailNotification(deposition, participant);
 
             return Result.Ok();
@@ -187,7 +187,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<Participant>> EditParticipantDetails(Guid depositionId, Participant participant)
         {
-            var deposition = await _depositionRepository.GetById(depositionId, include: new[] { $"{nameof(Deposition.Participants)}.{nameof(Participant.User)}", nameof(Deposition.Case)});
+            var deposition = await _depositionRepository.GetById(depositionId, include: new[] { $"{nameof(Deposition.Participants)}.{nameof(Participant.User)}", nameof(Deposition.Case) });
             if (deposition == null)
                 return Result.Fail(new ResourceNotFoundError($"Deposition not found with ID: {depositionId}"));
 
@@ -195,10 +195,13 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (hasCourtReporter && Equals(participant.Role, ParticipantType.CourtReporter))
                 return Result.Fail(new ResourceConflictError("Only one participant with Court reporter role is available."));
 
-            var currentParticipant = deposition.Participants.FirstOrDefault( p => p.Id == participant.Id);
+            var currentParticipant = deposition.Participants.FirstOrDefault(p => p.Id == participant.Id);
             if (currentParticipant == null)
                 return Result.Fail(new ResourceNotFoundError($"There are no participant available with ID: {participant.Id}."));
             var currentParticipantEmail = currentParticipant.Email;
+            var emailChanged = (currentParticipant.Email != participant.Email);
+
+            currentParticipant = await ManageEditParticipantPermission(emailChanged, depositionId, currentParticipant, participant);
 
             currentParticipant.Email = participant.Email;
             currentParticipant.Name = participant.Name;
@@ -219,6 +222,28 @@ namespace PrecisionReporters.Platform.Domain.Services
                 await _depositionEmailService.SendJoinDepositionEmailNotification(deposition, updatedParticipant);
 
             return Result.Ok(updatedParticipant);
+        }
+
+        private async Task<Participant> ManageEditParticipantPermission(bool emailChanged, Guid depositionId, Participant currentParticipant, Participant editedParticipant)
+        {
+            if (emailChanged && currentParticipant.User != null)
+            {
+                await _permissionService.RemoveParticipantPermissions(depositionId, currentParticipant);
+                currentParticipant.User = null;
+                currentParticipant.UserId = null;
+            }
+
+            if (emailChanged && !string.IsNullOrEmpty(editedParticipant.Email))
+            {
+                var newUser = await _userService.GetUserByEmail(editedParticipant.Email);
+                if (newUser.IsSuccess)
+                {
+                    currentParticipant.User = newUser.Value;
+                    currentParticipant.UserId = newUser.Value.Id;
+                    await _permissionService.AddParticipantPermissions(currentParticipant);
+                }
+            }
+            return currentParticipant;
         }
 
         public async Task<Result> SetUserDeviceInfo(Guid depositionId, DeviceInfo userDeviceInfo)
@@ -304,9 +329,9 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         private async Task RemoveDummyWitnessParticipantAsync(Guid depositionId)
         {
-            var dummyWitness = await _participantRepository.GetByFilter(w => 
-                w.DepositionId == depositionId && 
-                w.Role == ParticipantType.Witness && 
+            var dummyWitness = await _participantRepository.GetByFilter(w =>
+                w.DepositionId == depositionId &&
+                w.Role == ParticipantType.Witness &&
                 string.IsNullOrWhiteSpace(w.Email));
             if (dummyWitness?.Any() ?? false)
                 await _participantRepository.Remove(dummyWitness.First());
