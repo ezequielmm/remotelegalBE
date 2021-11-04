@@ -19,6 +19,7 @@ namespace PrecisionReporters.Platform.Data.Entities
         public int Duration { get; set; }
         public double Confidence { get; set; }
         public bool PostProcessed { get; set; }
+        public string ParticipantAlias { get; set; }
 
         public override void CopyFrom(Transcription entity)
         {
@@ -31,6 +32,7 @@ namespace PrecisionReporters.Platform.Data.Entities
             Duration = entity.Duration;
             Confidence = entity.Confidence;
             PostProcessed = entity.PostProcessed;
+            ParticipantAlias = entity.ParticipantAlias;
         }
     }
 }

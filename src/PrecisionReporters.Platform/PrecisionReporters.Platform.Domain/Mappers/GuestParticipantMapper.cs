@@ -25,6 +25,7 @@ namespace PrecisionReporters.Platform.Domain.Mappers
             return new Participant
             {
                 Name = dto.Name,
+                LastName = "",
                 Email = dto.EmailAddress.ToLower(),
                 Role = dto.ParticipantType,
                 User = new User
@@ -35,7 +36,7 @@ namespace PrecisionReporters.Platform.Domain.Mappers
                     IsGuest = true,
                     CompanyAddress = "Guest",
                     CompanyName = "Guest",
-                    PhoneNumber = "Guest"
+                    PhoneNumber = "0000000000"
                 }
             };
         }

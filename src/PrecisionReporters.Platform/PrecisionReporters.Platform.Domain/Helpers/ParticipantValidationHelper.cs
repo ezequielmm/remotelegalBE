@@ -19,7 +19,7 @@ namespace PrecisionReporters.Platform.Domain.Helpers
             _depositionRepository = depositionRepository;
         }
 
-        public async Task<Result<Deposition>> GetValidDepositionForEditParticipantRoleAsync(Guid depositionId)
+        public async Task<Result<Deposition>> GetValidDepositionForEditParticipantAsync(Guid depositionId)
         {
             var deposition = await _depositionRepository.GetById(depositionId,
             include: new[] { $"{nameof(Deposition.Participants)}.{nameof(Participant.User)}", nameof(Deposition.Case), nameof(Deposition.Events), nameof(Deposition.Room) });
@@ -27,20 +27,16 @@ namespace PrecisionReporters.Platform.Domain.Helpers
                 return Result.Fail(new ResourceNotFoundError($"Deposition not found with ID: {depositionId} ."));
 
             if (deposition.IsOnTheRecord)
-                return Result.Fail(new InvalidInputError("IsOnTheRecord A role change cannot be made if Deposition is currently on the record."));
+                return Result.Fail(new InvalidInputError("IsOnTheRecord A participant edit cannot be made if Deposition is currently on the record."));
 
             return Result.Ok(deposition);
         }
 
-        public Result<Participant> GetValidTargetParticipantForEditRole(Deposition deposition, Participant participant)
+        public Result ValidateTargetParticipantForEditRole(Deposition deposition, Participant participant, Participant targetParticipant)
         {
             var hasCourtReporter = deposition.Participants.Any(p => p.Email != participant.Email && Equals(p.Role, ParticipantType.CourtReporter));
             if (hasCourtReporter && Equals(participant.Role, ParticipantType.CourtReporter))
                 return Result.Fail(new InvalidInputError("Only one participant with Court reporter role is allowed."));
-
-            var targetParticipant = deposition.Participants.FirstOrDefault(p => p.Email == participant.Email);
-            if (targetParticipant == null)
-                return Result.Fail(new ResourceNotFoundError($"There are no participant available with email: {participant.Email}."));
 
             if (targetParticipant.Role == participant.Role)
                 return Result.Fail(new InvalidInputError("Participant already have requested role."));

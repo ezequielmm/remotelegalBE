@@ -52,8 +52,9 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Mappers
         [Fact]
         public void ToDto_ShouldReturnDto()
         {
-            var id = Guid.NewGuid();
             // Arrange
+            var id = Guid.NewGuid();
+            var user = UserFactory.GetUserByGivenId(id);
             var model = new Transcription
             {
                 DepositionId = Guid.NewGuid(),
@@ -65,7 +66,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Mappers
                 UserId = id,
                 Confidence = 97777777777777,
                 Duration = 50,
-                User = UserFactory.GetUserByGivenId(id)
+                User = user,
+                ParticipantAlias = user.GetFullName()
             };
 
             // Act

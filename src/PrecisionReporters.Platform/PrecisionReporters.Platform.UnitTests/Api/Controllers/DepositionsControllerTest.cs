@@ -1043,7 +1043,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
         }
 
         [Fact]
-        public async Task GetParticipantList_ReturnOkAndDepositionDto()
+        public async Task GetParticipantList_ReturnOkAndParticipantDto()
         {
             // Arrange
             var participants = new List<Participant> { ParticipantFactory.GetParticipant(Guid.NewGuid()) };
@@ -1057,7 +1057,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
             // Assert
             Assert.NotNull(result);
             var okResult = Assert.IsType<OkObjectResult>(result.Result);
-            Assert.IsAssignableFrom<List<Participant>>(okResult.Value);
+            Assert.IsAssignableFrom<List<ParticipantDto>>(okResult.Value);
             _depositionService.Verify(mock => mock.GetDepositionParticipants(It.IsAny<Guid>(), ParticipantSortField.Role, SortDirection.Descend), Times.Once);
         }
 

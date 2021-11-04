@@ -11,6 +11,7 @@ namespace PrecisionReporters.Platform.Data.Entities
         [Required]
         public ParticipantType Role { get; set; }
         public string Name { get; set; }
+        public string LastName { get; set; }
         public string Email { get; set; }
         public string Phone { get; set; }
         public bool? IsAdmitted { get; set; }
@@ -33,6 +34,7 @@ namespace PrecisionReporters.Platform.Data.Entities
         {
             Role = entity.Role;
             Name = entity.Name;
+            LastName = entity.LastName;
             Email = entity.Email;
             Phone = entity.Phone;
             User = entity.User;
@@ -45,12 +47,18 @@ namespace PrecisionReporters.Platform.Data.Entities
         public Participant(User user, ParticipantType role, bool? isAdmitted = null)
         {
             Email = user.EmailAddress;
-            Name = $"{user.FirstName} {user.LastName}";
+            Name = user.FirstName;
+            LastName = user.LastName;
             Phone = user.PhoneNumber;
             Role = role;
             UserId = user.Id;
             User = user;
             IsAdmitted = isAdmitted;
+        }
+
+        public string GetFullName()
+        {
+            return $"{Name} {LastName ?? string.Empty}";
         }
     }
 }

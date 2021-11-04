@@ -25,7 +25,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Helpers
         }
 
         [Fact]
-        public async Task GetValidDepositionForEditParticipantRoleAsync_ShouldReturnResourceNotFoundError_WhenDepositionNotExist()
+        public async Task GetValidDepositionForEditParticipantAsync_ShouldReturnResourceNotFoundError_WhenDepositionNotExist()
         {
             // Arrange
             var depositionId = Guid.NewGuid();
@@ -35,7 +35,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Helpers
                 .ReturnsAsync((Deposition)null);
 
             //Act
-            var result = await _classUnderTest.GetValidDepositionForEditParticipantRoleAsync(depositionId);
+            var result = await _classUnderTest.GetValidDepositionForEditParticipantAsync(depositionId);
 
             // Assert
             _depositionRepositoryMock.Verify(
@@ -47,19 +47,19 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Helpers
         }
 
         [Fact]
-        public async Task GetValidDepositionForEditParticipantRoleAsync_ShouldReturnResourceInvalidInputError_WhenIsOnTheRecord()
+        public async Task GetValidDepositionForEditParticipantAsync_ShouldReturnResourceInvalidInputError_WhenIsOnTheRecord()
         {
             // Arrange
             var depositionId = Guid.NewGuid();
             var baseParticipant = ParticipantFactory.GetParticipant(depositionId);
             baseParticipant.Role = ParticipantType.Observer;
-            var errorMessage = "IsOnTheRecord A role change cannot be made if Deposition is currently on the record.";
+            var errorMessage = "IsOnTheRecord A participant edit cannot be made if Deposition is currently on the record.";
             _depositionRepositoryMock
                 .Setup(mock => mock.GetById(It.IsAny<Guid>(), It.IsAny<string[]>()))
                 .ReturnsAsync(new Deposition { Id = depositionId, IsOnTheRecord = true });
 
             //Act
-            var result = await _classUnderTest.GetValidDepositionForEditParticipantRoleAsync(depositionId);
+            var result = await _classUnderTest.GetValidDepositionForEditParticipantAsync(depositionId);
 
             // Assert
             _depositionRepositoryMock.Verify(
@@ -71,7 +71,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Helpers
         }
 
         [Fact]
-        public async Task GetValidDepositionForEditParticipantRoleAsync_ShouldReturnOk()
+        public async Task GetValidDepositionForEditParticipantAsync_ShouldReturnOk()
         {
             // Arrange
             var depositionId = Guid.NewGuid();
@@ -82,7 +82,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Helpers
                 .ReturnsAsync(new Deposition { Id = depositionId, IsOnTheRecord = false });
 
             //Act
-            var result = await _classUnderTest.GetValidDepositionForEditParticipantRoleAsync(depositionId);
+            var result = await _classUnderTest.GetValidDepositionForEditParticipantAsync(depositionId);
 
             // Assert
             _depositionRepositoryMock.Verify(
@@ -94,7 +94,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Helpers
         }
 
         [Fact]
-        public void GetValidTargetParticipantForEditRole_ShouldReturnResourceInvalidInputError_WhenMoreThanOneCourtReporter()
+        public void ValidateTargetParticipantForEditRole_ShouldReturnResourceInvalidInputError_WhenMoreThanOneCourtReporter()
         {
             // Arrange
             var depositionId = Guid.NewGuid();
@@ -105,32 +105,15 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Helpers
             var deposition = new Deposition { Id = depositionId, Participants = new List<Participant> { courtReporterParticipant } };
 
             //Act
-            var result = _classUnderTest.GetValidTargetParticipantForEditRole(deposition, editedParticipant);
+            var result = _classUnderTest.ValidateTargetParticipantForEditRole(deposition, editedParticipant, courtReporterParticipant);
 
             // Assert
             Assert.True(result.IsFailed);
             Assert.Equal(errorMessage, result.Errors[0].Message);
         }
-
+        
         [Fact]
-        public void GetValidTargetParticipantForEditRole_ShouldReturnResourceNotFoundError_WhenParticipantNotFound()
-        {
-            // Arrange
-            var depositionId = Guid.NewGuid();
-            var errorMessage = "There are no participant available with email:";
-            var editedParticipant = new Participant { Id = Guid.NewGuid(), Role = ParticipantType.Observer, User = new User { IsGuest = false } };
-            var deposition = new Deposition { Id = depositionId, Participants = new List<Participant> { ParticipantFactory.GetParticipant(depositionId) } };
-
-            //Act
-            var result = _classUnderTest.GetValidTargetParticipantForEditRole(deposition, editedParticipant);
-
-            // Assert
-            Assert.True(result.IsFailed);
-            Assert.Contains(errorMessage, result.Errors[0].Message);
-        }
-
-        [Fact]
-        public void GetValidTargetParticipantForEditRole_ShouldReturnInvalidInputError_WhenRoleItSame()
+        public void ValidateTargetParticipantForEditRole_ShouldReturnInvalidInputError_WhenRoleItSame()
         {
             // Arrange
             var depositionId = Guid.NewGuid();
@@ -140,7 +123,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Helpers
             var deposition = new Deposition { Id = depositionId, Participants = new List<Participant> { baseParticipant } };
 
             //Act
-            var result = _classUnderTest.GetValidTargetParticipantForEditRole(deposition, editedParticipant);
+            var result = _classUnderTest.ValidateTargetParticipantForEditRole(deposition, editedParticipant, baseParticipant);
 
             // Assert
             Assert.True(result.IsFailed);
@@ -149,7 +132,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Helpers
 
         // This is a restriction for this increment. Once the depo was on the record, witness cannot be exchanged
         [Fact]
-        public void GetValidTargetParticipantForEditRole_ShouldReturnResourceInvalidInputError_WhenDepositionWasOnTheRecordAndTryChangeWitness()
+        public void ValidateTargetParticipantForEditRole_ShouldReturnResourceInvalidInputError_WhenDepositionWasOnTheRecordAndTryChangeWitness()
         {
             //Arrange
             var depositionId = Guid.NewGuid();
@@ -164,7 +147,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Helpers
             };
 
             //Act
-            var result = _classUnderTest.GetValidTargetParticipantForEditRole(deposition, editedParticipant);
+            var result = _classUnderTest.ValidateTargetParticipantForEditRole(deposition, editedParticipant, targetParticipant);
 
             // Assert
             Assert.True(result.IsFailed);
@@ -182,7 +165,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Helpers
             var deposition = new Deposition { Id = depositionId, Participants = new List<Participant> { targetParticipant }, IsOnTheRecord = false };
 
             //Act
-            var result = _classUnderTest.GetValidTargetParticipantForEditRole(deposition, editedParticipant);
+            var result = _classUnderTest.ValidateTargetParticipantForEditRole(deposition, editedParticipant, targetParticipant);
 
             // Assert
             Assert.NotNull(result);

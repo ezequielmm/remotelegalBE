@@ -67,7 +67,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             return Result.Ok(matchingRooms.First());
         }
 
-        public async Task<Result<string>> GenerateRoomToken(string roomName, User user, ParticipantType role, string email, ChatDto chatDto = null)
+        public async Task<Result<string>> GenerateRoomToken(string roomName, User user, ParticipantType role, string email, Participant participant, ChatDto chatDto = null)
         {
             var room = await _roomRepository.GetFirstOrDefaultByFilter(x => x.Name == roomName);
             _logger.LogInformation($"{nameof(RoomService)}.{nameof(RoomService.GenerateRoomToken)} Room SID: {room?.SId}");
@@ -79,7 +79,8 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             var twilioIdentity = new TwilioIdentity
             {
-                Name = $"{user.FirstName} {user.LastName}",
+                FirstName = participant.Name ?? user.FirstName,
+                LastName = participant.LastName ?? user.LastName,
                 Role = Enum.GetName(typeof(ParticipantType), role),
                 Email = email,
                 IsAdmin = user.IsAdmin
@@ -254,7 +255,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 ChatName = deposition.Id.ToString(),
                 SId = deposition.ChatSid
             };
-            var twilioToken = await GenerateRoomToken(deposition.Room.Name, participant.User, participant.Role, participant.Email, chatInfo);
+            var twilioToken = await GenerateRoomToken(deposition.Room.Name, participant.User, participant.Role, participant.Email, participant, chatInfo);
 
             return twilioToken.Value;
         }

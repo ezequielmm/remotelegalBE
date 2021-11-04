@@ -82,7 +82,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 TemplateData = new Dictionary<string, string>
                             {
                                 { "dateAndTime", deposition.StartDate.GetFormattedDateTime(deposition.TimeZone) },
-                                { "name", participant.Name ?? string.Empty },
+                                { "name", participant.GetFullName() ?? string.Empty },
                                 { "case", GetDescriptionCase(deposition) },
                                 { "imageUrl",  GetImageUrl(_emailConfiguration.LogoImageName) },
                                 { "calendar", GetImageUrl(_emailConfiguration.CalendarImageName) },
@@ -105,7 +105,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 TemplateData = new Dictionary<string, string>
                             {
                                 { "start-date", deposition.StartDate.GetFormattedDateTime(deposition.TimeZone) },
-                                { "user-name", participant.Name },
+                                { "user-name", participant.GetFullName() },
                                 { "case-name", GetDescriptionCase(deposition) },
                                 { "images-url",  _emailConfiguration.ImagesUrl },
                                 { "logo", GetImageUrl(_emailConfiguration.LogoImageName) }
@@ -128,7 +128,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                             {
                                 { "old-start-date", oldStartDate.GetFormattedDateTime(oldTimeZone) },
                                 { "start-date", deposition.StartDate.GetFormattedDateTime(deposition.TimeZone) },
-                                { "user-name", participant.Name ?? string.Empty },
+                                { "user-name", participant.GetFullName() ?? string.Empty },
                                 { "case-name", GetDescriptionCase(deposition) },
                                 { "images-url",  _emailConfiguration.ImagesUrl },
                                 { "logo", GetImageUrl(_emailConfiguration.LogoImageName) },
@@ -151,7 +151,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 TemplateData = new Dictionary<string, string>
                             {
                                 { "dateAndTime", deposition.StartDate.GetFormattedDateTime(deposition.TimeZone) },
-                                { "name", participant.Name ?? string.Empty },
+                                { "name", participant.GetFullName() ?? string.Empty },
                                 { "case", GetDescriptionCase(deposition) },
                                 { "imageUrl",  GetImageUrl(_emailConfiguration.LogoImageName) },
                                 { "calendar", GetImageUrl(_emailConfiguration.CalendarImageName) },
@@ -171,7 +171,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             var subject = $"{deposition.Case.Name} - {deposition.StartDate.GetFormattedDateTime(deposition.TimeZone)}";
 
             if (!string.IsNullOrEmpty(witness?.Name))
-                subject = $"{witness.Name} - {deposition.Case.Name} - {deposition.StartDate.GetFormattedDateTime(deposition.TimeZone)}";
+                subject = $"{witness.GetFullName()} - {deposition.Case.Name} - {deposition.StartDate.GetFormattedDateTime(deposition.TimeZone)}";
 
             return subject;
         }
@@ -182,7 +182,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             var caseName = $"<b>{deposition.Case.Name}</b>";
 
             if (!string.IsNullOrEmpty(witness?.Name))
-                caseName = $"<b>{witness.Name}</b> in the case of <b>{caseName}</b>";
+                caseName = $"<b>{witness.GetFullName()}</b> in the case of <b>{caseName}</b>";
 
             return caseName;
         }
@@ -195,7 +195,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         private Calendar CreateCalendar(Deposition deposition, string method = "REQUEST")
         {
             var witness = deposition.Participants.FirstOrDefault(x => x.Role == ParticipantType.Witness);
-            var strWitness = !string.IsNullOrWhiteSpace(witness?.Name) ? $"{witness.Name} - {deposition.Case.Name} " : deposition.Case.Name;
+            var strWitness = !string.IsNullOrWhiteSpace(witness?.GetFullName()) ? $"{witness.GetFullName()} - {deposition.Case.Name} " : deposition.Case.Name;
             var calendar = new Calendar
             {
                 Method = method

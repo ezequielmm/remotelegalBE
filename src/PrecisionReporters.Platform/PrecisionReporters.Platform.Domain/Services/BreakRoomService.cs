@@ -69,7 +69,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (!existingRooms.Any())
                 await _roomService.StartRoom(breakRoom.Room, true);
 
-            var token = await _roomService.GenerateRoomToken(breakRoom.Room.Name, currentParticipant.User, role, currentParticipant.User.EmailAddress);
+            var token = await _roomService.GenerateRoomToken(breakRoom.Room.Name, currentParticipant.User, role, currentParticipant.User.EmailAddress, currentParticipant);
             if (token.IsFailed)
                 return token.ToResult<string>();
 

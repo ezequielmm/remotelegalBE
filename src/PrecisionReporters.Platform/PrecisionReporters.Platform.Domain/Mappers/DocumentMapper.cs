@@ -1,6 +1,7 @@
 ﻿using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Domain.Dtos;
 using System;
+using System.Linq;
 
 namespace PrecisionReporters.Platform.Domain.Mappers
 {
@@ -41,7 +42,12 @@ namespace PrecisionReporters.Platform.Domain.Mappers
                 {
                     Id = model.AddedBy.Id,
                     FirstName = model.AddedBy.FirstName,
-                    LastName = model.AddedBy.LastName
+                    LastName = model.AddedBy.LastName,
+                    ParticipantAlias =
+                        model.DocumentUserDepositions?
+                            .Select(x => x.Deposition.Participants.Find(p => p.Id == model.AddedById))
+                            .FirstOrDefault(p => p != null && !string.IsNullOrWhiteSpace(p.LastName))?.GetFullName() ??
+                        string.Empty
                 },
                 SharedAt = model.SharedAt.HasValue ? new DateTimeOffset(model.SharedAt.Value, TimeSpan.Zero) : (DateTimeOffset?)null,
                 DocumentType = model.DocumentType

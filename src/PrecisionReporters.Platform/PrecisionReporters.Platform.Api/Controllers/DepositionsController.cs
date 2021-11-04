@@ -359,21 +359,23 @@ namespace PrecisionReporters.Platform.Api.Controllers
             return Ok(videoInformationResult.Value);
         }
 
-        ///<summary>
-        ///Get Participant list by Deposition ID
-        ///</summary>
-        ///<param name="id"></param>
-        ///<returns>Ok if succeded</returns>
+        /// <summary>
+        /// Get Participant list by Deposition ID
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="sortField"></param>
+        /// <param name="sortDirection"></param>
+        /// <returns>Ok if succeed</returns>
         [HttpGet("{id}/participants")]
         [UserAuthorize(ResourceType.Deposition, ResourceAction.View)]
-        public async Task<ActionResult<List<Participant>>> GetParticipantList([ResourceId(ResourceType.Deposition)] Guid id,
+        public async Task<ActionResult<List<ParticipantDto>>> GetParticipantList([ResourceId(ResourceType.Deposition)] Guid id,
             ParticipantSortField sortField = ParticipantSortField.Role,
             SortDirection sortDirection = SortDirection.Descend)
         {
             var lstParticipantResult = await _depositionService.GetDepositionParticipants(id, sortField, sortDirection);
             if (lstParticipantResult.IsFailed)
                 return WebApiResponses.GetErrorResponse(lstParticipantResult);
-            return Ok(lstParticipantResult.Value);
+            return Ok(lstParticipantResult.Value.Select(p => _participantMapper.ToDto(p)).ToList());
         }
 
         /// <summary>

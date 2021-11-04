@@ -95,7 +95,7 @@ namespace PrecisionReporters.Platform.Domain.Transcripts
             foreach (var sentence in transcripts)
             {
                 string text;
-                var fullName = sentence.User.IsGuest ? $"{sentence.User.FirstName?.Trim()}" : $"{sentence.User.FirstName?.Trim()} {sentence.User.LastName?.Trim()}";
+                var fullName = sentence.ParticipantAlias.Trim();
 
                 if (!string.IsNullOrEmpty(sentence.Text))
                 {

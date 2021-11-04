@@ -157,11 +157,11 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
             var participant = ParticipantFactory.GetParticipant(Guid.NewGuid());
             var editParticipantDto = new EditParticipantDto { Id = participant.Id, Role = participant.Role };
             _participantService
-                .Setup(mock => mock.EditParticipantRole(It.IsAny<Guid>(), It.IsAny<Participant>()))
+                .Setup(mock => mock.EditParticipantInDepo(It.IsAny<Guid>(), It.IsAny<Participant>()))
                 .ReturnsAsync(Result.Ok(participant));
 
             // Act
-            var result =await _classUnderTest.EditParticipantRole(It.IsAny<Guid>(),editParticipantDto);
+            var result =await _classUnderTest.EditParticipantInDepo(It.IsAny<Guid>(),editParticipantDto);
 
             // Assert
             Assert.NotNull(result);
@@ -173,7 +173,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
             Assert.Equal(participant.Role.ToString(), resultValue.Role);
             Assert.Equal(participant.Name, resultValue.Name);
             Assert.Equal(participant.IsMuted, resultValue.IsMuted);
-            _participantService.Verify(mock=>mock.EditParticipantRole(It.IsAny<Guid>(), It.IsAny<Participant>()),Times.Once);
+            _participantService.Verify(mock=>mock.EditParticipantInDepo(It.IsAny<Guid>(), It.IsAny<Participant>()),Times.Once);
         }
         
         [Fact]
@@ -183,17 +183,17 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
             var participant = ParticipantFactory.GetParticipant(Guid.NewGuid());
             var editParticipantDto = new EditParticipantDto { Id = participant.Id, Role = participant.Role };
             _participantService
-                .Setup(mock => mock.EditParticipantRole(It.IsAny<Guid>(), It.IsAny<Participant>()))
+                .Setup(mock => mock.EditParticipantInDepo(It.IsAny<Guid>(), It.IsAny<Participant>()))
                 .ReturnsAsync(Result.Fail(new Error()));
 
             // Act
-            var result =await _classUnderTest.EditParticipantRole(It.IsAny<Guid>(),editParticipantDto);
+            var result =await _classUnderTest.EditParticipantInDepo(It.IsAny<Guid>(),editParticipantDto);
 
             // Assert
             Assert.NotNull(result);
             var errorResult = Assert.IsType<InternalServerErrorResult>(result.Result);
             Assert.Equal((int) HttpStatusCode.InternalServerError, errorResult.StatusCode);
-            _participantService.Verify(mock=>mock.EditParticipantRole(It.IsAny<Guid>(), It.IsAny<Participant>()),Times.Once);
+            _participantService.Verify(mock=>mock.EditParticipantInDepo(It.IsAny<Guid>(), It.IsAny<Participant>()),Times.Once);
         }
     }
 }

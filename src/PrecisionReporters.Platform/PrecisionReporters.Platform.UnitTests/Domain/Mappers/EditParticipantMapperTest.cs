@@ -22,7 +22,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Mappers
             {
                 Id = Guid.NewGuid(),
                 Email = "mail@mock.com",
-                Name = "John Doe",
+                Name = "John",
+                LastName = "Doe",
                 Phone = "2233222333",
                 Role = Platform.Data.Enums.ParticipantType.Attorney
             };

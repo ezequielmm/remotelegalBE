@@ -54,8 +54,8 @@ namespace PrecisionReporters.Platform.Domain.Services
 
                 if (!string.IsNullOrEmpty(witness?.Name))
                 { 
-                    subject = $"{witness.Name} - {deposition.Case.Name} - {startDateFormatted}";
-                    caseName = $"<b>{witness.Name}</b> in the case of <b>{caseName}</b>";
+                    subject = $"{witness.GetFullName()} - {deposition.Case.Name} - {startDateFormatted}";
+                    caseName = $"<b>{witness.GetFullName()}</b> in the case of <b>{caseName}</b>";
                 }
 
                 var template = new EmailTemplateInfo

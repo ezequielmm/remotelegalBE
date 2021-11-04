@@ -544,23 +544,23 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         [InlineData(ParticipantType.Interpreter)]
         [InlineData(ParticipantType.Paralegal)]
         [InlineData(ParticipantType.TechExpert)]
-        public async Task EditParticipantRole_ShouldReturnOk_WhenIsOffTheRecord(ParticipantType participantType)
+        public async Task EditParticipantInDepo_ShouldReturnOk_WhenIsOffTheRecord(ParticipantType participantType)
         {
             // Arrange
             var baseRole = participantType;
             var depositionId = Guid.NewGuid();
             var targetParticipant = ParticipantFactory.GetParticipantByGivenRole(ParticipantType.Observer);
             targetParticipant.User = new User { IsGuest = false };
-            var editedParticipant = new Participant { Id = targetParticipant.Id, Role = baseRole };
+            var editedParticipant = new Participant { Id = targetParticipant.Id, Role = baseRole, Email = targetParticipant.Email};
             editedParticipant.User = targetParticipant.User;
             var deposition = new Deposition { Id = depositionId, Participants = new List<Participant> { targetParticipant }, IsOnTheRecord = false };
             var amazingTwilioToken = Guid.NewGuid().ToString();
             _participantValidatorHelper
-                .Setup(mock => mock.GetValidDepositionForEditParticipantRoleAsync(It.IsAny<Guid>()))
+                .Setup(mock => mock.GetValidDepositionForEditParticipantAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(Result.Ok(deposition));
             _participantValidatorHelper
-                .Setup(mock => mock.GetValidTargetParticipantForEditRole(It.IsAny<Deposition>(), It.IsAny<Participant>()))
-                .Returns(Result.Ok(targetParticipant));
+                .Setup(mock => mock.ValidateTargetParticipantForEditRole(It.IsAny<Deposition>(), It.IsAny<Participant>(), targetParticipant))
+                .Returns(Result.Ok());
             _participantRepositoryMock
                 .Setup(x => x.Update(It.IsAny<Participant>()))
                 .ReturnsAsync(editedParticipant);
@@ -571,11 +571,11 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 .Setup(mock => mock.GetByFilter(It.IsAny<Expression<Func<Participant, bool>>>(), It.IsAny<string[]>()))
                 .ReturnsAsync(new List<Participant> { targetParticipant });
             //Act
-            var result = await _participantService.EditParticipantRole(depositionId, editedParticipant);
+            var result = await _participantService.EditParticipantInDepo(depositionId, editedParticipant);
 
             // Assert
-            _participantValidatorHelper.Verify(mock => mock.GetValidDepositionForEditParticipantRoleAsync(It.IsAny<Guid>()), Times.Once);
-            _participantValidatorHelper.Verify(mock => mock.GetValidTargetParticipantForEditRole(It.IsAny<Deposition>(), It.IsAny<Participant>()), Times.Once);
+            _participantValidatorHelper.Verify(mock => mock.GetValidDepositionForEditParticipantAsync(It.IsAny<Guid>()), Times.Once);
+            _participantValidatorHelper.Verify(mock => mock.ValidateTargetParticipantForEditRole(It.IsAny<Deposition>(), It.IsAny<Participant>(), It.IsAny<Participant>()), Times.Once);
             _participantRepositoryMock.Verify(x => x.Update(It.IsAny<Participant>()), Times.Once);
             _signalRNotificationManagerMock.Verify(mock => mock.SendDirectMessage(It.IsAny<string>(), It.IsAny<NotificationDto>()), Times.Once);
             _roomServiceMock.Verify(mock => mock.RefreshRoomToken(It.IsAny<Participant>(), It.IsAny<Deposition>()), Times.Once);
@@ -585,30 +585,30 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         }
 
         [Fact]
-        public async Task EditParticipantRole_ShouldReturnInvalidInputError_WhenFailsToUpdateParticipant()
+        public async Task EditParticipantInDepo_ShouldReturnInvalidInputError_WhenFailsToUpdateParticipant()
         {
             var depositionId = Guid.NewGuid();
             var errorMessage = "There was an error updating Participant with Id:";
             var targetParticipant = ParticipantFactory.GetParticipantByGivenRole(ParticipantType.Witness);
             targetParticipant.User = new User { IsGuest = false };
-            var editedParticipant = new Participant { Id = targetParticipant.Id, Role = ParticipantType.Attorney };
+            var editedParticipant = new Participant { Id = targetParticipant.Id, Role = ParticipantType.Attorney, Email = targetParticipant.Email};
             var deposition = new Deposition { Id = depositionId, Participants = new List<Participant> { targetParticipant }, IsOnTheRecord = false };
             _participantValidatorHelper
-                .Setup(mock => mock.GetValidDepositionForEditParticipantRoleAsync(It.IsAny<Guid>()))
+                .Setup(mock => mock.GetValidDepositionForEditParticipantAsync(It.IsAny<Guid>()))
                 .ReturnsAsync(Result.Ok(deposition));
             _participantValidatorHelper
-                .Setup(mock => mock.GetValidTargetParticipantForEditRole(It.IsAny<Deposition>(), It.IsAny<Participant>()))
+                .Setup(mock => mock.ValidateTargetParticipantForEditRole(It.IsAny<Deposition>(), It.IsAny<Participant>(), targetParticipant))
                 .Returns(Result.Ok(targetParticipant));
             _participantRepositoryMock
                 .Setup(x => x.Update(It.IsAny<Participant>()))
                 .ReturnsAsync((Participant)null);
 
             //Act
-            var result = await _participantService.EditParticipantRole(depositionId, editedParticipant);
+            var result = await _participantService.EditParticipantInDepo(depositionId, editedParticipant);
 
             // Assert
-            _participantValidatorHelper.Verify(mock => mock.GetValidDepositionForEditParticipantRoleAsync(It.IsAny<Guid>()), Times.Once);
-            _participantValidatorHelper.Verify(mock => mock.GetValidTargetParticipantForEditRole(It.IsAny<Deposition>(), It.IsAny<Participant>()), Times.Once);
+            _participantValidatorHelper.Verify(mock => mock.GetValidDepositionForEditParticipantAsync(It.IsAny<Guid>()), Times.Once);
+            _participantValidatorHelper.Verify(mock => mock.ValidateTargetParticipantForEditRole(It.IsAny<Deposition>(), It.IsAny<Participant>(), It.IsAny<Participant>()), Times.Once);
             _participantRepositoryMock.Verify(x => x.Update(It.IsAny<Participant>()), Times.Once);
             _signalRNotificationManagerMock.Verify(mock => mock.SendDirectMessage(It.IsAny<string>(), It.IsAny<NotificationDto>()), Times.Never);
             Assert.True(result.IsFailed);

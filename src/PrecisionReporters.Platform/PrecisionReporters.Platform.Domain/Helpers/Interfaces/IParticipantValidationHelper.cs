@@ -7,7 +7,7 @@ namespace PrecisionReporters.Platform.Domain.Helpers.Interfaces
 {
     public interface IParticipantValidationHelper
     {
-        public Task<Result<Deposition>> GetValidDepositionForEditParticipantRoleAsync(Guid depositionId);
-        public Result<Participant> GetValidTargetParticipantForEditRole(Deposition deposition, Participant participant);
+        public Task<Result<Deposition>> GetValidDepositionForEditParticipantAsync(Guid depositionId);
+        public Result ValidateTargetParticipantForEditRole(Deposition deposition, Participant participant, Participant targetParticipant);
     }
 }

@@ -17,7 +17,8 @@ namespace PrecisionReporters.Platform.Domain.Mappers
                 DepositionId = dto.DepositionId,
                 UserId = dto.UserId,
                 TranscriptDateTime = dto.TranscriptDateTime.UtcDateTime,
-                PostProcessed = dto.PostProcessed
+                PostProcessed = dto.PostProcessed,
+                ParticipantAlias = dto.UserName
             };
         }
 
@@ -30,7 +31,7 @@ namespace PrecisionReporters.Platform.Domain.Mappers
                 Text = model.Text,
                 DepositionId = model.DepositionId,
                 UserId = model.User.Id,
-                UserName = model.User?.GetFullName(),
+                UserName = model.ParticipantAlias,
                 TranscriptDateTime = new DateTimeOffset(model.TranscriptDateTime, TimeSpan.Zero),
                 UserEmail = model.User.EmailAddress,
                 PostProcessed = model.PostProcessed,

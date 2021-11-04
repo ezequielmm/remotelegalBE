@@ -125,7 +125,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             }
         }
 
-        public async Task EditRoleToParticipant(Participant participant, Guid depositionId)
+        public async Task EditParticipant(Participant participant, Guid depositionId)
         {
             if (participant.User != null)
             {

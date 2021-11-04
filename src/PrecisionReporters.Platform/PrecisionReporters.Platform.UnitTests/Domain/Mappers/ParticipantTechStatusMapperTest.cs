@@ -28,6 +28,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Mappers
                 CreationDate = DateTime.UtcNow,
                 Email = "email@test.com",
                 Name = "name",
+                LastName = "lastName",
                 Phone = "5555555555",
                 Role = ParticipantType.CourtReporter,
                 IsMuted = false,
@@ -59,7 +60,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Mappers
             Assert.Equal(model.Id, result.Id);
             Assert.Equal(model.CreationDate, result.CreationDate);
             Assert.Equal(model.Email, result.Email);
-            Assert.Equal(model.Name, result.Name);
+            Assert.Equal($"{model.Name} {model.LastName}", result.Name);
             Assert.Equal(model.Role.ToString(), result.Role);
             Assert.Equal(model.DeviceInfo.CameraName, result.Devices.Camera.Name);
             Assert.Equal(model.DeviceInfo.CameraStatus, result.Devices.Camera.Status);
@@ -82,6 +83,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Mappers
                 CreationDate = DateTime.UtcNow,
                 Email = "email@test.com",
                 Name = "name",
+                LastName = null,
                 Phone = "5555555555",
                 Role = ParticipantType.CourtReporter,
                 IsMuted = false,
@@ -125,7 +127,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Mappers
             Assert.Equal(model.Id, result.Id);
             Assert.Equal(model.CreationDate, result.CreationDate);
             Assert.Equal(model.Email, result.Email);
-            Assert.Equal(model.Name, result.Name);
+            Assert.Equal($"{model.Name} {model.LastName}", result.Name);
             Assert.Equal(model.Role.ToString(), result.Role);
             Assert.Equal(browser, result.Browser);
             Assert.Equal(device, result.Device);

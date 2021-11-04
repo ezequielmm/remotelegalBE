@@ -15,6 +15,7 @@ namespace PrecisionReporters.Platform.Domain.Mappers
                 CreationDate = dto.CreationDate.UtcDateTime,
                 Email = dto.Email.ToLower(),
                 Name = dto.Name,
+                LastName = dto.LastName,
                 Phone = dto.Phone,
                 Role = Enum.Parse<ParticipantType>(dto.Role, true),
                 UserId = dto.User.Id,
@@ -28,6 +29,7 @@ namespace PrecisionReporters.Platform.Domain.Mappers
             {
                 Email = dto.Email?.ToLower(),
                 Name = dto.Name,
+                LastName = dto.LastName,
                 Phone = dto.Phone,
                 Role = dto.Role,
                 IsMuted = dto.IsMuted,
@@ -43,6 +45,7 @@ namespace PrecisionReporters.Platform.Domain.Mappers
                 CreationDate = model.CreationDate,
                 Email = model.Email,
                 Name = model.Name,
+                LastName = model.LastName,
                 Phone = model.Phone,
                 Role = model.Role.ToString(),
                 User = model.User != null ?

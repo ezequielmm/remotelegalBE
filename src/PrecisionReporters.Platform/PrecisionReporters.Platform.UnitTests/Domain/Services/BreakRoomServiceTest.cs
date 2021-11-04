@@ -88,7 +88,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 IsLocked = true
             };
             _roomServiceMock
-                .Setup(x => x.GenerateRoomToken(It.IsAny<string>(), It.IsAny<User>(), It.IsAny<ParticipantType>(), It.IsAny<string>(), It.IsAny<ChatDto>()))
+                .Setup(x => x.GenerateRoomToken(It.IsAny<string>(), It.IsAny<User>(), It.IsAny<ParticipantType>(), It.IsAny<string>(), It.IsAny<Participant>(), It.IsAny<ChatDto>()))
                 .ReturnsAsync(Result.Fail("Fail"));
 
             // Act
@@ -144,7 +144,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             };
             _userServiceMock.Setup(x => x.GetCurrentUserAsync()).ReturnsAsync(user);
             _roomServiceMock.Setup(x => x.GetTwilioRoomByNameAndStatus(It.IsAny<string>(), It.IsAny<RoomStatusEnum>())).ReturnsAsync(new List<RoomResource>());
-            _roomServiceMock.Setup(x => x.GenerateRoomToken(It.IsAny<string>(), It.IsAny<User>(), It.IsAny<ParticipantType>(), It.IsAny<string>(), It.IsAny<ChatDto>())).ReturnsAsync(Result.Ok("foo"));
+            _roomServiceMock.Setup(x => x.GenerateRoomToken(It.IsAny<string>(), It.IsAny<User>(), It.IsAny<ParticipantType>(), It.IsAny<string>(), It.IsAny<Participant>(), It.IsAny<ChatDto>())).ReturnsAsync(Result.Ok("foo"));
             _breakRoomRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).
                 ReturnsAsync(breakRoom);
 
@@ -177,7 +177,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             };
             _userServiceMock.Setup(x => x.GetCurrentUserAsync()).ReturnsAsync(user);
             _roomServiceMock.Setup(x => x.GetTwilioRoomByNameAndStatus(It.IsAny<string>(),It.IsAny<RoomStatusEnum>())).ReturnsAsync(new List<RoomResource>());
-            _roomServiceMock.Setup(x => x.GenerateRoomToken(It.IsAny<string>(), It.IsAny<User>(), It.IsAny<ParticipantType>(), It.IsAny<string>(), It.IsAny<ChatDto>())).ReturnsAsync(Result.Ok("foo"));
+            _roomServiceMock.Setup(x => x.GenerateRoomToken(It.IsAny<string>(), It.IsAny<User>(), It.IsAny<ParticipantType>(), It.IsAny<string>(), It.IsAny<Participant>(), It.IsAny<ChatDto>())).ReturnsAsync(Result.Ok("foo"));
             _breakRoomRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).
                 ReturnsAsync(breakRoom);
 
@@ -217,7 +217,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             };
             _userServiceMock.Setup(x => x.GetCurrentUserAsync()).ReturnsAsync(user);
             _roomServiceMock.Setup(x => x.GetTwilioRoomByNameAndStatus(It.IsAny<string>(), It.IsAny<RoomStatusEnum>())).ReturnsAsync(new List<RoomResource>());
-            _roomServiceMock.Setup(x => x.GenerateRoomToken(It.IsAny<string>(), It.IsAny<User>(), It.IsAny<ParticipantType>(), It.IsAny<string>(), It.IsAny<ChatDto>())).ReturnsAsync(Result.Ok("foo"));
+            _roomServiceMock.Setup(x => x.GenerateRoomToken(It.IsAny<string>(), It.IsAny<User>(), It.IsAny<ParticipantType>(), It.IsAny<string>(), It.IsAny<Participant>(), It.IsAny<ChatDto>())).ReturnsAsync(Result.Ok("foo"));
             _breakRoomRepositoryMock.Setup(x => x.Update(It.IsAny<BreakRoom>()));
             _breakRoomRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).
                 ReturnsAsync(breakRoom);
@@ -343,7 +343,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             // Arrange
             var identity = new TwilioIdentity() { 
                 Email = "test@test.com",
-                Name = "John Doe",
+                FirstName = "John Doe",
                 Role = "Tester"
             };
             var userMock = Mock.Of<User>();
@@ -379,7 +379,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var identity = new TwilioIdentity()
             {
                 Email = "test@test.com",
-                Name = "John Doe",
+                FirstName = "John Doe",
                 Role = "Tester"
             };
             var userMock = Mock.Of<User>();
@@ -415,7 +415,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var identity = new TwilioIdentity()
             {
                 Email = "test@test.com",
-                Name = "John Doe",
+                FirstName = "John Doe",
                 Role = "Tester"
             };
             var userMock = Mock.Of<User>();
@@ -449,7 +449,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var identity = new TwilioIdentity()
             {
                 Email = "test@test.com",
-                Name = "John Doe",
+                FirstName = "John Doe",
                 Role = "Tester"
             };
             var userMock = Mock.Of<User>();

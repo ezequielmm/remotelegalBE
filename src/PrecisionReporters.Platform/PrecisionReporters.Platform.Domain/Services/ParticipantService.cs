@@ -100,7 +100,8 @@ namespace PrecisionReporters.Platform.Domain.Services
                     CreationDate = DateTime.UtcNow,
                     DepositionId = depositionId,
                     Email = user.EmailAddress,
-                    Name = $"{user.FirstName} {user.LastName}",
+                    Name = user.FirstName,
+                    LastName = user.LastName,
                     Phone = user.PhoneNumber,
                     Role = ParticipantType.Admin,
                     UserId = user.Id
@@ -239,19 +240,33 @@ namespace PrecisionReporters.Platform.Domain.Services
             return Result.Ok();
         }
 
-        public async Task<Result<Participant>> EditParticipantRole(Guid depositionId, Participant participant)
+        public async Task<Result<Participant>> EditParticipantInDepo(Guid depositionId, Participant participant)
         {
-            var depositionResult = await _participantValidationHelper.GetValidDepositionForEditParticipantRoleAsync(depositionId);
+            var notificationType = NotificationEntity.Participant;
+            var depositionResult = await _participantValidationHelper.GetValidDepositionForEditParticipantAsync(depositionId);
             if (depositionResult.IsFailed)
                 return (Result)depositionResult;
 
-            var targetParticipant = _participantValidationHelper.GetValidTargetParticipantForEditRole(depositionResult.Value, participant);
-            if (targetParticipant.IsFailed)
-                return targetParticipant;
+            var targetParticipant = depositionResult.Value.Participants.FirstOrDefault(p => p.Email == participant.Email);
+            if (targetParticipant == null)
+                return Result.Fail(new ResourceNotFoundError($"There are no participant available with email: {participant.Email}."));
 
-            var updatedParticipant = await UpdateParticipant(participant, targetParticipant.Value);
+            if (targetParticipant.Role != participant.Role)
+            {
+                var result = _participantValidationHelper.ValidateTargetParticipantForEditRole(depositionResult.Value, participant, targetParticipant);
+                if (result.IsFailed)
+                    return result;
+                notificationType = NotificationEntity.ParticipantRole;
+            }
+
+            if (targetParticipant.LastName != participant.LastName || targetParticipant.Name != participant.Name)
+            {
+                notificationType = notificationType == NotificationEntity.ParticipantRole ? NotificationEntity.Participant : NotificationEntity.ParticipantName;
+            }
+
+            var updatedParticipant = await UpdateParticipant(participant, targetParticipant);
             if (updatedParticipant == null)
-                return Result.Fail(new ResourceNotFoundError($"There was an error updating Participant with Id: {targetParticipant.Value.Id}"));
+                return Result.Fail(new ResourceNotFoundError($"There was an error updating Participant with Id: {targetParticipant.Id}"));
 
             if (updatedParticipant.Role == ParticipantType.Witness)
             {
@@ -259,28 +274,30 @@ namespace PrecisionReporters.Platform.Domain.Services
                 await MigratePreviousWitness(depositionResult.Value, updatedParticipant.Id);
             }
 
-            await _permissionService.EditRoleToParticipant(updatedParticipant, depositionId);
+            await _permissionService.EditParticipant(updatedParticipant, depositionId);
             var newTwilioToken = await _roomService.RefreshRoomToken(updatedParticipant, depositionResult.Value);
-            await NotifyRoleChangedToParticipantAsync(updatedParticipant, newTwilioToken);
+            await NotifyEditionToParticipantAsync(updatedParticipant, newTwilioToken, notificationType);
             
-            _logger.LogInformation("Role changed successfully for user {user} on deposition {deposition} new role {role}", updatedParticipant.User.Id, depositionId, updatedParticipant.Role);
+            _logger.LogInformation("Participant's edition successfully for user {user} on deposition {deposition}", updatedParticipant.User.Id, depositionId );
             return Result.Ok(updatedParticipant);
         }
 
         private async Task<Participant> UpdateParticipant(Participant participant, Participant targetParticipant)
         {
             targetParticipant.Role = participant.Role;
+            targetParticipant.Name = participant.Name;
+            targetParticipant.LastName = participant.LastName;
             var updatedParticipant = await _participantRepository.Update(targetParticipant);
             return updatedParticipant;
         }
 
-        private async Task NotifyRoleChangedToParticipantAsync(Participant updatedParticipant, string twilioToken)
+        private async Task NotifyEditionToParticipantAsync(Participant updatedParticipant, string twilioToken, NotificationEntity notificationType)
         {
             var notificationMessage = new NotificationDto
             {
-                EntityType = NotificationEntity.ParticipantRole,
+                EntityType = notificationType,
                 Action = NotificationAction.Update,
-                Content = new { token = twilioToken, role = updatedParticipant.Role }
+                Content = new { token = twilioToken, role = updatedParticipant.Role, name = updatedParticipant.GetFullName() }
             };
             await _signalRNotificationManager.SendDirectMessage(updatedParticipant.Email, notificationMessage);
         }
@@ -302,9 +319,9 @@ namespace PrecisionReporters.Platform.Domain.Services
             {
                 previousWitness.Role = ParticipantType.Observer;
                 var updatedPreviousWitness = await _participantRepository.Update(previousWitness);
-                await _permissionService.EditRoleToParticipant(updatedPreviousWitness, deposition.Id);
+                await _permissionService.EditParticipant(updatedPreviousWitness, deposition.Id);
                 var newTwilioToken = await _roomService.RefreshRoomToken(updatedPreviousWitness, deposition);
-                await NotifyRoleChangedToParticipantAsync(updatedPreviousWitness, newTwilioToken);
+                await NotifyEditionToParticipantAsync(updatedPreviousWitness, newTwilioToken, NotificationEntity.ParticipantRole);
             }
         }
     }

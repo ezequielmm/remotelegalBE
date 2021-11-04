@@ -263,6 +263,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
         {
             var documentDto = _documentMapper.ToDto(depositionDocument.Document);
             documentDto.StampLabel = depositionDocument.StampLabel;
+            documentDto.AddedBy.ParticipantAlias = depositionDocument.Deposition.Participants.FirstOrDefault(p => p.UserId == documentDto.AddedBy.Id)?.GetFullName();
             return documentDto;
         }
     }

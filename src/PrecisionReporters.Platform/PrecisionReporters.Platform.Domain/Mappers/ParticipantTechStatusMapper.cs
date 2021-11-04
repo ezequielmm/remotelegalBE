@@ -21,7 +21,7 @@ namespace PrecisionReporters.Platform.Domain.Mappers
                 Id = model.Id,
                 CreationDate = model.CreationDate,
                 Email = model.Email,
-                Name = model.Name,
+                Name = model.GetFullName(),
                 Role = model.Role.ToString(),
                 Browser = lastSystemInfo?.Browser,
                 Device = lastSystemInfo?.Device,

@@ -28,10 +28,12 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly ISignalRTranscriptionManager _signalRTranscriptionManager;
         private readonly IMapper<Transcription, TranscriptionDto, object> _transcriptionMapper;
         private readonly IUserRepository _userRepository;
+        private readonly IParticipantRepository _participantRepository;
 
         private Guid _instanceDepositionId;
         private string _instanceUserEmail;
         private User _instanceUser;
+        private Participant _instanceParticipant;
 
         private PushAudioInputStream _audioInputStream;
         private SpeechRecognizer _recognizer;
@@ -44,7 +46,8 @@ namespace PrecisionReporters.Platform.Domain.Services
             ISignalRTranscriptionManager signalRTranscriptionManager,
             IMapper<Transcription, TranscriptionDto, object> transcriptionMapper,
             IUserRepository userRepository,
-            IFireAndForgetService fireAndForgetService)
+            IFireAndForgetService fireAndForgetService,
+            IParticipantRepository participantRepository)
         {
             _azureConfiguration = azureConfiguration.Value;
             _logger = logger;
@@ -52,6 +55,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             _transcriptionMapper = transcriptionMapper;
             _userRepository = userRepository;
             _fireAndForgetService = fireAndForgetService;
+            _participantRepository = participantRepository;
         }
 
 
@@ -105,6 +109,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             _instanceUserEmail = userEmail;
             _instanceDepositionId = Guid.Parse(depositionId);
             _instanceUser = await _userRepository.GetFirstOrDefaultByFilter(x => x.EmailAddress == userEmail, tracking: false);
+            _instanceParticipant = await _participantRepository.GetFirstOrDefaultByFilter(p => p.UserId == _instanceUser.Id && p.DepositionId == _instanceDepositionId, tracking: false);
         }
 
         private async void OnSpeechRecognizerRecognizing(object sender, SpeechRecognitionEventArgs e)
@@ -211,7 +216,8 @@ namespace PrecisionReporters.Platform.Domain.Services
                 DepositionId = _instanceDepositionId,
                 UserId = _instanceUser.Id,
                 User = _instanceUser,
-                CreationDate = DateTime.UtcNow
+                CreationDate = DateTime.UtcNow,
+                ParticipantAlias = _instanceParticipant.GetFullName()
             };
             return transcription;
         }

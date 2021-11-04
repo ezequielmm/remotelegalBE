@@ -256,10 +256,11 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             // Arrange
             var roomName = "TestingRoom";
             var expectedError = $"Room {roomName} not found";
+            var participant = ParticipantFactory.GetParticipant(Guid.NewGuid());
             _roomRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Room, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>())).ReturnsAsync((Room)null);
 
             // Act
-            var result = await _service.GenerateRoomToken(roomName, new User(), ParticipantType.Attorney, "any@mail.com");
+            var result = await _service.GenerateRoomToken(roomName, new User(), ParticipantType.Attorney, "any@mail.com", participant, null);
 
             // Assert
             _roomRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Room, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()), Times.Once);
@@ -278,10 +279,11 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var roomName = "TestingRoom";
             var room = new Room { Name = roomName, Status = roomStatus };
             var expectedError = $"There was an error ending the the Room '{roomName}'. It's not in progress. Current state: {roomStatus}";
+            var participant = ParticipantFactory.GetParticipant(Guid.NewGuid());
             _roomRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Room, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>())).ReturnsAsync(room);
 
             // Act
-            var result = await _service.GenerateRoomToken(roomName, new User(), ParticipantType.Attorney, "any@mail.com");
+            var result = await _service.GenerateRoomToken(roomName, new User(), ParticipantType.Attorney, "any@mail.com",participant, null);
 
             // Assert
             _roomRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Room, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()), Times.Once);
@@ -299,9 +301,12 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var room = new Room { Name = roomName, Status = RoomStatus.InProgress };
             var participantRole = ParticipantType.Observer;
             var user = new User { Id = Guid.NewGuid(), EmailAddress = "testUser@mail.com", FirstName = "userFirstName", LastName = "userLastName" };
+            var participant = ParticipantFactory.GetParticipant(Guid.NewGuid());
+            participant.User = user;
+            participant.Role = participantRole;
             var identityObject = new TwilioIdentity
             {
-                Name = $"{user.FirstName} {user.LastName}",
+                FirstName = $"{user.FirstName} {user.LastName}",
                 Role = Enum.GetName(typeof(ParticipantType), participantRole),
                 Email = user.EmailAddress
             };
@@ -311,7 +316,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _twilioServiceMock.Setup(x => x.GenerateToken(It.IsAny<string>(), It.IsAny<TwilioIdentity>(), It.IsAny<bool>())).Returns(token);
 
             // Act
-            var result = await _service.GenerateRoomToken(roomName, user, participantRole, user.EmailAddress);
+            var result = await _service.GenerateRoomToken(roomName, user, participantRole, user.EmailAddress, participant, null);
 
             // Assert
             _roomRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Room, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()), Times.Once);
@@ -330,9 +335,12 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var room = new Room { Name = roomName, Status = RoomStatus.InProgress };
             var participantRole = ParticipantType.Observer;
             var user = new User { Id = Guid.NewGuid(), EmailAddress = "testUser@mail.com", FirstName = "userFirstName", LastName = "userLastName" };
+            var participant = ParticipantFactory.GetParticipant(Guid.NewGuid());
+            participant.User = user;
+            participant.Role = participantRole;
             var identityObject = new TwilioIdentity
             {
-                Name = $"{user.FirstName} {user.LastName}",
+                FirstName = $"{user.FirstName} {user.LastName}",
                 Role = Enum.GetName(typeof(ParticipantType), participantRole),
                 Email = user.EmailAddress
             };
@@ -352,7 +360,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 .ReturnsAsync(Result.Ok("userChatSiD"));
 
             // Act
-            var result = await _service.GenerateRoomToken(roomName, user, participantRole, user.EmailAddress, chatDto);
+            var result = await _service.GenerateRoomToken(roomName, user, participantRole, user.EmailAddress, participant, chatDto);
 
             // Assert
             _roomRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Room, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()), Times.Once);
@@ -371,9 +379,12 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var room = new Room { Name = roomName, Status = RoomStatus.InProgress };
             var participantRole = ParticipantType.Observer;
             var user = new User { Id = Guid.NewGuid(), EmailAddress = "testUser@mail.com", FirstName = "userFirstName", LastName = "userLastName", SId = Guid.NewGuid().ToString() };
+            var participant = ParticipantFactory.GetParticipant(Guid.NewGuid());
+            participant.User = user;
+            participant.Role = participantRole;
             var identityObject = new TwilioIdentity
             {
-                Name = $"{user.FirstName} {user.LastName}",
+                FirstName = $"{user.FirstName} {user.LastName}",
                 Role = Enum.GetName(typeof(ParticipantType), participantRole),
                 Email = user.EmailAddress
             };
@@ -398,7 +409,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 .ReturnsAsync(DepositionFactory.GetDeposition(Guid.NewGuid(), Guid.NewGuid()));
 
             // Act
-            var result = await _service.GenerateRoomToken(roomName, user, participantRole, user.EmailAddress, chatDto);
+            var result = await _service.GenerateRoomToken(roomName, user, participantRole, user.EmailAddress, participant, chatDto);
 
             // Assert
             _roomRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Room, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()), Times.Once);

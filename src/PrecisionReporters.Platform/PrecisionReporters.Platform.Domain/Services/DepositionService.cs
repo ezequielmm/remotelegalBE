@@ -194,11 +194,13 @@ namespace PrecisionReporters.Platform.Domain.Services
                                 if (user.IsGuest)
                                 {
                                     user.FirstName = string.IsNullOrEmpty(participant.Name) ? user.FirstName : participant.Name;
+                                    user.LastName = string.IsNullOrEmpty(participant.LastName) ? user.LastName : participant.LastName;
                                     user.PhoneNumber = string.IsNullOrEmpty(participant.Phone) ? user.PhoneNumber : participant.Phone;
                                 }
                                 else
                                 {
-                                    participant.Name = $"{user.FirstName} {user.LastName}";
+                                    participant.Name = user.FirstName;
+                                    participant.LastName = user.LastName;
                                 }
                             }
                             return participant;
@@ -467,7 +469,8 @@ namespace PrecisionReporters.Platform.Domain.Services
                 if(witness != null)
                 {
                     identity.Email = witness.Email;
-                    identity.Name = witness.Name;
+                    identity.FirstName = witness.Name;
+                    identity.LastName = !string.IsNullOrWhiteSpace(witness.LastName) ? witness.LastName : String.Empty;
                     identity.Role = Enum.GetName(typeof(ParticipantType), witness.Role);
                 }
 
@@ -648,9 +651,12 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             if (participant != null)
             {
+                var hasLastName = !string.IsNullOrWhiteSpace(guest.LastName);
                 userResult.Value.FirstName = guest.Name;
+                userResult.Value.LastName = hasLastName ? guest.LastName : string.Empty;
                 participant.User = userResult.Value;
                 participant.Name = guest.Name;
+                participant.LastName = hasLastName ? guest.LastName : string.Empty;
                 if (participant.IsAdmitted.HasValue && !participant.IsAdmitted.Value)
                 {
                     participant.IsAdmitted = null;
@@ -701,6 +707,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             if (userResult.IsFailed)
                 return userResult.ToResult();
+            var hasLastName = !string.IsNullOrWhiteSpace(userResult.Value.LastName);
 
             var participantResult = deposition.Participants.FirstOrDefault(x => x.Email == participant.Email);
             if (participantResult != null)
@@ -718,7 +725,8 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (userResult.Value.IsAdmin)
                 participant.IsAdmitted = true;
 
-            participant.Name = userResult.Value.IsGuest ? userResult.Value.FirstName : $"{userResult.Value.FirstName} {userResult.Value.LastName}";
+            participant.Name = userResult.Value.FirstName;
+            participant.LastName = hasLastName ? userResult.Value.LastName : string.Empty;
             participant.Phone = userResult.Value.PhoneNumber;
             participant.User = userResult.Value;
             participant.HasJoined = true;
@@ -771,7 +779,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 fileName = deposition.Case.Name;
                 var witness = deposition.Participants?.FirstOrDefault(x => x.Role == ParticipantType.Witness);
                 if (!string.IsNullOrEmpty(witness?.Name))
-                    fileName += $"-{witness.Name}";
+                    fileName += $"-{witness.GetFullName()}";
 
                 url = _awsStorageService.GetFilePublicUri($"{deposition.Room.Composition.SId}.{deposition.Room.Composition.FileType}", _documentsConfiguration.PostDepoVideoBucket, expirationDate, $"{fileName}.{deposition.Room.Composition.FileType}");
             }
@@ -840,7 +848,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             Expression<Func<Participant, object>> orderBy = sortedField switch
             {
                 ParticipantSortField.Role => x => x.Role,
-                ParticipantSortField.Name => x => x.Name,
+                ParticipantSortField.Name => x => x.GetFullName(),
                 ParticipantSortField.Email => x => x.Email,
                 _ => x => x.Role
             };
@@ -881,8 +889,11 @@ namespace PrecisionReporters.Platform.Domain.Services
             {
                 newParticipant.User = userResult.Value;
                 newParticipant.Name = string.IsNullOrWhiteSpace(newParticipant.Name)
-                    ? $"{userResult.Value.FirstName} {userResult.Value.LastName}"
+                    ? userResult.Value.FirstName
                     : newParticipant.Name;
+                newParticipant.LastName = string.IsNullOrWhiteSpace(newParticipant.LastName)
+                    ? userResult.Value.LastName
+                    : newParticipant.LastName;
             }
             newParticipant.IsAdmitted = true;
             deposition.Participants.Add(newParticipant);
@@ -1213,8 +1224,8 @@ namespace PrecisionReporters.Platform.Domain.Services
                             EmailTo = new List<string> { participant.Email },
                             TemplateData = new Dictionary<string, string>
                             {
-                                { "user-name", participant.Name },
-                                { "witness-name", witness.Name },
+                                { "user-name", participant.GetFullName() },
+                                { "witness-name", witness.GetFullName() },
                                 { "case-name", depositionResult.Value.Case.Name },
                                 { "start-date",  depositionResult.Value.StartDate.GetFormattedDateTime(depositionResult.Value.TimeZone)},
                                 { "depo-details-link", $"{_urlPathConfiguration.FrontendBaseUrl}deposition/post-depo-details/{depositionResult.Value.Id}" },
@@ -1264,7 +1275,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                     CreateChat = true
                 };
                 _logger.LogInformation($"{nameof(DepositionService)}.{nameof(DepositionService.GetJoinDepositionInfoDto)} Chat SID CR Flow: {chatInfo?.SId}");
-                var token = await _roomService.GenerateRoomToken(deposition.Room.Name, user, role, identity, chatInfo);
+                var token = await _roomService.GenerateRoomToken(deposition.Room.Name, user, role, identity, currentParticipant, chatInfo);
                 if (token.IsFailed)
                     return token.ToResult<JoinDepositionDto>();
 
@@ -1318,7 +1329,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                             _logger.LogInformation($"{nameof(DepositionService)}.{nameof(DepositionService.GetJoinDepositionInfoDto)} No active twilio room, started new one: {room?.Value?.SId}");
                         }
 
-                        var token = await _roomService.GenerateRoomToken(deposition?.Room?.Name, user, role, identity, chatInfo);
+                        var token = await _roomService.GenerateRoomToken(deposition?.Room?.Name, user, role, identity, currentParticipant, chatInfo);
                         if (token.IsFailed)
                             return token.ToResult<JoinDepositionDto>();
 
@@ -1332,7 +1343,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                     _logger.LogInformation($"{nameof(DepositionService)}.{nameof(DepositionService.GetJoinDepositionInfoDto)} Start PreRoom");
                     await StartDepositionRoom(deposition.PreRoom, false);
 
-                    var preRoomToken = await _roomService.GenerateRoomToken(deposition.PreRoom.Name, user, role, identity);
+                    var preRoomToken = await _roomService.GenerateRoomToken(deposition.PreRoom.Name, user, role, identity, currentParticipant);
                     if (preRoomToken.IsFailed)
                         return preRoomToken.ToResult<JoinDepositionDto>();
 
@@ -1476,7 +1487,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             {
                 try
                 {
-                    var participants = await GetDepositionParticipants(deposition);
+                    var participants = deposition.Participants;
                     foreach (var participant in participants)
                     {
                         await _permissionService.SetCompletedDepositionPermissions(participant, deposition.Id);

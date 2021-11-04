@@ -508,12 +508,12 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (uploadZipFileResult.IsFailed)
                 return uploadZipFileResult;
 
-            var displayName = $"{deposition.Case.Name}-{witness.Name}{ApplicationConstants.ZipExtension}";
+            var displayName = $"{deposition.Case.Name}-{witness?.GetFullName()}{ApplicationConstants.ZipExtension}";
             if (documentType != null)
             {
                 var documentTypeDescription = documentType == DocumentType.Exhibit ? "Exhibits" : "Transcripts";
 
-                displayName = $"{deposition.Case.Name}-{witness.Name}-{documentTypeDescription}{ApplicationConstants.ZipExtension}";
+                displayName = $"{deposition.Case.Name}-{witness?.GetFullName()}-{documentTypeDescription}{ApplicationConstants.ZipExtension}";
             }
 
             var document = new Document() { FilePath = documentKeyName, Name = zipName, DisplayName = displayName };

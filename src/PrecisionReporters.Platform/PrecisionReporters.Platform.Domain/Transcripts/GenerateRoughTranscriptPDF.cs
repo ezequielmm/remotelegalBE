@@ -101,8 +101,8 @@ namespace PrecisionReporters.Platform.Domain.Transcripts
             replacer.AddString("case_n_tmp", deposition.Case.CaseNumber);
             replacer.AddString("date_tmp", startDate.ToString("dddd, MMMM d, yyyy"));
             replacer.AddString("time_tmp", startDate.ConvertTimeZone(deposition.TimeZone));
-            replacer.AddString("witness_tmp", deposition.Participants?.FirstOrDefault(x => x.Role == ParticipantType.Witness)?.Name?.ToUpper() ?? "");
-            replacer.AddString("reportedBy_tmp", deposition.Participants?.FirstOrDefault(x => x.Role == ParticipantType.CourtReporter).Name);
+            replacer.AddString("witness_tmp", deposition.Participants?.FirstOrDefault(x => x.Role == ParticipantType.Witness)?.GetFullName()?.ToUpper() ?? "");
+            replacer.AddString("reportedBy_tmp", deposition.Participants?.FirstOrDefault(x => x.Role == ParticipantType.CourtReporter)?.GetFullName() ?? "");
             replacer.AddString("job_n_tmp", deposition.Job ?? string.Empty);
             replacer.Process(page1);
         }

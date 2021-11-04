@@ -10,6 +10,8 @@ namespace PrecisionReporters.Platform.Domain.Dtos
         public Guid Id { get; set; }
         [StringLength(50)]
         public string Name { get; set; }
+        [StringLength(50)]
+        public string LastName { get; set; }
         [DataType(DataType.EmailAddress)]
         public string Email { get; set; }
         [RegularExpression(@"^\(?([2-9][0-8][0-9])\)?[-. ]?([2-9][0-9]{2})[-. ]?([0-9]{4})$", ErrorMessage = "Invalid US phone number format")]

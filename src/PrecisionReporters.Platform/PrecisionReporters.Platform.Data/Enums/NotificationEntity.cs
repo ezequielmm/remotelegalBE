@@ -13,6 +13,8 @@
         EndDeposition,
         Exhibit,
         Stamp,
-        ParticipantRole
+        Participant,
+        ParticipantRole,
+        ParticipantName
     }
 }

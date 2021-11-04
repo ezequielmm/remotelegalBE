@@ -12,6 +12,7 @@ namespace PrecisionReporters.Platform.Domain.Mappers
                 Id = dto.Id,
                 Email = dto.Email?.ToLower(),
                 Name = dto.Name,
+                LastName = dto.LastName,
                 Phone = dto.Phone,
                 Role = dto.Role
             };

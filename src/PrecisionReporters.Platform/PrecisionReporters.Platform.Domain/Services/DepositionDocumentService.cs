@@ -161,7 +161,11 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<List<DepositionDocument>>> GetEnteredExhibits(Guid depositionId, ExhibitSortField? sortedField = null, SortDirection? sortDirection = null)
         {
-            var includes = new[] { $"{ nameof(DepositionDocument.Document) }.{ nameof(Document.AddedBy) }" };
+            var includes = new[]
+            {
+                $"{nameof(DepositionDocument.Document)}.{nameof(Document.AddedBy)}", $"{nameof(DepositionDocument.Deposition)}.{nameof(Deposition.Participants)}",
+                $"{nameof(DepositionDocument.Deposition)}.{nameof(Deposition.Participants)}.{nameof(Participant.User)}"
+            };
             Expression<Func<DepositionDocument, object>> orderBy = sortedField switch
             {
                 ExhibitSortField.Name => x => x.Document.DisplayName,

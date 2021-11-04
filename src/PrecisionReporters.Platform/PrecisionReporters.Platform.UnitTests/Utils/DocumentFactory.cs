@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using PrecisionReporters.Platform.Data.Entities;
 using PrecisionReporters.Platform.Data.Enums;
 using PrecisionReporters.Platform.Domain.Dtos;
@@ -53,6 +54,7 @@ namespace PrecisionReporters.Platform.UnitTests.Utils
 
         public static Document GetDocument()
         {
+            var userId = Guid.NewGuid();
             return new Document
             {
                 Id = Guid.NewGuid(),
@@ -61,11 +63,19 @@ namespace PrecisionReporters.Platform.UnitTests.Utils
                 Size = 1088,
                 Name = "Mock Document",
                 AddedBy = new User {
-                    Id = Guid.NewGuid(),
+                    Id = userId,
                     FirstName = "Name",
                     LastName = "Lastname"
                 },
-                SharedAt = DateTime.UtcNow
+                SharedAt = DateTime.UtcNow,
+                DocumentUserDepositions = new List<DocumentUserDeposition>
+                {
+                    new DocumentUserDeposition()
+                    {
+                        User = UserFactory.GetUserByGivenId(userId),
+                        Deposition = DepositionFactory.GetDeposition(Guid.NewGuid(), Guid.NewGuid())
+                    }
+                }
             };
         }
     }
