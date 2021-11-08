@@ -49,7 +49,7 @@ namespace PrecisionReporters.Platform.UnitTests.Data.Repositories
                 {
                     CreationDate = new DateTime(),
                     ResourceId = resourceId,
-                    ResourceType = Shared.Enums.ResourceType.Case,
+                    ResourceType = ResourceType.Case,
                     Role = new Role { CreationDate = new DateTime(), Id = caseAtendeeRoleId, Name = RoleName.DepositionAttendee },
                     RoleId = caseAtendeeRoleId,
                     User = new User
@@ -117,7 +117,7 @@ namespace PrecisionReporters.Platform.UnitTests.Data.Repositories
             {
                 CreationDate = new DateTime(),
                 ResourceId = Guid.Parse("c3d398d7-7b06-4dbf-88d2-1feacd9514ef"),
-                ResourceType = Shared.Enums.ResourceType.Case,
+                ResourceType = ResourceType.Case,
                 Role = new Role { CreationDate = new DateTime(), Id = Guid.Parse("3dfedaf0-3337-4bec-9f75-f64dbcc2a412"), Name = RoleName.DepositionAttendee },
                 RoleId = Guid.Parse("3dfedaf0-3337-4bec-9f75-f64dbcc2a412"),
                 User = new User
@@ -153,7 +153,7 @@ namespace PrecisionReporters.Platform.UnitTests.Data.Repositories
             {
                 CreationDate = new DateTime(),
                 ResourceId = resourceId,
-                ResourceType = Shared.Enums.ResourceType.Case,
+                ResourceType = ResourceType.Case,
                 Role = new Role { CreationDate = new DateTime(), Id = caseAtendeeRoleId, Name = RoleName.DepositionAttendee },
                 RoleId = caseAtendeeRoleId,
                 User = new User
@@ -187,7 +187,7 @@ namespace PrecisionReporters.Platform.UnitTests.Data.Repositories
             {
                 CreationDate = new DateTime(),
                 ResourceId = resourceId,
-                ResourceType = Shared.Enums.ResourceType.Case,
+                ResourceType = ResourceType.Case,
                 Role = new Role { CreationDate = new DateTime(), Id = caseAtendeeRoleId, Name = RoleName.DepositionAttendee },
                 RoleId = caseAtendeeRoleId,
                 User = new User
