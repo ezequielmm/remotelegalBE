@@ -10,6 +10,7 @@ namespace PrecisionReporters.Platform.Domain.Dtos
         public string LastName { get; set; }
         public string EmailAddress { get; set; }
         public string ParticipantAlias { get; set; }
+        public bool IsGuest { get; set; }
 
         public UserOutputDto() { }
 
@@ -19,6 +20,7 @@ namespace PrecisionReporters.Platform.Domain.Dtos
             FirstName = user.FirstName;
             LastName = user.LastName;
             EmailAddress = user.EmailAddress;
+            IsGuest = user.IsGuest;
         }
     }
 }

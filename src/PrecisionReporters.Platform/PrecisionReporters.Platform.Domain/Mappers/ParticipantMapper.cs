@@ -54,7 +54,8 @@ namespace PrecisionReporters.Platform.Domain.Mappers
                         Id = model.User.Id,
                         FirstName = model.User.FirstName,
                         LastName = model.User.LastName,
-                        EmailAddress = model.User.EmailAddress
+                        EmailAddress = model.User.EmailAddress,
+                        IsGuest = model.User.IsGuest
                     }
                     : null,
                 IsMuted = model.IsMuted,
