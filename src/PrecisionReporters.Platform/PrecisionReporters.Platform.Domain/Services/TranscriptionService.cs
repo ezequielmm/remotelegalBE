@@ -138,7 +138,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                         TranscriptionVideoTime = CalculateSpeechTime(
                             CalculateSeconds(startedAt, GetDateTimestamp(x.TranscriptDateTime)),
                             compositionIntervals),
-                        UserName = x.User.GetFullName(),
+                        UserName = x.ParticipantAlias,
                         Duration = x.Duration
                     }
 
