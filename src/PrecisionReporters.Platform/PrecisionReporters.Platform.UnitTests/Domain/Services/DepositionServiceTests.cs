@@ -3214,5 +3214,54 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             Assert.Equal(stampLabel, result.Value.SharingMediaDocumentStamp);
             _depositionRepositoryMock.Verify(mock => mock.Update(It.IsAny<Deposition>()), Times.Once);
         }
+
+        [Fact]
+        public async Task GetUserParticipant_ResultOk()
+        {
+            //Arrange
+            var depositionId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
+
+            var currentUser = new User
+            {
+                Id = userId
+            };
+
+            var participant = new Participant
+            {
+                DepositionId = depositionId,
+                UserId = userId
+            };
+
+            _userServiceMock.Setup(x => x.GetCurrentUserAsync()).ReturnsAsync(currentUser);
+            _participantRepositoryMock.Setup(x => x.Update(It.IsAny<Participant>())).ReturnsAsync(participant);
+
+            // Act
+            var result = await _depositionService.GetUserParticipant(depositionId);
+
+            //Assert
+            Assert.NotNull(result);
+            Assert.IsType<Result<Participant>>(result);
+            Assert.Equal(result.Value.User, currentUser);
+        }
+
+        [Fact]
+        public async Task GetUserParticipant_ErrorMsg()
+        {
+            var errorMessage = $"User not found";
+
+            //Arrange
+            var depositionId = Guid.NewGuid();
+            var userId = Guid.NewGuid();
+
+            _userServiceMock.Setup(x => x.GetCurrentUserAsync()).ReturnsAsync((User)null);
+
+            // Act
+            var result = await _depositionService.GetUserParticipant(depositionId);
+
+            //Assert
+            Assert.Equal(result.Errors[0].Message, errorMessage);
+            Assert.True(result.IsFailed);
+        }
     }
 }
