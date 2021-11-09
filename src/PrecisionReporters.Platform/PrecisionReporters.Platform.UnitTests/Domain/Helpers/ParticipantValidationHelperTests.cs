@@ -153,7 +153,30 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Helpers
             Assert.True(result.IsFailed);
             Assert.Contains(errorMessage, result.Errors[0].Message);
         }
+        
+        [Fact]
+        public void ValidateTargetParticipantForEditRole_ShouldReturnResourceInvalidInputError_WhenDepositionWasOnTheRecordAndTryChangeParticipantToWitness()
+        {
+            //Arrange
+            var depositionId = Guid.NewGuid();
+            var errorMessage = "HasBeenOnTheRecord A Witness participant cannot be exchanged if Deposition has been on the record.";
+            var events = new DepositionEvent { EventType = EventType.OnTheRecord };
+            var targetParticipant = ParticipantFactory.GetParticipantByGivenRole(ParticipantType.Attorney);
+            targetParticipant.User = new User { IsGuest = false };
+            var editedParticipant = new Participant { Email = targetParticipant.Email, Role = ParticipantType.Witness };
+            var deposition = new Deposition
+            {
+                Id = depositionId, Participants = new List<Participant> { targetParticipant }, IsOnTheRecord = false, Events = new List<DepositionEvent> { events }
+            };
 
+            //Act
+            var result = _classUnderTest.ValidateTargetParticipantForEditRole(deposition, editedParticipant, targetParticipant);
+
+            // Assert
+            Assert.True(result.IsFailed);
+            Assert.Contains(errorMessage, result.Errors[0].Message);
+        }
+        
         [Fact]
         public void GetValidTargetParticipantForEditRole_ShouldReturnOk()
         {
