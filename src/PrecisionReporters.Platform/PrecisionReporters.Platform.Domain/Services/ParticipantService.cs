@@ -201,12 +201,12 @@ namespace PrecisionReporters.Platform.Domain.Services
             var currentParticipantEmail = currentParticipant.Email;
             var emailChanged = (currentParticipant.Email != participant.Email);
 
-            currentParticipant = await ManageEditParticipantPermission(emailChanged, depositionId, currentParticipant, participant);
-
             currentParticipant.Email = participant.Email;
             currentParticipant.Name = participant.Name;
             currentParticipant.Role = participant.Role;
             currentParticipant.Phone = participant.Phone;
+            
+            currentParticipant = await ManageEditParticipantPermission(emailChanged, depositionId, currentParticipant, participant);            
 
             if (currentParticipant?.User?.IsGuest == null)
             {
@@ -235,11 +235,13 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             if (emailChanged && !string.IsNullOrEmpty(editedParticipant.Email))
             {
-                var newUser = await _userService.GetUserByEmail(editedParticipant.Email);
-                if (newUser.IsSuccess)
+                var user = await _userService.GetUserByEmail(editedParticipant.Email);
+                if (user.IsSuccess)
                 {
-                    currentParticipant.User = newUser.Value;
-                    currentParticipant.UserId = newUser.Value.Id;
+                    currentParticipant.Name = $"{user.Value.FirstName} {user.Value.LastName}";
+                    currentParticipant.Phone = user.Value.PhoneNumber;
+                    currentParticipant.User = user.Value;
+                    currentParticipant.UserId = user.Value.Id;
                     await _permissionService.AddParticipantPermissions(currentParticipant);
                 }
             }
@@ -302,8 +304,8 @@ namespace PrecisionReporters.Platform.Domain.Services
             await _permissionService.EditParticipant(updatedParticipant, depositionId);
             var newTwilioToken = await _roomService.RefreshRoomToken(updatedParticipant, depositionResult.Value);
             await NotifyEditionToParticipantAsync(updatedParticipant, newTwilioToken, notificationType);
-            
-            _logger.LogInformation("Participant's edition successfully for user {user} on deposition {deposition}", updatedParticipant.User.Id, depositionId );
+
+            _logger.LogInformation("Participant's edition successfully for user {user} on deposition {deposition}", updatedParticipant.User.Id, depositionId);
             return Result.Ok(updatedParticipant);
         }
 
