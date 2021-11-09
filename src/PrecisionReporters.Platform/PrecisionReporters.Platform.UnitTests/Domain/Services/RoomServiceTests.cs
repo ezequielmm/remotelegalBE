@@ -307,7 +307,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var identityObject = new TwilioIdentity
             {
                 FirstName = $"{user.FirstName} {user.LastName}",
-                Role = Enum.GetName(typeof(ParticipantType), participantRole),
+                Role = (int) participantRole,
                 Email = user.EmailAddress
             };
 
@@ -341,7 +341,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var identityObject = new TwilioIdentity
             {
                 FirstName = $"{user.FirstName} {user.LastName}",
-                Role = Enum.GetName(typeof(ParticipantType), participantRole),
+                Role = (int) participantRole,
                 Email = user.EmailAddress
             };
 
@@ -385,7 +385,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var identityObject = new TwilioIdentity
             {
                 FirstName = $"{user.FirstName} {user.LastName}",
-                Role = Enum.GetName(typeof(ParticipantType), participantRole),
+                Role = (int) participantRole,
                 Email = user.EmailAddress
             };
             var token = "TestingToken";

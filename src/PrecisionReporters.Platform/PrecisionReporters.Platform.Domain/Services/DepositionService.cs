@@ -471,7 +471,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                     identity.Email = witness.Email;
                     identity.FirstName = witness.Name;
                     identity.LastName = !string.IsNullOrWhiteSpace(witness.LastName) ? witness.LastName : String.Empty;
-                    identity.Role = Enum.GetName(typeof(ParticipantType), witness.Role);
+                    identity.Role = (int) witness.Role;
                 }
 
                 _logger.LogInformation($"{nameof(DepositionService)}.{nameof(DepositionService.GoOnTheRecord)} Deposition is ON the record {depositionEvent.EventType}: in deposition {deposition.Id} with Witness {witness} Started by {userResult} with Twilio identity {identity}");

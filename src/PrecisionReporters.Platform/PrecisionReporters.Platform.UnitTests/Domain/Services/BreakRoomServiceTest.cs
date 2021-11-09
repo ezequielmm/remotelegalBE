@@ -344,7 +344,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var identity = new TwilioIdentity() { 
                 Email = "test@test.com",
                 FirstName = "John Doe",
-                Role = "Tester"
+                Role = (int) ParticipantType.Attorney
             };
             var userMock = Mock.Of<User>();
             var breakRoom = new BreakRoom
@@ -380,7 +380,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             {
                 Email = "test@test.com",
                 FirstName = "John Doe",
-                Role = "Tester"
+                Role = (int) ParticipantType.Attorney
             };
             var userMock = Mock.Of<User>();
             var breakRoom = new BreakRoom
@@ -416,7 +416,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             {
                 Email = "test@test.com",
                 FirstName = "John Doe",
-                Role = "Tester"
+                Role = (int) ParticipantType.Attorney
             };
             var userMock = Mock.Of<User>();
             var breakRoom = new BreakRoom
@@ -450,7 +450,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             {
                 Email = "test@test.com",
                 FirstName = "John Doe",
-                Role = "Tester"
+                Role = (int) ParticipantType.Attorney
             };
             var userMock = Mock.Of<User>();
             var breakRoom = new BreakRoom

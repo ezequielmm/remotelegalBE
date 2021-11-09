@@ -81,9 +81,9 @@ namespace PrecisionReporters.Platform.Domain.Services
             {
                 FirstName = participant.Name ?? user.FirstName,
                 LastName = participant.LastName ?? user.LastName,
-                Role = Enum.GetName(typeof(ParticipantType), role),
+                Role = (int) role,
                 Email = email,
-                IsAdmin = user.IsAdmin
+                IsAdmin = user.IsAdmin? 1 : 0
             };
 
             _logger.LogInformation($"{nameof(RoomService)}.{nameof(RoomService.GenerateRoomToken)} User Email: {email}");
