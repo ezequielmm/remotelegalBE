@@ -111,7 +111,7 @@
                 },
                 {
                     "name": "AppConfiguration__VerificationLinkConfiguration__ExpirationTime",
-                    "value": "96"
+                    "value": "720"
                 },
                 {
                     "name": "CORECLR_PROFILER",
