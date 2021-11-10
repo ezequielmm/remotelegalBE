@@ -201,16 +201,17 @@ namespace PrecisionReporters.Platform.Domain.Services
             var currentParticipantEmail = currentParticipant.Email;
             var emailChanged = (currentParticipant.Email != participant.Email);
 
+            currentParticipant = await ManageEditParticipantPermission(emailChanged, depositionId, currentParticipant, participant);
+            currentParticipant = HandleEditFullName(participant, currentParticipant, emailChanged);
+            
             currentParticipant.Email = participant.Email;
-            currentParticipant.Name = participant.Name;
             currentParticipant.Role = participant.Role;
             currentParticipant.Phone = participant.Phone;
             
-            currentParticipant = await ManageEditParticipantPermission(emailChanged, depositionId, currentParticipant, participant);            
-
             if (currentParticipant?.User?.IsGuest == null)
             {
                 currentParticipant.Name = participant.Name;
+                currentParticipant.LastName = participant.LastName;
                 currentParticipant.Phone = participant.Phone;
             }
 
@@ -222,6 +223,17 @@ namespace PrecisionReporters.Platform.Domain.Services
                 await _depositionEmailService.SendJoinDepositionEmailNotification(deposition, updatedParticipant);
 
             return Result.Ok(updatedParticipant);
+        }
+
+        private Participant HandleEditFullName(Participant participant, Participant currentParticipant, bool emailChanged)
+        {
+            var hasUser = currentParticipant.User != null;
+            if (!hasUser || !emailChanged)
+                return currentParticipant;
+            
+            currentParticipant.Name = string.IsNullOrWhiteSpace(participant.Name) ? currentParticipant.User.FirstName : participant.Name;
+            currentParticipant.LastName = string.IsNullOrWhiteSpace(participant.LastName) ? currentParticipant.User.LastName : participant.LastName;
+            return currentParticipant;
         }
 
         private async Task<Participant> ManageEditParticipantPermission(bool emailChanged, Guid depositionId, Participant currentParticipant, Participant editedParticipant)
@@ -238,7 +250,6 @@ namespace PrecisionReporters.Platform.Domain.Services
                 var user = await _userService.GetUserByEmail(editedParticipant.Email);
                 if (user.IsSuccess)
                 {
-                    currentParticipant.Name = $"{user.Value.FirstName} {user.Value.LastName}";
                     currentParticipant.Phone = user.Value.PhoneNumber;
                     currentParticipant.User = user.Value;
                     currentParticipant.UserId = user.Value.Id;
