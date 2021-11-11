@@ -108,9 +108,25 @@ namespace PrecisionReporters.Platform.Domain.Services
         public async Task ResendVerificationEmailAsync(string email)
         {
             var user = await _userRepository.GetFirstOrDefaultByFilter(x => x.EmailAddress.Equals(email));
-            var verifyUser = await _verifyUserService.GetVerifyUserByUserId(user.Id);
+            var verifyUser = await RefreshVerificationCode(user);
             var emailData = GetTemplate(user, verifyUser);
             await _awsEmailService.SetTemplateEmailRequest(emailData);
+        }
+        
+        private async Task<VerifyUser> RefreshVerificationCode(User user)
+        {
+            var expirationTime = int.Parse(_verificationLinkConfiguration.ExpirationTime);
+            var verifyUser = await _verifyUserService.GetVerifyUserByUserId(user.Id);
+            if (verifyUser == null)
+            {
+                verifyUser = await SaveVerifyUser(user, VerificationType.VerifyUser);
+            }
+            else if(verifyUser.CreationDate < DateTime.UtcNow.AddHours(-expirationTime))
+            {
+                verifyUser.CreationDate = DateTime.UtcNow; 
+                await _verifyUserService.UpdateVerifyUser(verifyUser);
+            }
+            return verifyUser;
         }
 
         public async Task<Result<User>> GetUserByEmail(string email)

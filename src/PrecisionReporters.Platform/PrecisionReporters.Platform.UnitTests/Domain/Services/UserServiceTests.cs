@@ -259,7 +259,62 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             verifyUserServiceMock.Verify(x => x.GetVerifyUserByUserId(It.Is<Guid>((a) => a == user.Id), null), Times.Once);
             awsEmailServiceMock.Verify(x => x.SetTemplateEmailRequest(It.IsAny<EmailTemplateInfo>(), null), Times.Once);
         }
+        
+        [Fact]
+        public async Task ResendVerificationEmailAsync_ShouldRefreshVerification_IfIsExpired()
+        {
+            var email = "User1@TestMail.com";
+            var expiredMonth = DateTime.UtcNow.AddMonths(-1);
+            var user = UserFactory.GetUserByGivenEmail(email);
+            var expiredVerifyUser = VerifyUserFactory.GetVerifyUserByGivenId(Guid.NewGuid(), expiredMonth, user);
+            var updatedVerifyUser = VerifyUserFactory.GetVerifyUserByGivenId(expiredVerifyUser.Id, DateTime.UtcNow, user);
+            
+            var userRepositoryMock = new Mock<IUserRepository>();
+            userRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>())).ReturnsAsync(user);
+            var verifyUserServiceMock = new Mock<IVerifyUserService>();
+            verifyUserServiceMock.Setup(x => x.GetVerifyUserByUserId(It.IsAny<Guid>(), null)).ReturnsAsync(expiredVerifyUser);
+            verifyUserServiceMock.Setup(x => x.UpdateVerifyUser(It.IsAny<VerifyUser>())).ReturnsAsync(updatedVerifyUser);
+            var awsEmailServiceMock = new Mock<IAwsEmailService>();
+            awsEmailServiceMock.Setup(x => x.SetTemplateEmailRequest(It.IsAny<EmailTemplateInfo>(), null)).Verifiable();
+            var service = InitializeService(userRepository: userRepositoryMock, verifyUserService: verifyUserServiceMock, awsEmailService: awsEmailServiceMock);
 
+            // Act
+            await service.ResendVerificationEmailAsync(email);
+
+            // Assert
+            userRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()), Times.Once);
+            verifyUserServiceMock.Verify(x => x.GetVerifyUserByUserId(It.Is<Guid>((a) => a == user.Id), null), Times.Once);
+            verifyUserServiceMock.Verify(x => x.UpdateVerifyUser(It.IsAny<VerifyUser>()), Times.Once);
+            awsEmailServiceMock.Verify(x => x.SetTemplateEmailRequest(It.IsAny<EmailTemplateInfo>(), null), Times.Once);
+        }
+
+        [Fact]
+        public async Task ResendVerificationEmailAsync_ShouldCreateANewOne_IfIsNotExist()
+        {
+            var email = "User1@TestMail.com";
+            var expiredMonth = DateTime.UtcNow.AddMonths(-1);
+            var user = UserFactory.GetUserByGivenEmail(email);
+            var newVerifyUser = VerifyUserFactory.GetVerifyUserByGivenId(Guid.NewGuid(), DateTime.UtcNow, user);
+            
+            var userRepositoryMock = new Mock<IUserRepository>();
+            userRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>())).ReturnsAsync(user);
+            var verifyUserServiceMock = new Mock<IVerifyUserService>();
+            verifyUserServiceMock.Setup(x => x.GetVerifyUserByUserId(It.IsAny<Guid>(), null)).ReturnsAsync((VerifyUser)null);
+            verifyUserServiceMock.Setup(x => x.CreateVerifyUser(It.IsAny<VerifyUser>())).ReturnsAsync(newVerifyUser);
+            var awsEmailServiceMock = new Mock<IAwsEmailService>();
+            awsEmailServiceMock.Setup(x => x.SetTemplateEmailRequest(It.IsAny<EmailTemplateInfo>(), null)).Verifiable();
+            var service = InitializeService(userRepository: userRepositoryMock, verifyUserService: verifyUserServiceMock, awsEmailService: awsEmailServiceMock);
+
+            // Act
+            await service.ResendVerificationEmailAsync(email);
+
+            // Assert
+            userRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()), Times.Once);
+            verifyUserServiceMock.Verify(x => x.GetVerifyUserByUserId(It.Is<Guid>((a) => a == user.Id), null), Times.Once);
+            verifyUserServiceMock.Verify(x => x.CreateVerifyUser(It.IsAny<VerifyUser>()), Times.Once);
+            awsEmailServiceMock.Verify(x => x.SetTemplateEmailRequest(It.IsAny<EmailTemplateInfo>(), null), Times.Once);
+        }
+        
         [Fact]
         public async Task GetUsersByFilter_ShouldReturnFailure_IfRepositoryReturnsNull()
         {
