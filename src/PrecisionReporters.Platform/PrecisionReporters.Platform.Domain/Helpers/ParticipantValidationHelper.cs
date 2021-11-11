@@ -43,7 +43,7 @@ namespace PrecisionReporters.Platform.Domain.Helpers
 
             //TODO: This is a restriction for this increment. Once the depo was on the record, witness cannot be exchanged
             var hasBeenOnTheRecord = deposition.Events?.Any(e => e.EventType == EventType.OnTheRecord) ?? false;
-            if (participant.Role == ParticipantType.Witness || targetParticipant.Role == ParticipantType.Witness && hasBeenOnTheRecord)
+            if ((participant.Role == ParticipantType.Witness || targetParticipant.Role == ParticipantType.Witness) && hasBeenOnTheRecord)
                 return Result.Fail(new InvalidInputError("HasBeenOnTheRecord A Witness participant cannot be exchanged if Deposition has been on the record."));
 
             return Result.Ok(targetParticipant);
