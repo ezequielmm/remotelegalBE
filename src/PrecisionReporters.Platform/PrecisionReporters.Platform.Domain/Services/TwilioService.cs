@@ -113,17 +113,16 @@ namespace PrecisionReporters.Platform.Domain.Services
             options.StatusCallback = new Uri(_twilioAccountConfiguration.StatusCallbackUrl);
             options.Format = CompositionResource.FormatEnum.Mp4;
             options.Trim = true;
-            if (room.IsRecordingEnabled)
+
+            _log.LogInformation($"{nameof(TwilioService)}.{nameof(TwilioService.CreateComposition)} - Create Composition Room Sid: {room?.SId} - Array Witness SID: {witnessSid}");
+
+            options.VideoLayout = new
             {
-                _log.LogInformation($"{nameof(TwilioService)}.{nameof(TwilioService.CreateComposition)} - Create Composition Room Sid: {room?.SId} - Array Witness SID: {witnessSid}");
-                options.VideoLayout = new
+                grid = new
                 {
-                    grid = new
-                    {
-                        video_sources = witnessSid
-                    }
-                };
-            }
+                    video_sources = witnessSid
+                }
+            };
 
             return await CompositionResource.CreateAsync(options);
         }
@@ -403,14 +402,9 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<bool> AddRecordingRules(string roomSid, TwilioIdentity witnessIdentity, bool IsVideoRecordingNeeded)
         {
-            var stringIdentity = SerializeObject(witnessIdentity);
             var rules = new List<RecordingRule>(){
-                        new RecordingRule(RecordingRule.TypeEnum.Include,null,stringIdentity,null,null),
-                        new RecordingRule(RecordingRule.TypeEnum.Include,null,null,null,RecordingRule.KindEnum.Audio)
+                        new RecordingRule(RecordingRule.TypeEnum.Include, true, null, null, null)
             };
-
-            if (IsVideoRecordingNeeded)
-                rules.Add(new RecordingRule(RecordingRule.TypeEnum.Include, null, null, null, RecordingRule.KindEnum.Video));
 
             await RecordingRulesResource.UpdateAsync(
                     rules: rules,
