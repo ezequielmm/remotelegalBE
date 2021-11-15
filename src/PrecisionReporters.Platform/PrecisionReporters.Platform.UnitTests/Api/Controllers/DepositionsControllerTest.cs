@@ -1300,7 +1300,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
                         Role = ParticipantType.TechExpert,
                         CreationDate = It.IsAny<DateTime>(),
                         Email = "test@test.com",
-                        HasJoined = false,
+                        HasJoined = true,
                         IsAdmitted = false,
                         IsMuted = false,
                         Phone = "2233222333",
@@ -1323,7 +1323,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
                 Role = ParticipantType.TechExpert,
                 CreationDate = It.IsAny<DateTime>(),
                 Email = "test@test.com",
-                HasJoined = false,
+                HasJoined = true,
                 IsAdmitted = false,
                 IsMuted = false,
                 Phone = "2233222333",
@@ -1354,7 +1354,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
                         Role = ParticipantType.TechExpert.ToString(),
                         CreationDate = It.IsAny<DateTime>(),
                         Email = "test@test.com",
-                        HasJoined = false,
+                        HasJoined = true,
                         IsAdmitted = false,
                         IsMuted = false,
                         Browser = "Firefox",
@@ -1583,6 +1583,68 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
             var okResult = Assert.IsType<OkObjectResult>(result);
 
             _depositionService.Verify(mock => mock.SaveAwsSessionInfo(It.IsAny<Guid>(), It.IsAny<string>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task SetUserDevice_ReturnsOk()
+        {
+            // Arrange
+            var deviceInfo = new DeviceInfo { CameraName = "cam1", CameraStatus = CameraStatus.Enabled, MicrophoneName = "mic1", SpeakersName = "spk1", Id = Guid.NewGuid(), CreationDate = DateTime.UtcNow };
+
+            var deviceInfoDto = new DeviceInfoDto
+            {
+                Camera = new CameraDto { Name = "Cam 1", Status = CameraStatus.Unavailable },
+                Microphone = new MicrophoneDto { Name = "Mic 1" },
+                Speakers = new SpeakersDto { Name = "Spk 1" }
+            };
+
+            _participantService
+                .Setup(mock => mock.SetUserDeviceInfo(It.IsAny<Guid>(), It.IsAny<DeviceInfo>()))
+                .ReturnsAsync(Result.Ok());
+
+            // Act
+            var resultMapper = _deviceInfoMapper.ToModel(deviceInfoDto);
+            var result = await _classUnderTest.SetUserDevice(Guid.NewGuid(), deviceInfoDto);
+
+            // Assert Mapper
+            Assert.NotNull(resultMapper);
+            Assert.Equal(resultMapper.CameraName, deviceInfoDto.Camera.Name);
+            Assert.Equal(resultMapper.CameraStatus, deviceInfoDto.Camera.Status);
+            Assert.Equal(resultMapper.MicrophoneName, deviceInfoDto.Microphone.Name);
+            Assert.Equal(resultMapper.SpeakersName, deviceInfoDto.Speakers.Name);
+
+            // Assert
+            Assert.NotNull(result);
+            var okResult = Assert.IsType<OkObjectResult>(result);
+
+            _participantService.Verify(mock => mock.SetUserDeviceInfo(It.IsAny<Guid>(), It.IsAny<DeviceInfo>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task SetUserDevice_ReturnsFails()
+        {
+            // Arrange
+            var deviceInfoDto = new DeviceInfoDto
+            {
+                Camera = new CameraDto { Name = "Cam 1", Status = CameraStatus.Unavailable },
+                Microphone = new MicrophoneDto { Name = "Mic 1" },
+                Speakers = new SpeakersDto { Name = "Spk 1" }
+            };
+
+            _participantService
+                .Setup(mock => mock.SetUserDeviceInfo(It.IsAny<Guid>(), It.IsAny<DeviceInfo>()))
+                .ReturnsAsync(Result.Fail(new Error()));
+
+            // Act
+            var result = await _classUnderTest.SetUserDevice(Guid.NewGuid(), deviceInfoDto);
+
+
+            // Assert
+            Assert.NotNull(result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result);
+            Assert.Equal((int)HttpStatusCode.InternalServerError, errorResult.StatusCode);
+
+            _participantService.Verify(mock => mock.SetUserDeviceInfo(It.IsAny<Guid>(), It.IsAny<DeviceInfo>()), Times.Once);
         }
     }
 }

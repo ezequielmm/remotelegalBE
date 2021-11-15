@@ -69,6 +69,49 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
             var errorResult = Assert.IsType<InternalServerErrorResult>(result.Result);
             Assert.Equal((int) HttpStatusCode.InternalServerError, errorResult.StatusCode);
             _participantService.Verify(mock=>mock.UpdateParticipantStatus(It.IsAny<ParticipantStatusDto>(), It.IsAny<Guid>()),Times.Once);
+        }        
+        
+        [Fact]
+        public async Task NotifyParticipantPresence_ReturnsOkAndParticipantStatusDto()
+        {
+            // Arrange
+            var participantStatus = new ParticipantStatusDto { Email = "test@mock.com", IsMuted = false };
+
+            _participantService
+                .Setup(mock => mock.NotifyParticipantPresence(It.IsAny<ParticipantStatusDto>(), It.IsAny<Guid>()))
+                .ReturnsAsync(Result.Ok(participantStatus));
+
+            // Act
+            var result = await _classUnderTest.NotifyParticipantPresence(Guid.NewGuid(), participantStatus);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.IsType<ActionResult<ParticipantStatusDto>>(result);
+            var okResult = Assert.IsType<OkObjectResult>(result.Result);
+            var resultValue = Assert.IsAssignableFrom<ParticipantStatusDto>(okResult.Value);
+            Assert.Equal(participantStatus.Email, resultValue.Email);
+            Assert.Equal(participantStatus.IsMuted, resultValue.IsMuted);
+            _participantService.Verify(mock=>mock.NotifyParticipantPresence(It.IsAny<ParticipantStatusDto>(), It.IsAny<Guid>()),Times.Once);
+        }
+
+        [Fact]
+        public async Task NotifyParticipantPresence_ReturnsError_NotifyParticipantPresenceFails()
+        {
+            // Arrange
+            var participantStatus = new ParticipantStatusDto {Email = "test@mock.com", IsMuted = false };
+
+            _participantService
+                .Setup(mock => mock.NotifyParticipantPresence(It.IsAny<ParticipantStatusDto>(), It.IsAny<Guid>()))
+                .ReturnsAsync(Result.Fail(new Error()));
+
+            // Act
+            var result = await _classUnderTest.NotifyParticipantPresence(Guid.NewGuid(), participantStatus);
+
+            // Assert
+            Assert.NotNull(result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result.Result);
+            Assert.Equal((int) HttpStatusCode.InternalServerError, errorResult.StatusCode);
+            _participantService.Verify(mock=>mock.NotifyParticipantPresence(It.IsAny<ParticipantStatusDto>(), It.IsAny<Guid>()),Times.Once);
         }
 
         [Fact]

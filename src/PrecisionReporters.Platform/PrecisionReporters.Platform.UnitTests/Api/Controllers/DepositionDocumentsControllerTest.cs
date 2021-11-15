@@ -625,5 +625,33 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
             _depositionService.Verify(mock => mock.GetDepositionCaption(It.IsAny<Guid>()), Times.Once);
             _documentService.Verify(mock => mock.GetFileSignedUrl(It.IsAny<Document>()), Times.Once);
         }
+
+        [Fact]
+        public void GetDocumentWithStamp_ShouldReturnDto()
+        {
+            var depositionId = Guid.NewGuid();
+            // Arrange
+            var model = new DepositionDocument {
+                CreationDate = It.IsAny<DateTime>(),
+                Deposition = DepositionFactory.GetDeposition(depositionId, Guid.NewGuid()),
+                DepositionId = depositionId,
+                Document = DocumentFactory.GetDocument(),
+                DocumentId = Guid.NewGuid(),
+                Id = Guid.NewGuid(),
+                StampLabel = "test"
+            
+            };
+
+            // Act
+            var result = _depositionDocumentMapper.ToDto(model);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(model.Id, result.Id);
+            Assert.Equal(model.CreationDate, result.CreationDate);
+            Assert.Equal(model.DepositionId, result.DepositionId);
+            Assert.Equal(model.StampLabel, result.StampLabel);
+            Assert.Equal(model.Document.Id, result.DocumentId);
+        }
     }
 }

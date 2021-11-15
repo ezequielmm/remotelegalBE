@@ -22,7 +22,7 @@ namespace PrecisionReporters.Platform.Data.Entities
         public DateTime? SharedAt { get; set; }
 
         public List<AnnotationEvent> AnnotationEvents { get; set; }
-        public DocumentType DocumentType { get; set; } 
+        public DocumentType DocumentType { get; set; }
 
         public override void CopyFrom(Document entity)
         {
