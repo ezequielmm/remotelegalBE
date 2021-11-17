@@ -37,6 +37,7 @@ namespace PrecisionReporters.Platform.Transcript.Api.Utils
 
                 _logger.LogInformation($"Creating {nameof(ITranscriptionLiveService)} and initializing recognition for user {{UserEmail}} on deposition {{DepositionId}} with sample rate {{SampleRate}}.", userEmail, depositionId, sampleRate);
                 connectionResources.ServiceScopeContainer = await CreateAndStartTranscriptionServiceAsync(userEmail, depositionId, sampleRate);
+                connectionResources.UserEmail = userEmail;
                 _logger.LogInformation("Recognition started for {ConnectionId}.", connectionId);
             }
             finally
@@ -53,6 +54,7 @@ namespace PrecisionReporters.Platform.Transcript.Api.Utils
                 return false;
             }
 
+            _logger.LogInformation("Existing live transcription service found for {ConnectionId}, user {UserEmail}", connectionId, connectionResources.UserEmail);
             transcriptionLiveService = connectionResources.ServiceScopeContainer.Service;
             return true;
         }
@@ -69,6 +71,7 @@ namespace PrecisionReporters.Platform.Transcript.Api.Utils
             Task.Run(async () =>
             {
                 // Both stopping and disposing TranscriptionLiveAzureService takes too long, so we are using fire and forget.
+                _logger.LogInformation("Unsubscribing {ConnectionId} for user {UserEmail}", connectionId, connectionResources.UserEmail);
                 try
                 {
                     using (connectionResources)

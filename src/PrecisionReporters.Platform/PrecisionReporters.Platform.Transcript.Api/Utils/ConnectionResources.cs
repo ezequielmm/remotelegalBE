@@ -11,6 +11,7 @@ namespace PrecisionReporters.Platform.Transcript.Api.Utils
     {
         public SemaphoreSlim SemaphoreSlim { get; } = new SemaphoreSlim(1, 1);
         public ServiceScopeContainer<ITranscriptionLiveService> ServiceScopeContainer { get; set; }
+        public string UserEmail { get; set; }
 
         private bool _disposed = false;
 

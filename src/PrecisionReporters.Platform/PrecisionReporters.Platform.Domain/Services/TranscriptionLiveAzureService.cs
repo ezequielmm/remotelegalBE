@@ -35,7 +35,9 @@ namespace PrecisionReporters.Platform.Domain.Services
         private User _instanceUser;
         private Participant _instanceParticipant;
 
+        private AudioStreamFormat _audioStreamFormat;
         private PushAudioInputStream _audioInputStream;
+        private AudioConfig _audioConfig;
         private SpeechRecognizer _recognizer;
         private bool _continuousRecognitionStopped = false;
 
@@ -58,7 +60,6 @@ namespace PrecisionReporters.Platform.Domain.Services
             _participantRepository = participantRepository;
         }
 
-
         public async Task StartRecognitionAsync(string userEmail, string depositionId, int sampleRate)
         {
             _logger.LogInformation("Starting continuous recognition. Deposition: {DepositionId}. User: {UserEmail}. Sample rate: {SampleRate}.",
@@ -68,15 +69,16 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             const int bitsPerSample = 16;
             const int channelCount = 1;
-            _audioInputStream = AudioInputStream.CreatePushStream(AudioStreamFormat.GetWaveFormatPCM(Convert.ToUInt16(sampleRate), bitsPerSample, channelCount));
-            var audioConfig = AudioConfig.FromStreamInput(_audioInputStream);
+            _audioStreamFormat = AudioStreamFormat.GetWaveFormatPCM(Convert.ToUInt16(sampleRate), bitsPerSample, channelCount);
+            _audioInputStream = AudioInputStream.CreatePushStream(_audioStreamFormat);
+            _audioConfig = AudioConfig.FromStreamInput(_audioInputStream);
             var speechConfig = SpeechConfig.FromSubscription(_azureConfiguration.SubscriptionKey, _azureConfiguration.RegionCode);
             speechConfig.SpeechRecognitionLanguage = "en-US";
             speechConfig.RequestWordLevelTimestamps();
             speechConfig.OutputFormat = OutputFormat.Detailed;
             speechConfig.EnableDictation();
 
-            _recognizer = new SpeechRecognizer(speechConfig, audioConfig);
+            _recognizer = new SpeechRecognizer(speechConfig, _audioConfig);
             _recognizer.Recognizing += OnSpeechRecognizerRecognizing;
             _recognizer.Recognized += OnSpeechRecognizerRecognized;
             _recognizer.SessionStopped += OnSpeechRecognizerSessionStopped;
@@ -273,8 +275,10 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             if (disposing)
             {
-                _recognizer?.Dispose();
+                _audioStreamFormat?.Dispose();
                 _audioInputStream?.Dispose();
+                _audioConfig?.Dispose();
+                _recognizer?.Dispose();
             }
 
             _disposed = true;
