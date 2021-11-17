@@ -33,6 +33,10 @@ namespace PrecisionReporters.Platform.Data
         public DbSet<DeviceInfo> DevicesInfo { get; set; }
         public DbSet<SystemSettings> SystemSettings { get; set; }
         public DbSet<TwilioParticipant> TwilioParticipant { get; set; }
+        public DbSet<TwilioAudioRecording> TwilioAudioRecordings { get; set; }
+        public DbSet<AzureMediaServiceJob> AzureMediaServiceJobs { get; set; }
+        public DbSet<PostProcessTranscription> PostProcessTranscriptions { get; set; }
+
         public ApplicationDbContext(DbContextOptions options) : base(options) { }
 
         public ApplicationDbContext() { }
@@ -108,6 +112,10 @@ namespace PrecisionReporters.Platform.Data
             modelBuilder.Entity<SystemSettings>()
                .Property(x => x.Name)
                .HasConversion(new EnumToStringConverter<SystemSettingsName>());
+
+            modelBuilder.Entity<TwilioAudioRecording>()
+               .Property(x => x.TranscriptionStatus)
+               .HasConversion(new EnumToStringConverter<RecordingTranscriptionStatus>());
 
             // Seeds
             modelBuilder.SeedRoles();
