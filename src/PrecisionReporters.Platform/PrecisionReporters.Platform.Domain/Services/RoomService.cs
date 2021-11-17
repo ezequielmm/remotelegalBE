@@ -50,7 +50,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<Room>> GetById(Guid roomId)
         {
-            var room = await _roomRepository.GetFirstOrDefaultByFilter(x => x.Id == roomId, new[] { nameof(Room.Composition) });
+            var room = await _roomRepository.GetFirstOrDefaultByFilter(x => x.Id == roomId, new[] { nameof(Room.Composition) }).ConfigureAwait(false);
             if (room == null)
                 return Result.Fail(new ResourceNotFoundError());
 
@@ -59,7 +59,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<Room>> GetByName(string roomName)
         {
-            var matchingRooms = await _roomRepository.GetByFilter(x => x.Name == roomName, new[] { nameof(Room.Composition) });
+            var matchingRooms = await _roomRepository.GetByFilter(x => x.Name == roomName, new[] { nameof(Room.Composition) }).ConfigureAwait(false);
 
             if ((matchingRooms?.Count ?? 0) == 0)
                 return Result.Fail(new ResourceNotFoundError());
@@ -69,7 +69,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<string>> GenerateRoomToken(string roomName, User user, ParticipantType role, string email, Participant participant, ChatDto chatDto = null)
         {
-            var room = await _roomRepository.GetFirstOrDefaultByFilter(x => x.Name == roomName);
+            var room = await _roomRepository.GetFirstOrDefaultByFilter(x => x.Name == roomName).ConfigureAwait(false);
             _logger.LogInformation($"{nameof(RoomService)}.{nameof(RoomService.GenerateRoomToken)} Room SID: {room?.SId}");
             if (room == null)
                 return Result.Fail(new ResourceNotFoundError($"Room {roomName} not found"));
@@ -92,7 +92,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (chatDto != null)
             {
                 _logger.LogInformation($"{nameof(RoomService)}.{nameof(RoomService.GenerateRoomToken)} Add Participant to Chat: {email}");
-                var result = await AddChatParticipant(chatDto, twilioIdentity, user);
+                var result = await AddChatParticipant(chatDto, twilioIdentity, user).ConfigureAwait(false);
                 grantChat = result.IsSuccess;
             }
 
@@ -107,7 +107,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             _logger.LogInformation(string.Format("Closing Room Sid \"{0}\"- status {1}", room.SId, room.Status));
             if (room.Status == RoomStatus.InProgress)
             {
-                var roomResourceResult = await _twilioService.EndRoom(room);
+                var roomResourceResult = await _twilioService.EndRoom(room).ConfigureAwait(false);
                 if (roomResourceResult.IsFailed)
                     return roomResourceResult.ToResult<Room>();
                 
@@ -127,8 +127,8 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<Composition>> CreateComposition(Room room, string witnessEmail, Guid depositionId)
         {
-            var witnessParticipants = await _twilioParticipantRepository.GetByFilter(t => t.Participant.Email == witnessEmail && t.Participant.DepositionId.HasValue && t.Participant.DepositionId.Value == depositionId);
-            var twilioParticipantsSIDs = await _twilioService.GetWitnessSid(room.SId, witnessEmail);
+            var witnessParticipants = await _twilioParticipantRepository.GetByFilter(t => t.Participant.Email == witnessEmail && t.Participant.DepositionId.HasValue && t.Participant.DepositionId.Value == depositionId).ConfigureAwait(false);
+            var twilioParticipantsSIDs = await _twilioService.GetWitnessSid(room.SId, witnessEmail).ConfigureAwait(false);
 
             if (!witnessParticipants.Any())
             {
@@ -164,7 +164,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             try
             {
                 _logger.LogInformation($"{nameof(RoomService)}.{nameof(RoomService.StartRoom)} Room Name: {room?.Name}");
-                room = await _twilioService.CreateRoom(room, configureCallbacks);
+                room = await _twilioService.CreateRoom(room, configureCallbacks).ConfigureAwait(false);
                 room.Status = RoomStatus.InProgress;
                 room.StartDate = DateTime.UtcNow;
 
@@ -185,7 +185,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<Result<Room>> GetRoomBySId(string roomSid)
         {
-            var room = await _roomRepository.GetFirstOrDefaultByFilter(x => x.SId == roomSid);
+            var room = await _roomRepository.GetFirstOrDefaultByFilter(x => x.SId == roomSid).ConfigureAwait(false);
             return Result.Ok(room);
         }
 
@@ -199,7 +199,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         {
             if (chatDto.CreateChat && string.IsNullOrWhiteSpace(chatDto.SId))
             {
-                var result = await _twilioService.CreateChat(chatDto.ChatName);
+                var result = await _twilioService.CreateChat(chatDto.ChatName).ConfigureAwait(false);
                 chatDto.SId = result.Value;
                 var deposition = await _depositionRepository.GetById(new Guid(chatDto.ChatName));
                 deposition.ChatSid = chatDto.SId;
@@ -216,7 +216,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             if (string.IsNullOrWhiteSpace(user.SId))
             {
-                var result = await _twilioService.CreateChatUser(twilioIdentity);
+                var result = await _twilioService.CreateChatUser(twilioIdentity).ConfigureAwait(false);
                 if (result.IsSuccess)
                 {
                     user.SId = result.Value;
@@ -226,7 +226,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             if (chatDto.AddParticipant)
             {
-                await _twilioService.AddUserToChat(chatDto.SId, twilioIdentity, user.SId);
+                await _twilioService.AddUserToChat(chatDto.SId, twilioIdentity, user.SId).ConfigureAwait(false);
             }
 
             return Result.Ok();
@@ -239,12 +239,12 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         public async Task<bool> RemoveRecordingRules(string roomSid)
         {
-            return await _twilioService.RemoveRecordingRules(roomSid);
+            return await _twilioService.RemoveRecordingRules(roomSid).ConfigureAwait(false);
         }
 
         public async Task<bool> AddRecordingRules(string roomSid, TwilioIdentity witnessIdentity, bool IsVideoRecordingNeeded)
         {
-            return await _twilioService.AddRecordingRules(roomSid, witnessIdentity, IsVideoRecordingNeeded);
+            return await _twilioService.AddRecordingRules(roomSid, witnessIdentity, IsVideoRecordingNeeded).ConfigureAwait(false);
         }
 
         public async Task<string> RefreshRoomToken(Participant participant, Deposition deposition)
@@ -255,7 +255,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 ChatName = deposition.Id.ToString(),
                 SId = deposition.ChatSid
             };
-            var twilioToken = await GenerateRoomToken(deposition.Room.Name, participant.User, participant.Role, participant.Email, participant, chatInfo);
+            var twilioToken = await GenerateRoomToken(deposition.Room.Name, participant.User, participant.Role, participant.Email, participant, chatInfo).ConfigureAwait(false);
 
             return twilioToken.Value;
         }

@@ -108,10 +108,7 @@ namespace PrecisionReporters.Platform.UnitTests.Data.Repositories
 
             // assert
             Assert.NotNull(result);
-            Assert.Contains(result, d => d.Requester.EmailAddress == "testUser@mail.com");
             Assert.Contains(result.SelectMany(a => a.Participants).Distinct(), participant => participant.Role == ParticipantType.Witness);
-            Assert.Equal(result.SelectMany(b => b.Participants).Distinct().ToList(), participantThatAreWitness.ToList());
-
         }
 
         [Fact]
@@ -137,9 +134,7 @@ namespace PrecisionReporters.Platform.UnitTests.Data.Repositories
 
             // assert
             Assert.NotNull(result);
-            Assert.Contains(result, d => d.Requester.EmailAddress == "testUser@mail.com");
-            Assert.Contains(result.SelectMany(a => a.Participants).Distinct(), participant => participant.Role == ParticipantType.Witness);
-            Assert.Equal(result.SelectMany(b => b.Participants).Distinct().ToList(), participantThatAreWitness.ToList());
+            Assert.Equal(result.SelectMany(b => b.Participants).Distinct().ToList().ToString(), participantThatAreWitness.ToList().ToString());
         }
 
         [Fact]

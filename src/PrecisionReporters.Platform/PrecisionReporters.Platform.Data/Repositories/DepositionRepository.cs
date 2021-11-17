@@ -19,7 +19,7 @@ namespace PrecisionReporters.Platform.Data.Repositories
         public async Task<List<Deposition>> GetByStatus(Expression<Func<Deposition, object>> orderBy, SortDirection sortDirection,
             Expression<Func<Deposition, bool>> filter = null, string[] include = null, Expression<Func<Deposition, object>> orderByThen = null)
         {
-            IQueryable<Deposition> query = _dbContext.Set<Deposition>();
+            IQueryable<Deposition> query = _dbContext.Set<Deposition>().AsNoTracking();
             IQueryable<Deposition> result;
 
             if (include != null)
@@ -53,23 +53,15 @@ namespace PrecisionReporters.Platform.Data.Repositories
             return await result.ToListAsync();
         }
 
-        public async Task<List<Deposition>> GetDepositionWithAdmittedParticipant(IQueryable<Deposition> depositions)
+        public Task<List<Deposition>> GetDepositionWithAdmittedParticipant(IQueryable<Deposition> depositions)
         {
-            IQueryable<Participant> participants = _dbContext.Set<Participant>().AsNoTracking();
+            var deposWithParticipants = depositions
+                .Where(d => d.Participants.Any(p => p.IsAdmitted.Value && p.DepositionId == d.Id))
+                .Include(d => d.Participants)
+                .AsNoTracking()
+                .ToListAsync();
 
-            var result = from d in depositions.AsNoTracking()
-                         join p in participants.Where(x => x.IsAdmitted == true)
-                              on d.Id equals p.DepositionId
-                         select new { d, p };
-
-            var filterParticipant = result.Select(x => x.p).ToList();
-
-            foreach (var item in depositions)
-            {
-                item.Participants = filterParticipant.Where(p => p.DepositionId == item.Id).ToList();
-            }
-
-            return await depositions.ToListAsync();
+            return deposWithParticipants;
         }
     }
 }

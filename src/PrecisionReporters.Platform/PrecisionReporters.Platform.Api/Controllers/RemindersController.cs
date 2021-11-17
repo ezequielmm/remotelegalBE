@@ -39,7 +39,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
             // avoid subscribe and validate message on Service layer
             _logger.LogInformation($"Init reminder method");
             string content;
-            using (var reader = new StreamReader(Request.Body)) { content = await reader.ReadToEndAsync(); }
+            using (var reader = new StreamReader(Request.Body)) { content = await reader.ReadToEndAsync().ConfigureAwait(false); }
 
             var message = _awsSnsWrapper.ParseMessage(content);
 
@@ -48,14 +48,14 @@ namespace PrecisionReporters.Platform.Api.Controllers
 
             if (message.IsSubscriptionType)
             {
-                var result = await _snsHelper.SubscribeEndpoint(message.SubscribeURL);
+                var result = await _snsHelper.SubscribeEndpoint(message.SubscribeURL).ConfigureAwait(false);
                 if (result.IsFailed)
                     _logger.LogError($"There was an error subscribing URL, {result}");
             }
 
             try
             {
-                await _reminderService.SendReminder();
+                await _reminderService.SendReminder().ConfigureAwait(false);
             }
             catch (Exception e)
             {
@@ -74,7 +74,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
             // avoid subscribe and validate message on Service layer
             _logger.LogInformation($"Init daily reminder method");
             string content;
-            using (var reader = new StreamReader(Request.Body)) { content = await reader.ReadToEndAsync(); }
+            using (var reader = new StreamReader(Request.Body)) { content = await reader.ReadToEndAsync().ConfigureAwait(false); }
 
             var message = _awsSnsWrapper.ParseMessage(content);
 
@@ -83,7 +83,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
 
             if (message.IsSubscriptionType)
             {
-                var result = await _snsHelper.SubscribeEndpoint(message.SubscribeURL);
+                var result = await _snsHelper.SubscribeEndpoint(message.SubscribeURL).ConfigureAwait(false);
                 if (result.IsFailed)
                     _logger.LogError($"There was an error subscribing URL, {result}");
             }
