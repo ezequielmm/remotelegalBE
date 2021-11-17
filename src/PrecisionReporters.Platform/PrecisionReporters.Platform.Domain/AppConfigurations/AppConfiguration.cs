@@ -23,5 +23,6 @@ namespace PrecisionReporters.Platform.Domain
         public DepositionConfiguration DepositionConfiguration { get; set; }
         public ReminderConfiguration ReminderConfiguration { get; set; }
         public LocalStackConfiguration LocalStackConfiguration { get; set; }
+        public EmailTemplateNames EmailTemplateNames { get; set; }
     }
 }

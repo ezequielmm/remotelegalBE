@@ -22,17 +22,20 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly UrlPathConfiguration _urlPathConfiguration;
         private readonly EmailConfiguration _emailConfiguration;
         private readonly ILogger<ActivityHistoryService> _logger;
+        private readonly EmailTemplateNames _emailTemplateNames;
 
         public ActivityHistoryService(IActivityHistoryRepository activityHistoryRepository, IAwsEmailService awsEmailService,
             IOptions<UrlPathConfiguration> urlPathConfiguration,
             IOptions<EmailConfiguration> emailConfiguration,
-            ILogger<ActivityHistoryService> logger)
+            ILogger<ActivityHistoryService> logger,
+            IOptions<EmailTemplateNames> emailTemplateNames)
         {
             _activityHistoryRepository = activityHistoryRepository;
             _awsEmailService = awsEmailService;
             _urlPathConfiguration = urlPathConfiguration.Value;
             _emailConfiguration = emailConfiguration.Value;
             _logger = logger;
+            _emailTemplateNames = emailTemplateNames.Value;
         }
 
         public async Task<Result> AddActivity(ActivityHistory activity, User user, Deposition deposition)
@@ -53,7 +56,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 var caseName = $"<b>{deposition.Case.Name}</b>";
 
                 if (!string.IsNullOrEmpty(witness?.Name))
-                { 
+                {
                     subject = $"{witness.GetFullName()} - {deposition.Case.Name} - {startDateFormatted}";
                     caseName = $"<b>{witness.GetFullName()}</b> in the case of <b>{caseName}</b>";
                 }
@@ -74,7 +77,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                                 { "logo", $"{_emailConfiguration.ImagesUrl}{_emailConfiguration.LogoImageName}"},
                                 { "sign-up-link", $"{_urlPathConfiguration.FrontendBaseUrl}sign-up"},
                             },
-                    TemplateName = ApplicationConstants.ActivityTemplateName
+                    TemplateName = _emailTemplateNames.ActivityEmail
                 };
 
                 await _awsEmailService.SetTemplateEmailRequest(template, _emailConfiguration.EmailNotification);
@@ -83,7 +86,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             {
                 _logger.LogError(ex, "Unable to add activity");
             }
-            
+
             return Result.Ok();
         }
 
@@ -91,7 +94,8 @@ namespace PrecisionReporters.Platform.Domain.Services
         {
             try
             {
-                var activityHistory = new ActivityHistory() {
+                var activityHistory = new ActivityHistory()
+                {
                     Action = ActivityHistoryAction.SetSystemInfo,
                     ActionDetails = string.Empty,
                     ActivityDate = DateTime.UtcNow,

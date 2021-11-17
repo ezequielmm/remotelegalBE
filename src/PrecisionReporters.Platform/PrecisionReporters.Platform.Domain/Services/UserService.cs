@@ -35,7 +35,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IMapper<User, UserDto, CreateUserDto> _userMapper;
         private readonly ILogger<UserService> _logger;
-
+        private readonly EmailTemplateNames _emailTemplateNames;
 
         public UserService(ILogger<UserService> log,
             IUserRepository userRepository,
@@ -46,7 +46,8 @@ namespace PrecisionReporters.Platform.Domain.Services
             IOptions<UrlPathConfiguration> urlPathConfiguration,
             IOptions<VerificationLinkConfiguration> verificationLinkConfiguration,
             IHttpContextAccessor httpContextAccessor, IMapper<User, UserDto, CreateUserDto> userMapper,
-            ILogger<UserService> logger)
+            ILogger<UserService> logger,
+            IOptions<EmailTemplateNames> emailTemplateNames)
         {
             _log = log;
             _userRepository = userRepository;
@@ -59,6 +60,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             _httpContextAccessor = httpContextAccessor;
             _userMapper = userMapper;
             _logger = logger;
+            _emailTemplateNames = emailTemplateNames.Value;
         }
 
         public async Task<Result<User>> SignUpAsync(User user)
@@ -174,14 +176,14 @@ namespace PrecisionReporters.Platform.Domain.Services
             Expression<Func<User, object>> orderByThen = x => x.FirstName;
             Expression<Func<IQueryable<User>, IOrderedQueryable<User>>> orderByQuery = null;
 
-                if (filterDto.SortDirection == null || filterDto.SortDirection == SortDirection.Ascend)
-                {
-                    orderByQuery = d => d.OrderBy(orderBy).ThenBy(orderByThen);
-                }
-                else
-                {
-                    orderByQuery = d => d.OrderByDescending(orderBy).ThenByDescending(orderByThen);
-                }
+            if (filterDto.SortDirection == null || filterDto.SortDirection == SortDirection.Ascend)
+            {
+                orderByQuery = d => d.OrderBy(orderBy).ThenBy(orderByThen);
+            }
+            else
+            {
+                orderByQuery = d => d.OrderByDescending(orderBy).ThenByDescending(orderByThen);
+            }
             return orderByQuery;
         }
 
@@ -233,7 +235,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
         private EmailTemplateInfo GetTemplate(User user, VerifyUser verifyUser)
         {
-            var template = new EmailTemplateInfo { EmailTo = new List<string> { user.EmailAddress }, TemplateName = verifyUser.VerificationType.GetDescription() };
+            var template = new EmailTemplateInfo { EmailTo = new List<string> { user.EmailAddress } };
 
             switch (verifyUser.VerificationType)
             {
@@ -243,6 +245,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                             { "user-name", user.FirstName },
                             { "verification-link",  $"{_urlPathConfiguration.FrontendBaseUrl}{_urlPathConfiguration.VerifyUserUrl}{verifyUser.Id}" }
                         };
+                    template.TemplateName = _emailTemplateNames.VerificationEmail;
                     break;
                 case VerificationType.ForgotPassword:
                     template.TemplateData = new Dictionary<string, string>
@@ -250,6 +253,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                             { "user-name", user.FirstName },
                             { "resetpassword-link",  $"{_urlPathConfiguration.FrontendBaseUrl}{_urlPathConfiguration.ForgotPasswordUrl}{verifyUser.Id}" }
                         };
+                    template.TemplateName = _emailTemplateNames.ForgotPasswordEmail;
                     break;
             }
 

@@ -78,6 +78,16 @@ namespace PrecisionReporters.Platform.Domain
             services.Configure<DepositionConfiguration>(x => { x.MinimumReScheduleSeconds = appConfiguration.DepositionConfiguration.MinimumReScheduleSeconds; });
             services.Configure<DepositionConfiguration>(x => { x.DepositionScheduleRestrictionHours = appConfiguration.DepositionConfiguration.DepositionScheduleRestrictionHours; });
 
+            services.Configure<EmailTemplateNames>(x => { x.VerificationEmail = appConfiguration.EmailTemplateNames.VerificationEmail; });
+            services.Configure<EmailTemplateNames>(x => { x.ForgotPasswordEmail = appConfiguration.EmailTemplateNames.ForgotPasswordEmail; });
+            services.Configure<EmailTemplateNames>(x => { x.DownloadCertifiedTranscriptEmail = appConfiguration.EmailTemplateNames.DownloadCertifiedTranscriptEmail; });
+            services.Configure<EmailTemplateNames>(x => { x.DownloadAssetsEmail = appConfiguration.EmailTemplateNames.DownloadAssetsEmail; });
+            services.Configure<EmailTemplateNames>(x => { x.JoinDepositionEmail = appConfiguration.EmailTemplateNames.JoinDepositionEmail; });
+            services.Configure<EmailTemplateNames>(x => { x.ActivityEmail = appConfiguration.EmailTemplateNames.ActivityEmail; });
+            services.Configure<EmailTemplateNames>(x => { x.CancelDepositionEmail = appConfiguration.EmailTemplateNames.CancelDepositionEmail; });
+            services.Configure<EmailTemplateNames>(x => { x.ReScheduleDepositionEmail = appConfiguration.EmailTemplateNames.ReScheduleDepositionEmail; });
+            services.Configure<EmailTemplateNames>(x => { x.DepositionReminderEmail = appConfiguration.EmailTemplateNames.DepositionReminderEmail; });
+
             // Authorization
             services.AddScoped<IAuthorizationHandler, UserAuthorizeHandler>();
             services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
@@ -220,6 +230,6 @@ namespace PrecisionReporters.Platform.Domain
             }
         }
     }
-    
+
 
 }

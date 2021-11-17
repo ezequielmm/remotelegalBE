@@ -3,7 +3,6 @@
     public static class ApplicationConstants
     {
         public const string VerificationCodeException = "Verification Code is already used or out of date.";
-        public const string VerificationEmailTemplate = "VerificationEmailTemplate";
         public const string RoomExistError = "Room exists";
         public const string DraftTranscriptPDFTemplateName = "rough-draft-transcript-template.pdf";
         public const string DraftTranscriptWordTemplateName = "rough-draft-transcript-template.docx";
@@ -21,10 +20,6 @@
         public const string WordExtension = ".docx";
         //TODO: unify ".mp4" and "mp4" constants
         public const string Mp4Extension = ".mp4";
-        public const string ActivityTemplateName = "ActivityEmailTemplate";
-        public const string CancelDepositionEmailTemplate = "CancelDepositionEmailTemplate";
-        public const string ReScheduleDepositionEmailTemplate = "ReScheduleDepositionEmailTemplate";
-        public const string DepositionReminderEmailTemplate = "DepositionReminderEmailTemplate";
         public const string ZipExtension = ".zip";
         public const int DefaultSampleRate = 48000;
         public const string UserIdExhibitsMetadata = "x-amz-meta-user-id";

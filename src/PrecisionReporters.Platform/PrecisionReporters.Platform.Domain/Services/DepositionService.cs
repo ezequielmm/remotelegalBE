@@ -28,8 +28,6 @@ namespace PrecisionReporters.Platform.Domain.Services
     {
         private const int DEFAULT_BREAK_ROOMS_AMOUNT = 4;
         private const string BREAK_ROOM_PREFIX = "BREAK_ROOM";
-        private const string DOWNLOAD_TRANSCRIPT_TEMPLATE = "DownloadCertifiedTranscriptEmailTemplate";
-        private const string DOWNLOAD_ASSETS_TEMPLATE = "DownloadAssetsEmailTemplate";
         private readonly IDepositionRepository _depositionRepository;
         private readonly IParticipantRepository _participantRepository;
         private readonly IDepositionEventRepository _depositionEventRepository;
@@ -55,11 +53,12 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly IActivityHistoryService _activityHistoryService;
         private readonly IDepositionEmailService _depositionEmailService;
         private readonly CognitoConfiguration _cognitoConfiguration;
+        private readonly EmailTemplateNames _emailTemplateNames;
 
         public DepositionService(IDepositionRepository depositionRepository,
             IParticipantRepository participantRepository,
             IDepositionEventRepository depositionEventRepository,
-            ISystemSettingsRepository systemSettingsRepository, 
+            ISystemSettingsRepository systemSettingsRepository,
             IUserService userService,
             IRoomService roomService,
             IBreakRoomService breakRoomService,
@@ -80,7 +79,8 @@ namespace PrecisionReporters.Platform.Domain.Services
             IMapper<BreakRoom, BreakRoomDto, object> breakRoomMapper,
             IActivityHistoryService activityHistoryService,
             IDepositionEmailService depositionEmailService,
-            IOptions<CognitoConfiguration> cognitoConfiguration)
+            IOptions<CognitoConfiguration> cognitoConfiguration,
+            IOptions<EmailTemplateNames> emailTemplateNames)
         {
             _awsStorageService = awsStorageService;
             _documentsConfiguration = documentConfigurations.Value ?? throw new ArgumentException(nameof(documentConfigurations));
@@ -107,6 +107,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             _activityHistoryService = activityHistoryService;
             _depositionEmailService = depositionEmailService;
             _cognitoConfiguration = cognitoConfiguration.Value;
+            _emailTemplateNames = emailTemplateNames.Value;
         }
 
         public async Task<List<Deposition>> GetDepositions(Expression<Func<Deposition, bool>> filter = null,
@@ -174,7 +175,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 var participants = await GetDepositionParticipants(deposition);
                 foreach (var participant in participants)
                 {
-                    if (participant.User == null) 
+                    if (participant.User == null)
                         continue;
                     await _permissionService.AddRolesToParticipants(participant, deposition.Id);
                 }
@@ -186,7 +187,8 @@ namespace PrecisionReporters.Platform.Domain.Services
             var participantUsers = await _userService.GetUsersByFilter(x => deposition.Participants.Select(p => p.Email).Contains(x.EmailAddress));
             return deposition.Participants?
                         .Where(participant => !string.IsNullOrWhiteSpace(participant.Email))
-                        .Select(participant => {
+                        .Select(participant =>
+                        {
                             var user = participantUsers.Find(x => x.EmailAddress == participant.Email);
                             if (user != null)
                             {
@@ -466,12 +468,12 @@ namespace PrecisionReporters.Platform.Domain.Services
             {
                 var witness = deposition.Participants.FirstOrDefault(p => p.Role == ParticipantType.Witness);
                 var identity = new TwilioIdentity();
-                if(witness != null)
+                if (witness != null)
                 {
                     identity.Email = witness.Email;
                     identity.FirstName = witness.Name;
                     identity.LastName = !string.IsNullOrWhiteSpace(witness.LastName) ? witness.LastName : String.Empty;
-                    identity.Role = (int) witness.Role;
+                    identity.Role = (int)witness.Role;
                 }
 
                 _logger.LogInformation($"{nameof(DepositionService)}.{nameof(DepositionService.GoOnTheRecord)} Deposition is ON the record {depositionEvent.EventType}: in deposition {deposition.Id} with Witness {witness} Started by {userResult} with Twilio identity {identity}");
@@ -545,7 +547,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                     Role = ParticipantType.Admin
                 };
             }
-           return await _breakRoomService.JoinBreakRoom(breakRoomId, currentParticipant);
+            return await _breakRoomService.JoinBreakRoom(breakRoomId, currentParticipant);
         }
 
         public Task<Result> LeaveBreakRoom(Guid depositionId, Guid breakRoomId)
@@ -917,7 +919,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 participant.UserId = user.Id;
                 await _permissionService.AddParticipantPermissions(participant);
                 if (deposition.Status == DepositionStatus.Completed)
-                { 
+                {
                     await _permissionService.SetCompletedDepositionPermissions(participant, deposition.Id);
                 }
                 await _depositionRepository.Update(deposition);
@@ -1232,7 +1234,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                                 { "logo", $"{_emailConfiguration.ImagesUrl}{_emailConfiguration.LogoImageName}"},
                                 { "calendar", $"{_emailConfiguration.ImagesUrl}{_emailConfiguration.CalendarImageName}"}
                             },
-                            TemplateName = isEndDeposition ? DOWNLOAD_ASSETS_TEMPLATE : DOWNLOAD_TRANSCRIPT_TEMPLATE
+                            TemplateName = isEndDeposition ? _emailTemplateNames.DownloadAssetsEmail : _emailTemplateNames.DownloadCertifiedTranscriptEmail
                         };
 
                         await _awsEmailService.SetTemplateEmailRequest(template, _emailConfiguration.EmailNotification);
@@ -1456,7 +1458,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             var deposition = await _depositionRepository.GetById(depositionId);
             if (deposition == null)
                 return Result.Fail(new ResourceNotFoundError($"Could not find any deposition with Id {depositionId}"));
-            if(!deposition.SharingDocumentId.HasValue)
+            if (!deposition.SharingDocumentId.HasValue)
             {
                 _logger.LogWarning("There is no shared document for deposition {depositionId}", deposition.Id);
                 return Result.Fail($"There is no shared document for deposition {depositionId}");

@@ -25,6 +25,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         private readonly UrlPathConfiguration _urlPathConfiguration;
         private readonly Mock<ILogger<ActivityHistoryService>> _loggerMock;
         private readonly ActivityHistoryService _service;
+        private readonly EmailTemplateNames _emailTemplateNames;
+        private readonly Mock<IOptions<EmailTemplateNames>> _emailTemplateNamesMock;
         public ActivityHistoryServiceTests()
         {
             _activityRepositoryMock = new Mock<IActivityHistoryRepository>();
@@ -40,12 +42,17 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             _loggerMock = new Mock<ILogger<ActivityHistoryService>>();
 
+            _emailTemplateNames = new EmailTemplateNames { ActivityEmail = "TestEmailTemplate" };
+            _emailTemplateNamesMock = new Mock<IOptions<EmailTemplateNames>>();
+            _emailTemplateNamesMock.Setup(x => x.Value).Returns(_emailTemplateNames);
+
             _service = new ActivityHistoryService(
                 _activityRepositoryMock.Object,
                 _awsEmailServiceMock.Object,
                 _urlPathConfigurationMock.Object,
                 _emailConfigurationMock.Object,
-                _loggerMock.Object);
+                _loggerMock.Object,
+                _emailTemplateNamesMock.Object);
         }
 
         public void Dispose()

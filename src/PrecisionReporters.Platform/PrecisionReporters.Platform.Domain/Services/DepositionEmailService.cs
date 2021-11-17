@@ -24,15 +24,18 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly IAwsEmailService _awsEmailService;
         private readonly EmailConfiguration _emailConfiguration;
         private readonly ILoggingHelper _loggingHelper;
+        private readonly EmailTemplateNames _emailTemplateNames;
 
         public DepositionEmailService(IAwsEmailService awsEmailService,
             IOptions<UrlPathConfiguration> urlPathConfiguration,
             IOptions<EmailConfiguration> emailConfiguration,
-            ILoggingHelper loggingHelper)
+            ILoggingHelper loggingHelper,
+            IOptions<EmailTemplateNames> emailTemplateNames)
         {
             _awsEmailService = awsEmailService;
             _emailConfiguration = emailConfiguration.Value;
             _loggingHelper = loggingHelper;
+            _emailTemplateNames = emailTemplateNames.Value;
         }
         public async Task SendJoinDepositionEmailNotification(Deposition deposition)
         {
@@ -88,7 +91,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                                 { "calendar", GetImageUrl(_emailConfiguration.CalendarImageName) },
                                 { "depositionJoinLink", $"{_emailConfiguration.DepositionLink}{deposition.Id}"}
                             },
-                TemplateName = _emailConfiguration.JoinDepositionTemplate,
+                TemplateName = _emailTemplateNames.JoinDepositionEmail,
                 Calendar = CreateCalendar(deposition, CalendarAction.Add.GetDescription()),
                 AdditionalText = $"You can join by clicking the link: {_emailConfiguration.DepositionLink}{deposition.Id}",
                 Subject = $"Invitation: Remote Legal - {GetSubject(deposition)}"
@@ -110,7 +113,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                                 { "images-url",  _emailConfiguration.ImagesUrl },
                                 { "logo", GetImageUrl(_emailConfiguration.LogoImageName) }
                             },
-                TemplateName = ApplicationConstants.CancelDepositionEmailTemplate,
+                TemplateName = _emailTemplateNames.CancelDepositionEmail,
                 AdditionalText = string.Empty,
                 Calendar = CreateCalendar(deposition, CalendarAction.Cancel.GetDescription()),
                 Subject = $"Cancellation: Remote Legal - {GetSubject(deposition)}"
@@ -134,7 +137,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                                 { "logo", GetImageUrl(_emailConfiguration.LogoImageName) },
                                 { "deposition-join-link", $"{_emailConfiguration.DepositionLink}{deposition.Id}"}
                             },
-                TemplateName = ApplicationConstants.ReScheduleDepositionEmailTemplate,
+                TemplateName = _emailTemplateNames.ReScheduleDepositionEmail,
                 AdditionalText = $"You can join by clicking the link: {_emailConfiguration.DepositionLink}{deposition.Id}",
                 Calendar = CreateCalendar(deposition, CalendarAction.Update.GetDescription()),
                 Subject = $"Invitation update: Remote Legal - {GetSubject(deposition)}"
@@ -157,7 +160,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                                 { "calendar", GetImageUrl(_emailConfiguration.CalendarImageName) },
                                 { "depositionJoinLink", $"{_emailConfiguration.DepositionLink}{deposition.Id}"}
                             },
-                TemplateName = ApplicationConstants.DepositionReminderEmailTemplate,
+                TemplateName = _emailTemplateNames.DepositionReminderEmail,
                 AdditionalText = $"You can join by clicking the link: {_emailConfiguration.DepositionLink}{deposition.Id}",
                 Subject = $"Invitation reminder: Remote Legal - {GetSubject(deposition)}"
             };

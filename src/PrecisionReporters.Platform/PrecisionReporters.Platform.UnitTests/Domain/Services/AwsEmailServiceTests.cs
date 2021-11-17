@@ -32,7 +32,6 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             var emailConfiguration = new EmailConfiguration 
             { 
-                JoinDepositionTemplate = "foo",
                 Sender = "sender@mail.com",
                 EmailNotification = "notifications@mail.com",
                 LogoImageName = "fooImage",

@@ -26,6 +26,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         private readonly Mock<IOptions<EmailConfiguration>> _emailConfigurationMock;
         private readonly Mock<ILogger<DepositionEmailService>> _loggerMock;
         private readonly Mock<ILoggingHelper> _loggingHelperMock;
+        private readonly EmailTemplateNames _emailTemplateNames;
+        private readonly Mock<IOptions<EmailTemplateNames>> _emailTemplateNamesMock;
 
         public DepositionEmailServiceTests()
         {
@@ -41,7 +43,21 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _loggerMock = new Mock<ILogger<DepositionEmailService>>();
             _loggingHelperMock = new Mock<ILoggingHelper>();
 
-            _service = new DepositionEmailService(_awsEmailServiceMock.Object,_urlPathConfigurationMock.Object,_emailConfigurationMock.Object, _loggingHelperMock.Object);
+            _emailTemplateNames = new EmailTemplateNames
+            {
+                JoinDepositionEmail = "TestEmailTemplate",
+                CancelDepositionEmail = "TestEmailTemplate",
+                ReScheduleDepositionEmail = "TestEmailTemplate",
+                DepositionReminderEmail = "TestEmailTemplate"
+            };
+            _emailTemplateNamesMock = new Mock<IOptions<EmailTemplateNames>>();
+            _emailTemplateNamesMock.Setup(x => x.Value).Returns(_emailTemplateNames);
+
+            _service = new DepositionEmailService(_awsEmailServiceMock.Object,
+                _urlPathConfigurationMock.Object,
+                _emailConfigurationMock.Object,
+                _loggingHelperMock.Object,
+                _emailTemplateNamesMock.Object);
 
         }
 
@@ -52,7 +68,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var deposition = DepositionFactory.GetDeposition(Guid.NewGuid(), Guid.NewGuid());
             deposition.Case = new Case() { Name = "Test" };
             _awsEmailServiceMock.Setup(x => x.SendRawEmailNotification(It.IsAny<EmailTemplateInfo>()));
-            
+
             //Act
             await _service.SendJoinDepositionEmailNotification(deposition);
 

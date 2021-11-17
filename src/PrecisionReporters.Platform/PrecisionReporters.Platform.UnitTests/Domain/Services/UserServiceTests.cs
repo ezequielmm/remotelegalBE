@@ -29,11 +29,13 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
     {
         private readonly UrlPathConfiguration _urlPathConfiguration;
         private readonly VerificationLinkConfiguration _verificationLinkConfiguration;
+        private readonly EmailTemplateNames _emailTemplateNames;
 
         public UserServiceTests()
         {
             _urlPathConfiguration = ConfigurationFactory.GetUrlPathConfiguration();
             _verificationLinkConfiguration = ConfigurationFactory.GetVerificationLinkConfiguration();
+            _emailTemplateNames = new EmailTemplateNames { VerificationEmail = "TestEmailTemplate", ForgotPasswordEmail = "TestEmailTemplate" };
         }
 
         [Fact]
@@ -356,7 +358,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         {
             var users = new List<User>();
             users.AddRange(UserFactory.GetUserList());
-            var upcomingList = users.FindAll(x => x.IsGuest == false );
+            var upcomingList = users.FindAll(x => x.IsGuest == false);
             var usersResult = new Tuple<int, IEnumerable<User>>(upcomingList.Count, upcomingList.AsQueryable());
 
             var filter = new UserFilterDto
@@ -395,7 +397,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                It.IsAny<string[]>(),
                It.IsAny<int>(),
                It.IsAny<int>()
-                ),Times.Once);
+                ), Times.Once);
         }
 
         [Fact]
@@ -417,7 +419,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             // Arrange
             var userRepositoryMock = new Mock<IUserRepository>();
             var userServiceMock = new Mock<IUserService>();
-         
+
             userRepositoryMock
                 .Setup(mock => mock.GetByFilterPagination(
                    null,
@@ -574,7 +576,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 });
 
             var service = InitializeService(userRepository: userRepositoryMock, cognitoService: cognitoServiceMock
-                , transactionHandler: transactionHandlerMock, _userLogger : loggerMock);
+                , transactionHandler: transactionHandlerMock, _userLogger: loggerMock);
 
             // Act
             var result = await service.AddGuestUser(user);
@@ -929,6 +931,10 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var verificationLinkConfigurationMock = new Mock<IOptions<VerificationLinkConfiguration>>();
             var userMapperMock = _userMapper ?? new Mock<IMapper<User, UserDto, CreateUserDto>>();
             var userLogger = _userLogger ?? new Mock<ILogger<UserService>>();
+
+            var _emailTemplateNamesMock = new Mock<IOptions<EmailTemplateNames>>();
+            _emailTemplateNamesMock.Setup(x => x.Value).Returns(_emailTemplateNames);
+
             urlPathConfigurationMock.Setup(x => x.Value).Returns(_urlPathConfiguration);
             verificationLinkConfigurationMock.Setup(x => x.Value).Returns(_verificationLinkConfiguration);
 
@@ -943,7 +949,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 verificationLinkConfigurationMock.Object,
                 null,
                 userMapperMock.Object,
-                userLogger.Object);
+                userLogger.Object,
+                _emailTemplateNamesMock.Object);
         }
     }
 }

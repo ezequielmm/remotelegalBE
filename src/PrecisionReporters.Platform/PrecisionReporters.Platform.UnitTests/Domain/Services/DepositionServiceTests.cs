@@ -61,6 +61,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         private readonly Mock<IDepositionEmailService> _depositionEmailServiceMock;
         private readonly Mock<IOptions<CognitoConfiguration>> _cognitoConfigurationMock;
         private readonly CognitoConfiguration _cognitoConfiguration;
+        private readonly EmailTemplateNames _emailTemplateNames;
+        private readonly Mock<IOptions<EmailTemplateNames>> _emailTemplateNamesMock;
 
         private readonly List<Deposition> _depositions = new List<Deposition>();
 
@@ -126,6 +128,10 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _activityHistoryServiceMock = new Mock<IActivityHistoryService>();
             _depositionEmailServiceMock = new Mock<IDepositionEmailService>();
 
+            _emailTemplateNames = new EmailTemplateNames { DownloadAssetsEmail = "TestEmailTemplate", DownloadCertifiedTranscriptEmail = "TestEmailTemplate" };
+            _emailTemplateNamesMock = new Mock<IOptions<EmailTemplateNames>>();
+            _emailTemplateNamesMock.Setup(x => x.Value).Returns(_emailTemplateNames);
+
             _depositionService = new DepositionService(
                 _depositionRepositoryMock.Object,
                 _participantRepositoryMock.Object,
@@ -151,7 +157,8 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 _breakRoomMapperMock.Object,
                 _activityHistoryServiceMock.Object,
                 _depositionEmailServiceMock.Object,
-                _cognitoConfigurationMock.Object);
+                _cognitoConfigurationMock.Object,
+                _emailTemplateNamesMock.Object);
 
             _transactionHandlerMock.Setup(x => x.RunAsync(It.IsAny<Func<Task<Result<Deposition>>>>()))
                 .Returns(async (Func<Task<Result<Deposition>>> action) =>
