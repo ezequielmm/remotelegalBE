@@ -10,7 +10,7 @@
         public string ImagesUrl { get; set; }
         public string LogoImageName { get; set; }
         public string CalendarImageName { get; set; }
-        public string PreDepositionLink { get; set; }
+        public string DepositionLink { get; set; }
         public string JoinDepositionTemplate { get; set; }
         public string SenderLabel { get; set; }
         public string XSesConfigurationSetHeader { get; set; }

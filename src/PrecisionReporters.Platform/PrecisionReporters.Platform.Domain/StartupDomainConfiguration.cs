@@ -157,7 +157,7 @@ namespace PrecisionReporters.Platform.Domain
                 x.ImagesUrl = appConfiguration.EmailConfiguration.ImagesUrl;
                 x.LogoImageName = appConfiguration.EmailConfiguration.LogoImageName;
                 x.CalendarImageName = appConfiguration.EmailConfiguration.CalendarImageName;
-                x.PreDepositionLink = appConfiguration.EmailConfiguration.PreDepositionLink;
+                x.DepositionLink = appConfiguration.EmailConfiguration.DepositionLink;
                 x.JoinDepositionTemplate = appConfiguration.EmailConfiguration.JoinDepositionTemplate;
                 x.SenderLabel = appConfiguration.EmailConfiguration.SenderLabel;
                 x.XSesConfigurationSetHeader = appConfiguration.EmailConfiguration.XSesConfigurationSetHeader;

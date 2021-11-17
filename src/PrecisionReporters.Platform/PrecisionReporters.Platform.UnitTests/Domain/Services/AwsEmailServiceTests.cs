@@ -38,7 +38,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 LogoImageName = "fooImage",
                 ImagesUrl = "imageUrl",
                 CalendarImageName = "calendarImageUrl",
-                PreDepositionLink = "someLink",
+                DepositionLink = "someLink",
                 XSesConfigurationSetHeader= "configset-open"
             };
             _emailConfigurationMock = new Mock<IOptions<EmailConfiguration>>();

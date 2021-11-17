@@ -86,8 +86,8 @@
                     "value": "https://prp-dev.prdevelopment.net/email/images/"
                 },
                 {
-                    "name": "AppConfiguration__EmailConfiguration__PreDepositionLink",
-                    "value": "https://prp-dev.prdevelopment.net/deposition/pre-join/"
+                    "name": "AppConfiguration__EmailConfiguration__DepositionLink",
+                    "value": "https://prp-dev.prdevelopment.net/deposition/join/"
                 },
                 {
                     "name": "AppConfiguration__EmailConfiguration__SesRegion",

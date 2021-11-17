@@ -78,8 +78,8 @@
                     "value": "https://prp-performance.prdevelopment.net/email/images/"
                 },
                 {
-                    "name": "AppConfiguration__EmailConfiguration__PreDepositionLink",
-                    "value": "https://prp-performance.prdevelopment.net/deposition/pre-join/"
+                    "name": "AppConfiguration__EmailConfiguration__DepositionLink",
+                    "value": "https://prp-performance.prdevelopment.net/deposition/join/"
                 },
                 {
                     "name": "AppConfiguration__EmailConfiguration__XSesConfigurationSetHeader",

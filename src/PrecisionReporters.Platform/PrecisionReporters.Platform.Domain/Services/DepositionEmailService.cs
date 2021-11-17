@@ -86,11 +86,11 @@ namespace PrecisionReporters.Platform.Domain.Services
                                 { "case", GetDescriptionCase(deposition) },
                                 { "imageUrl",  GetImageUrl(_emailConfiguration.LogoImageName) },
                                 { "calendar", GetImageUrl(_emailConfiguration.CalendarImageName) },
-                                { "depositionJoinLink", $"{_emailConfiguration.PreDepositionLink}{deposition.Id}"}
+                                { "depositionJoinLink", $"{_emailConfiguration.DepositionLink}{deposition.Id}"}
                             },
                 TemplateName = _emailConfiguration.JoinDepositionTemplate,
                 Calendar = CreateCalendar(deposition, CalendarAction.Add.GetDescription()),
-                AdditionalText = $"You can join by clicking the link: {_emailConfiguration.PreDepositionLink}{deposition.Id}",
+                AdditionalText = $"You can join by clicking the link: {_emailConfiguration.DepositionLink}{deposition.Id}",
                 Subject = $"Invitation: Remote Legal - {GetSubject(deposition)}"
             };
 
@@ -132,10 +132,10 @@ namespace PrecisionReporters.Platform.Domain.Services
                                 { "case-name", GetDescriptionCase(deposition) },
                                 { "images-url",  _emailConfiguration.ImagesUrl },
                                 { "logo", GetImageUrl(_emailConfiguration.LogoImageName) },
-                                { "deposition-join-link", $"{_emailConfiguration.PreDepositionLink}{deposition.Id}"}
+                                { "deposition-join-link", $"{_emailConfiguration.DepositionLink}{deposition.Id}"}
                             },
                 TemplateName = ApplicationConstants.ReScheduleDepositionEmailTemplate,
-                AdditionalText = $"You can join by clicking the link: {_emailConfiguration.PreDepositionLink}{deposition.Id}",
+                AdditionalText = $"You can join by clicking the link: {_emailConfiguration.DepositionLink}{deposition.Id}",
                 Calendar = CreateCalendar(deposition, CalendarAction.Update.GetDescription()),
                 Subject = $"Invitation update: Remote Legal - {GetSubject(deposition)}"
             };
@@ -155,10 +155,10 @@ namespace PrecisionReporters.Platform.Domain.Services
                                 { "case", GetDescriptionCase(deposition) },
                                 { "imageUrl",  GetImageUrl(_emailConfiguration.LogoImageName) },
                                 { "calendar", GetImageUrl(_emailConfiguration.CalendarImageName) },
-                                { "depositionJoinLink", $"{_emailConfiguration.PreDepositionLink}{deposition.Id}"}
+                                { "depositionJoinLink", $"{_emailConfiguration.DepositionLink}{deposition.Id}"}
                             },
                 TemplateName = ApplicationConstants.DepositionReminderEmailTemplate,
-                AdditionalText = $"You can join by clicking the link: {_emailConfiguration.PreDepositionLink}{deposition.Id}",
+                AdditionalText = $"You can join by clicking the link: {_emailConfiguration.DepositionLink}{deposition.Id}",
                 Subject = $"Invitation reminder: Remote Legal - {GetSubject(deposition)}"
             };
 
@@ -209,10 +209,10 @@ namespace PrecisionReporters.Platform.Domain.Services
             {
                 Uid = deposition.Id.ToString(),
                 Summary = $"Invitation: Remote Legal - {strWitness}",
-                Description = $"{strWitness}{Environment.NewLine}{_emailConfiguration.PreDepositionLink}{deposition.Id}",
+                Description = $"{strWitness}{Environment.NewLine}{_emailConfiguration.DepositionLink}{deposition.Id}",
                 Start = new CalDateTime(deposition.StartDate.GetConvertedTime(deposition.TimeZone), timeZone.Id),
                 End = deposition.EndDate.HasValue ? new CalDateTime(deposition.EndDate.Value.GetConvertedTime(deposition.TimeZone), timeZone.Id) : null,
-                Location = $"{_emailConfiguration.PreDepositionLink}{deposition.Id}",
+                Location = $"{_emailConfiguration.DepositionLink}{deposition.Id}",
                 Organizer = new Organizer()
                 {
                     CommonName = _emailConfiguration.SenderLabel,

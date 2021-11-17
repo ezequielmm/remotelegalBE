@@ -104,7 +104,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _depositionConfigurationMock = new Mock<IOptions<DepositionConfiguration>>();
             _depositionConfigurationMock.Setup(x => x.Value).Returns(_depositionconfiguration);
 
-            _emailConfiguration = new EmailConfiguration { EmailNotification = "notifications@remotelegal.com", PreDepositionLink = "", LogoImageName = "", ImagesUrl = "" };
+            _emailConfiguration = new EmailConfiguration { EmailNotification = "notifications@remotelegal.com", DepositionLink = "", LogoImageName = "", ImagesUrl = "" };
             _emailConfigurationMock = new Mock<IOptions<EmailConfiguration>>();
             _emailConfigurationMock.Setup(x => x.Value).Returns(_emailConfiguration);
 

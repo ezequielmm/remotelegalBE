@@ -29,7 +29,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
         public DepositionEmailServiceTests()
         {
-            _emailConfiguration = new EmailConfiguration { EmailNotification = "notifications@remotelegal.com", PreDepositionLink = "", LogoImageName = "", ImagesUrl = "" };
+            _emailConfiguration = new EmailConfiguration { EmailNotification = "notifications@remotelegal.com", DepositionLink = "", LogoImageName = "", ImagesUrl = "" };
             _emailConfigurationMock = new Mock<IOptions<EmailConfiguration>>();
             _emailConfigurationMock.Setup(x => x.Value).Returns(_emailConfiguration);
 
