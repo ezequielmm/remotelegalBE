@@ -37,7 +37,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
         private readonly IMapper<Participant, AddParticipantDto, CreateGuestDto> _guestMapper;
         private readonly IMapper<UserSystemInfo, UserSystemInfoDto, object> _userSystemInfoMapper;
         private readonly IMapper<DeviceInfo, DeviceInfoDto, object> _userDeviceMapper;
-        private readonly IMapper<AwsSessionInfo, AwsInfoDto, object> _awsSessionInfoMapper;
+        private readonly IMapper<Participant, SignInUnverifiedUserDto, object> _unverifiedParticipantMapper;
 
         public DepositionsController(IDepositionService depositionService,
             IMapper<Deposition, DepositionDto, CreateDepositionDto> depositionMapper,
@@ -48,7 +48,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
             IMapper<Participant, ParticipantTechStatusDto, object> participantTechStatusMapper,
             IMapper<UserSystemInfo, UserSystemInfoDto, object> userSystemInfoMapper,
             IMapper<DeviceInfo, DeviceInfoDto, object> userDeviceMapper,
-            IMapper<AwsSessionInfo, AwsInfoDto, object> awsInfoMapper)
+            IMapper<Participant, SignInUnverifiedUserDto, object> unverifiedParticipantMapper)
         {
             _depositionService = depositionService;
             _depositionMapper = depositionMapper;
@@ -63,7 +63,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
             _participantTechStatusMapper = participantTechStatusMapper;
             _userSystemInfoMapper = userSystemInfoMapper;
             _userDeviceMapper = userDeviceMapper;
-            _awsSessionInfoMapper = awsInfoMapper;
+            _unverifiedParticipantMapper = unverifiedParticipantMapper;
         }
 
         [HttpGet]
@@ -294,6 +294,7 @@ namespace PrecisionReporters.Platform.Api.Controllers
             var participantValidation = new ParticipantValidationDto
             {
                 IsUser = participantResult.Value.Item2,
+                IsVerify = participantResult.Value.Item3,
                 Participant = participantResult.Value.Item1 != null ? _participantMapper.ToDto(participantResult.Value.Item1) : null
             };
 
@@ -568,6 +569,33 @@ namespace PrecisionReporters.Platform.Api.Controllers
                 return WebApiResponses.GetErrorResponse(result);
 
             return Ok(result);
+        }
+
+        /// <summary>
+        /// Login an Unverified user
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="unverifiedUser"></param>
+        /// <returns></returns>
+        [HttpPost("{id}/addUnVerifyParticipant")]
+        [AllowAnonymous]
+        public async Task<ActionResult<GuestToken>> JoinUnverifiedParticipant([ResourceId(ResourceType.Deposition)] Guid id, SignInUnverifiedUserDto unverifiedUser)
+        {
+            var publicIPAddress = HttpContext.Request.Headers["X-Forwarded-For"].ToString().Split(new[] { ',' }).FirstOrDefault();
+            var localIPAddress = HttpContext.Connection.RemoteIpAddress.MapToIPv4();
+            //TODO: Add mapper
+            var activity = new ActivityHistory
+            {
+                Browser = unverifiedUser.Browser,
+                Device = unverifiedUser.Device,
+                IPAddress = string.IsNullOrWhiteSpace(publicIPAddress) ? localIPAddress.ToString() : publicIPAddress
+            };
+
+            var tokenResult = await _depositionService.JoinUnverifiedParticipant(id, _unverifiedParticipantMapper.ToModel(unverifiedUser), activity);
+            if (tokenResult.IsFailed)
+                return WebApiResponses.GetErrorResponse(tokenResult);
+
+            return Ok(tokenResult.Value);
         }
     }
 }

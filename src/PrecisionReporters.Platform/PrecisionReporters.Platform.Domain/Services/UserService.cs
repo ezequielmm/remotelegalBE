@@ -19,6 +19,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using PrecisionReporters.Platform.Domain.Enums;
 
 namespace PrecisionReporters.Platform.Domain.Services
 {
@@ -315,6 +316,21 @@ namespace PrecisionReporters.Platform.Domain.Services
             }
         }
 
+        public async Task DisableUnverifiedParticipants(List<Participant> participants)
+        {
+            foreach (var participant in participants?.Where(x => x.User != null && !x.User.IsGuest))
+            {
+                if (await CheckUserIsVerified(participant.Email))
+                    continue;
+
+                var userCognitoGroupList = await _cognitoService.GetUserCognitoGroupList(participant.Email);
+                if (userCognitoGroupList.IsSuccess && userCognitoGroupList.Value.Contains(CognitoGroup.UnverifiedUsers))
+                {
+                    await _cognitoService.DisableUser(participant.User);
+                }
+            }
+        }
+
         public async Task<Result> ForgotPassword(ForgotPasswordDto forgotPasswordDto)
         {
             var userResult = await GetUserByEmail(forgotPasswordDto.Email);
@@ -394,5 +410,32 @@ namespace PrecisionReporters.Platform.Domain.Services
             return Result.Ok(updatedUser);
         }
 
+        public async Task<bool> CheckUserIsVerified(string emailAddress)
+        {
+            var isVerified = false;
+            var transactionResult = await _transactionHandler.RunAsync(async () =>
+            {
+                var verifyUser = await _verifyUserService.GetVerifyUserByEmail(emailAddress);
+                if (verifyUser == null)
+                {
+                    var userCognitoGroupList = await _cognitoService.GetUserCognitoGroupList(emailAddress);
+                    isVerified = userCognitoGroupList.IsSuccess && !userCognitoGroupList.Value.Contains(CognitoGroup.UnverifiedUsers);
+                }
+                else
+                {
+                    isVerified = verifyUser.IsUsed;
+                }
+            });
+
+            return transactionResult.IsSuccess && isVerified;
+        }
+
+        public async Task<Result<GuestToken>> LoginUnverifiedAsync(User unverifiedUser)
+        {
+            if (unverifiedUser.IsGuest)
+                return Result.Fail(new InvalidInputError("Invalid user"));
+
+            return await _cognitoService.LoginUnVerifiedAsync(unverifiedUser);
+        }
     }
 }

@@ -176,7 +176,6 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             verifyUserServiceMock.Setup(x => x.GetVerifyUserById(It.IsAny<Guid>())).ReturnsAsync(verifyUser);
             verifyUserServiceMock.Setup(x => x.UpdateVerifyUser(It.IsAny<VerifyUser>())).ReturnsAsync(usedVerifyUser);
             var cognitoServiceMock = new Mock<ICognitoService>();
-            cognitoServiceMock.Setup(x => x.ConfirmUserAsync(It.IsAny<string>())).ReturnsAsync(admmConfirmSignUpResponse);
 
             var service = InitializeService(verifyUserService: verifyUserServiceMock, cognitoService: cognitoServiceMock);
 

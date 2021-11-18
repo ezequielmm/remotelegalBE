@@ -40,7 +40,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
         private readonly IMapper<User, UserDto, CreateUserDto> _userMapper;
         private readonly IMapper<UserSystemInfo, UserSystemInfoDto, object> _userSystemInfoMapper;
         private readonly IMapper<DeviceInfo, DeviceInfoDto, object> _deviceInfoMapper;
-        private readonly IMapper<AwsSessionInfo, AwsInfoDto, object> _awsInfoMapper;
+        private readonly IMapper<Participant, SignInUnverifiedUserDto, object> _unverifiedParticipantMapper;
         private readonly DepositionsController _classUnderTest;
 
         public DepositionsControllerTest()
@@ -57,7 +57,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
             _participantTechStatusMapper = new ParticipantTechStatusMapper();
             _userSystemInfoMapper = new UserSystemInfoMapper();
             _deviceInfoMapper = new DeviceInfoMapper();
-            _awsInfoMapper = new AwsInfoMapper();
+            _unverifiedParticipantMapper = new UnverifiedUserMapper();
 
             // Deposition mapper arguments
             _compositionMapper = new CompositionMapper();
@@ -81,7 +81,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
                 _participantTechStatusMapper,
                 _userSystemInfoMapper,
                 _deviceInfoMapper,
-                _awsInfoMapper);
+                _unverifiedParticipantMapper);
         }
 
         [Fact]
@@ -740,7 +740,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
             var participant = ParticipantFactory.GetParticipant(Guid.NewGuid());
             _depositionService
                 .Setup(mock => mock.CheckParticipant(It.IsAny<Guid>(), It.IsAny<string>()))
-                .ReturnsAsync(Result.Ok((participant, true)));
+                .ReturnsAsync(Result.Ok((participant, true, true)));
 
             // Act
             var result = await _classUnderTest.CheckParticipant(It.IsAny<Guid>(), participant.Email);
@@ -761,7 +761,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
             var participant = ParticipantFactory.GetParticipant(Guid.NewGuid());
             _depositionService
                 .Setup(mock => mock.CheckParticipant(It.IsAny<Guid>(), It.IsAny<string>()))
-                .ReturnsAsync(Result.Ok(((Participant) null, true)));
+                .ReturnsAsync(Result.Ok(((Participant) null, true, true)));
 
             // Act
             var result = await _classUnderTest.CheckParticipant(It.IsAny<Guid>(), participant.Email);
@@ -774,7 +774,7 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
             Assert.True(resultValues.IsUser);
             _depositionService.Verify(mock => mock.CheckParticipant(It.IsAny<Guid>(), It.IsAny<string>()), Times.Once);
         }
-
+        // TODO: checkparticipant not verify
         [Fact]
         public async Task CheckParticipant_ReturnsError_WhenCheckParticipantFails()
         {
@@ -1646,5 +1646,52 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
 
             _participantService.Verify(mock => mock.SetUserDeviceInfo(It.IsAny<Guid>(), It.IsAny<DeviceInfo>()), Times.Once);
         }
+
+        [Fact]
+        public async Task JoinUnverifiedParticipant_ReturnsOkAndGuestToken()
+        {
+            // Arrange
+            var unverifiedUserDto = new SignInUnverifiedUserDto { Browser = "chrome", Device = "desktop", EmailAddress = "test@mock.com", ParticipantType = ParticipantType.Observer, Password = "test123"};
+            
+            var guestToken = new GuestToken { IdToken = "guestTokenMock" };
+            var context = ContextFactory.GetControllerContextWithLocalIp();
+            _classUnderTest.ControllerContext = context;
+            _depositionService
+                .Setup(mock => mock.JoinUnverifiedParticipant(It.IsAny<Guid>(), It.IsAny<Participant>(), It.IsAny<ActivityHistory>()))
+                .ReturnsAsync(Result.Ok(guestToken));
+
+            // Act
+            var result = await _classUnderTest.JoinUnverifiedParticipant(It.IsAny<Guid>(), unverifiedUserDto);
+
+            // Assert
+            Assert.NotNull(result);
+            var okResult = Assert.IsType<OkObjectResult>(result.Result);
+            var resultValues = Assert.IsAssignableFrom<GuestToken>(okResult.Value);
+            Assert.Equal(guestToken.IdToken, resultValues.IdToken);
+            _depositionService.Verify(mock => mock.JoinUnverifiedParticipant(It.IsAny<Guid>(), It.IsAny<Participant>(), It.IsAny<ActivityHistory>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task JoinUnverifiedParticipant_ReturnsError_WhenJoinGuestParticipantFails()
+        {
+            // Arrange
+            var unverifiedUserDto = new SignInUnverifiedUserDto { Browser = "chrome", Device = "desktop", EmailAddress = "test@mock.com", ParticipantType = ParticipantType.Observer, Password = "test123" };
+
+            var context = ContextFactory.GetControllerContextWithLocalIp();
+            _classUnderTest.ControllerContext = context;
+            _depositionService
+                .Setup(mock => mock.JoinUnverifiedParticipant(It.IsAny<Guid>(), It.IsAny<Participant>(), It.IsAny<ActivityHistory>()))
+                .ReturnsAsync(Result.Fail(new Error()));
+
+            // Act
+            var result = await _classUnderTest.JoinUnverifiedParticipant(It.IsAny<Guid>(), unverifiedUserDto);
+
+            // Assert
+            Assert.NotNull(result);
+            var errorResult = Assert.IsType<InternalServerErrorResult>(result.Result);
+            Assert.Equal((int)HttpStatusCode.InternalServerError, errorResult.StatusCode);
+            _depositionService.Verify(mock => mock.JoinUnverifiedParticipant(It.IsAny<Guid>(), It.IsAny<Participant>(), It.IsAny<ActivityHistory>()), Times.Once);
+        }
+
     }
 }

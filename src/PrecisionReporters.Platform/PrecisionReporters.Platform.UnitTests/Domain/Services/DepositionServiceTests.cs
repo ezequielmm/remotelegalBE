@@ -63,6 +63,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         private readonly CognitoConfiguration _cognitoConfiguration;
         private readonly EmailTemplateNames _emailTemplateNames;
         private readonly Mock<IOptions<EmailTemplateNames>> _emailTemplateNamesMock;
+        private readonly Mock<IVerifyUserService> _verifyUserServiceMock;
 
         private readonly List<Deposition> _depositions = new List<Deposition>();
 
@@ -127,6 +128,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _awsEmailServiceMock = new Mock<IAwsEmailService>();
             _activityHistoryServiceMock = new Mock<IActivityHistoryService>();
             _depositionEmailServiceMock = new Mock<IDepositionEmailService>();
+            _verifyUserServiceMock = new Mock<IVerifyUserService>();
 
             _emailTemplateNames = new EmailTemplateNames { DownloadAssetsEmail = "TestEmailTemplate", DownloadCertifiedTranscriptEmail = "TestEmailTemplate" };
             _emailTemplateNamesMock = new Mock<IOptions<EmailTemplateNames>>();
@@ -158,6 +160,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 _activityHistoryServiceMock.Object,
                 _depositionEmailServiceMock.Object,
                 _cognitoConfigurationMock.Object,
+                _verifyUserServiceMock.Object,
                 _emailTemplateNamesMock.Object);
 
             _transactionHandlerMock.Setup(x => x.RunAsync(It.IsAny<Func<Task<Result<Deposition>>>>()))
@@ -1934,7 +1937,6 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var caseId = Guid.NewGuid();
             var deposition = DepositionFactory.GetDeposition(depositionId, caseId);
             deposition.Participants.Single(x => x.Role == ParticipantType.Witness).UserId = Guid.NewGuid();
-            var expectedError = "The deposition already has a participant as witness";
             var participant = new Participant
             {
                 Email = participantEmail,
@@ -1950,7 +1952,6 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             Assert.NotNull(result);
             Assert.IsType<Result<Guid>>(result);
             Assert.True(result.IsFailed);
-            Assert.Contains(expectedError, result.Errors.Select(e => e.Message));
         }
 
         [Fact]
@@ -3269,6 +3270,497 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             //Assert
             Assert.Equal(result.Errors[0].Message, errorMessage);
             Assert.True(result.IsFailed);
+        }
+
+        [Fact]
+        public async Task JoinUnverifiedParticipant_ShouldReturnAToken_ForARegisterUserAndParticipant()
+        {
+            // Arrange
+            var guestEmail = "participant@mail.com";
+            var user = new User { Id = Guid.NewGuid(), EmailAddress = guestEmail };
+            var activity = new ActivityHistory() { Device = "IPhone", Browser = "Safari", IPAddress = "10.10.10.10" };
+            var depositionId = Guid.NewGuid();
+            var deposition = DepositionFactory.GetDepositionWithParticipantEmail(guestEmail);
+            deposition.Id = depositionId;
+            deposition.Participants.Add(new Participant
+            {
+                Id = Guid.NewGuid(),
+                Role = ParticipantType.Witness,
+                IsAdmitted = true
+            });
+
+            var participant = new Participant
+            {
+                User = user,
+                UserId = user.Id,
+                Email = guestEmail,
+                DepositionId = depositionId
+            };
+
+            var includes = new[] { nameof(Deposition.Case), nameof(Deposition.Participants) };
+
+            var guestToken = new GuestToken { IdToken = "123456" };
+
+            _depositionRepositoryMock
+                .Setup(x => x.GetById(depositionId, includes))
+                .ReturnsAsync(deposition);
+
+            _userServiceMock
+                .Setup(x => x.GetUserByEmail(guestEmail))
+                .ReturnsAsync(Result.Ok(user));
+
+            _userServiceMock
+                .Setup(x => x.LoginUnverifiedAsync(user))
+                .ReturnsAsync(Result.Ok(guestToken));
+
+            // Act
+            var result = await _depositionService.JoinUnverifiedParticipant(depositionId, participant, activity);
+
+            // Assert
+            _depositionRepositoryMock.Verify(x => x.GetById(depositionId, includes), Times.Once);
+            _userServiceMock.Verify(x => x.GetUserByEmail(guestEmail), Times.Once);
+            _userServiceMock.Verify(x => x.LoginUnverifiedAsync(user), Times.Once);
+            Assert.True(result.IsSuccess);
+            Assert.IsType<Result<GuestToken>>(result);
+        }
+
+        [Fact]
+        public async Task JoinUnverifiedParticipant_ShouldFail_WhenQuestTokenFail()
+        {
+            // Arrange
+            var guestEmail = "participant@mail.com";
+            var user = new User { Id = Guid.NewGuid(), EmailAddress = guestEmail };
+            var activity = new ActivityHistory() { Device = "IPhone", Browser = "Safari", IPAddress = "10.10.10.10" };
+            var depositionId = Guid.NewGuid();
+            var deposition = DepositionFactory.GetDepositionWithParticipantEmail(guestEmail);
+            deposition.Id = depositionId;
+            deposition.Participants.Add(new Participant
+            {
+                Id = Guid.NewGuid(),
+                Role = ParticipantType.Witness,
+                IsAdmitted = true
+            });
+
+            var participant = new Participant
+            {
+                User = user,
+                UserId = user.Id,
+                Email = guestEmail,
+                DepositionId = depositionId
+            };
+
+            var includes = new[] { nameof(Deposition.Case), nameof(Deposition.Participants) };
+
+            var guestToken = new GuestToken { IdToken = "123456" };
+
+            _depositionRepositoryMock
+                .Setup(x => x.GetById(depositionId, includes))
+                .ReturnsAsync(deposition);
+
+            _userServiceMock
+                .Setup(x => x.GetUserByEmail(guestEmail))
+                .ReturnsAsync(Result.Ok(user));
+
+            _userServiceMock
+                .Setup(x => x.LoginUnverifiedAsync(user))
+                .ReturnsAsync(Result.Fail("Error"));
+
+            // Act
+            var result = await _depositionService.JoinUnverifiedParticipant(depositionId, participant, activity);
+
+            string expectedError = "Error";
+            // Assert
+            _depositionRepositoryMock.Verify(x => x.GetById(depositionId, includes), Times.Once);
+            _userServiceMock.Verify(x => x.GetUserByEmail(guestEmail), Times.Once);
+            _userServiceMock.Verify(x => x.LoginUnverifiedAsync(user), Times.Once);
+            Assert.True(result.IsFailed);
+            Assert.Contains(expectedError, result.Errors.Select(e => e.Message));
+        }
+
+        [Fact]
+        public async Task JoinUnverifiedParticipant_ShouldFail_WhenUserResultFail()
+        {
+            // Arrange
+            var guestEmail = "participant@mail.com";
+            var user = new User { Id = Guid.NewGuid(), EmailAddress = guestEmail };
+            var activity = new ActivityHistory() { Device = "IPhone", Browser = "Safari", IPAddress = "10.10.10.10" };
+            var depositionId = Guid.NewGuid();
+            var deposition = DepositionFactory.GetDepositionWithParticipantEmail(guestEmail);
+            deposition.Id = depositionId;
+            deposition.Participants.Add(new Participant
+            {
+                Id = Guid.NewGuid(),
+                Role = ParticipantType.Witness,
+                IsAdmitted = true
+            });
+
+            var participant = new Participant
+            {
+                User = user,
+                UserId = user.Id,
+                Email = guestEmail,
+                DepositionId = depositionId
+            };
+
+            var includes = new[] { nameof(Deposition.Case), nameof(Deposition.Participants) };
+
+            var guestToken = new GuestToken { IdToken = "123456" };
+
+            _depositionRepositoryMock
+                .Setup(x => x.GetById(depositionId, includes))
+                .ReturnsAsync(deposition);
+
+            _userServiceMock
+                .Setup(x => x.GetUserByEmail(guestEmail))
+                .ReturnsAsync(Result.Fail("Error"));
+
+            // Act
+            var result = await _depositionService.JoinUnverifiedParticipant(depositionId, participant, activity);
+
+            string expectedError = "Error";
+            // Assert
+            _depositionRepositoryMock.Verify(x => x.GetById(depositionId, includes), Times.Once);
+            _userServiceMock.Verify(x => x.GetUserByEmail(guestEmail), Times.Once);
+            Assert.True(result.IsFailed);
+            Assert.Contains(expectedError, result.Errors.Select(e => e.Message));
+        }
+
+        [Fact]
+        public async Task JoinUnverifiedParticipant_ShouldFail_WhenDepositionIsCompleted()
+        {
+            // Arrange
+            var guestEmail = "participant@mail.com";
+            var user = new User { Id = Guid.NewGuid(), EmailAddress = guestEmail };
+            var activity = new ActivityHistory() { Device = "IPhone", Browser = "Safari", IPAddress = "10.10.10.10" };
+            var depositionId = Guid.NewGuid();
+            var deposition = new Deposition
+            {
+                Status = DepositionStatus.Completed,
+                Participants = new List<Participant>
+                {
+                    new Participant
+                    {
+                        Email = guestEmail,
+                        UserId = Guid.NewGuid(),
+                        IsAdmitted = false,
+                        Role = ParticipantType.Observer
+                    }
+                },
+                Requester = new User
+                {
+                    EmailAddress = "requester@email.com"
+                }
+            };
+            deposition.Id = depositionId;
+            deposition.Participants.Add(new Participant
+            {
+                Id = Guid.NewGuid(),
+                Role = ParticipantType.Witness,
+                IsAdmitted = true
+            });
+
+            var participant = new Participant
+            {
+                User = user,
+                UserId = user.Id,
+                Email = guestEmail,
+                DepositionId = depositionId
+            };
+
+            var includes = new[] { nameof(Deposition.Case), nameof(Deposition.Participants) };
+
+            var guestToken = new GuestToken { IdToken = "123456" };
+
+            _depositionRepositoryMock
+                .Setup(x => x.GetById(depositionId, includes))
+                .ReturnsAsync(deposition);
+
+            // Act
+            var result = await _depositionService.JoinUnverifiedParticipant(depositionId, participant, activity);
+
+            string expectedError = "The deposition is not longer available";
+            // Assert
+            Assert.True(result.IsFailed);
+            Assert.Contains(expectedError, result.Errors.Select(e => e.Message));
+        }
+
+        [Fact]
+        public async Task JoinUnverifiedParticipant_ShouldFail_WhenDepositionIsCanceled()
+        {
+            // Arrange
+            var guestEmail = "participant@mail.com";
+            var user = new User { Id = Guid.NewGuid(), EmailAddress = guestEmail };
+            var activity = new ActivityHistory() { Device = "IPhone", Browser = "Safari", IPAddress = "10.10.10.10" };
+            var depositionId = Guid.NewGuid();
+            var deposition = new Deposition
+            {
+                Status = DepositionStatus.Canceled,
+                Participants = new List<Participant>
+                {
+                    new Participant
+                    {
+                        Email = guestEmail,
+                        UserId = Guid.NewGuid(),
+                        IsAdmitted = false,
+                        Role = ParticipantType.Observer
+                    }
+                },
+                Requester = new User
+                {
+                    EmailAddress = "requester@email.com"
+                }
+            };
+            deposition.Id = depositionId;
+            deposition.Participants.Add(new Participant
+            {
+                Id = Guid.NewGuid(),
+                Role = ParticipantType.Witness,
+                IsAdmitted = true
+            });
+
+            var participant = new Participant
+            {
+                User = user,
+                UserId = user.Id,
+                Email = guestEmail,
+                DepositionId = depositionId
+            };
+
+            var includes = new[] { nameof(Deposition.Case), nameof(Deposition.Participants) };
+
+            var guestToken = new GuestToken { IdToken = "123456" };
+
+            _depositionRepositoryMock
+                .Setup(x => x.GetById(depositionId, includes))
+                .ReturnsAsync(deposition);
+
+            // Act
+            var result = await _depositionService.JoinUnverifiedParticipant(depositionId, participant, activity);
+
+            string expectedError = "The deposition is not longer available";
+            // Assert
+            Assert.True(result.IsFailed);
+            Assert.Contains(expectedError, result.Errors.Select(e => e.Message));
+        }
+
+        [Fact]
+        public async Task JoinUnverifiedParticipant_ShouldFail_WhenDepositionResultFails()
+        {
+            // Arrange
+            var guestEmail = "participant@mail.com";
+            var user = new User { Id = Guid.NewGuid(), EmailAddress = guestEmail };
+            var activity = new ActivityHistory() { Device = "IPhone", Browser = "Safari", IPAddress = "10.10.10.10" };
+            var depositionId = Guid.NewGuid();
+            var deposition = new Deposition
+            {
+                Participants = new List<Participant>
+                {
+                    new Participant
+                    {
+                        Email = guestEmail,
+                        UserId = Guid.NewGuid(),
+                        IsAdmitted = false,
+                        Role = ParticipantType.Observer
+                    }
+                },
+                Requester = new User
+                {
+                    EmailAddress = "requester@email.com"
+                }
+            };
+            deposition.Id = depositionId;
+            deposition.Participants.Add(new Participant
+            {
+                Id = Guid.NewGuid(),
+                Role = ParticipantType.Witness,
+                IsAdmitted = true
+            });
+
+            var participant = new Participant
+            {
+                User = user,
+                UserId = user.Id,
+                Email = guestEmail,
+                DepositionId = depositionId
+            };
+
+            var includes = new[] { nameof(Deposition.Case), nameof(Deposition.Participants) };
+
+            var guestToken = new GuestToken { IdToken = "123456" };
+
+            _depositionRepositoryMock
+                .Setup(x => x.GetById(depositionId, includes))
+                .ReturnsAsync((Deposition)null);
+
+            // Act
+            var result = await _depositionService.JoinUnverifiedParticipant(depositionId, participant, activity);
+
+            string expectedError = "Deposition with id";
+            // Assert
+            Assert.True(result.IsFailed);
+            Assert.Contains(expectedError, result.Errors.Select(e => e.Message).Single());
+        }
+
+        [Fact]
+        public async Task JoinUnverifiedParticipant_ShouldReturnAToken_ParticipantNull()
+        {
+            // Arrange
+            var guestEmail = "participant@mail.com";
+            var secondEmail = "second@email.com";
+            var user = new User { Id = Guid.NewGuid(), EmailAddress = guestEmail };
+            var activity = new ActivityHistory() { Device = "IPhone", Browser = "Safari", IPAddress = "10.10.10.10" };
+            var depositionId = Guid.NewGuid();
+            var deposition = DepositionFactory.GetDepositionWithParticipantEmail(guestEmail);
+            deposition.Id = depositionId;
+            deposition.Participants.Add(new Participant
+            {
+                Id = Guid.NewGuid(),
+                Role = ParticipantType.Witness,
+                IsAdmitted = true
+            });
+
+            var participant = new Participant
+            {
+                User = user,
+                UserId = user.Id,
+                Email = secondEmail,
+                DepositionId = depositionId
+            };
+
+            var includes = new[] { nameof(Deposition.Case), nameof(Deposition.Participants) };
+
+            var guestToken = new GuestToken { IdToken = "123456" };
+
+            _depositionRepositoryMock
+                .Setup(x => x.GetById(depositionId, includes))
+                .ReturnsAsync(deposition);
+
+            _userServiceMock
+                .Setup(x => x.GetUserByEmail(secondEmail))
+                .ReturnsAsync(Result.Ok(user));
+
+            _userServiceMock
+                .Setup(x => x.LoginUnverifiedAsync(user))
+                .ReturnsAsync(Result.Ok(guestToken));
+
+            // Act
+            var result = await _depositionService.JoinUnverifiedParticipant(depositionId, participant, activity);
+
+            // Assert
+            _depositionRepositoryMock.Verify(x => x.GetById(depositionId, includes), Times.Once);
+            _userServiceMock.Verify(x => x.GetUserByEmail(secondEmail), Times.Once);
+            _userServiceMock.Verify(x => x.LoginUnverifiedAsync(user), Times.Once);
+            Assert.True(result.IsSuccess);
+            Assert.IsType<Result<GuestToken>>(result);
+        }
+        
+        [Fact]
+        public async Task JoinUnverifiedParticipant_ShouldReturnAToken_ParticipantNullAsNotWitness()
+        {
+            // Arrange
+            var guestEmail = "participant@mail.com";
+            var secondEmail = "second@email.com";
+            var user = new User { Id = Guid.NewGuid(), EmailAddress = guestEmail };
+            var activity = new ActivityHistory() { Device = "IPhone", Browser = "Safari", IPAddress = "10.10.10.10" };
+            var depositionId = Guid.NewGuid();
+            var deposition = DepositionFactory.GetDepositionWithParticipantEmail(guestEmail);
+            deposition.Id = depositionId;
+            deposition.Participants.Add(new Participant
+            {
+                Id = Guid.NewGuid(),
+                Role = ParticipantType.Witness,
+                IsAdmitted = true
+            });
+
+            var participant = new Participant
+            {
+                User = user,
+                UserId = user.Id,
+                Email = secondEmail,
+                DepositionId = depositionId,
+                Role = ParticipantType.Attorney
+            };
+
+            var includes = new[] { nameof(Deposition.Case), nameof(Deposition.Participants) };
+
+            var guestToken = new GuestToken { IdToken = "123456" };
+
+            _depositionRepositoryMock
+                .Setup(x => x.GetById(depositionId, includes))
+                .ReturnsAsync(deposition);
+
+            _userServiceMock
+                .Setup(x => x.GetUserByEmail(secondEmail))
+                .ReturnsAsync(Result.Ok(user));
+
+            _userServiceMock
+                .Setup(x => x.LoginUnverifiedAsync(user))
+                .ReturnsAsync(Result.Ok(guestToken));
+
+            // Act
+            var result = await _depositionService.JoinUnverifiedParticipant(depositionId, participant, activity);
+
+            // Assert
+            _depositionRepositoryMock.Verify(x => x.GetById(depositionId, includes), Times.Once);
+            _userServiceMock.Verify(x => x.GetUserByEmail(secondEmail), Times.Once);
+            _userServiceMock.Verify(x => x.LoginUnverifiedAsync(user), Times.Once);
+            Assert.True(result.IsSuccess);
+            Assert.IsType<Result<GuestToken>>(result);
+        }
+
+        [Fact]
+        public async Task JoinUnverifiedParticipant_ShouldFailt_WitnessEmailIsNotNull()
+        {
+            // Arrange
+            var guestEmail = "participant@mail.com";
+            var secondEmail = "second@email.com";
+            var user = new User { Id = Guid.NewGuid(), EmailAddress = guestEmail };
+            var activity = new ActivityHistory() { Device = "IPhone", Browser = "Safari", IPAddress = "10.10.10.10" };
+            var depositionId = Guid.NewGuid();
+            var deposition = DepositionFactory.GetDepositionWithParticipantEmail(guestEmail);
+            deposition.Id = depositionId;
+            deposition.Participants.Add(new Participant
+            {
+                Id = Guid.NewGuid(),
+                Role = ParticipantType.Witness,
+                IsAdmitted = true,
+                Email = "thirdemail@mock.com"
+            });
+
+            var participant = new Participant
+            {
+                User = user,
+                UserId = user.Id,
+                Email = secondEmail,
+                DepositionId = depositionId,
+                Role = ParticipantType.Witness
+            };
+
+            var includes = new[] { nameof(Deposition.Case), nameof(Deposition.Participants) };
+
+            var guestToken = new GuestToken { IdToken = "123456" };
+
+            _depositionRepositoryMock
+                .Setup(x => x.GetById(depositionId, includes))
+                .ReturnsAsync(deposition);
+
+            _userServiceMock
+                .Setup(x => x.GetUserByEmail(secondEmail))
+                .ReturnsAsync(Result.Ok(user));
+
+            _userServiceMock
+                .Setup(x => x.LoginUnverifiedAsync(user))
+                .ReturnsAsync(Result.Ok(guestToken));
+
+            // Act
+            var result = await _depositionService.JoinUnverifiedParticipant(depositionId, participant, activity);
+
+            // Assert
+            _depositionRepositoryMock.Verify(x => x.GetById(depositionId, includes), Times.Once);
+            _userServiceMock.Verify(x => x.GetUserByEmail(secondEmail), Times.Once);
+            _userServiceMock.Verify(x => x.LoginUnverifiedAsync(user), Times.Once);
+            Assert.True(result.IsFailed);
+            Assert.IsType<ForbiddenError>(new ForbiddenError());
         }
     }
 }

@@ -13,5 +13,7 @@
         public string GuestClientId { get; set; }
         public string GuestUsersGroup { get; set; }
         public string GuestUsersPass { get; set; }
+        public string UnVerifiedClientId { get; set; }
+        public string UnVerifiedUsersGroup { get; set; }
     }
 }

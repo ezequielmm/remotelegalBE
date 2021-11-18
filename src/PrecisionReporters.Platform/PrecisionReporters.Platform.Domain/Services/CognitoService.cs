@@ -9,7 +9,9 @@ using PrecisionReporters.Platform.Shared.Errors;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
+using PrecisionReporters.Platform.Domain.Enums;
 
 namespace PrecisionReporters.Platform.Domain.Services
 {
@@ -32,26 +34,15 @@ namespace PrecisionReporters.Platform.Domain.Services
             {
                 if (user.IsGuest)
                 {
-                    await CreateVerifiedUserAccount(user);
-                    await AddUserToGuestsGroup(user);
+                    await CreateVerifiedUserAccount(user, user.IsGuest);
+                    await AddUserToGroup(user, _cognitoConfiguration.GuestUsersGroup);
                 } else
                 {
                     // Register the user using Cognito
-                    var signUpRequest = new SignUpRequest
-                    {
-                        ClientId = _cognitoConfiguration.ClientId,
-                        Password = user.Password,
-                        Username = user.EmailAddress,
-                    };
-
-                    var emailAttribute = new AttributeType
-                    {
-                        Name = "email",
-                        Value = user.EmailAddress
-                    };
-
-                    signUpRequest.UserAttributes.Add(emailAttribute);
-                    await _cognitoClient.SignUpAsync(signUpRequest);
+                    await CreateVerifiedUserAccount(user, user.IsGuest);
+                    await AddUserToGroup(user, _cognitoConfiguration.UnVerifiedUsersGroup);
+                    // Disable the user until they confirm their email address
+                    await DisableUser(user);
                 }
             }
             catch (Exception ex)
@@ -60,19 +51,15 @@ namespace PrecisionReporters.Platform.Domain.Services
             }
         }
 
-        public async Task<AdminConfirmSignUpResponse> ConfirmUserAsync(string emailAddress)
+        public async Task ConfirmUserAsync(string emailAddress)
         {
-            // Confirm SigunUp
-            var confirmSignUp = new AdminConfirmSignUpRequest
-            {
-                Username = emailAddress,
-                UserPoolId = _cognitoConfiguration.UserPoolId
-            };
-
-            return await _cognitoClient.AdminConfirmSignUpAsync(confirmSignUp);
+            // Confirm SignUp
+            await EnableUser(emailAddress);
+            // Remove the user from the UnverifiedUsers group
+            await RemoveUserFromGroup(emailAddress, _cognitoConfiguration.UnVerifiedUsersGroup);
         }
 
-        private async Task CreateVerifiedUserAccount(User user)
+        private async Task CreateVerifiedUserAccount(User user, bool isGuest = true)
         {
             var adminCreateUser = new AdminCreateUserRequest
             {
@@ -85,7 +72,8 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             await _cognitoClient.AdminCreateUserAsync(adminCreateUser);
 
-            await SetPassword(user.EmailAddress, _cognitoConfiguration.GuestUsersPass);
+            var userPassword = isGuest ? _cognitoConfiguration.GuestUsersPass : user.Password;
+            await SetPassword(user.EmailAddress, userPassword);
         }
 
         private async Task SetPassword(string email, string password)
@@ -100,16 +88,27 @@ namespace PrecisionReporters.Platform.Domain.Services
             await _cognitoClient.AdminSetUserPasswordAsync(setPasswordRequest);
         }
 
-        private async Task AddUserToGuestsGroup(User user)
+        private async Task AddUserToGroup(User user, string groupName)
         {
             var adminAddUserToGroupRequest = new AdminAddUserToGroupRequest
             {
-                GroupName = _cognitoConfiguration.GuestUsersGroup,
+                GroupName = groupName,
                 Username = user.EmailAddress,
                 UserPoolId = _cognitoConfiguration.UserPoolId
             };
 
             await _cognitoClient.AdminAddUserToGroupAsync(adminAddUserToGroupRequest);
+        }
+
+        private async Task RemoveUserFromGroup(string emailAddress, string groupName)
+        {
+            var removeUserFromGroupRequest = new AdminRemoveUserFromGroupRequest
+            {
+                Username = emailAddress,
+                UserPoolId = _cognitoConfiguration.UserPoolId,
+                GroupName = groupName
+            };
+            await _cognitoClient.AdminRemoveUserFromGroupAsync(removeUserFromGroupRequest);
         }
 
         public async Task<Result<GuestToken>> LoginGuestAsync(User user)
@@ -132,6 +131,42 @@ namespace PrecisionReporters.Platform.Domain.Services
                 IdToken = response.AuthenticationResult.IdToken
             };
             return Result.Ok(token);
+        }
+
+        public async Task DisableUser(User user)
+        {
+            try
+            {
+                var adminDisableUserRequest = new AdminDisableUserRequest
+                {
+                    Username = user.EmailAddress,
+                    UserPoolId = _cognitoConfiguration.UserPoolId
+                };
+                await _cognitoClient.AdminDisableUserAsync(adminDisableUserRequest);
+            }
+            catch (Exception ex)
+            {
+                _log.LogError(ex, "Failed to Disable user '{UserEmail}' on Aws Cognito", user.EmailAddress);
+                throw new AmazonCognitoIdentityProviderException(new Exception("Failed to Disable user on Aws Cognito", ex));
+            }
+        }
+
+        private async Task EnableUser(string emailAddress)
+        {
+            try
+            {
+                var adminEnableUser = new AdminEnableUserRequest
+                {
+                    Username = emailAddress,
+                    UserPoolId = _cognitoConfiguration.UserPoolId
+                };
+                await _cognitoClient.AdminEnableUserAsync(adminEnableUser);
+            }
+            catch (Exception ex)
+            {
+                _log.LogError(ex, "Failed to Enable user '{UserEmail}' on Aws Cognito", emailAddress);
+                throw new AmazonCognitoIdentityProviderException(new Exception("Failed to Enable user on Aws Cognito", ex));
+            }
         }
 
         public async Task<Result> CheckUserExists(string emailAddress)
@@ -213,6 +248,72 @@ namespace PrecisionReporters.Platform.Domain.Services
             await _cognitoClient.AdminDeleteUserAsync(request);
 
             return Result.Ok();
+        }
+
+        public async Task<Result<GuestToken>> LoginUnVerifiedAsync(User user)
+        {
+            // Temporary verify user
+            try
+            {
+                await EnableUser(user.EmailAddress);
+
+                var cognito = new AmazonCognitoIdentityProviderClient();
+                var request = new AdminInitiateAuthRequest
+                {
+                    UserPoolId = _cognitoConfiguration.UserPoolId,
+                    ClientId = _cognitoConfiguration.UnVerifiedClientId,
+                    AuthFlow = AuthFlowType.ADMIN_USER_PASSWORD_AUTH
+                };
+                request.AuthParameters.Add("USERNAME", user.EmailAddress);
+                request.AuthParameters.Add("PASSWORD", user.Password);
+
+                var response = await cognito.AdminInitiateAuthAsync(request);
+
+                var token = new GuestToken
+                {
+                    IdToken = response.AuthenticationResult.IdToken
+                };
+
+                return Result.Ok(token);
+            }
+            catch (Exception ex)
+            {
+                await DisableUser(user);
+                _log.LogWarning(ex, "Fail login for the unverified user {UserEmail}", user.EmailAddress);
+                return Result.Fail(new InvalidInputError(ex.Message));
+            }
+            
+        }
+
+        /// <summary>
+        /// Get a list of all the groups the user is a member of
+        /// </summary>
+        /// <param name="userEmail">Email of the user to look up</param>
+        /// <returns>List of groups the user is a member of</returns>
+        public async Task<Result<List<CognitoGroup>>> GetUserCognitoGroupList(string userEmail)
+        {
+            var request = new AdminListGroupsForUserRequest()
+            {
+                Username = userEmail,
+                UserPoolId = _cognitoConfiguration.UserPoolId
+            };
+            var response = await _cognitoClient.AdminListGroupsForUserAsync(request);
+
+            if (!response.Groups.Any())
+                return Result.Fail(new InvalidInputError());
+
+            return Result.Ok(response.Groups.Select(x => Enum.Parse<CognitoGroup>(x.GroupName)).ToList());
+        }
+
+        private async Task GetAllUnconfirmedUsers()
+        {
+            var request1 = new ListUsersRequest
+            {
+                UserPoolId = _cognitoConfiguration.UserPoolId,
+                Filter = "cognito:user_status = \"UNCONFIRMED\"",
+                AttributesToGet = new List<string> { "email" },
+            };
+            var list = await _cognitoClient.ListUsersAsync(request1);
         }
     }
 }

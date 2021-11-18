@@ -54,6 +54,7 @@ namespace PrecisionReporters.Platform.Domain.Services
         private readonly IDepositionEmailService _depositionEmailService;
         private readonly CognitoConfiguration _cognitoConfiguration;
         private readonly EmailTemplateNames _emailTemplateNames;
+        private readonly IVerifyUserService _verifyUserService;
 
         public DepositionService(IDepositionRepository depositionRepository,
             IParticipantRepository participantRepository,
@@ -80,6 +81,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             IActivityHistoryService activityHistoryService,
             IDepositionEmailService depositionEmailService,
             IOptions<CognitoConfiguration> cognitoConfiguration,
+            IVerifyUserService verifyUserService,
             IOptions<EmailTemplateNames> emailTemplateNames)
         {
             _awsStorageService = awsStorageService;
@@ -106,6 +108,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             _breakRoomMapper = breakRoomMapper;
             _activityHistoryService = activityHistoryService;
             _depositionEmailService = depositionEmailService;
+            _verifyUserService = verifyUserService;
             _cognitoConfiguration = cognitoConfiguration.Value;
             _emailTemplateNames = emailTemplateNames.Value;
         }
@@ -365,6 +368,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
                 await GoOnTheRecord(deposition.Id, false, email);
                 await _userService.RemoveGuestParticipants(deposition.Participants);
+                await _userService.DisableUnverifiedParticipants(deposition.Participants);
                 var updatePermissionStatus = await UpdateParticipantPermissions(deposition);
                 if (updatePermissionStatus.IsFailed)
                     return updatePermissionStatus;
@@ -592,13 +596,13 @@ namespace PrecisionReporters.Platform.Domain.Services
             return Result.Ok(breakRooms);
         }
 
-        public async Task<Result<(Participant, bool)>> CheckParticipant(Guid id, string emailAddress)
+        public async Task<Result<(Participant, bool, bool)>> CheckParticipant(Guid id, string emailAddress)
         {
             var include = new[] { nameof(Deposition.Participants) };
             var depositionResult = await GetByIdWithIncludes(id, include);
 
             if (depositionResult.IsFailed)
-                return depositionResult.ToResult<(Participant, bool)>();
+                return depositionResult.ToResult<(Participant, bool, bool)>();
 
             var deposition = depositionResult.Value;
             if (deposition.Status == DepositionStatus.Completed
@@ -607,10 +611,13 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             var userResult = await _userService.GetUserByEmail(emailAddress);
             var isUser = userResult.IsSuccess && !userResult.Value.IsGuest;
-
+            var isVerify = true;
+            if (isUser)
+                isVerify = await _userService.CheckUserIsVerified(emailAddress);
+            
             var participant = deposition.Participants.FirstOrDefault(p => p.Email == emailAddress);
 
-            return Result.Ok((participant, isUser));
+            return Result.Ok((participant, isUser, isVerify));
         }
 
         public async Task<Result<Deposition>> ClearDepositionDocumentSharingId(Guid depositionId)
@@ -641,7 +648,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (guest.Role == ParticipantType.Witness
                 && !string.IsNullOrWhiteSpace(witnessParticipant?.Email)
                 && guest.Email != witnessParticipant?.Email)
-                return Result.Fail(new InvalidInputError("The deposition already has a participant as witness"));
+                return Result.Fail(new ForbiddenError());
 
             _logger.LogInformation($"{nameof(DepositionService)}.{nameof(DepositionService.JoinGuestParticipant)} Witness: {witnessParticipant?.Role}");
 
@@ -735,7 +742,7 @@ namespace PrecisionReporters.Platform.Domain.Services
 
             var witness = deposition.Participants.FirstOrDefault(p => p.Role == ParticipantType.Witness);
             if (witness != null && !string.IsNullOrWhiteSpace(witness.Email) && participant.Role == ParticipantType.Witness && witness.Email != participant.Email)
-                return Result.Fail(new InvalidInputError("The deposition already has a participant as witness"));
+                return Result.Fail(new ForbiddenError());
 
             if (participant.Role == ParticipantType.Witness && witness != null)
                 deposition.Participants[deposition.Participants.FindIndex(x => x.Role == ParticipantType.Witness)] = participant;
@@ -1503,6 +1510,66 @@ namespace PrecisionReporters.Platform.Domain.Services
                 }
             }
             return Result.Ok();
+        }
+        
+        public async Task<Result<GuestToken>> JoinUnverifiedParticipant(Guid depositionId, Participant unverifiedParticipant, ActivityHistory activityHistory)
+        {
+            var includes = new[] { nameof(Deposition.Case), nameof(Deposition.Participants) };
+
+            var depositionResult = await GetByIdWithIncludes(depositionId, includes);
+            if (depositionResult.IsFailed)
+                return depositionResult.ToResult<GuestToken>();
+
+            var deposition = depositionResult.Value;
+            if (deposition.Status == DepositionStatus.Completed
+                || deposition.Status == DepositionStatus.Canceled)
+                return Result.Fail(new InvalidInputError("The deposition is not longer available"));
+
+            var unverifiedUser = unverifiedParticipant.User;
+            var userResult = await _userService.GetUserByEmail(unverifiedParticipant.Email);
+
+            if (userResult.IsFailed)
+                return userResult.ToResult();
+            var hasLastName = !string.IsNullOrWhiteSpace(userResult.Value.LastName);
+
+            // Try to sign in Unverified user
+            var guestToken = await _userService.LoginUnverifiedAsync(unverifiedUser);
+            if (guestToken.IsFailed)
+                return guestToken.ToResult();
+
+            var participantResult = deposition.Participants.FirstOrDefault(x => x.Email == unverifiedParticipant.Email);
+            if (participantResult != null)
+            {
+                if (participantResult.IsAdmitted.HasValue && !participantResult.IsAdmitted.Value && !userResult.Value.IsAdmin)
+                {
+                    participantResult.IsAdmitted = null;
+                }
+
+                await _participantRepository.Update(participantResult);
+                
+                return guestToken;
+            }
+
+            unverifiedParticipant.Name = userResult.Value.FirstName;
+            unverifiedParticipant.LastName = hasLastName ? userResult.Value.LastName : string.Empty;
+            unverifiedParticipant.Phone = userResult.Value.PhoneNumber;
+            unverifiedParticipant.User = userResult.Value;
+            unverifiedParticipant.HasJoined = true;
+
+            var witness = deposition.Participants.FirstOrDefault(p => p.Role == ParticipantType.Witness);
+            if (witness != null && !string.IsNullOrWhiteSpace(witness.Email) && unverifiedParticipant.Role == ParticipantType.Witness && witness.Email != unverifiedParticipant.Email)
+                return Result.Fail(new ForbiddenError());
+
+            if (unverifiedParticipant.Role == ParticipantType.Witness && witness != null)
+                deposition.Participants[deposition.Participants.FindIndex(x => x.Role == ParticipantType.Witness)] = unverifiedParticipant;
+            else
+                deposition.Participants.Add(unverifiedParticipant);
+
+            await _depositionRepository.Update(deposition);
+            await _activityHistoryService.AddActivity(activityHistory, userResult.Value, deposition);
+            await _permissionService.AddParticipantPermissions(unverifiedParticipant);
+
+            return guestToken;
         }
     }
 }

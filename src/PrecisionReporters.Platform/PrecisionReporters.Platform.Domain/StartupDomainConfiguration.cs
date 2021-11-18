@@ -118,6 +118,7 @@ namespace PrecisionReporters.Platform.Domain
             services.AddSingleton<IMapper<Participant, ParticipantTechStatusDto, object>, ParticipantTechStatusMapper>();
             services.AddSingleton<IMapper<Document, Shared.Dtos.DocumentDto, object>, ExhibitDocumentMapper>();
             services.AddSingleton<IMapper<AwsSessionInfo, AwsInfoDto, object>, AwsInfoMapper>();
+            services.AddSingleton<IMapper<Participant, SignInUnverifiedUserDto, object>, UnverifiedUserMapper>();
 
             // Services            
             services.AddScoped<ITwilioService, TwilioService>().Configure<TwilioAccountConfiguration>(x =>
@@ -146,6 +147,8 @@ namespace PrecisionReporters.Platform.Domain
                 x.GuestUsersGroup = appConfiguration.CognitoConfiguration.GuestUsersGroup;
                 x.GuestUsersPass = appConfiguration.CognitoConfiguration.GuestUsersPass;
                 x.GuestClientId = appConfiguration.CognitoConfiguration.GuestClientId;
+                x.UnVerifiedClientId = appConfiguration.CognitoConfiguration.UnVerifiedClientId;
+                x.UnVerifiedUsersGroup = appConfiguration.CognitoConfiguration.UnVerifiedUsersGroup;
             });
 
             services.AddScoped<IPermissionService, PermissionService>();

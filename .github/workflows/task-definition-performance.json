@@ -16,27 +16,35 @@
                 {
                     "name": "AppConfiguration__CognitoConfiguration__AWSRegion",
                     "value": "us-east-1"
-                  },
-                  {
+                },
+                {
                     "name": "AppConfiguration__CognitoConfiguration__ClientId",
                     "value": "3fihjsoceeclkcbim6sn84ad7l"
-                  },
-                  {
+                },
+                {
                     "name": "AppConfiguration__CognitoConfiguration__UserPoolId",
                     "value": "us-east-1_VeMTCOfOh"
-                  },
-                  {
+                },
+                {
                     "name": "AppConfiguration__CognitoConfiguration__Authority",
                     "value": "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_VeMTCOfOh"
-                  },
-                  {
+                },
+                {
                     "name": "AppConfiguration__CognitoConfiguration__GuestClientId",
                     "value": "68rkght0h6ntkf4b2052o4fri8"
-                  },
-                  {
+                },
+                {
                     "name": "AppConfiguration__CognitoConfiguration__GuestUsersGroup",
                     "value": "Guests"
-                  },
+                },
+                {
+                    "name": "AppConfiguration__CognitoConfiguration__UnVerifiedUsersGroup",
+                    "value": "UnverifiedUsers"
+                },
+                {
+                    "name": "AppConfiguration__CognitoConfiguration__UnVerifiedClientId",
+                    "value": "4rm9sjnsqof9737otkoqnv4d91"
+                },
                 {
                     "name": "AppConfiguration__TwilioAccountConfiguration__StatusCallbackUrl",
                     "value": "https://api-performance.prdevelopment.net/api/compositions"

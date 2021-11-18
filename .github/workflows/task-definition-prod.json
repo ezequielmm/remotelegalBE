@@ -51,6 +51,14 @@
                     "value": "Guests"
                 },
                 {
+                    "name": "AppConfiguration__CognitoConfiguration__UnVerifiedUsersGroup",
+                    "value": "UnverifiedUsers"
+                },
+                {
+                    "name": "AppConfiguration__CognitoConfiguration__UnVerifiedClientId",
+                    "value": "4rm9sjnsqof9737otkoqnv4d91"
+                },
+                {
                     "name": "AppConfiguration__CognitoConfiguration__UserPoolId",
                     "value": "us-east-2_dtrQPEy1n"
                 },

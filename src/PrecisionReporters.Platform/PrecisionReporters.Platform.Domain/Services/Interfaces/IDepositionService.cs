@@ -27,7 +27,7 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
         Task<Result> LeaveBreakRoom(Guid depositionId, Guid breakRoomId);
         Task<Result<BreakRoom>> LockBreakRoom(Guid depositionId, Guid breakRoomId, bool lockRoom);
         Task<Result<List<BreakRoom>>> GetDepositionBreakRooms(Guid id);
-        Task<Result<(Participant, bool)>> CheckParticipant(Guid id, string emailAddress);
+        Task<Result<(Participant, bool, bool)>> CheckParticipant(Guid id, string emailAddress);
         Task<Result<GuestToken>> JoinGuestParticipant(Guid depositionId, Participant guest, ActivityHistory activityHistory);
         Task<Result<Guid>> AddParticipant(Guid depositionId, Participant participant);
         Task<Result<Deposition>> ClearDepositionDocumentSharingId(Guid depositionId);
@@ -53,5 +53,6 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
         Task<Result<DepositionStatusDto>> Summary(Guid depositionId);
         Task<Result<Deposition>> StampMediaDocument(Guid depositionId, string stampLabel);
         Task<Result> SaveAwsSessionInfo(Guid id, string containerId);
+        Task<Result<GuestToken>> JoinUnverifiedParticipant(Guid depositionId, Participant unverifiedParticipant, ActivityHistory activityHistory);
     }
 }
