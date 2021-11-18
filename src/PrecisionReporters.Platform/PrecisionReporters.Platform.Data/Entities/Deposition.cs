@@ -81,6 +81,7 @@ namespace PrecisionReporters.Platform.Data.Entities
             Job = entity.Job;
             RequesterNotes = entity.RequesterNotes;
             IsVideoRecordingNeeded = entity.IsVideoRecordingNeeded;
+            CreationDate = entity.CreationDate;
         }
 
         public DateTime? GetActualStartDate()

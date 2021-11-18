@@ -57,6 +57,7 @@ namespace PrecisionReporters.Platform.Domain.Mappers
             var witness = dto.Witness != null ? _participantMapper.ToModel(dto.Witness) : new Participant { Role = ParticipantType.Witness, IsAdmitted = true };
             return new Deposition
             {
+                CreationDate = DateTime.UtcNow,
                 StartDate = dto.StartDate.UtcDateTime,
                 TimeZone = ((USTimeZone)Enum.Parse(typeof(USTimeZone), dto.TimeZone)).GetDescription(),
                 EndDate = dto.EndDate?.UtcDateTime,
