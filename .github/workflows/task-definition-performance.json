@@ -86,6 +86,42 @@
                     "value": "configset-performance"
                 },
                 {
+                    "name": "AppConfiguration__EmailTemplateNames__ActivityEmail",
+                    "value": "PerfActivityEmailTemplate"
+                },
+                {
+                    "name": "AppConfiguration__EmailTemplateNames__CancelDepositionEmail",
+                    "value": "PerfCancelDepositionEmailTemplate"
+                },
+                {
+                    "name": "AppConfiguration__EmailTemplateNames__DepositionReminderEmail",
+                    "value": "PerfDepositionReminderEmailTemplate"
+                },
+                {
+                    "name": "AppConfiguration__EmailTemplateNames__DownloadAssetsEmail",
+                    "value": "PerfDownloadAssetsEmailTemplate"
+                },
+                {
+                    "name": "AppConfiguration__EmailTemplateNames__DownloadCertifiedTranscriptEmail",
+                    "value": "PerfDownloadCertifiedTranscriptEmailTemplate"
+                },
+                {
+                    "name": "AppConfiguration__EmailTemplateNames__ForgotPasswordEmail",
+                    "value": "PerfForgotPasswordEmailTemplate"
+                },
+                {
+                    "name": "AppConfiguration__EmailTemplateNames__JoinDepositionEmail",
+                    "value": "PerfJoinDepositionEmailTemplate"
+                },
+                {
+                    "name": "AppConfiguration__EmailTemplateNames__ReScheduleDepositionEmail",
+                    "value": "PerfReScheduleDepositionEmailTemplate"
+                },
+                {
+                    "name": "AppConfiguration__EmailTemplateNames__VerificationEmail",
+                    "value": "PerfVerificationEmailTemplate"
+                },
+                {
                     "name": "AppConfiguration__ConfigurationFlags__IsDeveloperExceptionPageEnabled",
                     "value": "true"
                 },

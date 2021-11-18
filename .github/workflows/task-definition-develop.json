@@ -102,6 +102,42 @@
                     "value": "configset-open"
                 },
                 {
+                    "name": "AppConfiguration__EmailTemplateNames__ActivityEmail",
+                    "value": "DevActivityEmailTemplate"
+                },
+                {
+                    "name": "AppConfiguration__EmailTemplateNames__CancelDepositionEmail",
+                    "value": "DevCancelDepositionEmailTemplate"
+                },
+                {
+                    "name": "AppConfiguration__EmailTemplateNames__DepositionReminderEmail",
+                    "value": "DevDepositionReminderEmailTemplate"
+                },
+                {
+                    "name": "AppConfiguration__EmailTemplateNames__DownloadAssetsEmail",
+                    "value": "DevDownloadAssetsEmailTemplate"
+                },
+                {
+                    "name": "AppConfiguration__EmailTemplateNames__DownloadCertifiedTranscriptEmail",
+                    "value": "DevDownloadCertifiedTranscriptEmailTemplate"
+                },
+                {
+                    "name": "AppConfiguration__EmailTemplateNames__ForgotPasswordEmail",
+                    "value": "DevForgotPasswordEmailTemplate"
+                },
+                {
+                    "name": "AppConfiguration__EmailTemplateNames__JoinDepositionEmail",
+                    "value": "DevJoinDepositionEmailTemplate"
+                },
+                {
+                    "name": "AppConfiguration__EmailTemplateNames__ReScheduleDepositionEmail",
+                    "value": "DevReScheduleDepositionEmailTemplate"
+                },
+                {
+                    "name": "AppConfiguration__EmailTemplateNames__VerificationEmail",
+                    "value": "DevVerificationEmailTemplate"
+                },
+                {
                     "name": "AppConfiguration__TwilioAccountConfiguration__S3DestinationBucket",
                     "value": "input-elastictranscoder-dev"
                 },

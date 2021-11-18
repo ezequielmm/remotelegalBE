@@ -86,6 +86,42 @@
           "value": "configset-qa"
         },
         {
+          "name": "AppConfiguration__EmailTemplateNames__ActivityEmail",
+          "value": "QAActivityEmailTemplate"
+        },
+        {
+          "name": "AppConfiguration__EmailTemplateNames__CancelDepositionEmail",
+          "value": "QACancelDepositionEmailTemplate"
+        },
+        {
+          "name": "AppConfiguration__EmailTemplateNames__DepositionReminderEmail",
+          "value": "QADepositionReminderEmailTemplate"
+        },
+        {
+          "name": "AppConfiguration__EmailTemplateNames__DownloadAssetsEmail",
+          "value": "QADownloadAssetsEmailTemplate"
+        },
+        {
+          "name": "AppConfiguration__EmailTemplateNames__DownloadCertifiedTranscriptEmail",
+          "value": "QADownloadCertifiedTranscriptEmailTemplate"
+        },
+        {
+          "name": "AppConfiguration__EmailTemplateNames__ForgotPasswordEmail",
+          "value": "QAForgotPasswordEmailTemplate"
+        },
+        {
+          "name": "AppConfiguration__EmailTemplateNames__JoinDepositionEmail",
+          "value": "QAJoinDepositionEmailTemplate"
+        },
+        {
+          "name": "AppConfiguration__EmailTemplateNames__ReScheduleDepositionEmail",
+          "value": "QAReScheduleDepositionEmailTemplate"
+        },
+        {
+          "name": "AppConfiguration__EmailTemplateNames__VerificationEmail",
+          "value": "QAVerificationEmailTemplate"
+        },
+        {
           "name": "AppConfiguration__ConfigurationFlags__IsDeveloperExceptionPageEnabled",
           "value": "true"
         },

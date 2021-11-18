@@ -107,6 +107,42 @@
 	        "value": "configset-prod"
 	      },
               {
+                  "name": "AppConfiguration__EmailTemplateNames__ActivityEmail",
+                  "value": "ProdActivityEmailTemplate"
+              },
+              {
+                  "name": "AppConfiguration__EmailTemplateNames__CancelDepositionEmail",
+                  "value": "ProdCancelDepositionEmailTemplate"
+              },
+              {
+                  "name": "AppConfiguration__EmailTemplateNames__DepositionReminderEmail",
+                  "value": "ProdDepositionReminderEmailTemplate"
+              },
+              {
+                  "name": "AppConfiguration__EmailTemplateNames__DownloadAssetsEmail",
+                  "value": "ProdDownloadAssetsEmailTemplate"
+              },
+              {
+                  "name": "AppConfiguration__EmailTemplateNames__DownloadCertifiedTranscriptEmail",
+                  "value": "ProdDownloadCertifiedTranscriptEmailTemplate"
+              },
+              {
+                  "name": "AppConfiguration__EmailTemplateNames__ForgotPasswordEmail",
+                  "value": "ProdForgotPasswordEmailTemplate"
+              },
+              {
+                  "name": "AppConfiguration__EmailTemplateNames__JoinDepositionEmail",
+                  "value": "ProdJoinDepositionEmailTemplate"
+              },
+              {
+                  "name": "AppConfiguration__EmailTemplateNames__ReScheduleDepositionEmail",
+                  "value": "ProdReScheduleDepositionEmailTemplate"
+              },
+              {
+                  "name": "AppConfiguration__EmailTemplateNames__VerificationEmail",
+                  "value": "ProdVerificationEmailTemplate"
+              },
+              {
                   "name": "AppConfiguration__EmailConfiguration__SesRegion",
                   "value": "us-east-1"
               },
