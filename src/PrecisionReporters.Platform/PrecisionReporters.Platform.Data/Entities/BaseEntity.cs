@@ -10,7 +10,6 @@ namespace PrecisionReporters.Platform.Data.Entities
         [Column(TypeName = "char(36)")]
         public Guid Id { get; set; }
 
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public DateTime CreationDate { get; set; }
 
         public abstract void CopyFrom(T entity);

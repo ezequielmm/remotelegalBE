@@ -1211,10 +1211,6 @@ namespace PrecisionReporters.Platform.Data.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("Deposition");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("PrecisionReporters.Platform.Data.Entities.AnnotationEvent", b =>
@@ -1230,10 +1226,6 @@ namespace PrecisionReporters.Platform.Data.Migrations
                         .HasForeignKey("DocumentId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("Author");
-
-                    b.Navigation("Document");
                 });
 
             modelBuilder.Entity("PrecisionReporters.Platform.Data.Entities.AzureMediaServiceJob", b =>
@@ -1241,8 +1233,6 @@ namespace PrecisionReporters.Platform.Data.Migrations
                     b.HasOne("PrecisionReporters.Platform.Data.Entities.TwilioAudioRecording", "TwilioAudioRecording")
                         .WithMany("AzureMediaServiceJobs")
                         .HasForeignKey("TwilioAudioRecordingId");
-
-                    b.Navigation("TwilioAudioRecording");
                 });
 
             modelBuilder.Entity("PrecisionReporters.Platform.Data.Entities.BreakRoom", b =>
@@ -1258,8 +1248,6 @@ namespace PrecisionReporters.Platform.Data.Migrations
                         .HasForeignKey("RoomId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("Room");
                 });
 
             modelBuilder.Entity("PrecisionReporters.Platform.Data.Entities.BreakRoomAttendee", b =>
@@ -1275,10 +1263,6 @@ namespace PrecisionReporters.Platform.Data.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("BreakRoom");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("PrecisionReporters.Platform.Data.Entities.Case", b =>
@@ -1288,8 +1272,6 @@ namespace PrecisionReporters.Platform.Data.Migrations
                         .HasForeignKey("AddedById")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("AddedBy");
                 });
 
             modelBuilder.Entity("PrecisionReporters.Platform.Data.Entities.Composition", b =>
@@ -1299,8 +1281,6 @@ namespace PrecisionReporters.Platform.Data.Migrations
                         .HasForeignKey("PrecisionReporters.Platform.Data.Entities.Composition", "RoomId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("Room");
                 });
 
             modelBuilder.Entity("PrecisionReporters.Platform.Data.Entities.Deposition", b =>
@@ -1342,22 +1322,6 @@ namespace PrecisionReporters.Platform.Data.Migrations
                     b.HasOne("PrecisionReporters.Platform.Data.Entities.Document", "SharingDocument")
                         .WithMany()
                         .HasForeignKey("SharingDocumentId");
-
-                    b.Navigation("AddedBy");
-
-                    b.Navigation("Caption");
-
-                    b.Navigation("Case");
-
-                    b.Navigation("EndedBy");
-
-                    b.Navigation("PreRoom");
-
-                    b.Navigation("Requester");
-
-                    b.Navigation("Room");
-
-                    b.Navigation("SharingDocument");
                 });
 
             modelBuilder.Entity("PrecisionReporters.Platform.Data.Entities.DepositionDocument", b =>
@@ -1373,10 +1337,6 @@ namespace PrecisionReporters.Platform.Data.Migrations
                         .HasForeignKey("DocumentId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("Deposition");
-
-                    b.Navigation("Document");
                 });
 
             modelBuilder.Entity("PrecisionReporters.Platform.Data.Entities.DepositionEvent", b =>
@@ -1390,10 +1350,6 @@ namespace PrecisionReporters.Platform.Data.Migrations
                     b.HasOne("PrecisionReporters.Platform.Data.Entities.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId");
-
-                    b.Navigation("Deposition");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("PrecisionReporters.Platform.Data.Entities.Document", b =>
@@ -1403,8 +1359,6 @@ namespace PrecisionReporters.Platform.Data.Migrations
                         .HasForeignKey("AddedById")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("AddedBy");
                 });
 
             modelBuilder.Entity("PrecisionReporters.Platform.Data.Entities.DocumentUserDeposition", b =>
@@ -1426,12 +1380,6 @@ namespace PrecisionReporters.Platform.Data.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("Deposition");
-
-                    b.Navigation("Document");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("PrecisionReporters.Platform.Data.Entities.Member", b =>
@@ -1447,10 +1395,6 @@ namespace PrecisionReporters.Platform.Data.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("Case");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("PrecisionReporters.Platform.Data.Entities.Participant", b =>
@@ -1466,10 +1410,6 @@ namespace PrecisionReporters.Platform.Data.Migrations
                     b.HasOne("PrecisionReporters.Platform.Data.Entities.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId");
-
-                    b.Navigation("DeviceInfo");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("PrecisionReporters.Platform.Data.Entities.PostProcessTranscription", b =>
@@ -1477,8 +1417,6 @@ namespace PrecisionReporters.Platform.Data.Migrations
                     b.HasOne("PrecisionReporters.Platform.Data.Entities.TwilioAudioRecording", "TwilioAudioRecording")
                         .WithMany("PostProcessTranscriptions")
                         .HasForeignKey("TwilioAudioRecordingId");
-
-                    b.Navigation("TwilioAudioRecording");
                 });
 
             modelBuilder.Entity("PrecisionReporters.Platform.Data.Entities.RolePermission", b =>
@@ -1488,8 +1426,6 @@ namespace PrecisionReporters.Platform.Data.Migrations
                         .HasForeignKey("RoleId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("Role");
                 });
 
             modelBuilder.Entity("PrecisionReporters.Platform.Data.Entities.Transcription", b =>
@@ -1499,8 +1435,6 @@ namespace PrecisionReporters.Platform.Data.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("PrecisionReporters.Platform.Data.Entities.TwilioParticipant", b =>
@@ -1508,8 +1442,6 @@ namespace PrecisionReporters.Platform.Data.Migrations
                     b.HasOne("PrecisionReporters.Platform.Data.Entities.Participant", "Participant")
                         .WithMany("TwilioParticipant")
                         .HasForeignKey("ParticipantId");
-
-                    b.Navigation("Participant");
                 });
 
             modelBuilder.Entity("PrecisionReporters.Platform.Data.Entities.UserResourceRole", b =>
@@ -1525,10 +1457,6 @@ namespace PrecisionReporters.Platform.Data.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("Role");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("PrecisionReporters.Platform.Data.Entities.VerifyUser", b =>
@@ -1536,68 +1464,6 @@ namespace PrecisionReporters.Platform.Data.Migrations
                     b.HasOne("PrecisionReporters.Platform.Data.Entities.User", "User")
                         .WithMany("VerifiedUsers")
                         .HasForeignKey("UserId");
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("PrecisionReporters.Platform.Data.Entities.BreakRoom", b =>
-                {
-                    b.Navigation("Attendees");
-                });
-
-            modelBuilder.Entity("PrecisionReporters.Platform.Data.Entities.Case", b =>
-                {
-                    b.Navigation("Depositions");
-
-                    b.Navigation("Members");
-                });
-
-            modelBuilder.Entity("PrecisionReporters.Platform.Data.Entities.Deposition", b =>
-                {
-                    b.Navigation("BreakRooms");
-
-                    b.Navigation("Documents");
-
-                    b.Navigation("DocumentUserDepositions");
-
-                    b.Navigation("Events");
-
-                    b.Navigation("Participants");
-                });
-
-            modelBuilder.Entity("PrecisionReporters.Platform.Data.Entities.Document", b =>
-                {
-                    b.Navigation("AnnotationEvents");
-
-                    b.Navigation("DocumentUserDepositions");
-                });
-
-            modelBuilder.Entity("PrecisionReporters.Platform.Data.Entities.Participant", b =>
-                {
-                    b.Navigation("TwilioParticipant");
-                });
-
-            modelBuilder.Entity("PrecisionReporters.Platform.Data.Entities.Room", b =>
-                {
-                    b.Navigation("Composition");
-                });
-
-            modelBuilder.Entity("PrecisionReporters.Platform.Data.Entities.TwilioAudioRecording", b =>
-                {
-                    b.Navigation("AzureMediaServiceJobs");
-
-                    b.Navigation("PostProcessTranscriptions");
-                });
-
-            modelBuilder.Entity("PrecisionReporters.Platform.Data.Entities.User", b =>
-                {
-                    b.Navigation("ActivityHistories");
-
-                    b.Navigation("DocumentUserDepositions");
-
-                    b.Navigation("MemberOn");
-
-                    b.Navigation("VerifiedUsers");
                 });
 #pragma warning restore 612, 618
         }

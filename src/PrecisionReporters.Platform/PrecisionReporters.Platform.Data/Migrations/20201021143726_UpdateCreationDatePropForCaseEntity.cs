@@ -1,6 +1,6 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
-using MySql.EntityFrameworkCore.Metadata;
+using MySql.Data.EntityFrameworkCore.Metadata;
 
 namespace PrecisionReporters.Platform.Data.Migrations
 {
