@@ -155,6 +155,14 @@ namespace PrecisionReporters.Platform.Domain.Services
         {
             try
             {
+                var confirmSignUp = new AdminConfirmSignUpRequest
+                {
+                    Username = emailAddress,
+                    UserPoolId = _cognitoConfiguration.UserPoolId
+                };
+
+                await _cognitoClient.AdminConfirmSignUpAsync(confirmSignUp);
+
                 var adminEnableUser = new AdminEnableUserRequest
                 {
                     Username = emailAddress,
