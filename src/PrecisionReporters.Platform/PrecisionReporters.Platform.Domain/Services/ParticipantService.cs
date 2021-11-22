@@ -202,17 +202,11 @@ namespace PrecisionReporters.Platform.Domain.Services
             var emailChanged = (currentParticipant.Email != participant.Email);
 
             currentParticipant = await ManageEditParticipantPermission(emailChanged, depositionId, currentParticipant, participant);
-            currentParticipant = HandleEditFullName(participant, currentParticipant, emailChanged);
-            
-            currentParticipant.Email = participant.Email;
-            currentParticipant.Role = participant.Role;
-            currentParticipant.Phone = participant.Phone;
-            
-            if (currentParticipant?.User?.IsGuest == null)
+            currentParticipant = HandleEditParticipantAttributes(participant, currentParticipant);
+            if (currentParticipant.User?.IsGuest == null)
             {
                 currentParticipant.Name = participant.Name;
                 currentParticipant.LastName = participant.LastName;
-                currentParticipant.Phone = participant.Phone;
             }
 
             var updatedParticipant = await _participantRepository.Update(currentParticipant);
@@ -225,14 +219,14 @@ namespace PrecisionReporters.Platform.Domain.Services
             return Result.Ok(updatedParticipant);
         }
 
-        private Participant HandleEditFullName(Participant participant, Participant currentParticipant, bool emailChanged)
+        private Participant HandleEditParticipantAttributes(Participant participant, Participant currentParticipant)
         {
-            var hasUser = currentParticipant.User != null;
-            if (!hasUser || !emailChanged)
-                return currentParticipant;
-            
-            currentParticipant.Name = string.IsNullOrWhiteSpace(participant.Name) ? currentParticipant.User.FirstName : participant.Name;
-            currentParticipant.LastName = string.IsNullOrWhiteSpace(participant.LastName) ? currentParticipant.User.LastName : participant.LastName;
+            currentParticipant.Email = participant.Email;
+            currentParticipant.Role = participant.Role;
+            currentParticipant.Phone = participant.Phone;
+            currentParticipant.Name = participant.Name;
+            currentParticipant.LastName = participant.LastName;
+
             return currentParticipant;
         }
 

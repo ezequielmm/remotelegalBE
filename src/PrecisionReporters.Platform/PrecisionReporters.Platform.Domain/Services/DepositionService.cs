@@ -897,12 +897,11 @@ namespace PrecisionReporters.Platform.Domain.Services
             if (userResult.IsSuccess)
             {
                 newParticipant.User = userResult.Value;
-                newParticipant.Name = string.IsNullOrWhiteSpace(newParticipant.Name)
-                    ? userResult.Value.FirstName
-                    : newParticipant.Name;
-                newParticipant.LastName = string.IsNullOrWhiteSpace(newParticipant.LastName)
-                    ? userResult.Value.LastName
-                    : newParticipant.LastName;
+                if (!userResult.Value.IsGuest)
+                {
+                    newParticipant.Name = userResult.Value.FirstName;
+                    newParticipant.LastName = userResult.Value.LastName;
+                }
             }
             newParticipant.IsAdmitted = true;
             deposition.Participants.Add(newParticipant);
