@@ -9,15 +9,15 @@ using PrecisionReporters.Platform.Data;
 namespace PrecisionReporters.Platform.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20211118181525_CreationDateAutoInsert")]
-    partial class CreationDateAutoInsert
+    [Migration("20211122170014_IsAdmitted_To_Null")]
+    partial class IsAdmitted_To_Null
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("Relational:MaxIdentifierLength", 64)
-                .HasAnnotation("ProductVersion", "5.0.11");
+                .HasAnnotation("ProductVersion", "3.1.8")
+                .HasAnnotation("Relational:MaxIdentifierLength", 64);
 
             modelBuilder.Entity("PrecisionReporters.Platform.Data.Entities.ActivityHistory", b =>
                 {
@@ -150,7 +150,7 @@ namespace PrecisionReporters.Platform.Data.Migrations
                         .HasColumnType("char(36)");
 
                     b.Property<bool>("IsLocked")
-                        .HasColumnType("tinyint(1)");
+                        .HasColumnType("bit");
 
                     b.Property<string>("Name")
                         .HasColumnType("text");
@@ -301,10 +301,10 @@ namespace PrecisionReporters.Platform.Data.Migrations
                         .HasColumnType("char(36)");
 
                     b.Property<bool>("IsOnTheRecord")
-                        .HasColumnType("tinyint(1)");
+                        .HasColumnType("bit");
 
                     b.Property<bool>("IsVideoRecordingNeeded")
-                        .HasColumnType("tinyint(1)");
+                        .HasColumnType("bit");
 
                     b.Property<string>("Job")
                         .HasColumnType("varchar(50)");
@@ -581,13 +581,13 @@ namespace PrecisionReporters.Platform.Data.Migrations
                         .HasColumnType("text");
 
                     b.Property<bool>("HasJoined")
-                        .HasColumnType("tinyint(1)");
+                        .HasColumnType("bit");
 
                     b.Property<bool?>("IsAdmitted")
-                        .HasColumnType("tinyint(1)");
+                        .HasColumnType("bit");
 
                     b.Property<bool>("IsMuted")
-                        .HasColumnType("tinyint(1)");
+                        .HasColumnType("bit");
 
                     b.Property<string>("LastName")
                         .HasColumnType("text");
@@ -909,12 +909,12 @@ namespace PrecisionReporters.Platform.Data.Migrations
                         .HasColumnType("datetime");
 
                     b.Property<bool>("IsRecordingEnabled")
-                        .HasColumnType("tinyint(1)");
+                        .HasColumnType("bit");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("varchar(255)");
+                        .HasColumnType("varchar(255)")
+                        .HasMaxLength(255);
 
                     b.Property<int>("RecordingDuration")
                         .HasColumnType("int");
@@ -992,7 +992,7 @@ namespace PrecisionReporters.Platform.Data.Migrations
                         .HasColumnType("text");
 
                     b.Property<bool>("PostProcessed")
-                        .HasColumnType("tinyint(1)");
+                        .HasColumnType("bit");
 
                     b.Property<string>("Text")
                         .IsRequired()
@@ -1104,18 +1104,18 @@ namespace PrecisionReporters.Platform.Data.Migrations
 
                     b.Property<string>("EmailAddress")
                         .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("varchar(255)");
+                        .HasColumnType("varchar(255)")
+                        .HasMaxLength(255);
 
                     b.Property<string>("FirstName")
                         .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<bool>("IsAdmin")
-                        .HasColumnType("tinyint(1)");
+                        .HasColumnType("bit");
 
                     b.Property<bool>("IsGuest")
-                        .HasColumnType("tinyint(1)");
+                        .HasColumnType("bit");
 
                     b.Property<string>("LastName")
                         .IsRequired()
@@ -1179,7 +1179,7 @@ namespace PrecisionReporters.Platform.Data.Migrations
                         .HasDefaultValueSql("CURRENT_TIMESTAMP(3)");
 
                     b.Property<bool>("IsUsed")
-                        .HasColumnType("tinyint(1)");
+                        .HasColumnType("bit");
 
                     b.Property<string>("UserId")
                         .HasColumnType("char(36)");

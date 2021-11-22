@@ -5,8 +5,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Migrations\20211118181525_CreationDateAutoInsert.cs" />
+    <Compile Remove="Migrations\20211118181525_CreationDateAutoInsert.Designer.cs" />
     <Compile Remove="Migrations\20211119151904_RollBackEFCore.cs" />
     <Compile Remove="Migrations\20211119151904_RollBackEFCore.Designer.cs" />
+    <Compile Remove="Migrations\20211119175330_RollbackEFCore.cs" />
+    <Compile Remove="Migrations\20211119175330_RollbackEFCore.Designer.cs" />
   </ItemGroup>
 
   <ItemGroup>
