@@ -987,7 +987,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
 
             // Act
             var result = await _depositionService.JoinBreakRoom(depositionId, breakRoomId);
-            
+
             Assert.True(result.IsFailed);
         }
 
@@ -1252,7 +1252,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _backgroundTaskQueueMock.Setup(x => x.QueueBackgroundWorkItem(It.IsAny<BackgroundTaskDto>()));
             var userMock = Mock.Of<User>();
             userMock.EmailAddress = deposition.Participants.First().Email;
-            var users = new List<User>() { 
+            var users = new List<User>() {
                 userMock
             };
             _userServiceMock.Setup(x => x.GetUsersByFilter(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<string[]>())).ReturnsAsync(users);
@@ -2738,7 +2738,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         public async Task RevertCancel_ShouldFail_DocumentUploadFail()
         {
             //Arrange
-            var depositionMock = new Deposition() { Id = Guid.NewGuid(), CaseId = Guid.NewGuid(), Room = RoomFactory.GetRoomById(Guid.NewGuid())};
+            var depositionMock = new Deposition() { Id = Guid.NewGuid(), CaseId = Guid.NewGuid(), Room = RoomFactory.GetRoomById(Guid.NewGuid()) };
             var testPath = $"{depositionMock.CaseId}/caption";
             var testEmail = "test@test.com";
             var expectedError = $"Unable to edit the deposition";
@@ -2771,7 +2771,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         public async Task RevertCancel_ShouldOk_ChangeStatusAndOtherFields()
         {
             //Arrange
-            var depositionMock = new Deposition() { Id = Guid.NewGuid(), Status = DepositionStatus.Pending, CaseId = Guid.NewGuid(), Caption = new Document()};
+            var depositionMock = new Deposition() { Id = Guid.NewGuid(), Status = DepositionStatus.Pending, CaseId = Guid.NewGuid(), Caption = new Document() };
             var currentDepositionMock = new Deposition() { Id = Guid.NewGuid(), Status = DepositionStatus.Canceled, CaseId = Guid.NewGuid(), Caption = new Document(), Room = RoomFactory.GetRoomById(Guid.NewGuid()) };
             var testPath = $"{depositionMock.CaseId}/caption";
             var testEmail = "test@test.com";
@@ -2913,7 +2913,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         {
             // Arrange
             var depositionMock = new Deposition() { Id = Guid.NewGuid(), StartDate = DateTime.UtcNow.AddSeconds(400), EndDate = DateTime.UtcNow.AddSeconds(600), Status = DepositionStatus.Pending, CaseId = Guid.NewGuid(), Caption = new Document(), Case = new Case { Name = "test" } };
-            var currentDepositionMock = new Deposition() { Id = Guid.NewGuid(), StartDate = DateTime.UtcNow.AddDays(-1), TimeZone = "America/New_York", Status = DepositionStatus.Canceled, CaseId = Guid.NewGuid(), Caption = new Document(), Case = new Case { Name = "test" }, Room = RoomFactory.GetRoomById(Guid.NewGuid())};
+            var currentDepositionMock = new Deposition() { Id = Guid.NewGuid(), StartDate = DateTime.UtcNow.AddDays(-1), TimeZone = "America/New_York", Status = DepositionStatus.Canceled, CaseId = Guid.NewGuid(), Caption = new Document(), Case = new Case { Name = "test" }, Room = RoomFactory.GetRoomById(Guid.NewGuid()) };
             var participant = new Participant { Name = "Jhon", Email = "test@test.com" };
             currentDepositionMock.Participants = new List<Participant> { participant };
             depositionMock.Participants = currentDepositionMock.Participants;
@@ -3091,6 +3091,219 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         }
 
         [Fact]
+        public async Task LockBreakRoom_ShouldReturnOk()
+        {
+            // arrange
+            var breakroomId = Guid.NewGuid();
+            var depositionId = Guid.NewGuid();
+            var participantEmail = "test@mock.com";
+            var caseId = Guid.NewGuid();
+            var deposition = new Deposition
+            {
+                Id = depositionId,
+                StartDate = DateTime.UtcNow,
+                EndDate = DateTime.UtcNow.AddHours(5),
+                CreationDate = DateTime.UtcNow,
+                Requester = new User
+                {
+                    Id = Guid.NewGuid(),
+                    EmailAddress = "jbrown@email.com",
+                    FirstName = "John",
+                    LastName = "Brown",
+                    IsAdmin = true
+                },
+                Room = new Room
+                {
+                    Id = Guid.NewGuid(),
+                    Name = $"{caseId}_{Guid.NewGuid()}",
+                    IsRecordingEnabled = true
+                },
+                Caption = new Document
+                {
+                    Id = Guid.NewGuid(),
+                    Name = "DepositionDocument_1",
+                    FileKey = "fileKey",
+                    AddedBy = new User
+                    {
+                        Id = Guid.NewGuid(),
+                        EmailAddress = "jbrown@email.com",
+                        FirstName = "John",
+                        LastName = "Brown",
+                        IsAdmin = true
+                    }
+                },
+                TimeZone = "America/New_York",
+                Participants = new List<Participant> { new Participant { Role = ParticipantType.Witness, Email = participantEmail } }
+            };
+
+            _depositions.Add(deposition);
+
+            var user = new User { Id = Guid.NewGuid(), EmailAddress = participantEmail, FirstName = "userFirstName", LastName = "userLastName" };
+
+            _depositionRepositoryMock
+                .Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>()))
+                .ReturnsAsync(() => _depositions.FirstOrDefault());
+
+            _breakRoomServiceMock
+                .Setup(x => x.LockBreakRoom(breakroomId, true))
+                .ReturnsAsync(Result.Ok(new BreakRoom()));
+
+            // act
+            var result = await _depositionService.LockBreakRoom(depositionId, breakroomId, true);
+
+            // assert
+            _breakRoomServiceMock.Verify(x => x.LockBreakRoom(breakroomId, true), Times.Once);
+            Assert.NotNull(result);
+            Assert.IsType<Result<BreakRoom>>(result);
+            Assert.True(result.IsSuccess);
+        }
+
+        [Fact]
+        public async Task GetDepositionBreakRooms_ShouldReturnOk()
+        {
+            // arrange
+            var breakroomId = Guid.NewGuid();
+            var depositionId = Guid.NewGuid();
+            var participantEmail = "test@mock.com";
+            var caseId = Guid.NewGuid();
+            var deposition = new Deposition
+            {
+                Id = depositionId,
+                StartDate = DateTime.UtcNow,
+                EndDate = DateTime.UtcNow.AddHours(5),
+                CreationDate = DateTime.UtcNow,
+                Requester = new User
+                {
+                    Id = Guid.NewGuid(),
+                    EmailAddress = "jbrown@email.com",
+                    FirstName = "John",
+                    LastName = "Brown",
+                    IsAdmin = true
+                },
+                Room = new Room
+                {
+                    Id = Guid.NewGuid(),
+                    Name = $"{caseId}_{Guid.NewGuid()}",
+                    IsRecordingEnabled = true
+                },
+                Caption = new Document
+                {
+                    Id = Guid.NewGuid(),
+                    Name = "DepositionDocument_1",
+                    FileKey = "fileKey",
+                    AddedBy = new User
+                    {
+                        Id = Guid.NewGuid(),
+                        EmailAddress = "jbrown@email.com",
+                        FirstName = "John",
+                        LastName = "Brown",
+                        IsAdmin = true
+                    }
+                },
+                TimeZone = "America/New_York",
+                Participants = new List<Participant> { new Participant { Role = ParticipantType.Witness, Email = participantEmail } }
+            };
+
+            _depositions.Add(deposition);
+
+            var user = new User { Id = Guid.NewGuid(), EmailAddress = participantEmail, FirstName = "userFirstName", LastName = "userLastName" };
+
+            _depositionRepositoryMock
+                .Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>()))
+                .ReturnsAsync(() => _depositions.FirstOrDefault());
+
+            // act
+            var result = await _depositionService.GetDepositionBreakRooms(breakroomId);
+
+            // assert
+            Assert.NotNull(result);
+            Assert.IsType<Result<List<BreakRoom>>>(result);
+            Assert.True(result.IsSuccess);
+        }
+
+        [Fact]
+        public async Task GetDepositionBreakRooms_WhenDepositionResultFails()
+        {
+            // arrange
+            var breakroomId = Guid.NewGuid();
+
+            // act
+            var result = await _depositionService.GetDepositionBreakRooms(breakroomId);
+
+            // assert
+            Assert.NotNull(result);
+            Assert.IsType<Result<List<BreakRoom>>>(result);
+            Assert.True(result.IsFailed);
+        }
+
+        [Fact]
+        public async Task ClearDepositionDocumentSharingId_ShouldReturnOk()
+        {
+            // arrange
+            var depositionId = Guid.NewGuid();
+            var participantEmail = "test@mock.com";
+            var caseId = Guid.NewGuid();
+            var deposition = new Deposition
+            {
+                Id = depositionId,
+                StartDate = DateTime.UtcNow,
+                EndDate = DateTime.UtcNow.AddHours(5),
+                CreationDate = DateTime.UtcNow,
+                Requester = new User
+                {
+                    Id = Guid.NewGuid(),
+                    EmailAddress = "jbrown@email.com",
+                    FirstName = "John",
+                    LastName = "Brown",
+                    IsAdmin = true
+                },
+                Room = new Room
+                {
+                    Id = Guid.NewGuid(),
+                    Name = $"{caseId}_{Guid.NewGuid()}",
+                    IsRecordingEnabled = true
+                },
+                Caption = new Document
+                {
+                    Id = Guid.NewGuid(),
+                    Name = "DepositionDocument_1",
+                    FileKey = "fileKey",
+                    AddedBy = new User
+                    {
+                        Id = Guid.NewGuid(),
+                        EmailAddress = "jbrown@email.com",
+                        FirstName = "John",
+                        LastName = "Brown",
+                        IsAdmin = true
+                    }
+                },
+                TimeZone = "America/New_York",
+                Participants = new List<Participant> { new Participant { Role = ParticipantType.Witness, Email = participantEmail } }
+            };
+
+            _depositions.Add(deposition);
+
+            var user = new User { Id = Guid.NewGuid(), EmailAddress = participantEmail, FirstName = "userFirstName", LastName = "userLastName" };
+
+            _depositionRepositoryMock
+                .Setup(x => x.GetById(depositionId, It.IsAny<string[]>()))
+                .ReturnsAsync(() => _depositions.FirstOrDefault());
+            
+            _depositionRepositoryMock
+                .Setup(x => x.Update(deposition))
+                .ReturnsAsync(() => _depositions.FirstOrDefault());
+
+            // act
+            var result = await _depositionService.ClearDepositionDocumentSharingId(depositionId);
+
+            // assert
+            _depositionRepositoryMock.Verify(x => x.Update(deposition), Times.Once);
+            Assert.NotNull(result);
+            Assert.IsType<Result<Deposition>>(result);
+            Assert.True(result.IsSuccess);
+        }
+
+        [Fact]
         public async Task Summary_ShouldReturnOk()
         {
             // Arrange
@@ -3121,7 +3334,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var depositionId = new Guid();
             var deposition = Mock.Of<Deposition>();
             var msg = $"Invalid Deposition id: {depositionId}";
-            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync((Deposition) null);
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync((Deposition)null);
 
             // Act
             var result = await _depositionService.Summary(depositionId);
@@ -3653,7 +3866,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             Assert.True(result.IsSuccess);
             Assert.IsType<Result<GuestToken>>(result);
         }
-        
+
         [Fact]
         public async Task JoinUnverifiedParticipant_ShouldReturnAToken_ParticipantNullAsNotWitness()
         {
@@ -3761,6 +3974,302 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _userServiceMock.Verify(x => x.LoginUnverifiedAsync(user), Times.Once);
             Assert.True(result.IsFailed);
             Assert.IsType<ForbiddenError>(new ForbiddenError());
+        }
+
+        [Fact]
+        public async Task JoinDeposition_ShouldReturnError_WhenGetJobDepositionDtoFails()
+        {
+            // Arrange
+            var userEmail = "testing@mail.com";
+            var user = new User { Id = Guid.NewGuid(), EmailAddress = userEmail, FirstName = "userFirstName", LastName = "userLastName" };
+            var token = Guid.NewGuid().ToString();
+            var depositionId = Guid.NewGuid();
+            var caseId = Guid.NewGuid();
+            var courtReporterUser = new User { Id = Guid.NewGuid(), EmailAddress = "courtreporter@email.com", FirstName = "userFirstName", LastName = "userLastName" };
+            var currentParticipant = new Participant { Name = "ParticipantName", Role = ParticipantType.Observer, User = user, IsAdmitted = true };
+            var deposition = new Deposition
+            {
+                Room = new Room
+                {
+                    Id = Guid.NewGuid(),
+                    Status = RoomStatus.Created,
+                    Name = "TestingRoom"
+                },
+                Participants = new List<Participant>
+                {
+                   new Participant { Name = "ParticipantName", Role = ParticipantType.CourtReporter, User = courtReporterUser, HasJoined = true },
+                   currentParticipant
+                },
+                TimeZone = "AT",
+                IsOnTheRecord = true,
+                Job = "Test123"
+            };
+            var roomList = new List<RoomResource> { roomMock };
+            _depositions.Add(deposition);
+            _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(user));
+            _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(() => _depositions.FirstOrDefault());
+            _roomServiceMock.Setup(x => x.GenerateRoomToken(It.IsAny<string>(), It.IsAny<User>(), It.IsAny<ParticipantType>(), It.IsAny<string>(), It.IsAny<Participant>(), It.IsAny<ChatDto>())).ReturnsAsync(Result.Fail(new Error()));
+            _roomServiceMock.Setup(x => x.GetTwilioRoomByNameAndStatus(It.IsAny<string>(), It.IsAny<RoomResource.RoomStatusEnum>())).ReturnsAsync(roomList);
+
+            // Act
+            var result = await _depositionService.JoinDeposition(depositionId, "identityTest");
+
+            string expectedError = "There was an issue trying to Join the deposition.";
+
+            // Assert
+            Assert.IsType<Result<JoinDepositionDto>>(result);
+            Assert.True(result.IsFailed);
+            Assert.Contains(expectedError, result.Errors.Select(e => e.Message).Single());
+        }
+
+        [Fact]
+        public async Task GetDepositionParticipantByEmail_ShouldReturnOk()
+        {
+            // arrange
+            var depositionId = Guid.NewGuid();
+            var participantEmail = "test@mock.com";
+            var caseId = Guid.NewGuid();
+            var deposition = new Deposition
+            {
+                Id = depositionId,
+                StartDate = DateTime.UtcNow,
+                EndDate = DateTime.UtcNow.AddHours(5),
+                CreationDate = DateTime.UtcNow,
+                Requester = new User
+                {
+                    Id = Guid.NewGuid(),
+                    EmailAddress = "jbrown@email.com",
+                    FirstName = "John",
+                    LastName = "Brown",
+                    IsAdmin = true
+                },
+                Room = new Room
+                {
+                    Id = Guid.NewGuid(),
+                    Name = $"{caseId}_{Guid.NewGuid()}",
+                    IsRecordingEnabled = true
+                },
+                Caption = new Document
+                {
+                    Id = Guid.NewGuid(),
+                    Name = "DepositionDocument_1",
+                    FileKey = "fileKey",
+                    AddedBy = new User
+                    {
+                        Id = Guid.NewGuid(),
+                        EmailAddress = "jbrown@email.com",
+                        FirstName = "John",
+                        LastName = "Brown",
+                        IsAdmin = true
+                    }
+                },
+                TimeZone = "America/New_York",
+                Participants = new List<Participant> { new Participant { Role = ParticipantType.Witness, Email = participantEmail } }
+            };
+
+            _depositions.Add(deposition);
+
+            var user = new User { Id = Guid.NewGuid(), EmailAddress = participantEmail, FirstName = "userFirstName", LastName = "userLastName" };
+
+            _depositionRepositoryMock
+                .Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>()))
+                .ReturnsAsync(() => _depositions.FirstOrDefault());
+
+            _userServiceMock
+                .Setup(x => x.GetUserByEmail(It.IsAny<string>()))
+                .ReturnsAsync(Result.Ok(user));
+
+            // act
+            var result = await _depositionService.GetDepositionParticipantByEmail(depositionId, participantEmail);
+
+            // assert
+            _userServiceMock.Verify(mock => mock.GetUserByEmail(It.Is<string>(a => a == participantEmail)), Times.Once());
+            Assert.NotNull(result);
+            Assert.IsType<Result<Participant>>(result);
+            Assert.True(result.IsSuccess);
+        }
+
+        [Fact]
+        public async Task GetDepositionParticipantByEmail_ShouldReturnError_WhenParticipantIsNull()
+        {
+            // arrange
+            var depositionId = Guid.NewGuid();
+            var participantEmail = "test@mock.com";
+            var caseId = Guid.NewGuid();
+            var deposition = new Deposition
+            {
+                Id = depositionId,
+                StartDate = DateTime.UtcNow,
+                EndDate = DateTime.UtcNow.AddHours(5),
+                CreationDate = DateTime.UtcNow,
+                Requester = new User
+                {
+                    Id = Guid.NewGuid(),
+                    EmailAddress = "jbrown@email.com",
+                    FirstName = "John",
+                    LastName = "Brown",
+                    IsAdmin = true
+                },
+                Room = new Room
+                {
+                    Id = Guid.NewGuid(),
+                    Name = $"{caseId}_{Guid.NewGuid()}",
+                    IsRecordingEnabled = true
+                },
+                Caption = new Document
+                {
+                    Id = Guid.NewGuid(),
+                    Name = "DepositionDocument_1",
+                    FileKey = "fileKey",
+                    AddedBy = new User
+                    {
+                        Id = Guid.NewGuid(),
+                        EmailAddress = "jbrown@email.com",
+                        FirstName = "John",
+                        LastName = "Brown",
+                        IsAdmin = true
+                    }
+                },
+                TimeZone = "America/New_York",
+                Participants = new List<Participant> { new Participant { Role = ParticipantType.Witness, Email = "alternativeEmail@mock.com" } }
+            };
+
+            _depositions.Add(deposition);
+
+            var user = new User { Id = Guid.NewGuid(), EmailAddress = participantEmail, FirstName = "userFirstName", LastName = "userLastName" };
+
+            _depositionRepositoryMock
+                .Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>()))
+                .ReturnsAsync(() => _depositions.FirstOrDefault());
+
+            _userServiceMock
+                .Setup(x => x.GetUserByEmail(It.IsAny<string>()))
+                .ReturnsAsync(Result.Fail(new Error()));
+
+            // act
+            var result = await _depositionService.GetDepositionParticipantByEmail(depositionId, participantEmail);
+
+            var expectedError = "Participant with email test@mock.com not found";
+
+            // assert
+            Assert.NotNull(result);
+            Assert.IsType<Result<Participant>>(result);
+            Assert.True(result.IsFailed);
+            Assert.Contains(expectedError, result.Errors.Select(e => e.Message).Single());
+        }
+
+        [Fact]
+        public async Task GetDepositionParticipantByEmail_ShouldReturnError_WhenDepositionResultIsNull()
+        {
+            // arrange
+            var depositionId = Guid.Empty;
+            var participantEmail = "test@mock.com";
+
+            // act
+            var result = await _depositionService.GetDepositionParticipantByEmail(depositionId, participantEmail);
+
+            var expectedError = "Deposition with id 00000000-0000-0000-0000-000000000000 not found";
+
+            // assert
+            Assert.NotNull(result);
+            Assert.IsType<Result<Participant>>(result);
+            Assert.True(result.IsFailed);
+            Assert.Contains(expectedError, result.Errors.Select(e => e.Message).Single());
+        }
+
+        [Fact]
+        public async Task UpdateUserSystemInfo_ReturnOk()
+        {
+            // arrange
+            var depositionId = Guid.NewGuid();
+            var userSystemInfo = new UserSystemInfo { Browser = "chrome", Device = "desktop", OS = "Windows" };
+            var user = new User { Id = Guid.NewGuid(), EmailAddress = "test@mock.com", FirstName = "userFirstName", LastName = "userLastName" };
+            var ipAddress = "0.0.0.0";
+
+            // arrange
+            _userServiceMock
+                .Setup(x => x.GetCurrentUserAsync())
+                .ReturnsAsync(user);
+
+            _activityHistoryServiceMock
+                .Setup(x => x.UpdateUserSystemInfo(It.IsAny<Guid>(), It.IsAny<UserSystemInfo>(), It.IsAny<User>(), It.IsAny<string>()))
+                .ReturnsAsync(Result.Ok(userSystemInfo));
+
+            // act
+            var result = await _depositionService.UpdateUserSystemInfo(depositionId, userSystemInfo, ipAddress);
+
+            // assert
+            _userServiceMock.Verify(mock => mock.GetCurrentUserAsync(), Times.Once());
+            _activityHistoryServiceMock.Verify(mock => mock.UpdateUserSystemInfo(It.IsAny<Guid>(), It.IsAny<UserSystemInfo>(), It.IsAny<User>(), It.IsAny<string>()), Times.Once);
+            Assert.NotNull(result);
+            Assert.IsType<Result>(result);
+            Assert.True(result.IsSuccess);
+        }
+
+        [Fact]
+        public async Task SaveAwsSessionInfo_ReturnOk()
+        {
+            var containderId = "test123456";
+            var depositionId = Guid.NewGuid();
+            var user = UserFactory.GetUserByGivenEmail("test@mock.com");
+            var awsSession = new AwsSessionInfo { AvailabilityZone = "west", ContainerId = containderId };
+
+            // arrange
+            _userServiceMock
+                .Setup(x => x.GetCurrentUserAsync())
+                .ReturnsAsync(user);
+
+            _activityHistoryServiceMock
+                .Setup(x => x.SaveAwsSessionInfo(It.IsAny<Guid>(), It.IsAny<AwsSessionInfo>(), It.IsAny<User>()))
+                .ReturnsAsync(Result.Ok());
+
+            // act
+            var result = await _depositionService.SaveAwsSessionInfo(depositionId, containderId);
+
+            // assert
+            _userServiceMock.Verify(mock => mock.GetCurrentUserAsync(), Times.Once());
+            _activityHistoryServiceMock.Verify(mock => mock.SaveAwsSessionInfo(It.IsAny<Guid>(), It.IsAny<AwsSessionInfo>(), It.IsAny<User>()), Times.Once);
+            Assert.NotNull(result);
+            Assert.IsType<Result>(result);
+            Assert.True(result.IsSuccess);
+        }
+
+        [Fact]
+        public async Task GetDepositionByRoomId_ShouldReturnOk()
+        {
+            // arrange
+            var roomId = Guid.NewGuid();
+
+            _depositionRepositoryMock
+                .Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Deposition, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()))
+                .ReturnsAsync(new Deposition());
+
+            // act
+            var result = await _depositionService.GetDepositionByRoomId(roomId);
+
+            // assert
+            _depositionRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Deposition, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()), Times.Once());
+            Assert.NotNull(result);
+            Assert.IsType<Result<Deposition>>(result);
+            Assert.True(result.IsSuccess);
+        }
+        
+        [Fact]
+        public async Task GetDepositionByRoomId_ShouldFail_WhenDepositionIsNull()
+        {
+            // arrange
+            var roomId = Guid.Empty;
+
+            // act
+            var result = await _depositionService.GetDepositionByRoomId(roomId);
+
+            var expectedError = "Deposition with RoomId = 00000000-0000-0000-0000-000000000000 not found";
+
+            // assert
+            Assert.NotNull(result);
+            Assert.IsType<Result<Deposition>>(result);
+            Assert.True(result.IsFailed);
+            Assert.Contains(expectedError, result.Errors.Select(e => e.Message).Single());
         }
     }
 }
