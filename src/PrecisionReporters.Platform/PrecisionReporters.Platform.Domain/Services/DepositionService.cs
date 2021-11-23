@@ -857,7 +857,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             Expression<Func<Participant, object>> orderBy = sortedField switch
             {
                 ParticipantSortField.Role => x => x.Role,
-                ParticipantSortField.Name => x => x.GetFullName(),
+                ParticipantSortField.Name => x => x.Name + x.LastName,
                 ParticipantSortField.Email => x => x.Email,
                 _ => x => x.Role
             };
