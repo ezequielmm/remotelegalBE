@@ -4,6 +4,7 @@
     {
         Name,
         Owner,
-        SharedAt
+        SharedAt,
+        StampLabel
     }
 }

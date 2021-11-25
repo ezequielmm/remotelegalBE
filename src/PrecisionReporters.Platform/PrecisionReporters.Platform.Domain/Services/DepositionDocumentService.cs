@@ -171,6 +171,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                 ExhibitSortField.Name => x => x.Document.DisplayName,
                 ExhibitSortField.Owner => x => x.Document.AddedBy.FirstName + x.Document.AddedBy.LastName,
                 ExhibitSortField.SharedAt => x => x.Document.SharedAt,
+                ExhibitSortField.StampLabel => x => x.StampLabel,
                 _ => x => x.Document.SharedAt,
             };
 
