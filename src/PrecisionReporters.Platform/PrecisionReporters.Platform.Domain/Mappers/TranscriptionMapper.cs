@@ -31,7 +31,7 @@ namespace PrecisionReporters.Platform.Domain.Mappers
                 Text = model.Text,
                 DepositionId = model.DepositionId,
                 UserId = model.User.Id,
-                UserName = model.ParticipantAlias,
+                UserName = model.ParticipantAlias ?? model.User.GetFullName(),
                 TranscriptDateTime = new DateTimeOffset(model.TranscriptDateTime, TimeSpan.Zero),
                 UserEmail = model.User.EmailAddress,
                 PostProcessed = model.PostProcessed,

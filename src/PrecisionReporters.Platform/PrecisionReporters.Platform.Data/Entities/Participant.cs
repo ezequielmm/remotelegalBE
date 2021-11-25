@@ -58,7 +58,7 @@ namespace PrecisionReporters.Platform.Data.Entities
 
         public string GetFullName()
         {
-            return $"{Name} {LastName ?? string.Empty}";
+            return !string.IsNullOrWhiteSpace(LastName) ? $"{Name} {LastName}" : Name;
         }
     }
 }

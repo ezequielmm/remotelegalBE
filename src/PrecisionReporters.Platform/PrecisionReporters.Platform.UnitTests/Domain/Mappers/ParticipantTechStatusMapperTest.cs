@@ -83,7 +83,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Mappers
                 CreationDate = DateTime.UtcNow,
                 Email = "email@test.com",
                 Name = "name",
-                LastName = null,
+                LastName = "last",
                 Phone = "5555555555",
                 Role = ParticipantType.CourtReporter,
                 IsMuted = false,
