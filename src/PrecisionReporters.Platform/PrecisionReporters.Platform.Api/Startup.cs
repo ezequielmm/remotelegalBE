@@ -93,6 +93,7 @@ namespace PrecisionReporters.Platform.Api
                 x.PreSignedUploadUrlValidSeconds = appConfiguration.DocumentConfiguration.PreSignedUploadUrlValidSeconds;
                 x.UseSignatureVersion4 = appConfiguration.DocumentConfiguration.UseSignatureVersion4;
             });
+            services.AddScoped<IChatService, ChatService>();
             services.AddScoped<ITagLibWrapper, TagLibWrapper>();
             services.AddScoped<ISnsHelper, SnsHelper>();
             services.AddScoped<ILoggingHelper, LoggingHelper>();

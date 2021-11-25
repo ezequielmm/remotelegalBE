@@ -260,7 +260,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _roomRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Room, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>())).ReturnsAsync((Room)null);
 
             // Act
-            var result = await _service.GenerateRoomToken(roomName, new User(), ParticipantType.Attorney, "any@mail.com", participant, null);
+            var result = await _service.GenerateRoomToken(roomName, new User(), ParticipantType.Attorney, "any@mail.com", participant);
 
             // Assert
             _roomRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Room, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()), Times.Once);
@@ -283,7 +283,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _roomRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Room, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>())).ReturnsAsync(room);
 
             // Act
-            var result = await _service.GenerateRoomToken(roomName, new User(), ParticipantType.Attorney, "any@mail.com",participant, null);
+            var result = await _service.GenerateRoomToken(roomName, new User(), ParticipantType.Attorney, "any@mail.com",participant);
 
             // Assert
             _roomRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Room, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()), Times.Once);
@@ -316,7 +316,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _twilioServiceMock.Setup(x => x.GenerateToken(It.IsAny<string>(), It.IsAny<TwilioIdentity>(), It.IsAny<bool>())).Returns(token);
 
             // Act
-            var result = await _service.GenerateRoomToken(roomName, user, participantRole, user.EmailAddress, participant, null);
+            var result = await _service.GenerateRoomToken(roomName, user, participantRole, user.EmailAddress, participant);
 
             // Assert
             _roomRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Room, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()), Times.Once);
@@ -346,21 +346,14 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             };
 
             var token = "TestingToken";
-            var chatDto = new ChatDto()
-            {
-                AddParticipant = true,
-                ChatName = "MockChat",
-                CreateChat = true,
-                SId = Guid.NewGuid().ToString()
-            };
             _roomRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Room, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>())).ReturnsAsync(room);
             _twilioServiceMock.Setup(x => x.GenerateToken(It.IsAny<string>(), It.IsAny<TwilioIdentity>(), It.IsAny<bool>())).Returns(token);
             _twilioServiceMock
                 .Setup(mock => mock.CreateChatUser(It.IsAny<TwilioIdentity>()))
-                .ReturnsAsync(Result.Ok("userChatSiD"));
+                .ReturnsAsync(Result.Ok());
 
             // Act
-            var result = await _service.GenerateRoomToken(roomName, user, participantRole, user.EmailAddress, participant, chatDto);
+            var result = await _service.GenerateRoomToken(roomName, user, participantRole, user.EmailAddress, participant);
 
             // Assert
             _roomRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Room, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()), Times.Once);
@@ -389,12 +382,6 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 Email = user.EmailAddress
             };
             var token = "TestingToken";
-            var chatDto = new ChatDto()
-            {
-                AddParticipant = true,
-                ChatName = Guid.NewGuid().ToString(),
-                CreateChat = true
-            };
             _roomRepositoryMock
                 .Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Room, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()))
                 .ReturnsAsync(room);
@@ -409,7 +396,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 .ReturnsAsync(DepositionFactory.GetDeposition(Guid.NewGuid(), Guid.NewGuid()));
 
             // Act
-            var result = await _service.GenerateRoomToken(roomName, user, participantRole, user.EmailAddress, participant, chatDto);
+            var result = await _service.GenerateRoomToken(roomName, user, participantRole, user.EmailAddress, participant);
 
             // Assert
             _roomRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Room, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()), Times.Once);

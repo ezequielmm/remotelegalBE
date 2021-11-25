@@ -15,7 +15,7 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
         Task<Result<Room>> Create(Room room);
         Task<Result<Room>> GetById(Guid roomId);
         Task<Result<Room>> GetByName(string roomName);
-        Task<Result<string>> GenerateRoomToken(string roomName, User user, ParticipantType role, string email, Participant participant, ChatDto chatDto = null);
+        Task<Result<string>> GenerateRoomToken(string roomName, User user, ParticipantType role, string email, Participant participant);
         Task<Result<Room>> EndRoom(Room room, string witnessEmail);
         Task<Result<Room>> StartRoom(Room room, bool configureCallbacks);
         Task<Result<Room>> GetRoomBySId(string roomSid);

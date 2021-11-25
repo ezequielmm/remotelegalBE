@@ -637,7 +637,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _depositions.Add(deposition);
             _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(user));
             _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(() => _depositions.FirstOrDefault());
-            _roomServiceMock.Setup(x => x.GenerateRoomToken(It.IsAny<string>(), It.IsAny<User>(), It.IsAny<ParticipantType>(), It.IsAny<string>(), It.IsAny<Participant>(), It.IsAny<ChatDto>())).ReturnsAsync(Result.Ok(token));
+            _roomServiceMock.Setup(x => x.GenerateRoomToken(It.IsAny<string>(), It.IsAny<User>(), It.IsAny<ParticipantType>(), It.IsAny<string>(), It.IsAny<Participant>())).ReturnsAsync(Result.Ok(token));
             _roomServiceMock.Setup(x => x.GetTwilioRoomByNameAndStatus(It.IsAny<string>(), It.IsAny<RoomResource.RoomStatusEnum>())).ReturnsAsync(roomList);
 
             // Act
@@ -650,7 +650,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 It.Is<string>(a => a == deposition.Room.Name),
                 It.Is<User>(a => a == user),
                 It.Is<ParticipantType>(a => a == currentParticipant.Role),
-                It.Is<string>(a => a == userEmail), It.IsAny<Participant>(), It.IsAny<ChatDto>()), Times.Once);
+                It.Is<string>(a => a == userEmail), It.IsAny<Participant>()), Times.Once);
             Assert.NotNull(result);
             Assert.IsType<Result<JoinDepositionDto>>(result);
             Assert.True(result.IsSuccess);
@@ -690,7 +690,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _depositions.Add(deposition);
             _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(courtReporterUser));
             _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(() => _depositions.FirstOrDefault());
-            _roomServiceMock.Setup(x => x.GenerateRoomToken(It.IsAny<string>(), It.IsAny<User>(), It.IsAny<ParticipantType>(), It.IsAny<string>(), It.IsAny<Participant>(), It.IsAny<ChatDto>())).ReturnsAsync(Result.Ok(token));
+            _roomServiceMock.Setup(x => x.GenerateRoomToken(It.IsAny<string>(), It.IsAny<User>(), It.IsAny<ParticipantType>(), It.IsAny<string>(), It.IsAny<Participant>())).ReturnsAsync(Result.Ok(token));
 
             // Act
             var result = await _depositionService.JoinDeposition(depositionId, userEmail);
@@ -702,7 +702,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 It.Is<string>(a => a == deposition.Room.Name),
                 It.Is<User>(a => a == courtReporterUser),
                 It.Is<ParticipantType>(a => a == ParticipantType.CourtReporter),
-                It.Is<string>(a => a == userEmail), It.IsAny<Participant>(), It.IsAny<ChatDto>()), Times.Once);
+                It.Is<string>(a => a == userEmail), It.IsAny<Participant>()), Times.Once);
             _signalRNotificationManagerMock.Verify(s => s.SendNotificationToDepositionMembers(It.IsAny<Guid>(), It.IsAny<NotificationDto>()), Times.Once());
             Assert.NotNull(result);
             Assert.IsType<Result<JoinDepositionDto>>(result);
@@ -747,7 +747,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _depositions.Add(deposition);
             _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(user));
             _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(() => _depositions.FirstOrDefault());
-            _roomServiceMock.Setup(x => x.GenerateRoomToken(It.IsAny<string>(), It.IsAny<User>(), It.IsAny<ParticipantType>(), It.IsAny<string>(), It.IsAny<Participant>(), It.IsAny<ChatDto>())).ReturnsAsync(Result.Ok(token));
+            _roomServiceMock.Setup(x => x.GenerateRoomToken(It.IsAny<string>(), It.IsAny<User>(), It.IsAny<ParticipantType>(), It.IsAny<string>(), It.IsAny<Participant>())).ReturnsAsync(Result.Ok(token));
             _roomServiceMock.Setup(x => x.GetTwilioRoomByNameAndStatus(It.IsAny<string>(), It.IsAny<RoomResource.RoomStatusEnum>())).ReturnsAsync(roomList);
 
             // Act
@@ -760,7 +760,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 It.Is<string>(a => a == deposition.Room.Name),
                 It.Is<User>(a => a == user),
                 It.Is<ParticipantType>(a => a == ParticipantType.Witness),
-                It.Is<string>(a => a == userEmail), It.IsAny<Participant>(), It.IsAny<ChatDto>()), Times.Once);
+                It.Is<string>(a => a == userEmail), It.IsAny<Participant>()), Times.Once);
             Assert.NotNull(result);
             Assert.IsType<Result<JoinDepositionDto>>(result);
             Assert.True(result.IsSuccess);
@@ -801,7 +801,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _depositions.Add(deposition);
             _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(courtReporter2));
             _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(() => _depositions.FirstOrDefault());
-            _roomServiceMock.Setup(x => x.GenerateRoomToken(It.IsAny<string>(), It.IsAny<User>(), It.IsAny<ParticipantType>(), It.IsAny<string>(), It.IsAny<Participant>(), It.IsAny<ChatDto>())).ReturnsAsync(Result.Ok(token));
+            _roomServiceMock.Setup(x => x.GenerateRoomToken(It.IsAny<string>(), It.IsAny<User>(), It.IsAny<ParticipantType>(), It.IsAny<string>(), It.IsAny<Participant>())).ReturnsAsync(Result.Ok(token));
             _roomServiceMock.Setup(x => x.GetTwilioRoomByNameAndStatus(It.IsAny<string>(), It.IsAny<RoomResource.RoomStatusEnum>())).ReturnsAsync(roomList);
 
             // Act
@@ -814,7 +814,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 It.Is<string>(a => a == deposition.Room.Name),
                 It.Is<User>(a => a == courtReporter2),
                 It.Is<ParticipantType>(a => a == ParticipantType.CourtReporter),
-                It.Is<string>(a => a == "courtreporter2@email.com"), It.IsAny<Participant>(), It.IsAny<ChatDto>()), Times.Once);
+                It.Is<string>(a => a == "courtreporter2@email.com"), It.IsAny<Participant>()), Times.Once);
             Assert.NotNull(result);
             Assert.IsType<Result<JoinDepositionDto>>(result);
             Assert.True(result.IsSuccess);
@@ -855,7 +855,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _depositions.Add(deposition);
             _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(user));
             _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(() => _depositions.FirstOrDefault());
-            _roomServiceMock.Setup(x => x.GenerateRoomToken(It.IsAny<string>(), It.IsAny<User>(), It.IsAny<ParticipantType>(), It.IsAny<string>(), It.IsAny<Participant>(), It.IsAny<ChatDto>())).ReturnsAsync(Result.Ok(token));
+            _roomServiceMock.Setup(x => x.GenerateRoomToken(It.IsAny<string>(), It.IsAny<User>(), It.IsAny<ParticipantType>(), It.IsAny<string>(), It.IsAny<Participant>())).ReturnsAsync(Result.Ok(token));
 
             // Act
             var result = await _depositionService.JoinDeposition(depositionId, userEmail);
@@ -867,7 +867,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 It.Is<string>(a => a == deposition.PreRoom.Name),
                 It.Is<User>(a => a == user),
                 It.Is<ParticipantType>(a => a == ParticipantType.Witness),
-                It.Is<string>(a => a == userEmail), It.IsAny<Participant>(), It.IsAny<ChatDto>()), Times.Once);
+                It.Is<string>(a => a == userEmail), It.IsAny<Participant>()), Times.Once);
             Assert.NotNull(result);
             Assert.IsType<Result<JoinDepositionDto>>(result);
             Assert.True(result.IsSuccess);
@@ -908,7 +908,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _depositions.Add(deposition);
             _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(user));
             _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(() => _depositions.FirstOrDefault());
-            _roomServiceMock.Setup(x => x.GenerateRoomToken(It.IsAny<string>(), It.IsAny<User>(), It.IsAny<ParticipantType>(), It.IsAny<string>(), It.IsAny<Participant>(), It.IsAny<ChatDto>())).ReturnsAsync(Result.Ok(token));
+            _roomServiceMock.Setup(x => x.GenerateRoomToken(It.IsAny<string>(), It.IsAny<User>(), It.IsAny<ParticipantType>(), It.IsAny<string>(), It.IsAny<Participant>())).ReturnsAsync(Result.Ok(token));
 
             // Act
             var result = await _depositionService.JoinDeposition(depositionId, userEmail);
@@ -920,7 +920,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 It.Is<string>(a => a == deposition.PreRoom.Name),
                 It.Is<User>(a => a == user),
                 It.Is<ParticipantType>(a => a == ParticipantType.Witness),
-                It.Is<string>(a => a == userEmail), It.IsAny<Participant>(), It.IsAny<ChatDto>()), Times.Once);
+                It.Is<string>(a => a == userEmail), It.IsAny<Participant>()), Times.Once);
             Assert.NotNull(result);
             Assert.IsType<Result<JoinDepositionDto>>(result);
             Assert.True(result.IsSuccess);
@@ -4008,7 +4008,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _depositions.Add(deposition);
             _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(user));
             _depositionRepositoryMock.Setup(x => x.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(() => _depositions.FirstOrDefault());
-            _roomServiceMock.Setup(x => x.GenerateRoomToken(It.IsAny<string>(), It.IsAny<User>(), It.IsAny<ParticipantType>(), It.IsAny<string>(), It.IsAny<Participant>(), It.IsAny<ChatDto>())).ReturnsAsync(Result.Fail(new Error()));
+            _roomServiceMock.Setup(x => x.GenerateRoomToken(It.IsAny<string>(), It.IsAny<User>(), It.IsAny<ParticipantType>(), It.IsAny<string>(), It.IsAny<Participant>())).ReturnsAsync(Result.Fail(new Error()));
             _roomServiceMock.Setup(x => x.GetTwilioRoomByNameAndStatus(It.IsAny<string>(), It.IsAny<RoomResource.RoomStatusEnum>())).ReturnsAsync(roomList);
 
             // Act

@@ -1275,15 +1275,9 @@ namespace PrecisionReporters.Platform.Domain.Services
                 _logger.LogInformation($"{nameof(DepositionService)}.{nameof(DepositionService.GetJoinDepositionInfoDto)} Joining CR Flow, start real deposition room: {currentParticipant?.Email}");
                 // Court Reporter Flow
                 await StartDepositionRoom(deposition.Room, true);
-                var chatInfo = new ChatDto()
-                {
-                    AddParticipant = true,
-                    ChatName = deposition.Id.ToString(),
-                    SId = deposition.ChatSid,
-                    CreateChat = true
-                };
-                _logger.LogInformation($"{nameof(DepositionService)}.{nameof(DepositionService.GetJoinDepositionInfoDto)} Chat SID CR Flow: {chatInfo?.SId}");
-                var token = await _roomService.GenerateRoomToken(deposition.Room.Name, user, role, identity, currentParticipant, chatInfo);
+                
+                _logger.LogInformation($"{nameof(DepositionService)}.{nameof(DepositionService.GetJoinDepositionInfoDto)} CR Flow - Participant ID: {currentParticipant?.Id}");
+                var token = await _roomService.GenerateRoomToken(deposition.Room.Name, user, role, identity, currentParticipant);
                 if (token.IsFailed)
                     return token.ToResult<JoinDepositionDto>();
 
@@ -1319,15 +1313,9 @@ namespace PrecisionReporters.Platform.Domain.Services
                         {
                             _logger.LogInformation($"{nameof(DepositionService)}.{nameof(DepositionService.GetJoinDepositionInfoDto)} Update CurrentParticipant Participant flow: {currentParticipant?.Id}");
                             await UpdateCurrentParticipant(currentParticipant);
-                        }
-                        var chatInfo = new ChatDto()
-                        {
-                            AddParticipant = true,
-                            ChatName = deposition.Id.ToString(),
-                            SId = deposition.ChatSid
-                        };
+                        }                        
 
-                        _logger.LogInformation($"{nameof(DepositionService)}.{nameof(DepositionService.GetJoinDepositionInfoDto)} Chat SID Participant Flow: {chatInfo?.SId}");
+                        _logger.LogInformation($"{nameof(DepositionService)}.{nameof(DepositionService.GetJoinDepositionInfoDto)} Participant Flow - Participant ID: {currentParticipant?.Id}");
 
                         var twilioRoom = await _roomService.GetTwilioRoomByNameAndStatus(deposition.Id.ToString(), RoomResource.RoomStatusEnum.InProgress);
 
@@ -1337,7 +1325,7 @@ namespace PrecisionReporters.Platform.Domain.Services
                             _logger.LogInformation($"{nameof(DepositionService)}.{nameof(DepositionService.GetJoinDepositionInfoDto)} No active twilio room, started new one: {room?.Value?.SId}");
                         }
 
-                        var token = await _roomService.GenerateRoomToken(deposition?.Room?.Name, user, role, identity, currentParticipant, chatInfo);
+                        var token = await _roomService.GenerateRoomToken(deposition?.Room?.Name, user, role, identity, currentParticipant);
                         if (token.IsFailed)
                             return token.ToResult<JoinDepositionDto>();
 

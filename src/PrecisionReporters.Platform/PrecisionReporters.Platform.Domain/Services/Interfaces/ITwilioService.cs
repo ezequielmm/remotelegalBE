@@ -14,7 +14,7 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
     {
         Task<Room> CreateRoom(Room room, bool configureCallbacks);
         Task<RoomResource> GetRoom(string roomName);
-        string GenerateToken(string roomName, TwilioIdentity identity, bool grantChat);
+        string GenerateToken(string roomName, TwilioIdentity identity, bool grantChat = false);
         Task<Result> EndRoom(Room room);
         Task<CompositionResource> CreateComposition(Room room, string[] witnessSid);
         Task<bool> GetCompositionMediaAsync(Composition composition);
@@ -22,7 +22,7 @@ namespace PrecisionReporters.Platform.Domain.Services.Interfaces
         Task<Result> UploadCompositionMetadata(CompositionRecordingMetadata metadata);
         Task<Result> DeleteCompositionAndRecordings(DeleteTwilioRecordingsDto deleteTwilioRecordings);
         Task<Result<string>> CreateChat(string chatName);
-        Task<Result<string>> CreateChatUser(TwilioIdentity identity);
+        Task<Result<UserResource>> CreateChatUser(TwilioIdentity identity);
         Task<Result> AddUserToChat(string conversationSid, TwilioIdentity identity, string userSid);
         Task<List<RoomResource>> GetRoomsByUniqueNameAndStatus(string uniqueName, RoomStatusEnum status = null);
         Task<Result<DateTime>> GetVideoStartTimeStamp(string roomSid);

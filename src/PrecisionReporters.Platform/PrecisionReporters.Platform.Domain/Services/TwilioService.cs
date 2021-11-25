@@ -74,12 +74,15 @@ namespace PrecisionReporters.Platform.Domain.Services
         {
             //TODO: Change identity from JSON string to User Email
             var stringIdentity = SerializeObject(identity);
-            var grant = new VideoGrant();
-            grant.Room = roomName;
-            _log.LogInformation($"{nameof(TwilioService)}.{nameof(TwilioService.GenerateToken)} Generating Token Room Name: {roomName}, User Identity: {stringIdentity}");
-            var grants = new HashSet<IGrant> { grant };
+            var grants = new HashSet<IGrant>();
+
+            if (!string.IsNullOrWhiteSpace(roomName))
+                grants.Add(new VideoGrant { Room = roomName });
+
             if (grantChat)
                 grants.Add(new ChatGrant { ServiceSid = _twilioAccountConfiguration.ConversationServiceId });
+
+            _log.LogInformation($"{nameof(TwilioService)}.{nameof(TwilioService.GenerateToken)} Generating Token Room Name: {roomName}, User Identity: {stringIdentity}");
 
             var expirationOffset = Convert.ToInt32(_twilioAccountConfiguration.ClientTokenExpirationMinutes);
             var token = new Token(_twilioAccountConfiguration.AccountSid, _twilioAccountConfiguration.ApiKeySid,
@@ -309,17 +312,20 @@ namespace PrecisionReporters.Platform.Domain.Services
             }
         }
 
-        public async Task<Result<string>> CreateChatUser(TwilioIdentity identity)
+        public async Task<Result<UserResource>> CreateChatUser(TwilioIdentity identity)
         {
             //TODO: Change identity from JSON string to User Email
+            var user = await GetExistingChatUser(identity);
+            if (user != null)
+                return Result.Ok(user);
             try
             {
                 var strIdentity = SerializeObject(identity);
-                var user = await UserResource.CreateAsync(
+                user = await UserResource.CreateAsync(
                     pathChatServiceSid: _twilioAccountConfiguration.ConversationServiceId,
                     identity: strIdentity);
                 if (user != null)
-                    return Result.Ok(user.Sid);
+                    return Result.Ok(user);
 
                 _log.LogError("Error creating user with identity: {0}", identity.Email);
                 return Result.Fail(new Error($"Error creating user with identity: {identity.Email}"));

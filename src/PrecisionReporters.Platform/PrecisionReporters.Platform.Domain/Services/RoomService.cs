@@ -67,7 +67,7 @@ namespace PrecisionReporters.Platform.Domain.Services
             return Result.Ok(matchingRooms.First());
         }
 
-        public async Task<Result<string>> GenerateRoomToken(string roomName, User user, ParticipantType role, string email, Participant participant, ChatDto chatDto = null)
+        public async Task<Result<string>> GenerateRoomToken(string roomName, User user, ParticipantType role, string email, Participant participant)
         {
             var room = await _roomRepository.GetFirstOrDefaultByFilter(x => x.Name == roomName).ConfigureAwait(false);
             _logger.LogInformation($"{nameof(RoomService)}.{nameof(RoomService.GenerateRoomToken)} Room SID: {room?.SId}");
@@ -87,16 +87,9 @@ namespace PrecisionReporters.Platform.Domain.Services
             };
 
             _logger.LogInformation($"{nameof(RoomService)}.{nameof(RoomService.GenerateRoomToken)} User Email: {email}");
+            
 
-            var grantChat = false;
-            if (chatDto != null)
-            {
-                _logger.LogInformation($"{nameof(RoomService)}.{nameof(RoomService.GenerateRoomToken)} Add Participant to Chat: {email}");
-                var result = await AddChatParticipant(chatDto, twilioIdentity, user).ConfigureAwait(false);
-                grantChat = result.IsSuccess;
-            }
-
-            var twilioToken = _twilioService.GenerateToken(roomName, twilioIdentity, grantChat);
+            var twilioToken = _twilioService.GenerateToken(roomName, twilioIdentity);
             _logger.LogInformation($"{nameof(RoomService)}.{nameof(RoomService.GenerateRoomToken)} Twilio Token: {twilioToken}");
 
             return Result.Ok(twilioToken);
@@ -193,44 +186,8 @@ namespace PrecisionReporters.Platform.Domain.Services
         {
             var updatedRoom = await _roomRepository.Update(room);
             return Result.Ok(updatedRoom);
-        }
+        }        
 
-        private async Task<Result> AddChatParticipant(ChatDto chatDto, TwilioIdentity twilioIdentity, User user)
-        {
-            if (chatDto.CreateChat && string.IsNullOrWhiteSpace(chatDto.SId))
-            {
-                var result = await _twilioService.CreateChat(chatDto.ChatName).ConfigureAwait(false);
-                chatDto.SId = result.Value;
-                var deposition = await _depositionRepository.GetById(new Guid(chatDto.ChatName));
-                deposition.ChatSid = chatDto.SId;
-                await _depositionRepository.Update(deposition);
-            }
-
-            var chatUsers = await _twilioService.GetExistingChatUser(twilioIdentity);
-            if (chatUsers != null)
-            {
-                user.SId = chatUsers.Sid;
-                await _userRepository.Update(user);
-            }
-
-
-            if (string.IsNullOrWhiteSpace(user.SId))
-            {
-                var result = await _twilioService.CreateChatUser(twilioIdentity).ConfigureAwait(false);
-                if (result.IsSuccess)
-                {
-                    user.SId = result.Value;
-                    await _userRepository.Update(user);
-                }
-            }
-
-            if (chatDto.AddParticipant)
-            {
-                await _twilioService.AddUserToChat(chatDto.SId, twilioIdentity, user.SId).ConfigureAwait(false);
-            }
-
-            return Result.Ok();
-        }
 
         public async Task<List<RoomResource>> GetTwilioRoomByNameAndStatus(string uniqueName, RoomStatusEnum status)
         {
@@ -248,14 +205,9 @@ namespace PrecisionReporters.Platform.Domain.Services
         }
 
         public async Task<string> RefreshRoomToken(Participant participant, Deposition deposition)
-        {
-            var chatInfo = new ChatDto
-            {
-                AddParticipant = true,
-                ChatName = deposition.Id.ToString(),
-                SId = deposition.ChatSid
-            };
-            var twilioToken = await GenerateRoomToken(deposition.Room.Name, participant.User, participant.Role, participant.Email, participant, chatInfo).ConfigureAwait(false);
+        {           
+            var twilioToken = await GenerateRoomToken(deposition.Room.Name, participant.User, participant.Role, participant.Email, participant);
+
 
             return twilioToken.Value;
         }
