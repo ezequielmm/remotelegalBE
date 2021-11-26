@@ -95,6 +95,8 @@ namespace PrecisionReporters.Platform.UnitTests.Utils
             {
                 Id = Guid.NewGuid(),
                 IsAdmin = false,
+                FirstName = "FirstName",
+                LastName = "LastName",
             };
         }
     }

@@ -397,6 +397,53 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
         }
 
         [Fact]
+        public async Task EditParticipantDetails_ShouldNotChangeNameAndLastName_WhenIsRegisteredUser()
+        {
+            // Arrange
+            var depositionId = Guid.NewGuid();
+            var newUser = ParticipantFactory.GetNotAdminUser();
+            var baseParticipant = ParticipantFactory.GetParticipant(depositionId);
+            baseParticipant.User = newUser;
+            baseParticipant.Email = "base@email.com";
+            var editedParticipant = new Participant
+            {
+                Id = baseParticipant.Id,
+                Email = $"editedemail@mail.com",
+                Name = "Participant Name",
+                LastName = "Participant LastName",
+                Role = baseParticipant.Role,
+                User = null
+            };
+            var expectedParticipant = new Participant();
+            expectedParticipant.CopyFrom(baseParticipant);
+            expectedParticipant.Email = editedParticipant.Email;
+            expectedParticipant.Role = editedParticipant.Role;
+            expectedParticipant.Name = newUser.FirstName;
+            expectedParticipant.LastName = newUser.LastName;
+
+            _userServiceMock
+                .Setup(x => x.GetUserByEmail(editedParticipant.Email))
+                .ReturnsAsync(Result.Ok(newUser));
+            _depositionRepositoryMock
+                .Setup(mock => mock.GetById(It.IsAny<Guid>(), It.IsAny<string[]>()))
+                .ReturnsAsync(new Deposition { Id = depositionId, Participants = new List<Participant> { baseParticipant } });
+            _participantRepositoryMock
+                .Setup(x => x.Update(It.IsAny<Participant>()))
+                .ReturnsAsync(expectedParticipant);
+
+            //Act
+            var result = await _participantService.EditParticipantDetails(depositionId, editedParticipant);
+
+            // Assert
+            _depositionRepositoryMock.Verify(mock => mock.GetById(It.IsAny<Guid>(), It.Is<string[]>(a => a.SequenceEqual(new[] { $"{nameof(Deposition.Participants)}.{nameof(Participant.User)}", nameof(Deposition.Case) }))), Times.Once);
+            _participantRepositoryMock.Verify(x => x.Update(It.IsAny<Participant>()), Times.Once);
+            Assert.NotNull(result);
+            Assert.True(result.IsSuccess);
+            Assert.Equal(newUser.FirstName, result.Value.Name);
+            Assert.Equal(newUser.LastName, result.Value.LastName);
+        }
+        
+        [Fact]
         public async Task RemoveParticipant_ShouldSendEmail_WhenStatusIsConfirmed()
         {
             // Arrange
