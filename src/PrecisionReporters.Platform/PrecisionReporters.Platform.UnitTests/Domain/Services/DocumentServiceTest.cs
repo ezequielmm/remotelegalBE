@@ -58,7 +58,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 MaxFileSize = 52428800,
                 AcceptedFileExtensions = new List<string> { ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".jpg", ".jpeg", ".png", ".mp4", ".mov", ".mp3", ".m4a", ".wav", ".ogg" },
                 AcceptedTranscriptionExtensions = new List<string> { ".pdf", ".txt", ".ptx" },
-                NonConvertToPdfExtensions= new List<string> { ".mp4", ".mov", ".mp3", ".m4a", ".wav", ".ogg" },
+                NonConvertToPdfExtensions = new List<string> { ".mp4", ".mov", ".mp3", ".m4a", ".wav", ".ogg" },
             };
 
             _awsStorageServiceMock = new Mock<IAwsStorageService>();
@@ -642,7 +642,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             var user = new User { EmailAddress = userEmail, Id = Guid.NewGuid() };
             var depositionId = Guid.NewGuid();
             var deposition = new Deposition { Id = depositionId, Documents = new List<DepositionDocument>() };
-            var file = new FileTransferInfo { Name = "file.doc", Length = 50428800};
+            var file = new FileTransferInfo { Name = "file.doc", Length = 50428800 };
             var expectedError = "Unable to create document permissions";
             var documentUserDeposition = new DocumentUserDeposition { Document = new Document { Id = Guid.NewGuid() }, UserId = user.Id };
             _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(user));
@@ -906,7 +906,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 }
             };
             _userServiceMock.Setup(x => x.GetUserByEmail(It.IsAny<string>())).ReturnsAsync(Result.Ok(new User()));
-            
+
             _depositionDocumentRepositoryMock
                 .Setup(x => x.GetByFilter(It.IsAny<Expression<Func<DepositionDocument, bool>>>(), It.IsAny<string[]>()))
                 .ReturnsAsync(depositionDocumentList);
@@ -1857,10 +1857,10 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 Id = docId
             };
 
-            var user = new User 
+            var user = new User
             {
-                 Id = Guid.NewGuid(),
-                 EmailAddress = "test@test.com"
+                Id = Guid.NewGuid(),
+                EmailAddress = "test@test.com"
             };
 
             _depositionRepositoryMock.Setup(r => r.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
@@ -1941,7 +1941,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             };
 
             _depositionRepositoryMock.Setup(r => r.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(deposition);
-            _documentRepositoryMock.Setup(r => r.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(document);            
+            _documentRepositoryMock.Setup(r => r.GetById(It.IsAny<Guid>(), It.IsAny<string[]>())).ReturnsAsync(document);
 
             //Act
             var result = await _service.ShareEnteredExhibit(depoId, docId);
@@ -2018,7 +2018,7 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 FileName = filename
             };
             var erroMsg = $"Deposition with id {depositionId} not found.";
-            var deposition = (Deposition) null;
+            var deposition = (Deposition)null;
             var depoDoc = new DepositionDocument { Id = documentId, Document = new Document { Id = documentId, DisplayName = "testName.pdf" } };
             _userServiceMock.Setup(x => x.GetCurrentUserAsync()).ReturnsAsync(new User());
 
@@ -2081,6 +2081,115 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             Assert.IsType<Result<PreSignedUrlDto>>(result);
             Assert.True(result.IsFailed);
             Assert.Equal(result.Errors.First().Message, erroMsg);
+        }
+
+        [Fact]
+        public async Task RemoveDepositionUserDocuments_ShouldReturnOk()
+        {
+            // arrange
+            var documentId = Guid.NewGuid();
+
+            _documentUserDepositionRepositoryMock
+                .Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<DocumentUserDeposition, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()))
+                .ReturnsAsync(new DocumentUserDeposition());
+
+
+            // act
+            var result = await _service.RemoveDepositionUserDocuments(documentId);
+
+            // assert
+            _documentUserDepositionRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<DocumentUserDeposition, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()), Times.Once());
+            Assert.NotNull(result);
+            Assert.IsType<Result>(result);
+            Assert.True(result.IsSuccess);
+        }
+
+        [Fact]
+        public async Task RemoveDepositionUserDocuments_WhenDocumentUserIsNull()
+        {
+            // arrange
+            var documentId = Guid.NewGuid();
+
+            // act
+            var result = await _service.RemoveDepositionUserDocuments(documentId);
+
+            // assert
+            Assert.NotNull(result);
+            Assert.IsType<Result>(result);
+            Assert.True(result.IsFailed);
+            Assert.IsType<ResourceNotFoundError>(result.Errors.First());
+        }
+
+        [Fact]
+        public async Task GetCannedPrivateURL_ReturnOk()
+        {
+            // arrange
+            var documentId = Guid.NewGuid();
+
+            _documentRepositoryMock
+                .Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Document, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()))
+                .ReturnsAsync(new Document());
+
+            // act
+            var result = await _service.GetCannedPrivateURL(documentId);
+
+            // assert
+            _documentRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Document, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()), Times.Once());
+            Assert.NotNull(result);
+            Assert.IsType<Result>(result.ToResult());
+            Assert.True(result.IsSuccess);
+        }
+
+        [Fact]
+        public async Task GetCannedPrivateURL_ShouldFailWhenDocumentIsNull()
+        {
+            // arrange
+            var documentId = Guid.NewGuid();
+
+            // act
+            var result = await _service.GetCannedPrivateURL(documentId);
+
+            // assert
+            Assert.NotNull(result);
+            Assert.IsType<Result>(result.ToResult());
+            Assert.True(result.IsFailed);
+            Assert.IsType<ResourceNotFoundError>(result.Errors.First());
+        }
+
+        [Fact]
+        public async Task GetFileSignedUrl_ShouldReturnOk()
+        {
+            // arrange
+            var documentId = Guid.NewGuid();
+
+            _documentRepositoryMock
+                .Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Document, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()))
+                .ReturnsAsync(new Document());
+
+            // act
+            var result = await _service.GetFileSignedUrl(documentId);
+
+            // assert
+            _documentRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<Document, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()), Times.Once());
+            Assert.NotNull(result);
+            Assert.IsType<Result>(result.ToResult());
+            Assert.True(result.IsSuccess);
+        }
+
+        [Fact]
+        public async Task GetFileSignedUrl_ShouldFailWhenDocumentIsNull()
+        {
+            // arrange
+            var documentId = Guid.NewGuid();
+
+            // act
+            var result = await _service.GetFileSignedUrl(documentId);
+
+            // assert
+            Assert.NotNull(result);
+            Assert.IsType<Result>(result.ToResult());
+            Assert.True(result.IsFailed);
+            Assert.IsType<ResourceNotFoundError>(result.Errors.First());
         }
     }
 }
