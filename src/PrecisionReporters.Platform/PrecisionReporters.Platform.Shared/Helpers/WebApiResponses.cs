@@ -18,7 +18,7 @@ namespace PrecisionReporters.Platform.Shared.Helpers
                 return new ConflictObjectResult(result.Errors);
 
             if (result.HasError<ForbiddenError>())
-                return new ForbidResult();
+                return new ForbiddenErrorResult(result.Errors);
 
             return new InternalServerErrorResult(result.Errors);
         }

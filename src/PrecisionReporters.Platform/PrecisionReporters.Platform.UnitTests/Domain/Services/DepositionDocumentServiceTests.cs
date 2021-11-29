@@ -16,6 +16,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
+using PrecisionReporters.Platform.Shared.Extensions;
 using Xunit;
 
 namespace PrecisionReporters.Platform.UnitTests.Domain.Services
@@ -401,7 +402,6 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 Id = Guid.NewGuid(),
                 Role = ParticipantType.Observer
             };
-            var errorMessage = "403";
 
             _userServiceMock.Setup(x => x.GetCurrentUserAsync()).ReturnsAsync(user);
             _depositionServiceMock.Setup(x => x.GetDepositionParticipantByEmail(It.Is<Guid>(a => a == depositionId), It.IsAny<string>())).ReturnsAsync(Result.Ok(participant));
@@ -414,7 +414,6 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             // Assert
             _userServiceMock.Verify(x => x.GetCurrentUserAsync(), Times.Once());
             Assert.True(result.IsFailed);
-            Assert.True(result.Errors[0].Message.Equals(errorMessage));
         }
 
         [Fact]
@@ -604,7 +603,6 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
                 Id = Guid.NewGuid(),
                 Role = ParticipantType.Observer
             };
-            var errorMessage = "403";
 
             _userServiceMock.Setup(x => x.GetCurrentUserAsync()).ReturnsAsync(user);
             _depositionServiceMock.Setup(x => x.GetDepositionParticipantByEmail(It.IsAny<Guid>(), It.IsAny<string>())).ReturnsAsync(Result.Ok(participant));
@@ -617,7 +615,6 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             _depositionServiceMock.Verify(x => x.GetDepositionParticipantByEmail(It.IsAny<Guid>(), It.IsAny<string>()), Times.Once());
 
             Assert.True(result.IsFailed);
-            Assert.True(result.Errors[0].Message.Equals(errorMessage));
         }
 
         [Fact]

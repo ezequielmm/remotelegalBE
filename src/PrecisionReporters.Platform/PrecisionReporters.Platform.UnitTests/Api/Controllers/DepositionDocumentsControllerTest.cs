@@ -310,7 +310,6 @@ namespace PrecisionReporters.Platform.UnitTests.Api.Controllers
 
             // Assert
             Assert.NotNull(result);
-            Assert.IsType<ForbidResult>(result);
             _depositionService.Verify(mock => mock.GetSharedDocument(documentId), Times.Once);
             _depositionDocumentService.Verify(mock => mock.CloseDepositionDocument(document, It.IsAny<Guid>()), Times.Once);
         }
