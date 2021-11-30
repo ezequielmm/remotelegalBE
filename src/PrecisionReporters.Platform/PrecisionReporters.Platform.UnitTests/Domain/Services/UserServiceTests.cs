@@ -9,6 +9,7 @@ using PrecisionReporters.Platform.Data.Handlers.Interfaces;
 using PrecisionReporters.Platform.Data.Repositories.Interfaces;
 using PrecisionReporters.Platform.Domain.Configurations;
 using PrecisionReporters.Platform.Domain.Dtos;
+using PrecisionReporters.Platform.Domain.Enums;
 using PrecisionReporters.Platform.Domain.Mappers;
 using PrecisionReporters.Platform.Domain.Services;
 using PrecisionReporters.Platform.Domain.Services.Interfaces;
@@ -907,6 +908,345 @@ namespace PrecisionReporters.Platform.UnitTests.Domain.Services
             cognitoServiceMock.Verify(x => x.ResetPassword(It.IsAny<User>()), Times.Once);
             verifyUserServiceMock.Verify(x => x.UpdateVerifyUser(It.IsAny<VerifyUser>()), Times.Once);
             Assert.True(result.IsFailed);
+        }
+
+        [Fact]
+        public async Task GetCurrentUserAsync_ShouldReturnUser()
+        {
+            // arrange
+            var userRepositoryMock = new Mock<IUserRepository>();
+
+            userRepositoryMock
+                .Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()))
+                .ReturnsAsync(new User());
+
+            // Arrange            
+            var id = Guid.NewGuid();
+            var email = "User1@TestMail.com";
+            var user = UserFactory.GetUserByGivenIdAndEmail(id, email);
+            var verifyUser = VerifyUserFactory.GetVerifyUser(user);
+
+            var verifyUserServiceMock = new Mock<IVerifyUserService>();
+            verifyUserServiceMock.Setup(x => x.CreateVerifyUser(It.IsAny<VerifyUser>())).ReturnsAsync(verifyUser);
+            var cognitoServiceMock = new Mock<ICognitoService>();
+            cognitoServiceMock.Setup(x => x.CreateAsync(It.IsAny<User>())).Verifiable();
+
+            var transactionHandlerMock = new Mock<ITransactionHandler>();
+            transactionHandlerMock
+                .Setup(x => x.RunAsync(It.IsAny<Func<Task>>()))
+                .Returns(async (Func<Task> action) =>
+                {
+                    await action();
+                    return Result.Ok();
+                });
+
+            var awsEmailServiceMock = new Mock<IAwsEmailService>();
+            awsEmailServiceMock.Setup(x => x.SetTemplateEmailRequest(It.IsAny<EmailTemplateInfo>(), null)).Verifiable();
+            var service = InitializeService(userRepository: userRepositoryMock, cognitoService: cognitoServiceMock, awsEmailService: awsEmailServiceMock, verifyUserService: verifyUserServiceMock, transactionHandler: transactionHandlerMock);
+
+            // Act
+            var result = await service.GetCurrentUserAsync();
+
+            // assert
+            userRepositoryMock.Verify(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>()), Times.Once);
+            Assert.NotNull(result);
+            Assert.IsType<User>(result);
+        }
+
+        [Fact]
+        public async Task LoginGuestAsync_ShouldReturnGuestToken()
+        {
+            // arrange
+            var cognitoServiceMock = new Mock<ICognitoService>();
+
+            cognitoServiceMock
+                .Setup(x => x.LoginGuestAsync(It.IsAny<User>()))
+                .ReturnsAsync(Result.Ok(new GuestToken()));
+
+            var id = Guid.NewGuid();
+            var email = "User1@TestMail.com";
+            var user = new User
+            {
+                Id = id,
+                CreationDate = DateTime.Now,
+                FirstName = "FirstNameUser1",
+                LastName = "LastNameUser1",
+                EmailAddress = email,
+                Password = "123456",
+                PhoneNumber = "1234567890",
+                IsGuest = true
+            };
+            var verifyUser = VerifyUserFactory.GetVerifyUser(user);
+
+            var userRepositoryMock = new Mock<IUserRepository>();
+            userRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>())).ReturnsAsync(user);
+            userRepositoryMock.Setup(x => x.Update(It.IsAny<User>())).ReturnsAsync(user);
+
+            var verifyUserServiceMock = new Mock<IVerifyUserService>();
+            verifyUserServiceMock.Setup(x => x.CreateVerifyUser(It.IsAny<VerifyUser>())).ReturnsAsync(verifyUser);
+
+            var transactionHandlerMock = new Mock<ITransactionHandler>();
+            transactionHandlerMock
+                .Setup(x => x.RunAsync(It.IsAny<Func<Task>>()))
+                .Returns(async (Func<Task> action) =>
+                {
+                    await action();
+                    return Result.Ok();
+                });
+
+            var awsEmailServiceMock = new Mock<IAwsEmailService>();
+            awsEmailServiceMock.Setup(x => x.SetTemplateEmailRequest(It.IsAny<EmailTemplateInfo>(), null)).Verifiable();
+            var service = InitializeService(userRepository: userRepositoryMock, cognitoService: cognitoServiceMock, awsEmailService: awsEmailServiceMock, verifyUserService: verifyUserServiceMock, transactionHandler: transactionHandlerMock);
+
+            // act
+            var result = await service.LoginGuestAsync("User1@TestMail.com");
+
+            // assert
+            cognitoServiceMock.Verify(x => x.LoginGuestAsync(It.IsAny<User>()), Times.Once);
+            Assert.NotNull(result);
+            Assert.IsType<Result<GuestToken>>(result);
+        }
+
+        [Fact]
+        public async Task LoginGuestAsync_ShouldFailWhenGuestIsFalse()
+        {
+            // arrange
+            var cognitoServiceMock = new Mock<ICognitoService>();
+
+            //var user = UserFactory.GetUserByGivenEmail("test@mock.com");
+
+            cognitoServiceMock
+                .Setup(x => x.LoginGuestAsync(It.IsAny<User>()))
+                .ReturnsAsync(Result.Ok(new GuestToken()));
+
+            var id = Guid.NewGuid();
+            var email = "User1@TestMail.com";
+            var user = new User
+            {
+                Id = id,
+                CreationDate = DateTime.Now,
+                FirstName = "FirstNameUser1",
+                LastName = "LastNameUser1",
+                EmailAddress = email,
+                Password = "123456",
+                PhoneNumber = "1234567890",
+                IsGuest = false
+            };
+            var verifyUser = VerifyUserFactory.GetVerifyUser(user);
+
+            var userRepositoryMock = new Mock<IUserRepository>();
+            userRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>())).ReturnsAsync(user);
+            userRepositoryMock.Setup(x => x.Update(It.IsAny<User>())).ReturnsAsync(user);
+
+            var verifyUserServiceMock = new Mock<IVerifyUserService>();
+            verifyUserServiceMock.Setup(x => x.CreateVerifyUser(It.IsAny<VerifyUser>())).ReturnsAsync(verifyUser);
+
+            var transactionHandlerMock = new Mock<ITransactionHandler>();
+            transactionHandlerMock
+                .Setup(x => x.RunAsync(It.IsAny<Func<Task>>()))
+                .Returns(async (Func<Task> action) =>
+                {
+                    await action();
+                    return Result.Ok();
+                });
+
+            var awsEmailServiceMock = new Mock<IAwsEmailService>();
+            awsEmailServiceMock.Setup(x => x.SetTemplateEmailRequest(It.IsAny<EmailTemplateInfo>(), null)).Verifiable();
+            var service = InitializeService(userRepository: userRepositoryMock, cognitoService: cognitoServiceMock, awsEmailService: awsEmailServiceMock, verifyUserService: verifyUserServiceMock, transactionHandler: transactionHandlerMock);
+
+            // act
+            var result = await service.LoginGuestAsync("User1@TestMail.com");
+
+            var expectedError = "Invalid user";
+
+            // assert
+            Assert.NotNull(result);
+            Assert.IsType<Result<GuestToken>>(result);
+            Assert.Contains(expectedError, result.Errors.Select(e => e.Message).Single());
+        }
+
+        [Fact]
+        public async Task DisableUnverifiedParticipants_ShouldReturnParticipant()
+        {
+            // arrange
+            var id = Guid.NewGuid();
+            var email = "User1@TestMail.com";
+            var user = new User
+            {
+                Id = id,
+                CreationDate = DateTime.Now,
+                FirstName = "FirstNameUser1",
+                LastName = "LastNameUser1",
+                EmailAddress = email,
+                Password = "123456",
+                PhoneNumber = "1234567890",
+                IsGuest = false,
+            };
+
+            List<Participant> participants = new List<Participant>() {
+                new Participant
+                {
+                    Id = Guid.NewGuid(),
+                    Email = "participant@email.com",
+                    Name = "Participant Email",
+                    IsMuted = false,
+                    DepositionId = Guid.NewGuid(),
+                    User = UserFactory.GetUserByGivenEmail("participant@email.com")
+                }
+            };
+
+            var cognitoServiceMock = new Mock<ICognitoService>();
+
+            cognitoServiceMock
+                .Setup(x => x.GetUserCognitoGroupList(It.IsAny<string>()))
+                .ReturnsAsync(Result.Ok(new List<CognitoGroup>()));
+
+            cognitoServiceMock
+                .Setup(x => x.DisableUser(It.IsAny<User>()))
+                .Verifiable();
+
+            var verifyUser = VerifyUserFactory.GetVerifyUser(user);
+
+            var userRepositoryMock = new Mock<IUserRepository>();
+            userRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>())).ReturnsAsync(user);
+            userRepositoryMock.Setup(x => x.Update(It.IsAny<User>())).ReturnsAsync(user);
+
+            var verifyUserServiceMock = new Mock<IVerifyUserService>();
+            verifyUserServiceMock.Setup(x => x.CreateVerifyUser(It.IsAny<VerifyUser>())).ReturnsAsync(verifyUser);
+
+            var transactionHandlerMock = new Mock<ITransactionHandler>();
+            transactionHandlerMock
+                .Setup(x => x.RunAsync(It.IsAny<Func<Task>>()))
+                .Returns(async (Func<Task> action) =>
+                {
+                    await action();
+                    return Result.Ok();
+                });
+
+            var awsEmailServiceMock = new Mock<IAwsEmailService>();
+            awsEmailServiceMock.Setup(x => x.SetTemplateEmailRequest(It.IsAny<EmailTemplateInfo>(), null)).Verifiable();
+            var service = InitializeService(userRepository: userRepositoryMock, cognitoService: cognitoServiceMock, awsEmailService: awsEmailServiceMock, verifyUserService: verifyUserServiceMock, transactionHandler: transactionHandlerMock);
+            
+            // act
+            try
+            {
+                await service.DisableUnverifiedParticipants(participants);
+                Assert.True(true);
+            }
+            catch
+            {
+                Assert.True(false);
+            }
+        }
+
+        [Fact]
+        public async Task LoginUnverifiedAsync_ShouldReturnGuestTokenGuestFalse()
+        {
+            // arrange
+            var cognitoServiceMock = new Mock<ICognitoService>();
+
+            cognitoServiceMock
+                .Setup(x => x.LoginUnVerifiedAsync(It.IsAny<User>()))
+                .ReturnsAsync(Result.Ok(new GuestToken()));
+
+            var id = Guid.NewGuid();
+            var email = "User1@TestMail.com";
+            var user = new User
+            {
+                Id = id,
+                CreationDate = DateTime.Now,
+                FirstName = "FirstNameUser1",
+                LastName = "LastNameUser1",
+                EmailAddress = email,
+                Password = "123456",
+                PhoneNumber = "1234567890",
+                IsGuest = false
+            };
+            var verifyUser = VerifyUserFactory.GetVerifyUser(user);
+
+            var userRepositoryMock = new Mock<IUserRepository>();
+            userRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>())).ReturnsAsync(user);
+            userRepositoryMock.Setup(x => x.Update(It.IsAny<User>())).ReturnsAsync(user);
+
+            var verifyUserServiceMock = new Mock<IVerifyUserService>();
+            verifyUserServiceMock.Setup(x => x.CreateVerifyUser(It.IsAny<VerifyUser>())).ReturnsAsync(verifyUser);
+
+            var transactionHandlerMock = new Mock<ITransactionHandler>();
+            transactionHandlerMock
+                .Setup(x => x.RunAsync(It.IsAny<Func<Task>>()))
+                .Returns(async (Func<Task> action) =>
+                {
+                    await action();
+                    return Result.Ok();
+                });
+
+            var awsEmailServiceMock = new Mock<IAwsEmailService>();
+            awsEmailServiceMock.Setup(x => x.SetTemplateEmailRequest(It.IsAny<EmailTemplateInfo>(), null)).Verifiable();
+            var service = InitializeService(userRepository: userRepositoryMock, cognitoService: cognitoServiceMock, awsEmailService: awsEmailServiceMock, verifyUserService: verifyUserServiceMock, transactionHandler: transactionHandlerMock);
+
+            // act
+            var result = await service.LoginUnverifiedAsync(user);
+
+            // assert
+            cognitoServiceMock.Verify(x => x.LoginUnVerifiedAsync(It.IsAny<User>()), Times.Once);
+            Assert.NotNull(result);
+            Assert.IsType<Result<GuestToken>>(result);
+        }
+
+        [Fact]
+        public async Task LoginUnverifiedAsync_ShouldReturnGuestTokenGuestTrue()
+        {
+            // arrange
+            var cognitoServiceMock = new Mock<ICognitoService>();
+
+            cognitoServiceMock
+                .Setup(x => x.LoginUnVerifiedAsync(It.IsAny<User>()))
+                .ReturnsAsync(Result.Ok(new GuestToken()));
+
+            var id = Guid.NewGuid();
+            var email = "User1@TestMail.com";
+            var user = new User
+            {
+                Id = id,
+                CreationDate = DateTime.Now,
+                FirstName = "FirstNameUser1",
+                LastName = "LastNameUser1",
+                EmailAddress = email,
+                Password = "123456",
+                PhoneNumber = "1234567890",
+                IsGuest = true
+            };
+            var verifyUser = VerifyUserFactory.GetVerifyUser(user);
+
+            var userRepositoryMock = new Mock<IUserRepository>();
+            userRepositoryMock.Setup(x => x.GetFirstOrDefaultByFilter(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<string[]>(), It.IsAny<bool>())).ReturnsAsync(user);
+            userRepositoryMock.Setup(x => x.Update(It.IsAny<User>())).ReturnsAsync(user);
+
+            var verifyUserServiceMock = new Mock<IVerifyUserService>();
+            verifyUserServiceMock.Setup(x => x.CreateVerifyUser(It.IsAny<VerifyUser>())).ReturnsAsync(verifyUser);
+
+            var transactionHandlerMock = new Mock<ITransactionHandler>();
+            transactionHandlerMock
+                .Setup(x => x.RunAsync(It.IsAny<Func<Task>>()))
+                .Returns(async (Func<Task> action) =>
+                {
+                    await action();
+                    return Result.Ok();
+                });
+
+            var awsEmailServiceMock = new Mock<IAwsEmailService>();
+            awsEmailServiceMock.Setup(x => x.SetTemplateEmailRequest(It.IsAny<EmailTemplateInfo>(), null)).Verifiable();
+            var service = InitializeService(userRepository: userRepositoryMock, cognitoService: cognitoServiceMock, awsEmailService: awsEmailServiceMock, verifyUserService: verifyUserServiceMock, transactionHandler: transactionHandlerMock);
+
+            // act
+            var result = await service.LoginUnverifiedAsync(user);
+
+            var expectedError = "Invalid user";
+
+            // assert
+            Assert.NotNull(result);
+            Assert.IsType<Result<GuestToken>>(result);
+            Assert.Contains(expectedError, result.Errors.Select(e => e.Message).Single());
         }
 
         private UserService InitializeService(
